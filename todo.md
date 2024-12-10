@@ -1,5 +1,4 @@
 eslint / prettier
-
 [x] eslint is not working
 [ ] fos sort imports
 [ ] fos remove unused imports
@@ -17,3 +16,9 @@ styling
 [ ] install styled components
 [ ] use it
 [ ] create global styling rules in `src/App.css`
+
+connect to api
+[ ] user auth endpoint
+[ ] sessions???
+[ ] user context
+[ ] get all users
