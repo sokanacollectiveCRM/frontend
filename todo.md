@@ -1,5 +1,8 @@
+- [ ] create react app
+
 eslint / prettier
 
+- [x] install and configure eslint and prettier
 - [x] eslint is not working
 - [ ] fos sort imports
 - [ ] fos remove unused imports
@@ -7,6 +10,7 @@ eslint / prettier
 
 organization
 
+- [x] write readme
 - [ ] organize src folder (common, pages)
 - [ ] do we need a public folder?
 
