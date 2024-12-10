@@ -1,4 +1,4 @@
-- [ ] create react app
+- [x] create react app
 
 eslint / prettier
 
