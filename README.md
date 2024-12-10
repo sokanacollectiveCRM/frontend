@@ -1,8 +1,7 @@
 # Frontend Template
 *2025 Discover Program Project Templates*
 
-This template was created by the [DISC](https://disc-nu.github.io/disc-website/) 
-tech leads of 2024-2025:
+This template was created by the DISC tech leads of 2024-2025:
 - [Amy Liao](https://www.linkedin.com/in/amyzliao/)
 - [Ethan Pineda](https://www.linkedin.com/in/ethanpineda/)
 - [Aanand Patel](https://www.linkedin.com/in/aanand-patel1/)
