@@ -82,3 +82,5 @@ npm run build
 ## Credits
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+
+We use [Prettier](https://prettier.io/) and [ESLint](https://eslint.org/) to handle code formatting.
