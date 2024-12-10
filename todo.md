@@ -22,3 +22,10 @@ connect to api
 [ ] sessions???
 [ ] user context
 [ ] get all users
+
+pages
+[ ] homepage: you are logged in/out
+[ ] navbar: buttons depend on auth
+[ ] loginpage
+[ ] signup page
+[ ] logout are you sure popup
