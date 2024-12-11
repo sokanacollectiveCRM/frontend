@@ -15,26 +15,24 @@ eslint / prettier
 - [x] fos remove unused imports
 - [x] fos spaces
 - [x] enforce semicolons
-- [ ] enforce proptypes
-
-- line endings! [link](https://prettier.io/docs/en/options#end-of-line) 
-
-organization
-
-- [x] write readme
-- [ ] organize src folder (common, pages)
-- [ ] do we need a public folder?
+- [x] enforce proptypes
 
 routing
 
-- [ ] install react router dom
-- [ ] use it
+- [x] install react router dom
+- [x] use it
 
 styling
 
 - [ ] install styled components
 - [ ] use it
 - [ ] create global styling rules in `src/App.css`
+
+organization
+
+- [x] write readme
+- [x] organize src folder (common, pages)
+- [ ] do we need a public folder?
 
 connect to api
 

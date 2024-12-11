@@ -20,6 +20,12 @@ export default [
     },
   },
   pluginJs.configs.recommended,
+  // get rid of warning
+  {
+    plugins: {
+      '@babel/plugin-transform-private-property-in-object': {},
+    },
+  },
   // react/jsx related
   pluginReact.configs.flat.recommended,
   {

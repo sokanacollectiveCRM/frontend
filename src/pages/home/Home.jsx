@@ -1,11 +1,8 @@
 import React from 'react';
 
-import Button from 'common/Button';
-import { THING } from 'common/constants';
+import Button from 'common/components/Button';
 
 export default function Home() {
-  console.log('THING', THING);
-
   return (
     <>
       <h1>Home</h1>

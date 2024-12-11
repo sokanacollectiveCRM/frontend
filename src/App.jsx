@@ -1,21 +1,27 @@
 import React from 'react';
+import { BrowserRouter, Route, Routes } from 'react-router';
 
-import Button from 'common/Button';
+import NavLayout from 'common/layouts/NavLayout';
+import Login from 'pages/auth/Login';
+import SignUp from 'pages/auth/SignUp';
+import Home from 'pages/home/Home';
+import NotFound from 'pages/not-found/NotFound';
 
 import './App.css';
 
 function App() {
-  const thing = 'thing';
-  console.log(thing);
-
   return (
     <div className='App'>
-      <header className='App-header'>
-        {' '}
-        heheh eh eh osfjd lkdfsjlf jdslf sldkjf lsdfds jsdlf lf
-        asdlfjasldfjaldfjlsdfk sdjflksd jflskf sldkjfl sjflsd fdsfj
-      </header>
-      <Button>Click me</Button>
+      <BrowserRouter>
+        <Routes>
+          <Route path='/' element={<NavLayout />}>
+            <Route index element={<Home />} />
+            <Route path='login' element={<Login />} />
+            <Route path='signup' element={<SignUp />} />
+            <Route path='*' element={<NotFound />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
     </div>
   );
 }
