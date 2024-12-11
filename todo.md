@@ -6,10 +6,12 @@ eslint / prettier
 - [x] eslint is not working
 - [x] fos sort imports
   - react
-  - common
+  - common 
   - relative
+- [ ] eslint check for bad imports
+  - bug with .jsx
 - [ ] eslint imports (enforce absolute paths) [link](https://www.npmjs.com/package/eslint-plugin-no-relative-import-paths)
-- [ ] fos enforce jsx vs js files [link](https://github.com/jsx-eslint/eslint-plugin-react)
+- [x] fos enforce jsx vs js files [link](https://github.com/jsx-eslint/eslint-plugin-react)
 - [x] fos remove unused imports
 - [x] fos spaces
 - [x] enforce semicolons

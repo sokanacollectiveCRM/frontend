@@ -19,8 +19,21 @@ export default [
     },
   },
   pluginJs.configs.recommended,
+  // react/jsx related
   pluginReact.configs.flat.recommended,
-  eslintPluginPrettierRecommended,
+  {
+    rules: {
+      'react/jsx-filename-extension': [
+        2,
+        {
+          allow: 'as-needed',
+          extensions: ['.jsx'],
+          ignoreFilesWithoutCode: true,
+        },
+      ],
+    },
+  },
+  // imports related
   importPlugin.flatConfigs.errors,
   {
     settings: {
@@ -31,4 +44,6 @@ export default [
       },
     },
   },
+  // use with prettier
+  eslintPluginPrettierRecommended,
 ];
