@@ -40,6 +40,7 @@ export default [
       'import/resolver': {
         node: {
           paths: ['src'],
+          extensions: ['.js', '.jsx'],
         },
       },
     },

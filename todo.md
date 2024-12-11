@@ -8,7 +8,7 @@ eslint / prettier
   - react
   - common 
   - relative
-- [ ] eslint check for bad imports
+- [x] eslint check for bad imports
   - bug with .jsx
 - [ ] eslint imports (enforce absolute paths) [link](https://www.npmjs.com/package/eslint-plugin-no-relative-import-paths)
 - [x] fos enforce jsx vs js files [link](https://github.com/jsx-eslint/eslint-plugin-react)
