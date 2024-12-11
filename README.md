@@ -17,53 +17,37 @@ Check out DISC:
 
 ## Get started
 
-### 1. install dependencies:
+### 1. Install dependencies
 
 ```
 npm i
 ```
 
-- Only run this command after initial clone, or after someone installs more
-  dependencies.
+### 2. Set up formatting with Prettier and ESLint
 
-### 2. Run the app in development mode:
+If you are contributing to this repo, you must make sure ALL your code is formatted
+according to our `eslint.config.mjs` and `.prettierrc.json` configs. The best way to make
+sure you are always sticking to our guidelines is by having prettier & eslint
+automatically format your code when you save.
+
+Here's how to set that up:
+
+- If you are using VSCode, do the following:
+
+  1. Install the
+     [Prettier ESLint VSCode extension](https://marketplace.visualstudio.com/items?itemName=rvest.vs-code-prettier-eslint)
+  2. Install the
+     [ESLint VSCode extension](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)
+  3. **Restart VSCode completely (quit app and reopen).**
+
+- If you are NOT using VSCode, either use VSCode or you'll have to figure out how to
+  format-on-save on your own.
+
+### 3. Run the app in development mode
 
 ```
 npm start
 ```
-
-### 3. Set up formatting with Prettier and ESLint
-
-If you are contributing, you must make sure ALL your code is formatted
-according to our `eslint.config.mjs` and `.prettierrc.json` configs.
-Below are instructions for setting up automatic format-on-save for a VSCode environment.
-
-_If you are NOT using VSCode, you must figure out how to configure format-on-save on your own._
-
-1. Install the [Prettier ESLint VSCode extension](https://marketplace.visualstudio.com/items?itemName=rvest.vs-code-prettier-eslint)
-2. Install the [ESLint VSCode extension](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)
-3. Open the command palette in VSCode by typing:
-    ```
-    CMD + SHIFT + P (Mac OS)
-    CTRL + SHIFT + P (Windows)
-    ```
-4. In the command palette, search for and select `Preferences: Open Workspace Settings (JSON)`
-5. In the .vscode/settings.json file we just opened, add the following settings
-
-```
-{
-  "editor.defaultFormatter": "rvest.vs-code-prettier-eslint",
-  "editor.formatOnType": false,
-  "editor.formatOnSave": true,
-  "editor.formatOnSaveMode": "file",
-  "vs-code-prettier-eslint.prettierLast": false
-}
-```
-
-6. **IMPORTANT!!!!!!! Restart VSCode**
-
-Now, whenever you save a file, it should be automatically formatted
-according to our configuration.
 
 ## Additional scripts
 
@@ -81,6 +65,8 @@ npm run build
 
 ## Credits
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This project was bootstrapped with
+[Create React App](https://github.com/facebook/create-react-app).
 
-We use [Prettier](https://prettier.io/) and [ESLint](https://eslint.org/) to handle code formatting.
+We use [Prettier](https://prettier.io/) and [ESLint](https://eslint.org/) to handle code
+formatting.

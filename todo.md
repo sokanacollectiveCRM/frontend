@@ -4,9 +4,18 @@ eslint / prettier
 
 - [x] install and configure eslint and prettier
 - [x] eslint is not working
-- [ ] fos sort imports
-- [ ] fos remove unused imports
-- [ ] fos spaces
+- [x] fos sort imports
+  - react
+  - common
+  - relative
+- [ ] eslint imports (enforce absolute paths) [link](https://www.npmjs.com/package/eslint-plugin-no-relative-import-paths)
+- [ ] fos enforce jsx vs js files [link](https://github.com/jsx-eslint/eslint-plugin-react)
+- [x] fos remove unused imports
+- [x] fos spaces
+- [x] enforce semicolons
+- [ ] enforce proptypes
+
+- line endings! [link](https://prettier.io/docs/en/options#end-of-line) 
 
 organization
 
@@ -27,8 +36,15 @@ styling
 
 connect to api
 
-- [ ] user auth endpoint
-- [ ] sessions???
+- [ ] login
+  - bcrypt to encrypt user pwd in the request
+  - salt in .env
+- [ ] sign up
+- [ ] sign up with google
+- [ ] log out
+- [ ] sessions
+  - dont use JWTs
+  - store session token as cookie
 - [ ] user context
 - [ ] get all users
 
@@ -39,3 +55,9 @@ pages
 - [ ] loginpage
 - [ ] signup page
 - [ ] logout are you sure popup
+
+github
+
+- enforce linting/styling in order to merge into main
+- can't push directly to main (except ethan, amy, aanand)
+- pr templates
