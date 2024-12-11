@@ -32,7 +32,6 @@ organization
 
 - [x] write readme
 - [x] organize src folder (common, pages)
-- [ ] do we need a public folder?
 
 connect to api
 
@@ -48,13 +47,14 @@ connect to api
 - [ ] user context
 - [ ] get all users
 
-pages
+content
 
 - [ ] homepage: you are logged in/out
 - [ ] navbar: buttons depend on auth
 - [ ] loginpage
 - [ ] signup page
 - [ ] logout are you sure popup
+- [ ] public/manifest.json (and logos)
 
 github
 
