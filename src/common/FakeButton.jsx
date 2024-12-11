@@ -2,6 +2,7 @@ import React from 'react';
 
 import { XTHING, YTHING, ZTHING } from 'constants.js';
 import { ATHING } from 'donstants.js';
+import Home from 'pages/Home';
 import { TESTTHING } from 'test/constants.js';
 
 import { THING } from './constants';
@@ -17,5 +18,10 @@ export default function FakeButton() {
   console.log('shoe', shoe);
   console.log('TESTTHING', TESTTHING);
 
-  return <button>SNoop dog</button>;
+  return (
+    <>
+      <button>SNoop dog</button>
+      <Home />
+    </>
+  );
 }

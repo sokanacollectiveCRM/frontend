@@ -1,6 +1,7 @@
 // @ts-nocheck
 import pluginJs from '@eslint/js';
 import importPlugin from 'eslint-plugin-import';
+import noRelativeImportPaths from 'eslint-plugin-no-relative-import-paths';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import pluginReact from 'eslint-plugin-react';
 import globals from 'globals';
@@ -43,6 +44,20 @@ export default [
           extensions: ['.js', '.jsx'],
         },
       },
+    },
+  },
+  {
+    plugins: {
+      'no-relative-import-paths': noRelativeImportPaths,
+    },
+    rules: {
+      'no-relative-import-paths/no-relative-import-paths': [
+        'error',
+        {
+          allowSameFolder: true,
+          rootDir: 'src',
+        },
+      ],
     },
   },
   // use with prettier
