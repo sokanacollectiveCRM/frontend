@@ -24,8 +24,8 @@ routing
 
 styling
 
-- [ ] install styled components
-- [ ] use it
+- [x] install styled components
+- [x] use it
 - [ ] create global styling rules in `src/App.css`
 
 organization
