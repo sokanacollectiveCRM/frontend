@@ -73,7 +73,7 @@ Code that deviates is always flagged as an error.
 - Only `.jsx` files can have React JSX in them, and all `.jsx` files MUST have
   JSX in them.  
   Empty files are not flagged.
-- Always have semicolons at the end of expresions
+- Always have semicolons at the end of expressions
 - Single quotes only
 - Line widths around 80, wrapping everything including prose
 - Code has a tab width of 2. Editor displays a tab size of 2.
