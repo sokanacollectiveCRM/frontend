@@ -88,6 +88,7 @@ Code that deviates is always flagged as an error.
     3. absolute paths in `src` (begin with `common` or `pages`)
     4. relative paths (begin with `.` or `/`)
   - Within each import group, imports are sorted alphabetically
+  - Line of space between each import group
   - If importing multiple things from one file, items imported are sorted
     alphabetically
   - Imports that don't exist are not allowed
