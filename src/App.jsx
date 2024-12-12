@@ -3,8 +3,8 @@ import React from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router';
 
 import NavLayout from 'common/layouts/NavLayout';
-import Login from 'pages/auth/Login';
-import SignUp from 'pages/auth/SignUp';
+import Login from 'pages/account/Login';
+import SignUp from 'pages/account/SignUp';
 import Home from 'pages/home/Home';
 import NotFound from 'pages/not-found/NotFound';
 
