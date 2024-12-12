@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { BrowserRouter, Route, Routes } from 'react-router';
 
 import NavLayout from 'common/layouts/NavLayout';

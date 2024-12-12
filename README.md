@@ -25,10 +25,10 @@ npm i
 
 ### 2. Set up formatting with Prettier and ESLint
 
-If you are contributing to this repo, you must make sure ALL your code is formatted
-according to our `eslint.config.mjs` and `.prettierrc.json` configs. The best way to make
-sure you are always sticking to our guidelines is by having prettier & eslint
-automatically format your code when you save.
+If you are contributing to this repo, you must make sure ALL your code is
+formatted according to our `eslint.config.mjs` and `.prettierrc.json` configs.
+The best way to make sure you are always sticking to our guidelines is by having
+prettier & eslint automatically format your code when you save.
 
 Here's how to set that up:
 
@@ -40,8 +40,8 @@ Here's how to set that up:
      [ESLint VSCode extension](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)
   3. **Restart VSCode completely (quit app and reopen).**
 
-- If you are NOT using VSCode, either use VSCode or you'll have to figure out how to
-  format-on-save on your own.
+- If you are NOT using VSCode, either use VSCode or you'll have to figure out
+  how to format-on-save on your own.
 
 Find more details about our linting config [here](#code-formatting-rules)
 
@@ -66,26 +66,30 @@ npm run build
 ```
 
 ## Code formatting rules
-We enforce the following rules across all of our code.   
+
+We enforce the following rules across all of our code.  
 Code that deviates is always flagged as an error.
 
-- Only `.jsx` files can have React JSX in them, and all `.jsx` files MUST have JSX in them.   
-Empty files are not flagged.
+- Only `.jsx` files can have React JSX in them, and all `.jsx` files MUST have
+  JSX in them.  
+  Empty files are not flagged.
 - Always have semicolons at the end of expresions
 - Single quotes only
 - Line widths around 80, wrapping everything including prose
 - Code has a tab width of 2. Editor displays a tab size of 2.
 - Imports
   - Unused imports are not allowed
-  - Relative import paths are only permitted if the imported file is inside
-  the same directory. In all other cases, absolute paths only.
-  `src` is the base directory for absolute import paths. 
-  - Imports are bundled into 3 groups, in this order:
+  - Relative import paths are only permitted if the imported file is inside the
+    same directory. In all other cases, absolute paths only. `src` is the base
+    directory for absolute import paths.
+  - Imports are roughly bundled into 3 groups, in this order:
     1. "react"
-    2. everything that doesn't fall into 1 or 3
-    3. relative import paths
+    2. third party modules (things that dont fit other rules)
+    3. absolute paths in `src` (begin with `common` or `pages`)
+    4. relative paths (begin with `.` or `/`)
   - Within each import group, imports are sorted alphabetically
-  - If importing multiple things from one file, items imported are sorted alphabetically
+  - If importing multiple things from one file, items imported are sorted
+    alphabetically
   - Imports that don't exist are not allowed
 - Plus the default rules in the following eslint plugins:
   - js plugin recommended
@@ -93,17 +97,19 @@ Empty files are not flagged.
   - import plugin errors
   - prettier plugin recommended
 
-
 ## Credits
 
 This project was bootstrapped with
 [Create React App](https://github.com/facebook/create-react-app).
 
-We use [Prettier](https://prettier.io/) and [ESLint](https://eslint.org/) with various plugins to handle code
-formatting.
+We use [Prettier](https://prettier.io/) and [ESLint](https://eslint.org/) with
+various plugins to handle code formatting.
 
-We enforce defining [prop-types](https://www.npmjs.com/package/prop-types) for all components.
+We enforce defining [prop-types](https://www.npmjs.com/package/prop-types) for
+all components.
 
-We use [React Router DOM](https://reactrouter.com/7.0.2/home) for client-side routing.
+We use [React Router DOM](https://reactrouter.com/7.0.2/home) for client-side
+routing.
 
-The vast majority of styling is done using [styled-components](https://styled-components.com/).
+The vast majority of styling is done using
+[styled-components](https://styled-components.com/).
