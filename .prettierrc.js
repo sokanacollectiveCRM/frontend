@@ -10,7 +10,7 @@ module.exports = {
   importOrder: [
     '^react$',
     '<THIRD_PARTY_MODULES>',
-    '^(common|pages)(.*)$',
+    '^(common|pages)/(.*)$',
     '^[./]',
   ],
   importOrderSeparation: true,
