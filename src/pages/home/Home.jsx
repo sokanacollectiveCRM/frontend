@@ -1,12 +1,24 @@
 import React from 'react';
 
-import Button from 'common/components/Button';
+import styled from 'styled-components';
+
+const Text = styled.p`
+  font-size: 2.5em;
+  font-weight: bold;
+  color: var(--text);
+`;
+
+const HomePage = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+`;
 
 export default function Home() {
   return (
-    <>
-      <h1>Home</h1>
-      <Button>Hehe</Button>
-    </>
+    <HomePage>
+      <Text>Welcome to the Home Page</Text>
+    </HomePage>
   );
 }
