@@ -1,12 +1,14 @@
 import React from 'react';
 
-import { Button } from 'common/components/Button';
+import { Title } from 'common/components/Text';
 
-export default function SignUp() {
+import { StyledButton, StyledPage } from './styles';
+
+export default function LogIn() {
   return (
-    <>
-      <h1>Login</h1>
-      <Button.Primary>submit</Button.Primary>
-    </>
+    <StyledPage>
+      <Title>Log In</Title>
+      <StyledButton>Submit</StyledButton>
+    </StyledPage>
   );
 }
