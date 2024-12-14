@@ -3,6 +3,8 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 
+import { Button } from 'common/components/Button';
+
 const StyledNav = styled.nav`
   display: flex;
   gap: 10px;
@@ -16,40 +18,12 @@ const LeftAligned = styled.div`
   gap: 10px;
 `;
 
-const ButtonPrimary = styled.button`
-  background-color: var(--primary-green);
-  font-size: 0.8em;
-  padding: 5px 20px;
-  border-radius: 5px;
-  border: solid 1px var(--primary-green);
-  color: var(--white);
-`;
-
-const ButtonSecondary = styled.button`
-  background-color: var(--secondary-lightgrey);
-  font-size: 0.8em;
-  padding: 5px 20px;
-  border-radius: 5px;
-  border: solid 1px var(--text);
-`;
-
-const ButtonTransparent = styled.button`
-  background-color: transparent;
-  font-size: 0.8em;
-  padding: 5px 20px;
-  border-radius: 5px;
-`;
-
-const StyledLogo = styled.div`
-  font-size: 2.3rem;
+const LogoPlaceholder = styled(Button.Invisible)`
+  padding: 0;
+  font-size: 1.7rem;
   font-weight: bold;
   font-family: monospace;
-  height: 39px;
 `;
-
-function Logo() {
-  return <StyledLogo>LOGO</StyledLogo>;
-}
 
 export default function NavBar() {
   const navigate = useNavigate();
@@ -69,10 +43,10 @@ export default function NavBar() {
   return (
     <StyledNav>
       <LeftAligned>
-        <Logo onClick={handleHomeNav} />
+        <LogoPlaceholder onClick={handleHomeNav}>[LOGO]</LogoPlaceholder>
       </LeftAligned>
-      <ButtonPrimary onClick={handleSignupNav}>Sign Up</ButtonPrimary>
-      <ButtonSecondary onClick={handleLoginNav}>Login</ButtonSecondary>
+      <Button.Primary onClick={handleSignupNav}>Sign Up</Button.Primary>
+      <Button.Secondary onClick={handleLoginNav}>Login</Button.Secondary>
     </StyledNav>
   );
 }
