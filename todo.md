@@ -61,6 +61,10 @@ content
 - [x] use proper proptypes
 - [ ] required fields
 
+deploy
+
+- [ ] deploy on vercel
+
 github
 
 - enforce linting/styling in order to merge into main
