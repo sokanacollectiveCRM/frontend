@@ -1,18 +1,12 @@
 import React, { useState } from 'react';
 
-import { Icon } from 'assets/icons/icons';
 import { useNavigate } from 'react-router-dom';
 
-import { Title } from 'common/components/Text';
+import { Form, FormTitle } from 'common/components/form/Form';
+import { Input } from 'common/components/form/Input';
+import SubmitButton from 'common/components/form/SubmitButton';
 
-import {
-  IconContainer,
-  PasswordContainer,
-  StyledButton,
-  StyledForm,
-  StyledInput,
-  StyledPage,
-} from './styles';
+import { StyledPage } from './styles';
 
 export default function LogIn() {
   const navigate = useNavigate();
@@ -21,7 +15,6 @@ export default function LogIn() {
     email: '',
     password: '',
   });
-  const [showPassword, setShowPassword] = useState(false);
 
   const handleChangeEmail = (e) => {
     setFormState({ ...formState, email: e.target.value });
@@ -35,36 +28,21 @@ export default function LogIn() {
     // prevent page refresh
     e.preventDefault();
     console.log('Submitted', formState);
-    // navigate('/');
-  };
-
-  const toggleShowPassword = () => {
-    setShowPassword(!showPassword);
+    navigate('/');
   };
 
   return (
     <StyledPage>
-      <Title>Log In</Title>
-      <StyledForm>
-        <StyledInput
-          type='text'
-          onChange={handleChangeEmail}
-          placeholder='Email'
+      <Form>
+        <FormTitle>Log In</FormTitle>
+        <Input.Text
+          title='Email'
+          placeholder='j@example.com'
+          handleChange={handleChangeEmail}
         />
-        <PasswordContainer>
-          <StyledInput
-            type={showPassword ? 'text' : 'password'}
-            onChange={handleChangePassword}
-            placeholder='Password'
-          />
-          <IconContainer onClick={toggleShowPassword}>
-            {showPassword ? <Icon.EyeClosed /> : <Icon.Eye />}
-          </IconContainer>
-        </PasswordContainer>
-        <StyledButton type='submit' onClick={handleSubmit}>
-          Log In
-        </StyledButton>
-      </StyledForm>
+        <Input.Password title='Password' handleChange={handleChangePassword} />
+        <SubmitButton onClick={handleSubmit}>Log In</SubmitButton>
+      </Form>
     </StyledPage>
   );
 }

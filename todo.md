@@ -48,15 +48,18 @@ connect to api
   - store session token as cookie
 - [ ] user context
 - [ ] get all users
+- [ ] navbar: buttons depend on auth
+- [ ] homepage: you are logged in/out
 
 content
 
-- [x] homepage: you are logged in/out
-- [ ] navbar: buttons depend on auth
-- [ ] loginpage
-- [ ] signup page
+- [x] homepage
+- [x] loginpage
+- [x] signup page
 - [ ] logout are you sure popup
 - [ ] public/manifest.json (and logos)
+- [x] use proper proptypes
+- [ ] required fields
 
 github
 

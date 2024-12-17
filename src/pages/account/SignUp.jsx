@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
-import { Title } from 'common/components/Text';
+import { Form, FormTitle } from 'common/components/form/Form';
+import { Input } from 'common/components/form/Input';
+import SubmitButton from 'common/components/form/SubmitButton';
 
-import { StyledButton, StyledForm, StyledInput, StyledPage } from './styles';
+import { StyledPage } from './styles';
 
 export default function SignUp() {
   const navigate = useNavigate();
@@ -23,7 +25,7 @@ export default function SignUp() {
     setFormState({ ...formState, lastname: e.target.value });
   };
   const handleChangeEmail = (e) => {
-    setFormState({ ...formState, username: e.target.value });
+    setFormState({ ...formState, email: e.target.value });
   };
   const handleChangePassword = (e) => {
     setFormState({ ...formState, password: e.target.value });
@@ -38,32 +40,26 @@ export default function SignUp() {
 
   return (
     <StyledPage>
-      <Title>Sign Up</Title>
-      <StyledForm>
-        <StyledInput
-          type='text'
-          onChange={handleChangeFirstname}
-          placeholder='First Name'
+      <Form>
+        <FormTitle>Create an account</FormTitle>
+        <Input.Text
+          title='First name'
+          placeholder='John'
+          handleChange={handleChangeFirstname}
         />
-        <StyledInput
-          type='text'
-          onChange={handleChangeLastname}
-          placeholder='Last Name'
+        <Input.Text
+          title='Last name'
+          placeholder='Smith'
+          handleChange={handleChangeLastname}
         />
-        <StyledInput
-          type='text'
-          onChange={handleChangeEmail}
-          placeholder='Email'
+        <Input.Text
+          title='Email'
+          placeholder='j@example.com'
+          handleChange={handleChangeEmail}
         />
-        <StyledInput
-          type='password'
-          onChange={handleChangePassword}
-          placeholder='Password'
-        />
-        <StyledButton type='submit' onClick={handleSubmit}>
-          Sign Up
-        </StyledButton>
-      </StyledForm>
+        <Input.Password title='Password' handleChange={handleChangePassword} />
+        <SubmitButton onClick={handleSubmit}>Sign Up</SubmitButton>
+      </Form>
     </StyledPage>
   );
 }

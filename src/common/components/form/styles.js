@@ -2,19 +2,20 @@ import styled from 'styled-components';
 
 import { Button } from 'common/components/Button';
 
-export const StyledForm = styled.form`
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  width: 25%;
-  margin-left: auto;
-  margin-right: auto;
-  margin-top: 40px;
+export const InputContainer = styled.div``;
+
+export const InputName = styled.h3`
+  margin: 0;
+  text-align: left;
+  font-weight: normal;
+  font-size: 1rem;
+  margin-bottom: 4px;
 `;
 
 export const StyledInput = styled.input`
   font-size: 1rem;
   padding: 8px;
+  border: solid 2px var(--text);
   border-radius: 8px;
   width: 375px;
 `;
@@ -32,18 +33,11 @@ export const IconContainer = styled.div`
   cursor: pointer;
 `;
 
-export const StyledPage = styled.div`
-  flex: 1 0 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-`;
-
 export const StyledButton = styled(Button.Primary)`
   font-size: 1.1rem;
-  width: content;
-  padding-left: 30px;
-  padding-right: 30px;
+  width: 200px;
+  font-align: center;
+  margin-top: 20px;
   margin-left: auto;
   margin-right: auto;
 `;
