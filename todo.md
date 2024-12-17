@@ -37,6 +37,7 @@ organization
 
 connect to api
 
+- [x] user context
 - [ ] login
   - bcrypt to encrypt user pwd in the request
   - salt in .env
@@ -46,7 +47,6 @@ connect to api
 - [ ] sessions
   - dont use JWTs
   - store session token as cookie
-- [ ] user context
 - [ ] get all users
 - [ ] navbar: buttons depend on auth
 - [ ] homepage: you are logged in/out
@@ -66,5 +66,3 @@ github
 - enforce linting/styling in order to merge into main
 - can't push directly to main (except ethan, amy, aanand)
 - pr templates
-
-[tabler icons](https://tablericons.com/)
