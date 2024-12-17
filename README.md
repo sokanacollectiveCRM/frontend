@@ -65,6 +65,46 @@ Create an optimized production build:
 npm run build
 ```
 
+## File organization
+
+Feel free to modify stuff inside the `public` or `src` directories, or the
+`README`:
+
+```c
+├── public // root html, favicon, and manifest
+├── src
+│   ├── assets // files that are not code (eg. icons, images)
+│   │   └── icons // all icons used in the app (bunch of .svg files)
+│   ├── common // stuff that doesn't belong to any one page; shared stuff
+│   │   ├── components
+│   │   ├── contexts
+│   │   ├── hooks // custom hooks
+│   │   ├── layouts // for routing
+│   │   └── utils // helper functions that are not hooks
+│   ├── pages // a folder for every unique page (or set of pages)
+│   │   ├── account // user account related pages (login, signup, etc)
+│   │   ├── home // homepage
+│   │   └── not-found // error page for bad routes
+│   ├── App.css // global stylesheet
+│   └── App.jsx // global contexts & routing
+└── README.md // project documentation
+```
+
+Everything else: **DO NOT TOUCH!!!**
+
+- many of these are modified as side-effects of normal development, that's okay
+- just never modify these directly
+
+```c
+├── .vscode // project-specific settings for VSCode (eg. format on save)
+├── build // copy of the project optimized for production
+├── node_modules // external libraries and dependencies
+├── eslint.config.mjs // linting config
+├── jsconfig.json // JS compiling config
+├── package-lock.json // detailed description of the entire dependency tree
+└── package.json // project dependencies
+```
+
 ## Code formatting rules
 
 We enforce the following rules across all of our code.  
