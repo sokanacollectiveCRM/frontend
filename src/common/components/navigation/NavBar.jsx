@@ -31,11 +31,28 @@ export default function NavBar() {
 
   const { user, setUser } = useContext(UserContext);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     console.log('Logging out');
-    setUser(null);
-  };
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_BACKEND_URL}/auth/logout`,
+        {
+          method: 'POST',
+          credentials: 'include',
+        }
+      );
 
+      if (!response.ok) {
+        throw new Error('Logout failed');
+      }
+
+      setUser(null);
+      navigate('/', { replace: true });
+    } catch (error) {
+      console.error('Logout error:', error);
+      // TODO: we probably want to actually handle error states here
+    }
+  };
   return (
     <StyledNav>
       <LeftAligned>
