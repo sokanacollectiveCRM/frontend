@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useContext } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 
 import { Button } from 'common/components/Button';
+import { UserContext } from 'common/contexts/UserContext';
 
 const StyledNav = styled.nav`
   display: flex;
@@ -28,25 +29,30 @@ const LogoPlaceholder = styled(Button.Invisible)`
 export default function NavBar() {
   const navigate = useNavigate();
 
-  const handleHomeNav = () => {
-    navigate('/');
-  };
+  const { user, setUser } = useContext(UserContext);
 
-  const handleLoginNav = () => {
-    navigate('/login');
-  };
-
-  const handleSignupNav = () => {
-    navigate('/signup');
+  const handleLogout = () => {
+    console.log('Logging out');
+    setUser(null);
   };
 
   return (
     <StyledNav>
       <LeftAligned>
-        <LogoPlaceholder onClick={handleHomeNav}>[LOGO]</LogoPlaceholder>
+        <LogoPlaceholder onClick={() => navigate('/')}>[LOGO]</LogoPlaceholder>
       </LeftAligned>
-      <Button.Primary onClick={handleSignupNav}>Sign Up</Button.Primary>
-      <Button.Secondary onClick={handleLoginNav}>Login</Button.Secondary>
+      {user ? (
+        <Button.Secondary onClick={handleLogout}>Log Out</Button.Secondary>
+      ) : (
+        <>
+          <Button.Primary onClick={() => navigate('/signup')}>
+            Sign Up
+          </Button.Primary>
+          <Button.Secondary onClick={() => navigate('/login')}>
+            Login
+          </Button.Secondary>
+        </>
+      )}
     </StyledNav>
   );
 }

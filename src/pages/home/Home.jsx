@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useContext } from 'react';
 
 import styled from 'styled-components';
 
 import { Subtitle, Title } from 'common/components/Text';
+import { UserContext } from 'common/contexts/UserContext';
 
 const TextContainer = styled.div`
   display: flex;
@@ -20,11 +21,13 @@ const HomePage = styled.div`
 `;
 
 export default function Home() {
+  const { user } = useContext(UserContext);
+
   return (
     <HomePage>
       <TextContainer>
         <Title>Home Page</Title>
-        <Subtitle>You are NOT logged in.</Subtitle>
+        <Subtitle>You are {user ? '' : 'NOT'} logged in.</Subtitle>
       </TextContainer>
     </HomePage>
   );
