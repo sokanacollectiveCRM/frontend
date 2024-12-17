@@ -6,12 +6,14 @@ eslint / prettier
 - [x] eslint is not working
 - [x] fos sort imports
   - react
-  - common 
+  - common
   - relative
 - [x] eslint check for bad imports
   - bug with .jsx
-- [x] eslint imports (enforce absolute paths) [link](https://www.npmjs.com/package/eslint-plugin-no-relative-import-paths)
-- [x] fos enforce jsx vs js files [link](https://github.com/jsx-eslint/eslint-plugin-react)
+- [x] eslint imports (enforce absolute paths)
+      [link](https://www.npmjs.com/package/eslint-plugin-no-relative-import-paths)
+- [x] fos enforce jsx vs js files
+      [link](https://github.com/jsx-eslint/eslint-plugin-react)
 - [x] fos remove unused imports
 - [x] fos spaces
 - [x] enforce semicolons
@@ -26,7 +28,7 @@ styling
 
 - [x] install styled components
 - [x] use it
-- [ ] create global styling rules in `src/App.css`
+- [x] create global styling rules in `src/App.css`
 
 organization
 
@@ -49,7 +51,7 @@ connect to api
 
 content
 
-- [ ] homepage: you are logged in/out
+- [x] homepage: you are logged in/out
 - [ ] navbar: buttons depend on auth
 - [ ] loginpage
 - [ ] signup page
