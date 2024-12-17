@@ -34,6 +34,7 @@ organization
 
 - [x] write readme
 - [x] organize src folder (common, pages)
+- [x] file organization in readme
 
 connect to api
 
@@ -45,11 +46,11 @@ connect to api
 - [ ] sign up with google
 - [ ] log out
 - [ ] sessions
-  - dont use JWTs
   - store session token as cookie
-- [ ] get all users
+- [ ] get all users (display on homepage)
 - [ ] navbar: buttons depend on auth
 - [ ] homepage: you are logged in/out
+- [ ] ensure correct pages are inaccessible if logged in/out
 
 content
 
