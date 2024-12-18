@@ -5,7 +5,7 @@ import PropTypes from 'prop-types';
 export const UserContext = React.createContext({
   user: null,
   setUser: () => {},
-  isAuthenticated: false,
+  isLoading: false,
 });
 
 UserProvider.propTypes = {
