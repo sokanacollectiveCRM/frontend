@@ -122,7 +122,6 @@ export default function SignUp() {
           placeholder='johnsmith'
           value={formState.username}
           onChange={handleChangeUsername}
-          required
         />
         <Input.Password
           title='Password'

@@ -17,12 +17,12 @@ export default function LogIn() {
   const [isLoading, setIsLoading] = useState(false);
 
   const [formState, setFormState] = useState({
-    email: '',
+    identifier: '',
     password: '',
   });
 
   const handleChangeEmail = (e) => {
-    setFormState({ ...formState, email: e.target.value });
+    setFormState({ ...formState, identifier: e.target.value });
     setError('');
   };
 
@@ -46,7 +46,7 @@ export default function LogIn() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            email: formState.email,
+            identifier: formState.identifier,
             password: formState.password,
           }),
         }
@@ -86,9 +86,9 @@ export default function LogIn() {
         <FormTitle>Log In</FormTitle>
         {error && <RedSpan>{error}</RedSpan>}
         <Input.Text
-          title='Email'
-          placeholder='j@example.com'
-          value={formState.email}
+          title='Username or Email'
+          placeholder='jsmith or j@example.com'
+          value={formState.identifier}
           onChange={handleChangeEmail}
           required
         />
