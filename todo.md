@@ -40,17 +40,17 @@ connect to api
 
 - [x] user context
 - [ ] login
-  - bcrypt to encrypt user pwd in the request
-  - salt in .env
-- [ ] sign up
+  - [x] basic login done
+  - [ ] bcrypt + salt to encrypt user pwd in the request
+- [x] sign up
 - [ ] sign up with google
-- [ ] log out
-- [ ] sessions
-  - store session token as cookie
+- [x] log out
+- [ ] sessions & cookies
 - [ ] get all users (display on homepage)
-- [ ] navbar: buttons depend on auth
-- [ ] homepage: you are logged in/out
-- [ ] ensure correct pages are inaccessible if logged in/out
+- [x] navbar: buttons depend on auth
+- [x] homepage: you are logged in/out
+- [ ] pages inaccessible if logged in: signup, login
+- [ ] pages inaccessible if logged out: home
 
 content
 
@@ -60,7 +60,7 @@ content
 - [ ] logout are you sure popup
 - [ ] public/manifest.json (and logos)
 - [x] use proper proptypes
-- [ ] required fields
+- [x] required fields
 
 deploy
 
