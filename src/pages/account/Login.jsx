@@ -9,7 +9,7 @@ import { UserContext } from 'common/contexts/UserContext';
 
 import { StyledPage } from './styles';
 
-export default function Login() {
+export default function LogIn() {
   const navigate = useNavigate();
   const { setUser } = useContext(UserContext);
   const [error, setError] = useState('');

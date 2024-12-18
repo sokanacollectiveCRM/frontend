@@ -5,7 +5,7 @@ import { BrowserRouter, Route, Routes } from 'react-router';
 import { UserProvider } from 'common/contexts/UserContext';
 import NavLayout from 'common/layouts/NavLayout';
 import AuthCallback from 'pages/account/AuthCallback';
-import Login from 'pages/account/Login';
+import LogIn from 'pages/account/LogIn';
 import SignUp from 'pages/account/SignUp';
 import Home from 'pages/home/Home';
 import NotFound from 'pages/not-found/NotFound';
@@ -19,7 +19,7 @@ function App() {
         <Routes>
           <Route path='/' element={<NavLayout />}>
             <Route index element={<Home />} />
-            <Route path='login' element={<Login />} />
+            <Route path='login' element={<LogIn />} />
             <Route path='signup' element={<SignUp />} />
             <Route path='auth/callback' element={<AuthCallback />} />
             <Route path='*' element={<NotFound />} />
