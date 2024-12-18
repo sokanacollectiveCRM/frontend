@@ -37,7 +37,7 @@ export default function EmailVerification() {
       {status === 'success' && (
         <>
           <Title>Email Verified!</Title>
-          <Subtitle>You'll be redirected to login in 3 seconds...</Subtitle>
+          <Subtitle>{"You'll be redirected to login in 3 seconds..."}</Subtitle>
         </>
       )}
       {status === 'error' && (
