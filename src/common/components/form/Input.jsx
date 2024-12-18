@@ -7,55 +7,56 @@ import {
   IconContainer,
   InputContainer,
   InputName,
+  InputTitle,
   PasswordContainer,
+  RedSpan,
   StyledInput,
 } from './styles';
 
 TitledInput.propTypes = {
   title: PropTypes.string.isRequired,
+  required: PropTypes.bool,
   children: PropTypes.node.isRequired,
 };
-function TitledInput({ title, children }) {
+function TitledInput({ title, required, children }) {
   return (
     <InputContainer>
-      <InputName>{title}</InputName>
+      <InputName>
+        <InputTitle>{title}</InputTitle>
+        {required && <RedSpan>*</RedSpan>}
+      </InputName>
       {children}
     </InputContainer>
   );
 }
 
-TextField.propTypes = {
-  handleChange: PropTypes.func.isRequired,
+const InputPropTypes = {
+  onChange: PropTypes.func.isRequired,
   placeholder: PropTypes.string,
+  value: PropTypes.string,
+  required: PropTypes.bool,
 };
-function TextField({ handleChange, placeholder = 'Text' }) {
-  return (
-    <StyledInput
-      type='text'
-      onChange={handleChange}
-      placeholder={placeholder}
-    />
-  );
+
+TextField.propTypes = InputPropTypes;
+function TextField(props) {
+  props.placeholder ??= 'Text Here';
+  return <StyledInput type='text' {...props} />;
 }
 
 InputText.propTypes = {
   title: PropTypes.string.isRequired,
-  handleChange: PropTypes.func.isRequired,
-  placeholder: PropTypes.string,
+  ...InputPropTypes,
 };
-function InputText({ title, handleChange, placeholder }) {
+function InputText({ title, ...rest }) {
   return (
-    <TitledInput title={title}>
-      <TextField handleChange={handleChange} placeholder={placeholder} />
+    <TitledInput title={title} required={rest.required}>
+      <TextField {...rest} />
     </TitledInput>
   );
 }
 
-PasswordField.propTypes = {
-  handleChange: PropTypes.func.isRequired,
-  placeholder: PropTypes.string,
-};
-function PasswordField({ handleChange, placeholder = '' }) {
+PasswordField.propTypes = InputPropTypes;
+function PasswordField(props) {
   const [showPassword, setShowPassword] = useState(false);
   const toggleShowPassword = () => {
     setShowPassword(!showPassword);
@@ -63,11 +64,7 @@ function PasswordField({ handleChange, placeholder = '' }) {
 
   return (
     <PasswordContainer>
-      <StyledInput
-        type={showPassword ? 'text' : 'password'}
-        onChange={handleChange}
-        placeholder={placeholder}
-      />
+      <StyledInput type={showPassword ? 'text' : 'password'} {...props} />
       <IconContainer onClick={toggleShowPassword}>
         {showPassword ? <Icon.EyeClosed /> : <Icon.Eye />}
       </IconContainer>
@@ -77,13 +74,12 @@ function PasswordField({ handleChange, placeholder = '' }) {
 
 InputPassword.propTypes = {
   title: PropTypes.string.isRequired,
-  handleChange: PropTypes.func.isRequired,
-  placeholder: PropTypes.string,
+  ...InputPropTypes,
 };
-function InputPassword({ title, handleChange, placeholder }) {
+function InputPassword({ title, ...rest }) {
   return (
-    <TitledInput title={title}>
-      <PasswordField handleChange={handleChange} placeholder={placeholder} />
+    <TitledInput title={title} required={rest.required}>
+      <PasswordField {...rest} />
     </TitledInput>
   );
 }

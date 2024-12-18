@@ -11,6 +11,12 @@ export const InputName = styled.h3`
   font-size: 1rem;
   margin-bottom: 4px;
 `;
+export const InputTitle = styled.span`
+  margin-right: 2px;
+`;
+export const RedSpan = styled.span`
+  color: red;
+`;
 
 export const StyledInput = styled.input`
   font-size: 1rem;

@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Form, FormTitle } from 'common/components/form/Form';
 import { Input } from 'common/components/form/Input';
 import SubmitButton from 'common/components/form/SubmitButton';
+import { RedSpan } from 'common/components/form/styles';
 import { UserContext } from 'common/contexts/UserContext';
 
 import { StyledPage } from './styles';
@@ -83,21 +84,21 @@ export default function LogIn() {
     <StyledPage>
       <Form onSubmit={handleSubmit}>
         <FormTitle>Log In</FormTitle>
-        {error && <div className='text-red-500 mb-4'>{error}</div>}
+        {error && <RedSpan>{error}</RedSpan>}
         <Input.Text
           title='Email'
           placeholder='j@example.com'
           value={formState.email}
-          handleChange={handleChangeEmail}
+          onChange={handleChangeEmail}
           required
         />
         <Input.Password
           title='Password'
           value={formState.password}
-          handleChange={handleChangePassword}
+          onChange={handleChangePassword}
           required
         />
-        <SubmitButton onClick={handleSubmit} disabled={isLoading}>
+        <SubmitButton onClick={() => {}} disabled={isLoading}>
           {isLoading ? 'Logging in...' : 'Log In'}
         </SubmitButton>
       </Form>

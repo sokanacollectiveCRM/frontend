@@ -100,35 +100,37 @@ export default function SignUp() {
           title='First name'
           placeholder='John'
           value={formState.firstname}
-          handleChange={handleChangeFirstname}
+          onChange={handleChangeFirstname}
+          required
         />
         <Input.Text
           title='Last name'
           placeholder='Smith'
           value={formState.lastname}
-          handleChange={handleChangeLastname}
+          onChange={handleChangeLastname}
+          required
         />
         <Input.Text
           title='Email'
           placeholder='j@example.com'
           value={formState.email}
-          handleChange={handleChangeEmail}
-          required
-        />
-        <Input.Password
-          title='Password'
-          value={formState.password}
-          handleChange={handleChangePassword}
+          onChange={handleChangeEmail}
           required
         />
         <Input.Text
           title='Username'
           placeholder='johnsmith'
           value={formState.username}
-          handleChange={handleChangeUsername}
+          onChange={handleChangeUsername}
           required
         />
-        <SubmitButton onClick={handleSubmit} disabled={isLoading}>
+        <Input.Password
+          title='Password'
+          value={formState.password}
+          onChange={handleChangePassword}
+          required
+        />
+        <SubmitButton onClick={() => {}} disabled={isLoading}>
           {isLoading ? 'Creating account...' : 'Sign Up'}
         </SubmitButton>
       </Form>
