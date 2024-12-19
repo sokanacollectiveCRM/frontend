@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
+import GoogleButton from 'common/components/GoogleButton';
 import { Form, FormTitle } from 'common/components/form/Form';
 import { Input } from 'common/components/form/Input';
 import SubmitButton from 'common/components/form/SubmitButton';
+import { useUser } from 'common/contexts/UserContext';
 
 import { StyledPage } from './styles';
 
@@ -12,6 +14,7 @@ export default function SignUp() {
   const navigate = useNavigate();
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { googleAuth } = useUser();
 
   const [formState, setFormState] = useState({
     firstname: '',
@@ -44,6 +47,14 @@ export default function SignUp() {
   const handleChangeUsername = (e) => {
     setFormState({ ...formState, username: e.target.value });
     setError('');
+  };
+
+  const handleGoogleSignup = async () => {
+    try {
+      await googleAuth();
+    } catch (error) {
+      setError(error.message);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -130,6 +141,11 @@ export default function SignUp() {
         <SubmitButton onClick={() => {}} disabled={isLoading}>
           {isLoading ? 'Creating account...' : 'Sign Up'}
         </SubmitButton>
+        <GoogleButton
+          onClick={handleGoogleSignup}
+          isLoading={isLoading}
+          text='Sign up with Google'
+        />
       </Form>
     </StyledPage>
   );

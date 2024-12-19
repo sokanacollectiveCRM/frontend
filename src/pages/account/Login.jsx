@@ -1,33 +1,29 @@
-import React, { useContext, useState } from 'react';
+import React, { useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
+import GoogleButton from 'common/components/GoogleButton';
 import { Form, FormTitle } from 'common/components/form/Form';
 import { Input } from 'common/components/form/Input';
 import SubmitButton from 'common/components/form/SubmitButton';
 import { RedSpan } from 'common/components/form/styles';
-import { UserContext } from 'common/contexts/UserContext';
+import { useUser } from 'common/contexts/UserContext';
 
 import { StyledPage } from './styles';
 
-export default function LogIn() {
+export default function Login() {
   const navigate = useNavigate();
-  const { setUser } = useContext(UserContext);
+  const { login, googleAuth } = useUser();
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const [formState, setFormState] = useState({
-    identifier: '',
+    email: '',
     password: '',
   });
 
-  const handleChangeEmail = (e) => {
-    setFormState({ ...formState, identifier: e.target.value });
-    setError('');
-  };
-
-  const handleChangePassword = (e) => {
-    setFormState({ ...formState, password: e.target.value });
+  const handleChange = (e) => {
+    setFormState({ ...formState, [e.target.name]: e.target.value });
     setError('');
   };
 
@@ -37,46 +33,20 @@ export default function LogIn() {
     setError('');
 
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_BACKEND_URL}/auth/login`,
-        {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            identifier: formState.identifier,
-            password: formState.password,
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Login failed');
-      }
-
-      const userResponse = await fetch(
-        `${process.env.REACT_APP_BACKEND_URL}/auth/me`,
-        {
-          credentials: 'include',
-        }
-      );
-
-      if (!userResponse.ok) {
-        throw new Error('Failed to fetch user data');
-      }
-
-      const userData = await userResponse.json();
-      setUser(userData);
+      await login(formState.email, formState.password);
       navigate('/', { replace: true });
     } catch (error) {
-      console.error('Login error:', error);
       setError(error.message || 'Failed to login. Please try again.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      await googleAuth();
+    } catch (error) {
+      setError(error.message);
     }
   };
 
@@ -86,21 +56,28 @@ export default function LogIn() {
         <FormTitle>Log In</FormTitle>
         {error && <RedSpan>{error}</RedSpan>}
         <Input.Text
-          title='Username or Email'
+          title='Email'
+          name='email'
           placeholder='jsmith or j@example.com'
-          value={formState.identifier}
-          onChange={handleChangeEmail}
+          value={formState.email}
+          onChange={handleChange}
           required
         />
         <Input.Password
           title='Password'
+          name='password'
           value={formState.password}
-          onChange={handleChangePassword}
+          onChange={handleChange}
           required
         />
-        <SubmitButton onClick={() => {}} disabled={isLoading}>
+        <SubmitButton disabled={isLoading}>
           {isLoading ? 'Logging in...' : 'Log In'}
         </SubmitButton>
+        <GoogleButton
+          onClick={handleGoogleLogin}
+          isLoading={isLoading}
+          text='Sign in with Google'
+        />
       </Form>
     </StyledPage>
   );

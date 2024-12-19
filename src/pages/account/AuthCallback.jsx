@@ -1,61 +1,80 @@
-// AuthCallback.js
-import React, { useContext, useEffect } from 'react';
+import React, { useEffect } from 'react';
 
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import styled from 'styled-components';
 
-import { UserContext } from 'common/contexts/UserContext';
+import { useUser } from 'common/contexts/UserContext';
+
+const Container = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+`;
+
+const LoadingText = styled.p`
+  font-size: 1rem;
+  color: ${(props) => props.theme.colors?.text || '#000'};
+`;
 
 export default function AuthCallback() {
   const navigate = useNavigate();
-  const { setUser } = useContext(UserContext);
-  const [searchParams] = useSearchParams();
+  const { checkAuth } = useUser();
 
   useEffect(() => {
     const handleCallback = async () => {
-      const accessToken = searchParams.get('access_token');
-      const error = searchParams.get('error');
-
-      if (error) {
-        console.error('Authentication error:', error);
-        navigate('/login');
-        return;
-      }
-
-      if (!accessToken) {
-        console.error('No access token received');
-        navigate('/login');
-        return;
-      }
-
-      localStorage.setItem('access_token', accessToken);
-
       try {
-        const response = await fetch('http://localhost:5050/auth/me', {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
+        console.log('AuthCallback mounted');
+        const hash = window.location.hash.substring(1);
+        const params = new URLSearchParams(hash);
+        const access_token = params.get('access_token');
 
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
+        console.log('Token status:', access_token ? 'present' : 'missing');
+
+        if (!access_token) {
+          throw new Error('No access token received');
+        }
+
+        const response = await fetch(
+          `${process.env.REACT_APP_BACKEND_URL}/auth/callback`,
+          {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ access_token }),
+          }
+        );
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Authentication failed');
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        const authSuccess = await checkAuth();
+        if (authSuccess) {
           navigate('/', { replace: true });
         } else {
-          throw new Error('Failed to get user details');
+          throw new Error('Authentication verification failed');
         }
       } catch (error) {
         console.error('Auth callback error:', error);
-        navigate('/login');
+        navigate('/login', {
+          state: { error: error.message },
+          replace: true,
+        });
       }
     };
 
     handleCallback();
-  }, [navigate, setUser, searchParams]);
+  }, [navigate, checkAuth]);
 
   return (
-    <div className='flex flex-col items-center justify-center min-h-screen'>
-      <h2 className='text-xl font-semibold mb-4'>Verifying your account...</h2>
-      <p>Please wait while we complete the verification process.</p>
-    </div>
+    <Container>
+      <LoadingText>Completing authentication...</LoadingText>
+    </Container>
   );
 }

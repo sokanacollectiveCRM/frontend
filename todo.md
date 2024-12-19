@@ -39,13 +39,12 @@ organization
 connect to api
 
 - [x] user context
-- [ ] login
+- [x] login
   - [x] basic login done
-  - [ ] bcrypt + salt to encrypt user pwd in the request
 - [x] sign up
-- [ ] sign up with google
+- [x] sign up with google
 - [x] log out
-- [ ] sessions & cookies
+- [x] sessions & cookies
 - [ ] get all users (display on homepage)
 - [x] navbar: buttons depend on auth
 - [x] homepage: you are logged in/out
@@ -57,7 +56,7 @@ content
 - [x] homepage
 - [x] loginpage
 - [x] signup page
-- [ ] logout are you sure popup
+- [x] logout are you sure popup
 - [ ] public/manifest.json (and logos)
 - [x] use proper proptypes
 - [x] required fields

@@ -1,10 +1,12 @@
-import React, { useContext } from 'react';
+import React, { useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 
 import { Button } from 'common/components/Button';
-import { UserContext } from 'common/contexts/UserContext';
+import { useUser } from 'common/contexts/UserContext';
+
+import LogoutModal from './LogoutModal';
 
 const StyledNav = styled.nav`
   display: flex;
@@ -27,39 +29,35 @@ const LogoPlaceholder = styled(Button.Invisible)`
 `;
 
 export default function NavBar() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
+  const { user, logout } = useUser();
 
-  const { user, setUser } = useContext(UserContext);
+  const handleLogoutClick = () => {
+    setIsModalOpen(true);
+  };
 
-  const handleLogout = async () => {
-    console.log('Logging out');
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+  };
+
+  const handleLogoutConfirm = async () => {
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_BACKEND_URL}/auth/logout`,
-        {
-          method: 'POST',
-          credentials: 'include',
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Logout failed');
-      }
-
-      setUser(null);
+      await logout();
+      setIsModalOpen(false);
       navigate('/', { replace: true });
     } catch (error) {
       console.error('Logout error:', error);
-      // TODO: we probably want to actually handle error states here
     }
   };
+
   return (
     <StyledNav>
       <LeftAligned>
         <LogoPlaceholder onClick={() => navigate('/')}>[LOGO]</LogoPlaceholder>
       </LeftAligned>
       {user ? (
-        <Button.Secondary onClick={handleLogout}>Log Out</Button.Secondary>
+        <Button.Secondary onClick={handleLogoutClick}>Log Out</Button.Secondary>
       ) : (
         <>
           <Button.Primary onClick={() => navigate('/signup')}>
@@ -70,6 +68,11 @@ export default function NavBar() {
           </Button.Secondary>
         </>
       )}
+      <LogoutModal
+        isOpen={isModalOpen}
+        onClose={handleModalClose}
+        onLogout={handleLogoutConfirm}
+      />
     </StyledNav>
   );
 }
