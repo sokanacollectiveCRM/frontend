@@ -3,6 +3,7 @@ import React, { useContext } from 'react';
 import styled from 'styled-components';
 
 import { Subtitle, Title } from 'common/components/Text';
+import UsersList from 'common/components/Users/UsersList';
 import { UserContext } from 'common/contexts/UserContext';
 
 const TextContainer = styled.div`
@@ -17,7 +18,7 @@ const HomePage = styled.div`
   justify-content: center;
   align-items: center;
   text-align: center;
-  padding-top: 100px;
+  padding: 2rem;
 `;
 
 export default function Home() {
@@ -27,8 +28,9 @@ export default function Home() {
     <HomePage>
       <TextContainer>
         <Title>Home Page</Title>
-        <Subtitle>You are {user ? '' : 'NOT'} logged in.</Subtitle>
+        <Subtitle>Welcome, {user?.firstname || 'User'}!</Subtitle>
       </TextContainer>
+      <UsersList />
     </HomePage>
   );
 }
