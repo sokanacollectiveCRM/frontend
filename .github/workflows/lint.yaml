@@ -26,27 +26,20 @@ jobs:
 
       - name: Check component file extensions
         run: |
-          # Files that should use .jsx extension
-          COMPONENT_PATHS=(
-            "src/common/components"
-            "src/pages"
-            "src/App.jsx"
-          )
-
-          # Find .js files in component directories (excluding specific patterns)
-          INVALID_FILES=$(find "${COMPONENT_PATHS[@]}" -type f \
-            -name "*.js" \
-            ! -name "*.test.js" \
-            ! -name "styles.js" \
-            ! -name "*.config.js" \
-            ! -name "*.utils.js" \
-            ! -name "*.constants.js" \
-            2>/dev/null || true)
+          # Only check files that contain JSX syntax
+          # This excludes styled-components and other utility files
+          for file in $(find src -type f -name "*.js"); do
+            if grep -l "React\|jsx\|<.*>\|render" "$file" > /dev/null; then
+              if [[ "$file" != *.test.js ]] && [[ "$file" != */styles.js ]] && [[ ! "$file" =~ [._]styles?.js$ ]]; then
+                INVALID_FILES="$INVALID_FILES$file"$'\n'
+              fi
+            fi
+          done
 
           if [ ! -z "$INVALID_FILES" ]; then
-            echo "The following files should use .jsx extension:"
+            echo "The following files contain JSX and should use .jsx extension:"
             echo "$INVALID_FILES"
-            echo "Components, pages, and App should use .jsx extension"
+            echo "Files with JSX content should use .jsx extension"
             exit 1
           fi
 
