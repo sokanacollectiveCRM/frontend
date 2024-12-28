@@ -18,7 +18,10 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "lint": "eslint .",
-    "lint:fix": "eslint -fix ."
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"src/**/*.{js,jsx,mjs,cjs,json,css,scss,md}\"",
+    "format:check": "prettier --check \"src/**/*.{js,jsx,mjs,cjs,json,css,scss,md}\"",
+    "check-imports": "prettier --check --plugin @trivago/prettier-plugin-sort-imports \"src/**/*.{js,jsx,mjs,cjs}\""
   },
   "eslintConfig": {
     "extends": [

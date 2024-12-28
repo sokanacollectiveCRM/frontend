@@ -67,6 +67,6 @@ deploy
 
 github
 
-- enforce linting/styling in order to merge into main
-- can't push directly to main (except ethan, amy, aanand)
-- pr templates
+- [ ] enforce linting/styling in order to merge into main
+- [ ] can't push directly to main (except ethan, amy, aanand)
+- [x] pr templates
