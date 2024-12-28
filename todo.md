@@ -45,11 +45,12 @@ connect to api
 - [x] sign up with google
 - [x] log out
 - [x] sessions & cookies
-- [ ] get all users (display on homepage)
+- [x] get all users (display on homepage)
 - [x] navbar: buttons depend on auth
 - [x] homepage: you are logged in/out
-- [ ] pages inaccessible if logged in: signup, login
-- [ ] pages inaccessible if logged out: home
+- [x] pages inaccessible if logged in: signup, login
+- [x] pages inaccessible if logged out: home
+- [ ] password reset
 
 content
 
@@ -60,6 +61,7 @@ content
 - [ ] public/manifest.json (and logos)
 - [x] use proper proptypes
 - [x] required fields
+- [ ] password reset
 
 deploy
 
