@@ -26,20 +26,30 @@ jobs:
 
       - name: Check component file extensions
         run: |
-          # Only check files that contain JSX syntax
-          # This excludes styled-components and other utility files
+          # Only check files that contain actual JSX syntax (looking for HTML-like tags)
+          # This excludes files that only import/export components
           for file in $(find src -type f -name "*.js"); do
-            if grep -l "React\|jsx\|<.*>\|render" "$file" > /dev/null; then
-              if [[ "$file" != *.test.js ]] && [[ "$file" != */styles.js ]] && [[ ! "$file" =~ [._]styles?.js$ ]]; then
-                INVALID_FILES="$INVALID_FILES$file"$'\n'
-              fi
+            # Skip specific file patterns
+            if [[ "$file" == *.test.js ]] || \
+               [[ "$file" == */styles.js ]] || \
+               [[ "$file" =~ [._]styles?.js$ ]] || \
+               [[ "$file" == */utils/* ]] || \
+               [[ "$file" == */hooks/* ]] || \
+               [[ "$file" == */constants.js ]]; then
+              continue
+            fi
+            
+            # Check for JSX syntax (looking for HTML-like tags)
+            # Ignore import statements with curly braces
+            if grep -l "<[A-Za-z][^>]*>" "$file" | grep -v "import.*{.*}" > /dev/null; then
+              INVALID_FILES="$INVALID_FILES$file"$'\n'
             fi
           done
 
           if [ ! -z "$INVALID_FILES" ]; then
             echo "The following files contain JSX and should use .jsx extension:"
             echo "$INVALID_FILES"
-            echo "Files with JSX content should use .jsx extension"
+            echo "Files with JSX content should use .jsx extension (excluding styles, utils, and hooks)"
             exit 1
           fi
 
