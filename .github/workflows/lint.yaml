@@ -24,10 +24,29 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check file extensions
+      - name: Check component file extensions
         run: |
-          if find src -type f -name "*.js" ! -name "*.test.js" ! -name "setupTests.js" ; then
-            echo "Found .js files that should be .jsx"
+          # Files that should use .jsx extension
+          COMPONENT_PATHS=(
+            "src/common/components"
+            "src/pages"
+            "src/App.jsx"
+          )
+
+          # Find .js files in component directories (excluding specific patterns)
+          INVALID_FILES=$(find "${COMPONENT_PATHS[@]}" -type f \
+            -name "*.js" \
+            ! -name "*.test.js" \
+            ! -name "styles.js" \
+            ! -name "*.config.js" \
+            ! -name "*.utils.js" \
+            ! -name "*.constants.js" \
+            2>/dev/null || true)
+
+          if [ ! -z "$INVALID_FILES" ]; then
+            echo "The following files should use .jsx extension:"
+            echo "$INVALID_FILES"
+            echo "Components, pages, and App should use .jsx extension"
             exit 1
           fi
 
