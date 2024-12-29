@@ -18,6 +18,7 @@ export function UserProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Utility function to build URLs without trailing slashes
   const buildUrl = (endpoint) =>
     `${process.env.REACT_APP_BACKEND_URL.replace(/\/$/, '')}${endpoint}`;
 
@@ -178,3 +179,11 @@ export function UserProvider({ children }) {
     <UserContext.Provider value={contextValue}>{children}</UserContext.Provider>
   );
 }
+
+export const useUser = () => {
+  const context = React.useContext(UserContext);
+  if (context === undefined) {
+    throw new Error('useUser must be used within a UserProvider');
+  }
+  return context;
+};
