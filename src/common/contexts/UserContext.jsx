@@ -97,7 +97,7 @@ export function UserProvider({ children }) {
       const response = await fetch(
         `${process.env.REACT_APP_BACKEND_URL}/auth/google`,
         {
-          credentials: 'include', // Add this
+          credentials: 'include',
         }
       );
       const { url } = await response.json();
@@ -109,6 +109,57 @@ export function UserProvider({ children }) {
     } catch (error) {
       console.error('Google auth error:', error);
       throw new Error('Failed to initialize Google authentication');
+    }
+  };
+
+  const requestPasswordReset = async (email) => {
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_BACKEND_URL}/auth/reset-password`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email }),
+        }
+      );
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Password reset request failed');
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Password reset request error:', error);
+      throw error;
+    }
+  };
+
+  const updatePassword = async (password, accessToken) => {
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_BACKEND_URL}/auth/reset-password`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ password }),
+        }
+      );
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Password update failed');
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Password update error:', error);
+      throw error;
     }
   };
 
@@ -124,6 +175,8 @@ export function UserProvider({ children }) {
     logout,
     checkAuth,
     googleAuth,
+    requestPasswordReset,
+    updatePassword,
   };
 
   return (

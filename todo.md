@@ -61,7 +61,7 @@ content
 - [ ] public/manifest.json (and logos)
 - [x] use proper proptypes
 - [x] required fields
-- [ ] password reset
+- [x] password reset
 
 deploy
 
