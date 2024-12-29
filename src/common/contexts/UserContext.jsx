@@ -18,27 +18,27 @@ export function UserProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const buildUrl = (endpoint) =>
+    `${process.env.REACT_APP_BACKEND_URL.replace(/\/$/, '')}${endpoint}`;
+
   const checkAuth = async () => {
     const token = localStorage.getItem('authToken');
     console.log('Token from localStorage:', token);
 
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_BACKEND_URL}/auth/me`,
-        {
-          credentials: 'include', // Include cookies
-          headers: {
-            Authorization: `Bearer ${token}`, // Use token from localStorage
-          },
-        }
-      );
+      const response = await fetch(buildUrl('/auth/me'), {
+        credentials: 'include',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (!response.ok) {
         throw new Error('Auth check failed');
       }
 
       const userData = await response.json();
-      console.log('User data:', userData); // Log user data
+      console.log('User data:', userData);
       setUser(userData);
       return true;
     } catch (error) {
@@ -52,17 +52,14 @@ export function UserProvider({ children }) {
 
   const login = async (email, password) => {
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_BACKEND_URL}/auth/login`,
-        {
-          method: 'POST',
-          credentials: 'include', // Include cookies
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email, password }),
-        }
-      );
+      const response = await fetch(buildUrl('/auth/login'), {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
       if (!response.ok) {
         const data = await response.json();
@@ -82,13 +79,10 @@ export function UserProvider({ children }) {
 
   const logout = async () => {
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_BACKEND_URL}/auth/logout`,
-        {
-          method: 'POST',
-          credentials: 'include',
-        }
-      );
+      const response = await fetch(buildUrl('/auth/logout'), {
+        method: 'POST',
+        credentials: 'include',
+      });
 
       if (!response.ok) {
         throw new Error('Logout failed');
@@ -104,12 +98,9 @@ export function UserProvider({ children }) {
 
   const googleAuth = async () => {
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_BACKEND_URL}/auth/google`,
-        {
-          credentials: 'include',
-        }
-      );
+      const response = await fetch(buildUrl('/auth/google'), {
+        credentials: 'include',
+      });
       const { url } = await response.json();
       if (url) {
         window.location.href = url;
@@ -124,16 +115,13 @@ export function UserProvider({ children }) {
 
   const requestPasswordReset = async (email) => {
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_BACKEND_URL}/auth/reset-password`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email }),
-        }
-      );
+      const response = await fetch(buildUrl('/auth/reset-password'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
 
       if (!response.ok) {
         const data = await response.json();
@@ -149,17 +137,14 @@ export function UserProvider({ children }) {
 
   const updatePassword = async (password, accessToken) => {
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_BACKEND_URL}/auth/reset-password`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({ password }),
-        }
-      );
+      const response = await fetch(buildUrl('/auth/reset-password'), {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ password }),
+      });
 
       if (!response.ok) {
         const data = await response.json();
@@ -193,11 +178,3 @@ export function UserProvider({ children }) {
     <UserContext.Provider value={contextValue}>{children}</UserContext.Provider>
   );
 }
-
-export const useUser = () => {
-  const context = React.useContext(UserContext);
-  if (context === undefined) {
-    throw new Error('useUser must be used within a UserProvider');
-  }
-  return context;
-};
