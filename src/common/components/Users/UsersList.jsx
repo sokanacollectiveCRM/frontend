@@ -55,10 +55,14 @@ export default function UsersList() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
+        const token = localStorage.getItem('authToken');
         const response = await fetch(
           `${process.env.REACT_APP_BACKEND_URL}/auth/users`,
           {
             credentials: 'include',
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           }
         );
 
