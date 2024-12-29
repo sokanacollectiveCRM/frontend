@@ -121,8 +121,8 @@ export default function RequestPasswordReset() {
           <SuccessMessage>
             Password reset instructions have been sent to your email. Please
             check your inbox and follow the instructions to reset your password.
-            If you don't receive the email within a few minutes, please check
-            your spam folder.
+            If you don&apos;t receive the email within a few minutes, please
+            check your spam folder.
           </SuccessMessage>
           <StyledLink to='/login'>Back to Login</StyledLink>
         </div>

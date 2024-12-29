@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 
 import { useUser } from 'common/contexts/UserContext';
@@ -90,8 +90,6 @@ export default function ResetPassword() {
   const [isLoading, setIsLoading] = useState(false);
   const { updatePassword } = useUser();
   const navigate = useNavigate();
-  const location = useLocation();
-  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     const hash = window.location.hash.substring(1);
