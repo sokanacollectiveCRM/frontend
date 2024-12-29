@@ -65,7 +65,7 @@ content
 
 deploy
 
-- [ ] deploy on vercel
+- [x] deploy on vercel
 
 github
 
