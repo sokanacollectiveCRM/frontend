@@ -18,7 +18,6 @@ export function UserProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Utility function to build URLs without trailing slashes
   const buildUrl = (endpoint) =>
     `${process.env.REACT_APP_BACKEND_URL.replace(/\/$/, '')}${endpoint}`;
 
@@ -67,9 +66,9 @@ export function UserProvider({ children }) {
         throw new Error(data.error || 'Login failed');
       }
 
-      const { token } = await response.json(); // Assuming the response includes a token
-      console.log('Token received:', token); // Log token
-      localStorage.setItem('authToken', token); // Save token
+      const { token } = await response.json();
+      console.log('Token received:', token);
+      localStorage.setItem('authToken', token);
       await checkAuth();
       return true;
     } catch (error) {
