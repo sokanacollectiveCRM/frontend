@@ -19,11 +19,17 @@ export function UserProvider({ children }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const checkAuth = async () => {
+    const token = localStorage.getItem('authToken');
+    console.log('Token from localStorage:', token);
+
     try {
       const response = await fetch(
         `${process.env.REACT_APP_BACKEND_URL}/auth/me`,
         {
-          credentials: 'include',
+          credentials: 'include', // Include cookies
+          headers: {
+            Authorization: `Bearer ${token}`, // Use token from localStorage
+          },
         }
       );
 
@@ -32,6 +38,7 @@ export function UserProvider({ children }) {
       }
 
       const userData = await response.json();
+      console.log('User data:', userData); // Log user data
       setUser(userData);
       return true;
     } catch (error) {
@@ -49,7 +56,7 @@ export function UserProvider({ children }) {
         `${process.env.REACT_APP_BACKEND_URL}/auth/login`,
         {
           method: 'POST',
-          credentials: 'include',
+          credentials: 'include', // Include cookies
           headers: {
             'Content-Type': 'application/json',
           },
@@ -62,6 +69,9 @@ export function UserProvider({ children }) {
         throw new Error(data.error || 'Login failed');
       }
 
+      const { token } = await response.json(); // Assuming the response includes a token
+      console.log('Token received:', token); // Log token
+      localStorage.setItem('authToken', token); // Save token
       await checkAuth();
       return true;
     } catch (error) {
