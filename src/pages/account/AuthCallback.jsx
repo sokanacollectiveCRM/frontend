@@ -52,10 +52,8 @@ export default function AuthCallback() {
           throw new Error(error.error || 'Authentication failed');
         }
 
-        // Save the token to localStorage after successful backend validation
         localStorage.setItem('authToken', access_token);
 
-        // Wait a bit for the token to be stored
         await new Promise((resolve) => setTimeout(resolve, 100));
 
         const authSuccess = await checkAuth();
