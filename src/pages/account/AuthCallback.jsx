@@ -25,6 +25,8 @@ export default function AuthCallback() {
     const handleCallback = async () => {
       try {
         console.log('AuthCallback mounted');
+
+        // Get token from hash - remove the leading '#'
         const hash = window.location.hash.substring(1);
         const params = new URLSearchParams(hash);
         const access_token = params.get('access_token');
@@ -43,7 +45,13 @@ export default function AuthCallback() {
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ access_token }),
+            body: JSON.stringify({
+              access_token,
+              // Include other tokens from hash if present
+              refresh_token: params.get('refresh_token'),
+              expires_in: params.get('expires_in'),
+              provider_token: params.get('provider_token'),
+            }),
           }
         );
 
@@ -52,7 +60,8 @@ export default function AuthCallback() {
           throw new Error(error.error || 'Authentication failed');
         }
 
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        // Give a bit more time for the session to be established
+        await new Promise((resolve) => setTimeout(resolve, 500));
 
         const authSuccess = await checkAuth();
         if (authSuccess) {
