@@ -25,18 +25,25 @@ export default function AuthCallback() {
     const handleCallback = async () => {
       try {
         console.log('AuthCallback mounted');
+        console.log('Full URL:', window.location.href);
 
-        // Get token from hash - remove the leading '#'
         const hash = window.location.hash.substring(1);
         const params = new URLSearchParams(hash);
         const access_token = params.get('access_token');
 
+        console.log('Parsed hash:', hash.substring(0, 50) + '...'); // Only log first 50 chars for security
         console.log('Token status:', access_token ? 'present' : 'missing');
+        console.log('Other params:', {
+          expires_in: params.get('expires_in'),
+          refresh_token: params.get('refresh_token') ? 'present' : 'missing',
+          provider_token: params.get('provider_token') ? 'present' : 'missing',
+        });
 
         if (!access_token) {
           throw new Error('No access token received');
         }
 
+        console.log('About to make backend request...');
         const response = await fetch(
           `${process.env.REACT_APP_BACKEND_URL}/auth/callback`,
           {
@@ -45,15 +52,13 @@ export default function AuthCallback() {
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              access_token,
-              // Include other tokens from hash if present
-              refresh_token: params.get('refresh_token'),
-              expires_in: params.get('expires_in'),
-              provider_token: params.get('provider_token'),
-            }),
+            body: JSON.stringify({ access_token }),
           }
         );
+        console.log('Backend response status:', response.status);
+
+        const responseData = await response.json();
+        console.log('Backend response:', responseData);
 
         if (!response.ok) {
           const error = await response.json();
