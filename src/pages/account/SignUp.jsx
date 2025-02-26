@@ -64,7 +64,7 @@ export default function SignUp() {
 
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_BACKEND_URL}/auth/signup`,
+        `${import.meta.env.VITE_APP_BACKEND_URL}/auth/signup`,
         {
           method: 'POST',
           headers: {

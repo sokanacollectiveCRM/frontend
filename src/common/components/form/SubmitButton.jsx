@@ -1,16 +1,23 @@
 
 import PropTypes from 'prop-types';
 
-import { StyledButton } from './styles';
+// import { StyledButton } from './styles';
+import { Button } from '@/components/ui/button';
 
 SubmitButton.propTypes = {
   children: PropTypes.node.isRequired,
   onClick: PropTypes.func.isRequired,
 };
+
 export default function SubmitButton({ children, onClick }) {
   return (
-    <StyledButton type='submit' onClick={onClick}>
+    <Button onClick={onClick}>
       {children}
-    </StyledButton>
+    </Button>
   );
 }
+
+//<StyledButton type='submit' onClick={onClick}>
+//{children}
+//</StyledButton>
+
