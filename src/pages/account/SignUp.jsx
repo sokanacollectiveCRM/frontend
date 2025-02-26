@@ -1,14 +1,16 @@
 import { useState } from 'react';
 
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
-import GoogleButton from '@/common/components/GoogleButton';
-import { Form, FormTitle } from '@/common/components/form/Form';
-import { Input } from '@/common/components/form/Input';
-import SubmitButton from '@/common/components/form/SubmitButton';
+// import { Input } from '@/common/components/form/Input';
 import { useUser } from '@/common/contexts/UserContext';
 
-import { StyledPage } from './styles';
+import SubmitButton from '@/common/components/form/SubmitButton';
+import GoogleButton from '@/common/components/GoogleButton';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+
 
 export default function SignUp() {
   const navigate = useNavigate();
@@ -103,50 +105,138 @@ export default function SignUp() {
   };
 
   return (
-    <StyledPage>
-      <Form onSubmit={handleSubmit}>
-        <FormTitle>Create an account</FormTitle>
-        {error && <div className='text-red-500 mb-4'>{error}</div>}
-        <Input.Text
-          title='First name'
-          placeholder='John'
-          value={formState.firstname}
-          onChange={handleChangeFirstname}
-        />
-        <Input.Text
-          title='Last name'
-          placeholder='Smith'
-          value={formState.lastname}
-          onChange={handleChangeLastname}
-        />
-        <Input.Text
-          title='Email'
-          placeholder='j@example.com'
-          value={formState.email}
-          onChange={handleChangeEmail}
-          required
-        />
-        <Input.Text
-          title='Username'
-          placeholder='johnsmith'
-          value={formState.username}
-          onChange={handleChangeUsername}
-        />
-        <Input.Password
-          title='Password'
-          value={formState.password}
-          onChange={handleChangePassword}
-          required
-        />
-        <SubmitButton onClick={() => {}} disabled={isLoading}>
-          {isLoading ? 'Creating account...' : 'Sign Up'}
-        </SubmitButton>
-        <GoogleButton
-          onClick={handleGoogleSignup}
-          isLoading={isLoading}
-          text='Sign up with Google'
-        />
-      </Form>
-    </StyledPage>
+    <div className="flex flex-col gap-6 max-w-md mx-auto">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-2xl">Sign Up</CardTitle>
+          <CardDescription>Enter your details below to create your account</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+            {error && <RedSpan>{error}</RedSpan>}
+            <div className="grid gap-2">
+              <Label htmlFor="firstname">First Name</Label>
+              <Input
+                id="firstname"
+                name="firstname"
+                placeholder="First Name"
+                value={formState.firstname}
+                onChange={handleChangeFirstname}
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="lastname">Last Name</Label>
+              <Input
+                id="lastname"
+                name="lastname"
+                placeholder="Last Name"
+                value={formState.lastname}
+                onChange={handleChangeLastname}
+              />
+            </div>  
+
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                name="email"
+                placeholder="j@example.com"
+                value={formState.email}
+                onChange={handleChangeEmail}
+                required
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                name="username"
+                placeholder="johnsmith"
+                value={formState.username}
+                onChange={handleChangeUsername}
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                name="password"
+                placeholder="Password"
+                value={formState.password}
+                onChange={handleChangePassword}
+                required
+              />
+            </div>
+            <SubmitButton disabled={isLoading} className="w-full">
+              {isLoading ? "Logging in..." : "Log In"}
+            </SubmitButton>
+            <GoogleButton
+              onClick={handleGoogleSignup}
+              isLoading={isLoading}
+              text='Sign up with Google'
+  />
+          </form>
+          <div className="mt-4 text-center text-sm">
+            Already have an account?{" "}
+            <Link to="/login" className="underline underline-offset-4">
+              Login
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
+
+// Keep for reference if we decide to use styled components again
+
+{/* <StyledPage>
+<Form onSubmit={handleSubmit}>
+  <FormTitle>Create an account</FormTitle>
+  {error && <div className='text-red-500 mb-4'>{error}</div>}
+  <Input.Text
+    title='First name'
+    placeholder='John'
+    value={formState.firstname}
+    onChange={handleChangeFirstname}
+  />
+  <Input.Text
+    title='Last name'
+    placeholder='Smith'
+    value={formState.lastname}
+    onChange={handleChangeLastname}
+  />
+  <Input.Text
+    title='Email'
+    placeholder='j@example.com'
+    value={formState.email}
+    onChange={handleChangeEmail}
+    required
+  />
+  <Input.Text
+    title='Username'
+    placeholder='johnsmith'
+    value={formState.username}
+    onChange={handleChangeUsername}
+  />
+  <Input.Password
+    title='Password'
+    value={formState.password}
+    onChange={handleChangePassword}
+    required
+  />
+  <SubmitButton onClick={() => {}} disabled={isLoading}>
+    {isLoading ? 'Creating account...' : 'Sign Up'}
+  </SubmitButton>
+  <GoogleButton
+    onClick={handleGoogleSignup}
+    isLoading={isLoading}
+    text='Sign up with Google'
+  />
+</Form>
+</StyledPage> */}
