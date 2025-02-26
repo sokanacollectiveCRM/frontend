@@ -36,7 +36,7 @@ export default function AuthCallback() {
         }
 
         const response = await fetch(
-          `${process.env.REACT_APP_BACKEND_URL}/auth/callback`,
+          `${import.meta.env.VITE_APP_BACKEND_URL}/auth/callback`,
           {
             method: 'POST',
             credentials: 'include',
