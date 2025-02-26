@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 
-import { Button } from 'common/components/Button';
-import { useUser } from 'common/contexts/UserContext';
+import { Button } from '@/common/components/Button';
+import { useUser } from '@/common/contexts/UserContext';
 
 import LogoutModal from './LogoutModal';
 

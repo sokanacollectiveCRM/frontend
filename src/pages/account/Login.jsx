@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 
-import GoogleButton from 'common/components/GoogleButton';
-import { Form, FormTitle } from 'common/components/form/Form';
-import { Input } from 'common/components/form/Input';
-import SubmitButton from 'common/components/form/SubmitButton';
-import { RedSpan } from 'common/components/form/styles';
-import { useUser } from 'common/contexts/UserContext';
+import GoogleButton from '@/common/components/GoogleButton';
+import { Form, FormTitle } from '@/common/components/form/Form';
+import { Input } from '@/common/components/form/Input';
+import SubmitButton from '@/common/components/form/SubmitButton';
+import { RedSpan } from '@/common/components/form/styles';
+import { useUser } from '@/common/contexts/UserContext';
 
 import { StyledPage } from './styles';
 

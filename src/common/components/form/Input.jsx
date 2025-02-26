@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
-import { Icon } from 'assets/icons/icons';
+import { Eye, EyeClosed } from '@/assets/icons.jsx';
 import PropTypes from 'prop-types';
 
 import {
@@ -66,7 +66,7 @@ function PasswordField(props) {
     <PasswordContainer>
       <StyledInput type={showPassword ? 'text' : 'password'} {...props} />
       <IconContainer onClick={toggleShowPassword}>
-        {showPassword ? <Icon.eyeClosed /> : <Icon.eye />}
+        {showPassword ? <EyeClosed /> : <Eye />}
       </IconContainer>
     </PasswordContainer>
   );
