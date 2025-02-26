@@ -19,7 +19,7 @@ export function UserProvider({ children }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const buildUrl = (endpoint) =>
-    `${process.env.REACT_APP_BACKEND_URL.replace(/\/$/, '')}${endpoint}`;
+    `${import.meta.env.VITE_APP_BACKEND_URL.replace(/\/$/, '')}${endpoint}`;
 
   const checkAuth = async () => {
     const token = localStorage.getItem('authToken');

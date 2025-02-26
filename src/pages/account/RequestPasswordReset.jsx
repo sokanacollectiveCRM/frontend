@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 
-import { useUser } from 'common/contexts/UserContext';
+import { useUser } from '@/common/contexts/UserContext';
 
 const Container = styled.div`
   max-width: 400px;

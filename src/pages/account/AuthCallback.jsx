@@ -1,9 +1,9 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 
-import { useUser } from 'common/contexts/UserContext';
+import { useUser } from '@/common/contexts/UserContext';
 
 const Container = styled.div`
   display: flex;

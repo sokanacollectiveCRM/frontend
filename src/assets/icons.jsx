@@ -1,6 +1,3 @@
-import { ReactComponent as eye } from './eye.svg';
-import { ReactComponent as eyeClosed } from './eyeclosed.svg';
-
 /**
  * How to add new icons:
  * 1. Create a new .svg file /src/assets/icons
@@ -11,7 +8,10 @@ import { ReactComponent as eyeClosed } from './eyeclosed.svg';
  * Great icon resource: [tabler icons](https://tablericons.com/)
  */
 
-export const Icon = {
-  eye,
-  eyeClosed,
+export const EyeClosed = () => {
+  return <div> Eye </div>;
+};
+
+export const Eye = () => {
+  return <div> EyeClosed </div>;
 };

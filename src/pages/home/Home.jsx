@@ -1,10 +1,10 @@
-import React, { useContext } from 'react';
+import { useContext } from 'react';
 
 import styled from 'styled-components';
 
-import { Subtitle, Title } from 'common/components/Text';
-import UsersList from 'common/components/Users/UsersList';
-import { UserContext } from 'common/contexts/UserContext';
+import { Subtitle, Title } from '@/common/components/Text';
+import UsersList from '@/common/components/Users/UsersList';
+import { UserContext } from '@/common/contexts/UserContext';
 
 const TextContainer = styled.div`
   display: flex;
