@@ -17,7 +17,3 @@ export default function SubmitButton({ children, onClick }) {
   );
 }
 
-//<StyledButton type='submit' onClick={onClick}>
-//{children}
-//</StyledButton>
-
