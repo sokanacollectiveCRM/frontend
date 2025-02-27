@@ -5,7 +5,7 @@ import styled from 'styled-components';
 
 import GoogleButton from '@/common/components/GoogleButton';
 // import { Input } from '@/common/components/form/Input'; Not sure if we need this anymore
-import { SubmitButton } from '@/common/components/form/SubmitButton';
+import SubmitButton from '@/common/components/form/SubmitButton';
 import { RedSpan } from '@/common/components/form/styles';
 import { useUser } from '@/common/contexts/UserContext';
 

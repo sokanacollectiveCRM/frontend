@@ -11,7 +11,7 @@ SubmitButton.propTypes = {
 
 export default function SubmitButton({ children, onClick }) {
   return (
-    <Button onClick={onClick}>
+    <Button type='submit' onClick={onClick}>
       {children}
     </Button>
   );
