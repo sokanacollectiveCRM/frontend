@@ -57,7 +57,7 @@ export default function UsersList() {
       try {
         const token = localStorage.getItem('authToken');
         const response = await fetch(
-          `${import.meta.env.VITE_APP_BACKEND_URL}auth/users`,
+          `${import.meta.env.VITE_APP_BACKEND_URL}/auth/users`,
           {
             credentials: 'include',
             headers: {
