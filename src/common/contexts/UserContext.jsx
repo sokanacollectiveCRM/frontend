@@ -123,14 +123,17 @@ export function UserProvider({ children }) {
         body: JSON.stringify({ email }),
       });
 
+      const data = await response.json();
+      console.log(data);
+
       if (!response.ok) {
-        const data = await response.json();
+        console.log(data);
         throw new Error(data.error || 'Password reset request failed');
       }
 
       return true;
     } catch (error) {
-      console.error('Password reset request error:', error);
+      console.error('Password reset request error:', error.message);
       throw error;
     }
   };
