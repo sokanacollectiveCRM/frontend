@@ -12,6 +12,7 @@ import ResetPassword from "@/pages/account/ResetPassword";
 import SignUp from "@/pages/account/SignUp";
 import Home from "@/pages/home/Home";
 import NotFound from "@/pages/not-found/NotFound";
+import RequestForm from "@/pages/request/RequestForm"; 
 
 import './App.css';
 
@@ -26,6 +27,7 @@ export default function App() {
           </Route>
           <Route element={<PublicOnlyRoute />}>
           <Route path='login' element={<Login />} />
+          <Route path='request' element={<RequestForm />} />
           <Route path='signup' element={<SignUp />} />
           <Route
           path='forgot-password'
