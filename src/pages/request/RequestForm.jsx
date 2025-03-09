@@ -1,20 +1,18 @@
-import React, { useContext, useState } from "react";
-import { useForm } from "react-hook-form";
+import { UserContext } from "@/common/contexts/UserContext";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger, } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { UserContext } from "@/common/contexts/UserContext";
-import { toast } from "sonner";
-import {DropdownMenu,DropdownMenuContent,DropdownMenuItem,DropdownMenuLabel,DropdownMenuSeparator,DropdownMenuTrigger,} from "@/components/ui/dropdown-menu"
-import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue,} from "@/components/ui/select"
-import { Calendar as CalendarIcon } from "lucide-react"
-import { Calendar } from "@/components/ui/calendar"
-import {Popover,PopoverContent,PopoverTrigger,} from "@/components/ui/popover"
-import { DayPicker } from "react-day-picker";
 import { format } from "date-fns";
+import { Calendar as CalendarIcon } from "lucide-react";
+import React, { useContext, useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 
 
@@ -37,6 +35,22 @@ export default function RequestForm() {
       setStep(step + 1);
     } else {
       console.log(formData);
+      try{
+        const response = await fetch('http://localhost:5050/requestService/requestSubmission',{
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        }
+        );
+        const responseData = await response.json();
+        console.log("Service Response:", responseData);
+        
+      }
+      catch (error) {
+        console.log(error)
+      }
       setStep(0);
       reset();
       toast.success("Request Form Submitted");
@@ -85,7 +99,7 @@ export default function RequestForm() {
               <form onSubmit={handleSubmit(onSubmit)} className="grid gap-y-4">
                 <FormField
                   control={control}
-                  name="firstName"
+                  name="first_name"
                   render={({ field }) => (
                     <FormItem>
                       <div className = "mb-5 font-semibold text-lg underline">Personal Info</div>
@@ -99,7 +113,7 @@ export default function RequestForm() {
                 />
                 <FormField
                   control={control}
-                  name="lastName"
+                  name="last_name"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Last Name</FormLabel>
@@ -125,7 +139,7 @@ export default function RequestForm() {
                 />
                 <FormField
                   control={control}
-                  name="phoneNumber"
+                  name="phone_number"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Phone Number</FormLabel>
@@ -181,7 +195,7 @@ export default function RequestForm() {
               <form onSubmit={handleSubmit(onSubmit)} className="grid gap-y-4">
                 <FormField
                   control={control}
-                  name="healthIssues"
+                  name="health_history"
                   render={({ field }) => (
                     <FormItem>
                       <div className = "mb-5 font-semibold text-lg underline">Health Info</div>
@@ -208,7 +222,20 @@ export default function RequestForm() {
                 />
                 <FormField
                   control={control}
-                  name="dueDate"
+                  name="hospital"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Hospital</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Name of Hospital" autoComplete="off" />
+                      </FormControl>
+                      <FormDescription></FormDescription>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={control}
+                  name="due_date"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Baby's Due/Birth Date</FormLabel>
@@ -242,7 +269,7 @@ export default function RequestForm() {
                 />
                   <FormField
                   control={control}
-                  name="Baby Sex"
+                  name="baby_sex"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Baby's Sex</FormLabel>
@@ -261,7 +288,7 @@ export default function RequestForm() {
                 />
                 <FormField
                   control={control}
-                  name="Number of Babies"
+                  name="children_expected"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Number of Babies</FormLabel>
@@ -306,7 +333,7 @@ export default function RequestForm() {
           <form onSubmit={handleSubmit(onSubmit)} className="grid gap-y-4">
             <FormField
               control={control}
-              name="Address"
+              name="address"
               render={({ field }) => (
                 <FormItem>
                   <div className="mb-5 font-semibold text-lg underline">Home Details</div>
@@ -320,7 +347,7 @@ export default function RequestForm() {
             />
                <FormField
               control={control}
-              name="City"
+              name="city"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>City</FormLabel>
@@ -333,7 +360,7 @@ export default function RequestForm() {
             />
               <FormField
               control={control}
-              name="State"
+              name="state"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>State</FormLabel>
@@ -402,7 +429,7 @@ export default function RequestForm() {
             />
             <FormField
               control={control}
-              name="Zip"
+              name="zip_code"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Zip Code</FormLabel>
@@ -436,7 +463,7 @@ export default function RequestForm() {
               <form onSubmit={handleSubmit(onSubmit)} className="grid gap-y-4">
                 <FormField
                   control={control}
-                  name="AnnualIncome"
+                  name="annual_income"
                   render={({ field }) => (
                     <FormItem>
                       <div className = "mb-5 font-semibold text-lg underline">Income Info</div>
@@ -462,7 +489,7 @@ export default function RequestForm() {
                 />
                  <FormField
                   control={control}
-                  name="serviceInterest"
+                  name="service_needed"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>What Service Are you Interested In?</FormLabel>
@@ -488,7 +515,7 @@ export default function RequestForm() {
                 />
                 <FormField
                   control={control}
-                  name="serviceSpecifics"
+                  name="service_specifics"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel> Service Specifics</FormLabel>
