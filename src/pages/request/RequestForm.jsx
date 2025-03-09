@@ -8,31 +8,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { UserContext } from "@/common/contexts/UserContext";
 import { toast } from "sonner";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import {DropdownMenu,DropdownMenuContent,DropdownMenuItem,DropdownMenuLabel,DropdownMenuSeparator,DropdownMenuTrigger,} from "@/components/ui/dropdown-menu"
+import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue,} from "@/components/ui/select"
+import { Calendar as CalendarIcon } from "lucide-react"
+import { Calendar } from "@/components/ui/calendar"
+import {Popover,PopoverContent,PopoverTrigger,} from "@/components/ui/popover"
+import { DayPicker } from "react-day-picker";
+import { format } from "date-fns";
+
 
 
 export default function RequestForm() {
   const { user } = useContext(UserContext);
+
   const [step, setStep] = useState(0);
   const totalSteps = 4;
 
+
+
+
   const form = useForm();
   const { handleSubmit, control, reset } = form;
-
 
 
 
@@ -52,7 +48,6 @@ export default function RequestForm() {
       setStep(step - 1);
     }
   };
-
 
 
 
@@ -147,9 +142,9 @@ export default function RequestForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Pronouns</FormLabel>
-                      <Select>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <SelectTrigger className="w-[180px]">
-                          <SelectValue placeholder="Select Pronouns" />
+                          <SelectValue placeholder="Select Pronouns" type = "string" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="She/Her">She/Her</SelectItem>
@@ -157,8 +152,6 @@ export default function RequestForm() {
                           <SelectItem value="He/Him">He/Him</SelectItem>
                           <SelectItem value="Ze/Hir/Zir">Ze/Hir/Zir</SelectItem>
                           <SelectItem value="None">None</SelectItem>
-
-
                         </SelectContent>
                       </Select>
                       <FormDescription></FormDescription>
@@ -213,6 +206,84 @@ export default function RequestForm() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={control}
+                  name="dueDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Baby's Due/Birth Date</FormLabel>
+                      <FormControl>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-[280px] justify-start text-left font-normal",
+                                !field.value && "text-muted-foreground",
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {field.value ? format(field.value, "yyyy-MM-dd") : <span>Pick a date</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </FormControl>
+                      <FormDescription></FormDescription>
+                    </FormItem>
+                  )}
+                />
+                  <FormField
+                  control={control}
+                  name="Baby Sex"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Baby's Sex</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue placeholder="Select Baby's Sex" type = "string" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Male">Male</SelectItem>
+                          <SelectItem value="Female">Female</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription></FormDescription>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={control}
+                  name="Number of Babies"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Number of Babies</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue="1">
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue defaultValue = "1" type = "string" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">1</SelectItem>
+                          <SelectItem value="2">2</SelectItem>
+                          <SelectItem value="3">3</SelectItem>
+                          <SelectItem value="4">4</SelectItem>
+                          <SelectItem value="5">5</SelectItem>
+                          <SelectItem value="6">6</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription></FormDescription>
+                    </FormItem>
+                  )}
+                />
+
+
                 <div className="flex justify-between">
                   <Button
                     type="button"
@@ -266,11 +337,12 @@ export default function RequestForm() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>State</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
-                  <Select>
                     <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="None" />
+                      <SelectValue  placeholder="None" />
                     </SelectTrigger>
+                    </FormControl>
                     <SelectContent>
   <SelectItem value="IL">IL</SelectItem>
   <SelectItem value="AL">AL</SelectItem>
@@ -324,7 +396,6 @@ export default function RequestForm() {
   <SelectItem value="WY">WY</SelectItem>
 </SelectContent>
                   </Select>
-                  </FormControl>
                   <FormDescription></FormDescription>
                 </FormItem>
               )}
@@ -365,23 +436,23 @@ export default function RequestForm() {
               <form onSubmit={handleSubmit(onSubmit)} className="grid gap-y-4">
                 <FormField
                   control={control}
-                  name="healthIssues"
+                  name="AnnualIncome"
                   render={({ field }) => (
                     <FormItem>
                       <div className = "mb-5 font-semibold text-lg underline">Income Info</div>
                       <FormLabel>Annual Income</FormLabel>
                       <FormControl>
-                      <Select>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <SelectTrigger className="w-[180px]">
-                          <SelectValue placeholder="Select" />
+                          <SelectValue placeholder="Select" type = "string"/>
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="25k">$0 - $24,999: Labor - $150 | Postpartum $150 for up to 30hrs of care</SelectItem>
-                          <SelectItem value="45k">$25,000 - $44,999: Labor - $300 | Postpartum $12/hr daytime and $15/hr for overnight </SelectItem>
-                          <SelectItem value="65k">$45,000 - $64,999: Labor - $700 | Postpartum $17/hr daytime and $20/hr for overnight</SelectItem>
-                          <SelectItem value="85k">$65,000 - $84,999: Labor - $1,000 | Postpartum $27/hr daytime and $30/hr for overnight</SelectItem>
-                          <SelectItem value="100k">$85,000 - $99,999: Labor - $1,350 | Postpartum $34/hr daytime and $37/hr for overnight</SelectItem>
-                          <SelectItem value="over">$100,000 and above: Labor - $1,500 | Postpartum $37/hr daytime and $40/hr for overnight</SelectItem>
+                          <SelectItem value="$0-$24,999">$0 - $24,999: Labor - $150 | Postpartum $150 for up to 30hrs of care</SelectItem>
+                          <SelectItem value="$25,000-$44,999">$25,000 - $44,999: Labor - $300 | Postpartum $12/hr daytime and $15/hr for overnight </SelectItem>
+                          <SelectItem value="$45,000-$64,999">$45,000 - $64,999: Labor - $700 | Postpartum $17/hr daytime and $20/hr for overnight</SelectItem>
+                          <SelectItem value="$65,000-$84,999">$65,000 - $84,999: Labor - $1,000 | Postpartum $27/hr daytime and $30/hr for overnight</SelectItem>
+                          <SelectItem value="$85,000-$99,999">$85,000 - $99,999: Labor - $1,350 | Postpartum $34/hr daytime and $37/hr for overnight</SelectItem>
+                          <SelectItem value="100k and above">$100,000 and above: Labor - $1,500 | Postpartum $37/hr daytime and $40/hr for overnight</SelectItem>
                         </SelectContent>
                       </Select>
                       </FormControl>
@@ -396,7 +467,7 @@ export default function RequestForm() {
                     <FormItem>
                       <FormLabel>What Service Are you Interested In?</FormLabel>
                       <FormControl>
-                      <Select>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <SelectTrigger className="w-[180px]">
                           <SelectValue placeholder="Select" />
                         </SelectTrigger>
@@ -407,6 +478,7 @@ export default function RequestForm() {
                           <SelectItem value="Lactation">Lactation Support</SelectItem>
                           <SelectItem value="Perinatal">Perinatal Support</SelectItem>
                           <SelectItem value="Abortion">Abortion Support</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
                         </SelectContent>
                       </Select> 
                       </FormControl>
@@ -416,11 +488,11 @@ export default function RequestForm() {
                 />
                 <FormField
                   control={control}
-                  name="serviceInfo"
+                  name="serviceSpecifics"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel> Service Specifics</FormLabel>
-                      <FormDescription>What does doula support look like for you? Be specific. How can a labor doula help? For postpartum do you want daytime, overnights and for how many weeks</FormDescription>
+                      <FormDescription>What does doula support look like for you? Be specific. How can a labor doula help? For postpartum do you want daytime, overnights and for how many weeks. If you selected Other for the previous question, please elaborate here.</FormDescription>
                       <FormControl>
                         <Textarea {...field} placeholder="Please be Detailed" autoComplete="off" />
                       </FormControl>
