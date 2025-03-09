@@ -5,6 +5,9 @@ import { Link, useNavigate } from 'react-router-dom';
 // import { Input } from '@/common/components/form/Input';
 import { useUser } from '@/common/contexts/UserContext';
 
+
+import { RedSpan } from '@/common/components/form/styles';
+
 import SubmitButton from '@/common/components/form/SubmitButton';
 import GoogleButton from '@/common/components/GoogleButton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
