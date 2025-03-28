@@ -12,7 +12,8 @@ import ResetPassword from "@/pages/account/ResetPassword";
 import SignUp from "@/pages/account/SignUp";
 import Home from "@/pages/home/Home";
 import NotFound from "@/pages/not-found/NotFound";
-import RequestForm from "@/pages/request/RequestForm"; 
+import RequestForm from "@/pages/request/RequestForm";
+import MyAccount from './pages/my-account/MyAccount'; 
 
 import './App.css';
 
@@ -25,6 +26,7 @@ export default function App() {
           <Route element={<PrivateRoute />}>
           <Route index element={<Home />} />
           </Route>
+          <Route path="my-account" element={<MyAccount />} />
           <Route element={<PublicOnlyRoute />}>
           <Route path='login' element={<Login />} />
           <Route path='request' element={<RequestForm />} />
