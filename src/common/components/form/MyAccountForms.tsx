@@ -72,3 +72,25 @@ export const Profile = () => {
     </Card>
   );
 };
+
+export const Account = () => {
+  const accountForm = useForm<z.infer<typeof accountFormSchema>>({
+    resolver: zodResolver(accountFormSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      address: "",
+      city: "",
+      country: ""    
+    },
+  });
+
+  function submitAccountForm(values: z.infer<typeof accountFormSchema>) {
+    console.log(values); //for now just prints to console
+  }
+
+  return (
+    <div>hi</div>
+  );
+};

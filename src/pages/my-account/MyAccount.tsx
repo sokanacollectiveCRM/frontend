@@ -9,7 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { imageSchema } from '../../common/utils/ZodSchemas';
-import { Profile } from '../../common/components/form/MyAccountForms';
+import { Profile, Account } from '../../common/components/form/MyAccountForms';
 
 const profileFormSchema = z.object({
   profilePicture: imageSchema.optional(),
@@ -70,7 +70,6 @@ export default function MyAccount() {
   }
 
   return (
-    // <ProfileAccountTabs>
     <Tabs defaultValue="profile" className="w-1/2">
       <TabsList>
         <TabsTrigger value="profile">Profile</TabsTrigger>
@@ -80,7 +79,7 @@ export default function MyAccount() {
         <Profile />
       </TabsContent>  
       <TabsContent value="account">
-
+        <Account />
       </TabsContent>
     </Tabs>
   );
