@@ -8,9 +8,8 @@ import { Separator } from "@/components/ui/separator"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { imageSchema } from '../../common/utils/ZodFormSchemas';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Textarea } from '../../components/ui/textarea';
+import { imageSchema } from '../../common/utils/ZodSchemas';
+import { Profile } from '../../common/components/form/MyAccountForms';
 
 const profileFormSchema = z.object({
   profilePicture: imageSchema.optional(),
@@ -78,44 +77,11 @@ export default function MyAccount() {
         <TabsTrigger value="account">Account</TabsTrigger>
       </TabsList>
       <TabsContent value="profile">
-        <Card className="h-96 py-10">
-          <CardHeader>
-            <CardTitle>Profile</CardTitle>
-            <CardDescription>This is how others see you</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col flex-1">
-            <Separator />
-            <Form {...profileForm} className="flex-1">
-              <form onSubmit={profileForm.handleSubmit(submitProfileForm)} className='flex flex-col flex-1 py-5 space-y-10'>
-                {/* <FormField 
-                  control={profileForm.control}
-                  name="profilePicture"
-                  render={({ field }) => (
-                />
-                 */}
-                <FormField
-                  control={profileForm.control}
-                  name="bio"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="pb-1">Bio</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="Tell us a little bit about yourself" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button type="submit" className='cursor-pointer'>Save Changes</Button>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
+        <Profile />
       </TabsContent>  
       <TabsContent value="account">
 
       </TabsContent>
     </Tabs>
-    // </ProfileAccountTabs>
   );
 }
