@@ -17,5 +17,5 @@ export const accountFormSchema = z.object({
   email: z.string().email().optional(),
   address: z.string().optional(),
   city: z.string().optional(),
-  country: z.string().optional()
+  state: z.string().optional()
 });

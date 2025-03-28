@@ -7,7 +7,16 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Textarea } from "../../../components/ui/textarea";
+import { Select, SelectTrigger, SelectValue } from "@radix-ui/react-select";
 import { profileFormSchema, accountFormSchema } from '../../utils/ZodSchemas';
+import styled from 'styled-components';
+
+const TwoInputs = styled.div`
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  
+`
 
 export const Profile = () => {
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
@@ -49,6 +58,7 @@ export const Profile = () => {
                       className="cursor-pointer"
                       />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
               />
@@ -82,7 +92,7 @@ export const Account = () => {
       email: "",
       address: "",
       city: "",
-      country: ""    
+      state: ""    
     },
   });
 
@@ -91,6 +101,104 @@ export const Account = () => {
   }
 
   return (
-    <div>hi</div>
+    <Card className="min-h-96 py-5">
+      <CardHeader>
+        <CardTitle>Account</CardTitle>
+        <CardDescription>Update your personal details</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col flex-1">
+        <Separator />
+        <Form {...accountForm} classname="flex-1">
+          <form onSubmit={accountForm.handleSubmit(submitAccountForm)} className="flex flex-col flex-1 py-5 space-y-4">
+            <TwoInputs>
+              <FormField
+                control={accountForm.control}
+                name="firstName"
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <FormLabel>First Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Jane" {...field} />
+                    </FormControl>
+                    <FormMessage /> 
+                  </FormItem>
+                )}
+              />  
+              <FormField
+                control={accountForm.control}
+                name="lastName"
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <FormLabel>Last Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Smith" {...field} />
+                    </FormControl>
+                    <FormMessage /> 
+                  </FormItem>
+                )}
+              />  
+            </TwoInputs>
+            <FormField 
+              control={accountForm.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem >
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input placeholder="janeSmith@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage /> 
+                </FormItem>
+              )}
+            />
+            <TwoInputs>
+              <FormField
+                control={accountForm.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <FormLabel>Address</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Address" {...field} />
+                    </FormControl>
+                    <FormMessage /> 
+                  </FormItem>
+                )}
+              />  
+              <FormField
+                control={accountForm.control}
+                name="city"
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <FormLabel>City</FormLabel>
+                    <FormControl>
+                      <Input placeholder="City" {...field} />
+                    </FormControl>
+                    <FormMessage /> 
+                  </FormItem>
+                )}
+              />  
+            </TwoInputs>
+            <FormField 
+              control={accountForm.control}
+              name="state"
+              render={({ field }) => (
+                <FormItem >
+                  <FormLabel>State</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a verified email to display" />
+                      </SelectTrigger>
+                    </FormControl>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
   );
 };
