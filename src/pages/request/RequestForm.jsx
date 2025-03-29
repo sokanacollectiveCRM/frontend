@@ -13,8 +13,8 @@ import { Calendar as CalendarIcon } from "lucide-react";
 import React, { useContext, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { STATES } from "@/common/utils/50States"; // Add this line
-
+import { STATES } from "@/common/utils/50States"; 
+import { DatePicker } from "@/common/components/form/DatePicker"
 
 export default function RequestForm() {
   const { user } = useContext(UserContext);
@@ -22,13 +22,8 @@ export default function RequestForm() {
   const [step, setStep] = useState(0);
   const totalSteps = 4;
 
-
-
-
   const form = useForm();
   const { handleSubmit, control, reset } = form;
-
-
 
   const onSubmit = async (formData) => {
     if (step < totalSteps - 1) {
@@ -237,6 +232,17 @@ export default function RequestForm() {
                   control={control}
                   name="due_date"
                   render={({ field }) => (
+                    <DatePicker
+                      field={field}
+                      label="Baby's Due/Birth Date"
+                      placeholder="Select due date"
+                    />
+                  )}
+                />
+                {/* <FormField
+                  control={control}
+                  name="due_date"
+                  render={({ field }) => (
                     <FormItem>
                       <FormLabel>Baby's Due/Birth Date</FormLabel>
                       <FormControl>
@@ -266,7 +272,7 @@ export default function RequestForm() {
                       <FormDescription></FormDescription>
                     </FormItem>
                   )}
-                />
+                /> */}
                   <FormField
                   control={control}
                   name="baby_sex"
@@ -476,7 +482,7 @@ export default function RequestForm() {
                       <FormLabel> Service Specifics</FormLabel>
                       <FormDescription>What does doula support look like for you? Be specific. How can a labor doula help? For postpartum do you want daytime, overnights and for how many weeks. If you selected Other for the previous question, please elaborate here.</FormDescription>
                       <FormControl>
-                        <Textarea {...field} placeholder="Please be Detailed" autoComplete="off" />
+                        <Textarea {...field} placeholder="Please be detailed..." autoComplete="off" />
                       </FormControl>
                     </FormItem>
                   )}

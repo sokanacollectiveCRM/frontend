@@ -7,9 +7,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Textarea } from "../../../components/ui/textarea";
-import { Select, SelectTrigger, SelectValue } from "@radix-ui/react-select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { profileFormSchema, accountFormSchema } from '../../utils/ZodSchemas';
 import styled from 'styled-components';
+import { STATES } from "@/common/utils/50States";
 
 const TwoInputs = styled.div`
   display: flex;
@@ -61,7 +62,7 @@ export const Profile = () => {
                   <FormMessage />
                 </FormItem>
               )}
-              />
+            />
             <FormField
               control={profileForm.control}
               name="bio"
@@ -92,7 +93,8 @@ export const Account = () => {
       email: "",
       address: "",
       city: "",
-      state: ""    
+      state: "",
+      dob: undefined,
     },
   });
 
@@ -187,10 +189,17 @@ export const Account = () => {
                   <FormLabel>State</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a verified email to display" />
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="None" />
                       </SelectTrigger>
                     </FormControl>
+                    <SelectContent>
+                      {STATES.map(state => (
+                        <SelectItem key={state.value} value={state.value}>
+                          {state.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
                   <FormMessage />
                 </FormItem>

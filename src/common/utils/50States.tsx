@@ -1,5 +1,4 @@
 export const STATES = [
-  { value: "IL", label: "Illinois" },
   { value: "AL", label: "Alabama" },
   { value: "AK", label: "Alaska" },
   { value: "AZ", label: "Arizona" },
@@ -12,6 +11,7 @@ export const STATES = [
   { value: "GA", label: "Georgia" },
   { value: "HI", label: "Hawaii" },
   { value: "ID", label: "Idaho" },
+  { value: "IL", label: "Illinois" },
   { value: "IN", label: "Indiana" },
   { value: "IA", label: "Iowa" },
   { value: "KS", label: "Kansas" },
