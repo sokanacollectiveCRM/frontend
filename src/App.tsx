@@ -1,4 +1,3 @@
-import React from 'react';
 
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
@@ -10,9 +9,10 @@ import Login from "@/pages/account/Login";
 import RequestPasswordReset from "@/pages/account/RequestPasswordReset";
 import ResetPassword from "@/pages/account/ResetPassword";
 import SignUp from "@/pages/account/SignUp";
+import Clients from "@/pages/clients/Clients";
 import Home from "@/pages/home/Home";
 import NotFound from "@/pages/not-found/NotFound";
-import RequestForm from "@/pages/request/RequestForm"; 
+import RequestForm from "@/pages/request/RequestForm";
 
 import './App.css';
 
@@ -24,6 +24,7 @@ export default function App() {
           <Route path='/' element={<NavLayout />}>
           <Route element={<PrivateRoute />}>
           <Route index element={<Home />} />
+          <Route path='clients' element={<Clients />} />
           </Route>
           <Route element={<PublicOnlyRoute />}>
           <Route path='login' element={<Login />} />
