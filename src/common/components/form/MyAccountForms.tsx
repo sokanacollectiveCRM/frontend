@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { profileFormSchema, accountFormSchema } from '../../utils/ZodSchemas';
 import styled from 'styled-components';
 import { STATES } from "@/common/utils/50States";
+import { DatePicker } from "./DatePicker";
+import LoadingSymbol from "../LoadingSymbol";
 
 const TwoInputs = styled.div`
   display: flex;
@@ -33,6 +35,7 @@ export const Profile = () => {
   
   return (
     <Card className="min-h-96 py-5">
+      <LoadingSymbol />
       <CardHeader>
         <CardTitle>Profile</CardTitle>
         <CardDescription>This is how others see you</CardDescription>
@@ -205,6 +208,18 @@ export const Account = () => {
                 </FormItem>
               )}
             />
+            <FormField
+              control={accountForm.control}
+              name="dob"
+              render={({ field }) => (
+                <DatePicker
+                  field={field}
+                  label="Date of Birth"
+                  placeholder="Select birth date"
+                />
+              )}
+            />
+            <Button type="submit" className='cursor-pointer mt-10'>Save Changes</Button>
           </form>
         </Form>
       </CardContent>
