@@ -13,10 +13,7 @@ import Clients from "@/pages/clients/Clients";
 import Home from "@/pages/home/Home";
 import NotFound from "@/pages/not-found/NotFound";
 import RequestForm from "@/pages/request/RequestForm";
-<<<<<<< HEAD
 import MyAccount from './pages/my-account/MyAccount'; 
-=======
->>>>>>> main
 
 import './App.css';
 

@@ -13,12 +13,12 @@ import styled from 'styled-components';
 import { STATES } from "@/common/utils/50States";
 import { DatePicker } from "./DatePicker";
 import LoadingSymbol from "../LoadingSymbol";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 const TwoInputs = styled.div`
   display: flex;
   flex-direction: row;
-  gap: 10px;
-  
+  gap: 10px;  
 `
 
 export const Profile = () => {
@@ -30,17 +30,21 @@ export const Profile = () => {
   });
   
   function submitProfileForm(values: z.infer<typeof profileFormSchema>) {
-    console.log(values); //for now just prints to console
+    
   }
   
   return (
     <Card className="min-h-96 py-5">
-      <LoadingSymbol />
       <CardHeader>
         <CardTitle>Profile</CardTitle>
         <CardDescription>This is how others see you</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col flex-1">
+        <Card>
+          <CardContent>
+              <h1>temp</h1>
+          </CardContent>
+        </Card>
         <Separator />
         <Form {...profileForm} className="flex-1">
           <form onSubmit={profileForm.handleSubmit(submitProfileForm)} className='flex flex-col flex-1 py-5 space-y-4'>
@@ -198,7 +202,7 @@ export const Account = () => {
                     </FormControl>
                     <SelectContent>
                       {STATES.map(state => (
-                        <SelectItem key={state.value} value={state.value}>
+                        <SelectItem key={state.value} value={state.value} className="cursor-pointer">
                           {state.label}
                         </SelectItem>
                       ))}
