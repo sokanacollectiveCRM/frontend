@@ -2,7 +2,7 @@
 import PropTypes from 'prop-types';
 
 // import { StyledButton } from './styles';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/common/components/ui/button';
 
 SubmitButton.propTypes = {
   children: PropTypes.node.isRequired,
