@@ -1,6 +1,6 @@
-import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'; // Import ShadCN table components
-import { H1 } from '@/components/ui/typography';
+import { Button } from '@/common/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/common/components/ui/table'; // Import ShadCN table components
+import { H1 } from '@/common/components/ui/typography';
 import { useEffect, useState } from 'react';
 
 const UsersPage = () => {
