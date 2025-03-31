@@ -1,61 +1,52 @@
-// src/hooks/useUserData.ts
 import { useState, useEffect } from 'react';
-import supabase
+import { useUser } from "@/common/contexts/UserContext"
 
-interface User {
-  id: string;
-  email: string;
-  username: string;
-  firstname: string;
-  lastname: string;
-  role: 'admin' | 'doula' | 'client';
-  // Add any other user fields you have
-}
-
-export function useUserData(userId: string) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+export default function useUserData(userId: string) {
+  const [user, setUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const { user: currentUser } = useUser();
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
+    if (!userId) {
+      setUser(null);
+      return;
+    }
 
-        // Get current session for the token
-        const { data: { session } } = await supabase.auth.getSession();
+    async function fetchUser() {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const token = localStorage.getItem('authToken');
         
-        if (!session?.access_token) {
+        if (!token) {
           throw new Error('Not authenticated');
         }
 
-        // Make the API call to your backend
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/users/${userId}`, {
+        const response = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL}users/${userId}`, {
           headers: {
-            'Authorization': `Bearer ${session.access_token}`,
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         });
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to fetch user data');
+          throw new Error(errorData.error || `Error ${response.status}`);
         }
 
         const userData = await response.json();
         setUser(userData);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An unknown error occurred');
-        console.error('Error fetching user data:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch user');
+        console.error('Error fetching user:', err);
       } finally {
         setIsLoading(false);
       }
-    };
-
-    if (userId) {
-      fetchUserData();
     }
+
+    fetchUser();
   }, [userId]);
 
   return { user, isLoading, error };

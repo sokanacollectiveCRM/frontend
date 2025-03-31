@@ -13,7 +13,9 @@ import styled from 'styled-components';
 import { STATES } from "@/common/utils/50States";
 import { DatePicker } from "./DatePicker";
 import LoadingSymbol from "../LoadingSymbol";
-import { Avatar, AvatarFallback, AvatarImage } from "@/common/components/ui/avatar";
+// import { Avatar, AvatarFallback, AvatarImage } from "@/common/components/ui/avatar";
+import useUserData from '@/common/hooks/useGetUserById';
+import { useUser } from '@/common/contexts/UserContext';
 
 const TwoInputs = styled.div`
   display: flex;
@@ -22,6 +24,12 @@ const TwoInputs = styled.div`
 `
 
 export const Profile = () => {
+
+  const { user } = useUser();
+  const { user: userDetails, isLoading, error } = useUserData(user?.id);
+
+
+
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
@@ -30,7 +38,15 @@ export const Profile = () => {
   });
   
   function submitProfileForm(values: z.infer<typeof profileFormSchema>) {
-    
+    if (!isLoading && !error && user) {
+      console.log("SUCESSSSSSSSSSSS");
+      console.log(userDetails);
+    }
+    else {
+      console.log(`isLoading is ${isLoading}`);
+      console.log(`error is ${error}`);
+      console.log(`user is ${user}`);
+    }
   }
   
   return (
