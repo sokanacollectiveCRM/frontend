@@ -13,9 +13,9 @@ import styled from 'styled-components';
 import { STATES } from "@/common/utils/50States";
 import { DatePicker } from "./DatePicker";
 import LoadingSymbol from "../LoadingSymbol";
-// import { Avatar, AvatarFallback, AvatarImage } from "@/common/components/ui/avatar";
 import useUserData from '@/common/hooks/useGetUserById';
 import { useUser } from '@/common/contexts/UserContext';
+import UserAvatar from "../Users/UserAvatar";
 
 const TwoInputs = styled.div`
   display: flex;
@@ -36,16 +36,7 @@ export const Profile = () => {
   });
   
   function submitProfileForm(values: z.infer<typeof profileFormSchema>) {
-    if (!isLoading && !error && user) {
-      console.log("SUCESSSSSSSSSSSS");
-      console.log(userDetails);
-      console.log(`your bio is ${userDetails.bio}`);
-    }
-    else {
-      console.log(`isLoading is ${isLoading}`);
-      console.log(`error is ${error}`);
-      console.log(`user is ${user}`);
-    }
+    console.log(values); //for now just print to console 
   }
 
   if(isLoading) {
@@ -65,8 +56,15 @@ export const Profile = () => {
       <CardContent className="flex flex-col flex-1">
         <Card>
           <CardContent>
-              <h1>temp</h1>
+            <UserAvatar 
+              profile_picture={userDetails?.profile_picture}
+              fullName={`${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`}
+              />
           </CardContent>
+          <CardHeader>
+            <CardTitle>{`${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`}</CardTitle>
+            <CardDescription>{userDetails?.email || ''}</CardDescription>
+          </CardHeader>
         </Card>
         <Separator />
         <Form {...profileForm} className="flex-1">
@@ -237,8 +235,8 @@ export const Account = () => {
                     </FormControl>
                     <SelectContent>
                       {STATES.map(state => (
-                        <SelectItem key={state.value} value={state.value} className="cursor-pointer">
-                          {state.label}
+                        <SelectItem key={state.value} value={state.label} className="cursor-pointer">
+                          {state.value}
                         </SelectItem>
                       ))}
                     </SelectContent>
