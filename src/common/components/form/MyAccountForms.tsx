@@ -28,8 +28,6 @@ export const Profile = () => {
   const { user } = useUser();
   const { user: userDetails, isLoading, error } = useUserData(user?.id);
 
-
-
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
@@ -41,12 +39,21 @@ export const Profile = () => {
     if (!isLoading && !error && user) {
       console.log("SUCESSSSSSSSSSSS");
       console.log(userDetails);
+      console.log(`your bio is ${userDetails.bio}`);
     }
     else {
       console.log(`isLoading is ${isLoading}`);
       console.log(`error is ${error}`);
       console.log(`user is ${user}`);
     }
+  }
+
+  if(isLoading) {
+    return <div>Loading...</div>
+  }
+
+  if(error) {
+    return <div>Error: {error}...</div>
   }
   
   return (
@@ -93,7 +100,7 @@ export const Profile = () => {
                 <FormItem>
                   <FormLabel className="pb-1">Bio</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Tell us a little bit about yourself" {...field} />
+                    <Textarea placeholder={`Current: ${userDetails?.bio || ''}`} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -108,6 +115,10 @@ export const Profile = () => {
 };
 
 export const Account = () => {
+
+  const { user } = useUser();
+  const { user: userDetails, isLoading, error } = useUserData(user?.id);
+
   const accountForm = useForm<z.infer<typeof accountFormSchema>>({
     resolver: zodResolver(accountFormSchema),
     defaultValues: {
@@ -123,6 +134,14 @@ export const Account = () => {
 
   function submitAccountForm(values: z.infer<typeof accountFormSchema>) {
     console.log(values); //for now just prints to console
+  }
+
+  if(isLoading) {
+    return <div>Loading...</div>
+  }
+
+  if(error) {
+    return <div>Error: {error}...</div>
   }
 
   return (
@@ -143,7 +162,7 @@ export const Account = () => {
                   <FormItem className="flex-1">
                     <FormLabel>First Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Jane" {...field} />
+                      <Input placeholder={userDetails?.firstname || ''} {...field} />
                     </FormControl>
                     <FormMessage /> 
                   </FormItem>
@@ -156,7 +175,7 @@ export const Account = () => {
                   <FormItem className="flex-1">
                     <FormLabel>Last Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Smith" {...field} />
+                      <Input placeholder={userDetails?.lastname || ''} {...field} />
                     </FormControl>
                     <FormMessage /> 
                   </FormItem>
@@ -170,7 +189,7 @@ export const Account = () => {
                 <FormItem >
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="janeSmith@example.com" {...field} />
+                    <Input placeholder={userDetails?.email || ''} {...field} />
                   </FormControl>
                   <FormMessage /> 
                 </FormItem>
@@ -184,7 +203,7 @@ export const Account = () => {
                   <FormItem className="flex-1">
                     <FormLabel>Address</FormLabel>
                     <FormControl>
-                      <Input placeholder="Address" {...field} />
+                      <Input placeholder={userDetails?.address || ''} {...field} />
                     </FormControl>
                     <FormMessage /> 
                   </FormItem>
@@ -197,7 +216,7 @@ export const Account = () => {
                   <FormItem className="flex-1">
                     <FormLabel>City</FormLabel>
                     <FormControl>
-                      <Input placeholder="City" {...field} />
+                      <Input placeholder={userDetails?.city || ''} {...field} />
                     </FormControl>
                     <FormMessage /> 
                   </FormItem>
@@ -213,7 +232,7 @@ export const Account = () => {
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="None" />
+                        <SelectValue placeholder={userDetails?.state || ''} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>

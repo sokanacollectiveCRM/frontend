@@ -5,7 +5,7 @@ export default function useUserData(userId: string) {
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const { user: currentUser } = useUser();
+  // const { user: currentUser } = useUser();
 
   useEffect(() => {
     if (!userId) {
