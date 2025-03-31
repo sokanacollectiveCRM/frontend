@@ -1,4 +1,4 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger, } from "@/components/ui/tabs"
+import { Tabs, TabsContent, TabsList, TabsTrigger, } from "@/common/components/ui/tabs"
 import { Profile, Account } from '../../common/components/form/MyAccountForms';
 
 export default function MyAccount() {
