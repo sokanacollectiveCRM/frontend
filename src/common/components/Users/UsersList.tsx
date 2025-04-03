@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
+import { User } from '@/common/types/auth';
 import styled from 'styled-components';
 
 const UsersContainer = styled.div`
@@ -48,9 +49,9 @@ const LoadingMessage = styled.div`
 `;
 
 export default function UsersList() {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -73,7 +74,7 @@ export default function UsersList() {
         const data = await response.json();
         setUsers(data);
       } catch (err) {
-        setError(err.message);
+        setError(err instanceof Error ? err.message : 'Error fetching users');
         console.error('Error fetching users:', err);
       } finally {
         setLoading(false);

@@ -1,7 +1,11 @@
-import React from 'react';
 
-import PropTypes from 'prop-types';
 import styled from 'styled-components';
+
+interface LogoutModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onLogout: () => void;
+}
 
 const ModalOverlay = styled.div`
   position: fixed;
@@ -65,7 +69,7 @@ const LogoutButton = styled(Button)`
   color: white;
 `;
 
-const LogoutModal = ({ isOpen, onClose, onLogout }) => {
+const LogoutModal = ({ isOpen, onClose, onLogout }: LogoutModalProps) => {
   if (!isOpen) return null;
 
   return (
@@ -80,12 +84,6 @@ const LogoutModal = ({ isOpen, onClose, onLogout }) => {
       </ModalContent>
     </ModalOverlay>
   );
-};
-
-LogoutModal.propTypes = {
-  isOpen: PropTypes.bool.isRequired,
-  onClose: PropTypes.func.isRequired,
-  onLogout: PropTypes.func.isRequired,
 };
 
 export default LogoutModal;
