@@ -1,27 +1,32 @@
-import React, { useEffect, useState } from 'react';
+import type { UserContextType } from '@/common/types/auth';
+import React, { createContext, ReactNode, useEffect, useState } from 'react';
 
-import PropTypes from 'prop-types';
-
-export const UserContext = React.createContext({
+export const UserContext = createContext<UserContextType>({
   user: null,
   setUser: () => {},
   isLoading: false,
-  logout: () => {},
-  checkAuth: () => {},
+  isAuthenticated: false,
+  login: async () => false,
+  logout: async () => {},
+  loadUser: async () => {},
+  checkAuth: async () => false,
+  googleAuth: async () => {},
+  requestPasswordReset: async () => false,
+  updatePassword: async () => false,
 });
 
-UserProvider.propTypes = {
-  children: PropTypes.node.isRequired,
+interface UserProviderProps {
+  children: ReactNode;
 };
 
-export function UserProvider({ children }) {
+export function UserProvider({ children }: UserProviderProps): React.ReactElement {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const buildUrl = (endpoint) =>
+  const buildUrl = (endpoint: string): string =>
     `${import.meta.env.VITE_APP_BACKEND_URL.replace(/\/$/, '')}${endpoint}`;
 
-  const checkAuth = async () => {
+  const checkAuth = async (): Promise<boolean> => {
     const token = localStorage.getItem('authToken');
     console.log('Token from localStorage:', token);
 
@@ -50,7 +55,7 @@ export function UserProvider({ children }) {
     }
   };
 
-  const login = async (email, password) => {
+  const login = async (email: string, password:string): Promise<boolean> => {
     try {
       const response = await fetch(buildUrl('/auth/login'), {
         method: 'POST',
@@ -77,7 +82,7 @@ export function UserProvider({ children }) {
     }
   };
 
-  const logout = async () => {
+  const logout = async (): Promise<void> => {
     try {
       const response = await fetch(buildUrl('/auth/logout'), {
         method: 'POST',
@@ -90,14 +95,13 @@ export function UserProvider({ children }) {
 
       setUser(null);
       localStorage.removeItem('authToken');
-      return true;
     } catch (error) {
       console.error('Logout error:', error);
       throw error;
     }
   };
 
-  const googleAuth = async () => {
+  const googleAuth = async (): Promise<void> => {
     try {
       const response = await fetch(buildUrl('/auth/google'), {
         credentials: 'include',
@@ -114,7 +118,7 @@ export function UserProvider({ children }) {
     }
   };
 
-  const requestPasswordReset = async (email) => {
+  const requestPasswordReset = async (email: string): Promise<boolean> => {
     try {
       const response = await fetch(buildUrl('/auth/reset-password'), {
         method: 'POST',
@@ -134,12 +138,12 @@ export function UserProvider({ children }) {
 
       return true;
     } catch (error) {
-      console.error('Password reset request error:', error.message);
+      console.error('Password reset request error:', error);
       throw error;
     }
   };
 
-  const updatePassword = async (password, accessToken) => {
+  const updatePassword = async (password:string , accessToken: string): Promise<boolean> => {
     try {
       const response = await fetch(buildUrl('/auth/reset-password'), {
         method: 'PUT',
