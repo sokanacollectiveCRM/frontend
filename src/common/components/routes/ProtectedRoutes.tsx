@@ -1,7 +1,7 @@
 
 import { Navigate, Outlet } from 'react-router-dom';
 
-import { useUser } from '@/common/contexts/UserContext';
+import { useUser } from '@/common/hooks/useUser';
 
 export function PrivateRoute() {
   const { user, isLoading } = useUser();
