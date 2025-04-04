@@ -1,9 +1,8 @@
-import { RouteIcon } from "lucide-react";
-import AdminPay from "./AdminPay";
 import { Route } from "react-router-dom";
+import AdminPay from "./AdminPay";
 
 const AdminPayRoute = () => (
-  <Route path = "/AdminPay" element = {<AdminPay/>} />
+  <Route path = "/admin_pay" element = {<AdminPay/>} />
 )
 
 export default AdminPayRoute
