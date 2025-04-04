@@ -6,6 +6,7 @@ import RequestRoutes from "@/features/request/RequestRoutes";
 import Home from "@/pages/Home";
 import NotFound from "@/pages/NotFound";
 import { Route, Routes } from 'react-router-dom';
+import AdminPayRoute from './features/AdminPayment/AdminPayRoute';
 
 const AppRoutes = () => (
   <Routes>
@@ -16,6 +17,7 @@ const AppRoutes = () => (
       {ClientRoutes()}
       {AuthRoutes()}
       {RequestRoutes()}
+      {AdminPayRoute()}
       <Route path='*' element={<NotFound />} />
     </Route>
   </Routes>
