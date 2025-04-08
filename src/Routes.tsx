@@ -10,7 +10,7 @@ import AdminPayRoute from './features/AdminPayment/AdminPayRoute';
 
 const AppRoutes = () => (
   <Routes>
-    <Route path='/' element={<NavLayout />}>
+    <Route path='/'>
       <Route element={<PrivateRoute />}>
         <Route index element={<Home />} />
       </Route>

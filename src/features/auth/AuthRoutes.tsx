@@ -6,9 +6,10 @@ import Login from "./Login";
 import RequestPasswordReset from "./RequestPasswordReset";
 import ResetPassword from "./ResetPassword";
 import SignUp from "./SignUp";
+import NavLayout from '@/common/layouts/NavLayout';
 
 const AuthRoutes = () => (
-  <Route>
+  <Route element = {<NavLayout/>}>
     <Route element={<PublicOnlyRoute />}>
       <Route path='login' element={<Login />} />
       <Route path='signup' element={<SignUp />} />
