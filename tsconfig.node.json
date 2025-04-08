@@ -5,10 +5,15 @@
     "esModuleInterop": true,
     "allowJs": true,
     "strict": true,
-    "moduleResolution": "node",
-    "outDir": "./dist",
-    "declaration": true,
-    "skipLibCheck": true
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "include": ["src"]
 }
