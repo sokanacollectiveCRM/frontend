@@ -2,20 +2,19 @@ import { Button } from "@/common/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/common/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/common/components/ui/form";
 import { Input } from "@/common/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/common/components/ui/select";
 import { Separator } from "@/common/components/ui/separator";
+import { Textarea } from "@/common/components/ui/textarea";
+import { useUser } from '@/common/contexts/UserContext';
+import useUserData from '@/common/hooks/useGetUserById';
+import { STATES } from "@/common/utils/50States";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { Textarea } from "@/common/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/common/components/ui/select";
-import { profileFormSchema, accountFormSchema } from '../../utils/ZodSchemas';
 import styled from 'styled-components';
-import { STATES } from "@/common/utils/50States";
+import { z } from "zod";
+import { accountFormSchema, profileFormSchema } from '../../utils/ZodSchemas';
+import UserAvatar from "../users/UserAvatar";
 import { DatePicker } from "./DatePicker";
-import LoadingSymbol from "../LoadingSymbol";
-import useUserData from '@/common/hooks/useGetUserById';
-import { useUser } from '@/common/contexts/UserContext';
-import UserAvatar from "../Users/UserAvatar";
 
 const TwoInputs = styled.div`
   display: flex;

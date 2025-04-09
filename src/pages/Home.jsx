@@ -3,7 +3,7 @@ import { useContext } from 'react';
 import styled from 'styled-components';
 
 import { Subtitle, Title } from '@/common/components/Text';
-import UsersList from '@/common/components/Users/UsersList';
+import UsersList from '@/common/components/users/UsersList';
 import { UserContext } from '@/common/contexts/UserContext';
 
 const TextContainer = styled.div`
