@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+
 export default function useUserData(userId: string) {
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
