@@ -127,7 +127,7 @@ export function AppSidebar() {
         <SidebarGroup className="pb-0">
           <SidebarGroupLabel>
               <SidebarMenuButton asChild>
-                <a href = "#" className="pl-0">
+                <a href = "/my-account" className="pl-0">
                   <LucideUser></LucideUser>
                   <span>My Account</span>
                 </a>

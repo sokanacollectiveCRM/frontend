@@ -8,7 +8,7 @@ import NotFound from "@/pages/NotFound";
 import { Route, Routes } from 'react-router-dom';
 import DashboardLayout from './common/layouts/DashboardLayout';
 import AdminPayRoute from './features/AdminPayment/AdminPayRoute';
-import MyAccount from './pages/my-account/MyAccount';
+import MyAccount from './pages/MyAccount';
 
 const AppRoutes = () => (
   <Routes>
