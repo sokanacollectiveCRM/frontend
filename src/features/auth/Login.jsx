@@ -119,37 +119,3 @@ export default function Login() {
     </div>
   );
 }
-
-// This was the previous code. There is a good chance we might decide to use styled components again but with shadcn, we'll see
-// so keep this here for now so we can go back and look.
-
-{/* <StyledPage>
-<Form onSubmit={handleSubmit}>
-  <FormTitle>Log In</FormTitle>
-  {error && <RedSpan>{error}</RedSpan>}
-  <Input.Text
-    title='Email'
-    name='email'
-    placeholder='jsmith or j@example.com'
-    value={formState.email}
-    onChange={handleChange}
-    required
-  />
-  <Input.Password
-    title='Password'
-    name='password'
-    value={formState.password}
-    onChange={handleChange}
-    required
-  />
-  <StyledLink to='/forgot-password'>Forgot Password?</StyledLink>
-  <SubmitButton disabled={isLoading}>
-    {isLoading ? 'Logging in...' : 'Log In'}
-  </SubmitButton>
-  <GoogleButton
-    onClick={handleGoogleLogin}
-    isLoading={isLoading}
-    text='Sign in with Google'
-  />
-</Form>
-</StyledPage> */}

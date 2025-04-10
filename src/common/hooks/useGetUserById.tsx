@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function useUserData(userId: string) {
   const [user, setUser] = useState<any>(null);
@@ -39,7 +39,7 @@ export default function useUserData(userId: string) {
         setUser(userData);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch user');
-        console.error('Error fetching user:', err);
+        console.error('Error fetching user:', error);
       } finally {
         setIsLoading(false);
       }
