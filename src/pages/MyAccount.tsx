@@ -1,5 +1,5 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger, } from "@/common/components/ui/tabs"
-import { Profile, Account } from '../../common/components/form/MyAccountForms';
+import { Tabs, TabsContent, TabsList, TabsTrigger, } from "@/common/components/ui/tabs";
+import { Account, Profile } from '../common/components/form/MyAccountForms';
 
 export default function MyAccount() {
   return (

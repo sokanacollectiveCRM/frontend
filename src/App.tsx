@@ -17,7 +17,6 @@
 
 // import '@/styles/App.css';
 
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { PrivateRoute, PublicOnlyRoute } from "@/common/components/routes/ProtectedRoutes";
 import { UserProvider } from "@/common/contexts/UserContext";
 import NavLayout from "@/common/layouts/NavLayout";
@@ -27,11 +26,11 @@ import RequestPasswordReset from "@/features/auth/RequestPasswordReset";
 import ResetPassword from "@/features/auth/ResetPassword";
 import SignUp from "@/features/auth/SignUp";
 import Clients from "@/features/clients/Clients";
-import Home from "@/pages/Home";
-import NotFound from "@/pages/NotFound";
 import RequestForm from "@/features/request/RequestForm";
-import MyAccount from '@/pages/my-account/MyAccount'; 
-import AppRoutes from "@/routes";
+import Home from "@/pages/Home";
+import MyAccount from '@/pages/MyAccount';
+import NotFound from "@/pages/NotFound";
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
 import '@/styles/App.css';
 

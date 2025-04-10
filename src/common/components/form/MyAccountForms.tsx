@@ -2,20 +2,20 @@ import { Button } from "@/common/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/common/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/common/components/ui/form";
 import { Input } from "@/common/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/common/components/ui/select";
 import { Separator } from "@/common/components/ui/separator";
+import { Textarea } from "@/common/components/ui/textarea";
+import { useUser } from '@/common/contexts/UserContext';
+import useUserData from '@/common/hooks/useGetUserById';
+import useSaveUser from "@/common/hooks/useSaveUser";
+import { STATES } from "@/common/utils/50States";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { Textarea } from "@/common/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/common/components/ui/select";
-import { profileFormSchema, accountFormSchema } from '../../utils/ZodSchemas';
 import styled from 'styled-components';
-import { STATES } from "@/common/utils/50States";
-import { DatePicker } from "./DatePicker";
-import LoadingSymbol from "../LoadingSymbol";
-import useUserData from '@/common/hooks/useGetUserById';
-import { useUser } from '@/common/contexts/UserContext';
+import { z } from "zod";
+import { accountFormSchema, profileFormSchema } from '../../utils/ZodSchemas';
 import UserAvatar from "../Users/UserAvatar";
+import { DatePicker } from "./DatePicker";
 
 const TwoInputs = styled.div`
   display: flex;
@@ -36,7 +36,28 @@ export const Profile = () => {
   });
   
   function submitProfileForm(values: z.infer<typeof profileFormSchema>) {
-    console.log(values); //for now just print to console 
+    console.assert(user.id !== undefined, "the context has not provided this user's id");
+
+    interface profileFormData {
+      id: string; 
+      bio?: string;
+      profile_picture?: File | undefined;
+    }    
+
+    const userFormData: profileFormData = {
+      id: user.id,
+    };
+
+    if(values.bio !== "") userFormData.bio = values.bio;
+    if(values.profile_picture !== undefined) userFormData.profile_picture = values.profile_picture;
+
+    useSaveUser(userFormData)
+      .then(savedUser => {
+        console.log('User saved successfully:', savedUser);
+      })
+      .catch(error => {
+        console.log("user NOT saved successfully :(", error);
+      });
   }
 
   if(isLoading) {
@@ -46,6 +67,8 @@ export const Profile = () => {
   if(error) {
     return <div>Error: {error}...</div>
   }
+
+  console.log("MyAccountFormsLoaded", userDetails);
   
   return (
     <Card className="min-h-96 py-5">
@@ -131,8 +154,41 @@ export const Account = () => {
   });
 
   function submitAccountForm(values: z.infer<typeof accountFormSchema>) {
-    console.log(values); //for now just prints to console
+    console.assert(user.id !== undefined, "the context has not provided this user's id");
+
+    interface accountFormData {
+      id: string; 
+      firstname?: string | undefined,
+      lastname?: string | undefined,
+      email?: string | undefined,
+      address?: string | undefined,
+      city?: string | undefined,
+      state?: typeof STATES[0],
+    }    
+
+    const userFormData: accountFormData = {
+      id: user.id,
+    };
+
+    console.log("inside submitAccountForm", values);
+    if(values.firstname !== "") userFormData.firstname = values.firstname;
+    if(values.lastname !== "") userFormData.lastname = values.lastname;
+    if(values.email !== "") userFormData.email = values.email;
+    if(values.address !== "") userFormData.address = values.address;
+    if(values.city !== "") userFormData.city = values.city;
+    // Complex code bc typescript but just saying if form's state is a valid state, add it to the form data to be updated on database
+    if(STATES.some(state => state.value === values.state)) userFormData.state = STATES.find(state => state.value === values.state);
+    
+    console.log("inside submitAccountForm, userFormData is", userFormData);
+    useSaveUser(userFormData)
+      .then(savedUser => {
+        console.log('User saved successfully:', savedUser);
+      })
+      .catch(error => {
+        console.log("user NOT saved successfully :(", error);
+      });
   }
+
 
   if(isLoading) {
     return <div>Loading...</div>
@@ -155,7 +211,7 @@ export const Account = () => {
             <TwoInputs>
               <FormField
                 control={accountForm.control}
-                name="firstName"
+                name="firstname"
                 render={({ field }) => (
                   <FormItem className="flex-1">
                     <FormLabel>First Name</FormLabel>
@@ -168,7 +224,7 @@ export const Account = () => {
               />  
               <FormField
                 control={accountForm.control}
-                name="lastName"
+                name="lastname"
                 render={({ field }) => (
                   <FormItem className="flex-1">
                     <FormLabel>Last Name</FormLabel>

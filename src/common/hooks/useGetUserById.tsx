@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useUser } from "@/common/contexts/UserContext"
 
 export default function useUserData(userId: string) {
   const [user, setUser] = useState<any>(null);
@@ -20,7 +19,7 @@ export default function useUserData(userId: string) {
       try {
         const token = localStorage.getItem('authToken');
         
-        if (!token) {
+      if (!token) {
           throw new Error('Not authenticated');
         }
 
