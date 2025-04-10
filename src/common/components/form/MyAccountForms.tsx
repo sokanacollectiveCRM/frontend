@@ -143,12 +143,12 @@ export const Account = () => {
   const accountForm = useForm<z.infer<typeof accountFormSchema>>({
     resolver: zodResolver(accountFormSchema),
     defaultValues: {
-      firstName: "",
-      lastName: "",
+      firstname: "",
+      lastname: "",
       email: "",
       address: "",
       city: "",
-      state: "",
+      state: STATES[0],
       dob: undefined,
     },
   });
@@ -299,17 +299,6 @@ export const Account = () => {
                   </Select>
                   <FormMessage />
                 </FormItem>
-              )}
-            />
-            <FormField
-              control={accountForm.control}
-              name="dob"
-              render={({ field }) => (
-                <DatePicker
-                  field={field}
-                  label="Date of Birth"
-                  placeholder="Select birth date"
-                />
               )}
             />
             <Button type="submit" className='cursor-pointer mt-10'>Save Changes</Button>

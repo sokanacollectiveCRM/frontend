@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { STATES } from "./50States";
 
 export const imageSchema = z
   .instanceof(File)
@@ -18,5 +19,5 @@ export const accountFormSchema = z.object({
   address: z.string().optional(),
   city: z.string().optional(),
   state: z.string().optional(),
-  dob: z.date().optional()
+  dob: z.string().optional()
 });
