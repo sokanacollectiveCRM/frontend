@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+
 export default function useUserData(userId: string) {
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -19,7 +20,7 @@ export default function useUserData(userId: string) {
       try {
         const token = localStorage.getItem('authToken');
         
-        if (!token) {
+      if (!token) {
           throw new Error('Not authenticated');
         }
 
