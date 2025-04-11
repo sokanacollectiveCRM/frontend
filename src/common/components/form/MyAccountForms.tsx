@@ -14,8 +14,7 @@ import { useForm } from "react-hook-form";
 import styled from 'styled-components';
 import { z } from "zod";
 import { accountFormSchema, profileFormSchema } from '../../utils/ZodSchemas';
-import UserAvatar from "../Users/UserAvatar";
-import { DatePicker } from "./DatePicker";
+import UserAvatar from "../users/UserAvatar";
 
 const TwoInputs = styled.div`
   display: flex;
