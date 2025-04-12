@@ -16,18 +16,19 @@ const AppRoutes = () => (
     <Route element={<PublicOnlyRoute />}>
       <Route element={<NavLayout />}>
         {AuthPublicRoutes()}
+        <Route element={<DashboardLayout />}>
+        {AdminPayRoute()}
+        </Route>
       </Route>
     </Route>
 
     <Route element={<PrivateRoute />}>
-      <Route element={<DashboardLayout />}>
         <Route index element={<Home />} />
         {ClientRoutes()}
         {RequestRoutes()}
-        {AdminPayRoute()}
         <Route path='/my-account' element={<MyAccount />} />
-      </Route>
     </Route>
+    
 
     {AuthRoutes()}
     <Route path='*' element={<NotFound />} />

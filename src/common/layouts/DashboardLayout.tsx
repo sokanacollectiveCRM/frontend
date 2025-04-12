@@ -4,9 +4,9 @@ import { Outlet } from "react-router-dom";
 
 export default function DashboardLayout() {
   return (
-    <SidebarProvider>
+    <SidebarProvider className="flex w-full">
       <AppSidebar />
-      <main>
+      <main className="flex w-full">
         <Outlet />
       </main>
     </SidebarProvider>
