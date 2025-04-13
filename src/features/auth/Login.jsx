@@ -7,7 +7,7 @@ import GoogleButton from '@/common/components/GoogleButton';
 // import { Input } from '@/common/components/form/Input'; Not sure if we need this anymore
 import SubmitButton from '@/common/components/form/SubmitButton';
 import { RedSpan } from '@/common/components/form/styles';
-import { useUser } from '@/common/contexts/UserContext';
+import { useUser } from '@/common/hooks/useUser';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/common/components/ui/card';
 import { Input } from '@/common/components/ui/input';

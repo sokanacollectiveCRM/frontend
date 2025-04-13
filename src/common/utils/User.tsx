@@ -14,7 +14,7 @@ export interface User {
   state?: typeof STATES[0];
   country?: string;
   zip_code?: number;
-  profile_picture?: File;  
+  profile_picture?: string;  
   account_status?: ACCOUNT_STATUS;
   business?: string;
   bio?: string;

@@ -5,16 +5,17 @@ import { Input } from "@/common/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/common/components/ui/select";
 import { Separator } from "@/common/components/ui/separator";
 import { Textarea } from "@/common/components/ui/textarea";
-import { useUser } from '@/common/contexts/UserContext';
 import useUserData from '@/common/hooks/useGetUserById';
-import useSaveUser from "@/common/hooks/useSaveUser";
+import { useUser } from '@/common/hooks/useUser';
 import { STATES } from "@/common/utils/50States";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import styled from 'styled-components';
 import { z } from "zod";
-import { accountFormSchema, profileFormSchema } from '../../utils/ZodSchemas';
+import { accountFormSchema } from '../../utils/ZodSchemas';
 import UserAvatar from "../users/UserAvatar";
+
+import saveUser from '@/common/utils/saveUser';
 
 const TwoInputs = styled.div`
   display: flex;
@@ -22,53 +23,40 @@ const TwoInputs = styled.div`
   gap: 10px;  
 `
 
+interface ProfileFormValues {
+  bio?: string;
+  profile_picture?: File;
+}
+
 export const Profile = () => {
+  const { user, isLoading } = useUser();
 
-  const { user } = useUser();
-  const { user: userDetails, isLoading, error } = useUserData(user?.id);
-
-  const profileForm = useForm<z.infer<typeof profileFormSchema>>({
-    resolver: zodResolver(profileFormSchema),
+  const profileForm = useForm<ProfileFormValues>({
     defaultValues: {
       bio: "",
     },
   });
-  
-  function submitProfileForm(values: z.infer<typeof profileFormSchema>) {
-    console.assert(user.id !== undefined, "the context has not provided this user's id");
 
-    interface profileFormData {
-      id: string; 
-      bio?: string;
-      profile_picture?: File | undefined;
-    }    
+  const submitProfileForm = async (values: ProfileFormValues) => {
+    if (!user?.id) return;
 
-    const userFormData: profileFormData = {
-      id: user.id,
-    };
+    const formData = new FormData();
+    formData.append('id', user.id);
+    formData.append('bio', values.bio ?? '');
+    formData.append('profile_picture', values.profile_picture ?? '');
 
-    if(values.bio !== "") userFormData.bio = values.bio;
-    if(values.profile_picture !== undefined) userFormData.profile_picture = values.profile_picture;
+    try {
+      const savedUser = await saveUser(formData);
+      console.log("User saved successfully:", savedUser);
+    } catch (err) {
+      console.error("User NOT saved successfully:", err);
+    }
+  };
 
-    useSaveUser(userFormData)
-      .then(savedUser => {
-        console.log('User saved successfully:', savedUser);
-      })
-      .catch(error => {
-        console.log("user NOT saved successfully :(", error);
-      });
-  }
+  // might need to add an error check here if user context isn't working
+  if (isLoading) return <div>Loading...</div>;
+  if (!user) return <div>No user found</div>;
 
-  if(isLoading) {
-    return <div>Loading...</div>
-  }
-
-  if(error) {
-    return <div>Error: {error}...</div>
-  }
-
-  console.log("MyAccountFormsLoaded", userDetails);
-  
   return (
     <Card className="min-h-96 py-5">
       <CardHeader>
@@ -79,21 +67,22 @@ export const Profile = () => {
         <Card>
           <CardContent>
             <UserAvatar 
-              profile_picture={userDetails?.profile_picture}
-              fullName={`${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`}
-              />
+              profile_picture={user.profile_picture}
+              fullName={`${user.firstname || ''} ${user.lastname || ''}`}
+            />
           </CardContent>
           <CardHeader>
-            <CardTitle>{`${userDetails?.firstname || ''} ${userDetails?.lastname || ''}`}</CardTitle>
-            <CardDescription>{userDetails?.email || ''}</CardDescription>
+            <CardTitle>{`${user.firstname || ''} ${user.lastname || ''}`}</CardTitle>
+            <CardDescription>{user.email || ''}</CardDescription>
           </CardHeader>
         </Card>
         <Separator />
+
         <Form {...profileForm} className="flex-1">
-          <form onSubmit={profileForm.handleSubmit(submitProfileForm)} className='flex flex-col flex-1 py-5 space-y-4'>
+          <form onSubmit={profileForm.handleSubmit(submitProfileForm)} className="flex flex-col flex-1 py-5 space-y-4">
             <FormField 
               control={profileForm.control}
-              name="profilePicture"
+              name="profile_picture"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Profile Picture</FormLabel>
@@ -101,18 +90,18 @@ export const Profile = () => {
                     <Input 
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                        console.log(e);
-                        const file: File | undefined = e.target.files?.[0];
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                        const file = e.target.files?.[0];
                         field.onChange(file || undefined);
                       }}
                       className="cursor-pointer"
-                      />
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
             <FormField
               control={profileForm.control}
               name="bio"
@@ -120,13 +109,14 @@ export const Profile = () => {
                 <FormItem>
                   <FormLabel className="pb-1">Bio</FormLabel>
                   <FormControl>
-                    <Textarea placeholder={`Current: ${userDetails?.bio || ''}`} {...field} />
+                    <Textarea placeholder={`Current: ${user.bio || ''}`} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
-              />
-            <Button type="submit" className='cursor-pointer mt-10'>Save Changes</Button>
+            />
+
+            <Button type="submit" className="cursor-pointer mt-10">Save Changes</Button>
           </form>
         </Form>
       </CardContent>
@@ -179,7 +169,7 @@ export const Account = () => {
     if(STATES.some(state => state.value === values.state)) userFormData.state = STATES.find(state => state.value === values.state);
     
     console.log("inside submitAccountForm, userFormData is", userFormData);
-    useSaveUser(userFormData)
+    saveUser(userFormData)
       .then(savedUser => {
         console.log('User saved successfully:', savedUser);
       })

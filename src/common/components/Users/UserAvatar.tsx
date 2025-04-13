@@ -1,22 +1,27 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/common/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/common/components/ui/avatar";
 
-export default function UserAvatar( {profile_picture, fullName}: {profile_picture: File, fullName: string} ) {
+interface UserAvatarProps {
+  profile_picture?: string;
+  fullName: string;
+}
 
-  // not sure how to correctly handle profile picture data, will keep at input but will ignore for now
+export default function UserAvatar({ profile_picture, fullName }: UserAvatarProps) {
+  const initials = fullName
+    .split(' ')
+    .map((word) => word[0]?.toUpperCase())
+    .join('');
 
   return (
     <div className="flex items-center justify-center py-6">
       <Avatar className="h-24 w-24">
-        {/* commented to ignore profile picture for now */}
-        {/* <AvatarImage 
-          src={"imageUrl"} 
+        <AvatarImage 
+          src={profile_picture || ''} 
           alt={`${fullName}'s profile`} 
-        /> */}
+        />
         <AvatarFallback className="text-lg">
-          {/* display just the initials */}
-          {fullName.split(' ').map(name => name[0]).join('')} 
+          {initials}
         </AvatarFallback>
       </Avatar>
     </div>  
-  )
+  );
 }
