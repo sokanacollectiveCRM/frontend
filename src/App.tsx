@@ -5,7 +5,7 @@ import AppRoutes from "./Routes";
 
  
 
-import '@/styles/App.css';
+import './App.css';
 
 export default function App() {
   return (
