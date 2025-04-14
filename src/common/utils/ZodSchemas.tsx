@@ -13,11 +13,11 @@ export const profileFormSchema = z.object({
 });
 
 export const accountFormSchema = z.object({
-  firstname: z.string().optional(),
-  lastname: z.string().optional(),
-  email: z.string().email().optional(),
-  address: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  dob: z.string().optional()
+  firstname: z.string().max(300).optional(),
+  lastname: z.string().max(300).optional(),
+  email: z.string().max(300).email().optional(),
+  address: z.string().max(300).optional(),
+  city: z.string().max(300).optional(),
+  state: z.string().max(300).optional(),
+  dob: z.string().max(300).optional()
 });
