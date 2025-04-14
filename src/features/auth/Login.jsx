@@ -2,10 +2,10 @@ import { useState } from 'react';
 
 import { Link, useNavigate } from 'react-router-dom';
 
-import GoogleButton from '@/common/components/GoogleButton';
 import SubmitButton from '@/common/components/form/SubmitButton';
 import { RedSpan } from '@/common/components/form/styles';
 import { useUser } from '@/common/hooks/useUser';
+import GoogleButton from '@/features/auth/GoogleButton';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/common/components/ui/card';
 import { Input } from '@/common/components/ui/input';

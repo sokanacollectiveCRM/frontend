@@ -95,6 +95,7 @@ export function UserProvider({ children }: UserProviderProps): React.ReactElemen
 
       setUser(null);
       localStorage.removeItem('authToken');
+      window.location.href = '/login';
     } catch (error) {
       console.error('Logout error:', error);
       throw error;
