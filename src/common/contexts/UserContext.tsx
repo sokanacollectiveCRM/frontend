@@ -95,6 +95,7 @@ export function UserProvider({ children }: UserProviderProps): React.ReactElemen
 
       setUser(null);
       localStorage.removeItem('authToken');
+      window.location.href = '/login';
     } catch (error) {
       console.error('Logout error:', error);
       throw error;
@@ -186,11 +187,3 @@ export function UserProvider({ children }: UserProviderProps): React.ReactElemen
     <UserContext.Provider value={contextValue}>{children}</UserContext.Provider>
   );
 }
-
-export const useUser = () => {
-  const context = React.useContext(UserContext);
-  if (context === undefined) {
-    throw new Error('useUser must be used within a UserProvider');
-  }
-  return context;
-};
