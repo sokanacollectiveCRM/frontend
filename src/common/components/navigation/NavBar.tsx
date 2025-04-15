@@ -6,8 +6,6 @@ import styled from 'styled-components';
 import { Button } from '@/common/components/Button';
 import { useUser } from '@/common/hooks/useUser';
 
-import LogoutModal from './LogoutModal';
-
 const StyledNav = styled.nav`
   display: flex;
   gap: 10px;
@@ -68,11 +66,6 @@ export default function NavBar() {
           </Button.Secondary>
         </>
       )}
-      <LogoutModal
-        isOpen={isModalOpen}
-        onClose={handleModalClose}
-        onLogout={handleLogoutConfirm}
-      />
     </StyledNav>
   );
 }

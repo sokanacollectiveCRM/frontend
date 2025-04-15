@@ -1,5 +1,6 @@
 import { AppSidebar } from "@/common/components/ui/app-sidebar";
 import { SidebarProvider, SidebarTrigger } from "@/common/components/ui/sidebar";
+import { SearchProvider } from '@/common/contexts/search-context';
 import { Outlet } from "react-router-dom";
 import styled from 'styled-components';
 
@@ -21,14 +22,17 @@ const MainContent = styled.main`
 
 export default function DashboardLayout() {
   return (
-    <SidebarProvider>
-      <LayoutContainer>
-        <AppSidebar />
-        <SidebarTrigger />
-        <MainContent>
-            <Outlet />
-        </MainContent>
-      </LayoutContainer>
-    </SidebarProvider>
+    <SearchProvider>
+      <SidebarProvider>
+        <LayoutContainer>
+          <AppSidebar />
+          <SidebarTrigger />
+          <MainContent>
+              <Outlet />
+          </MainContent>
+        </LayoutContainer>
+      </SidebarProvider>
+    </SearchProvider>
+
   );
 }
