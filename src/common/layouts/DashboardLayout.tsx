@@ -2,16 +2,13 @@ import { AppSidebar } from "@/common/components/navigation/sidebar/AppSidebar";
 import { SidebarProvider } from "@/common/components/ui/sidebar";
 import { SearchProvider } from '@/common/contexts/search-context';
 import { cn } from '@/lib/utils';
-import Cookies from 'js-cookie';
 import { Outlet } from "react-router-dom";
 
 export default function DashboardLayout() {
-  const defaultOpen = Cookies.get('sidebar:state') !== 'false'
-  console.log("default Open:", defaultOpen);
 
   return (
     <SearchProvider>
-      <SidebarProvider defaultOpen={defaultOpen}>
+      <SidebarProvider>
           <AppSidebar />
             <div
             id='content'

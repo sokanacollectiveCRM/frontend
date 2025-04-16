@@ -1,5 +1,4 @@
 import { Separator } from '@/common/components/ui/separator'
-import { SidebarTrigger } from '@/common/components/ui/sidebar'
 import { cn } from '@/lib/utils'
 import React from 'react'
 
@@ -38,7 +37,6 @@ export const Header = ({
       )}
       {...props}
     >
-      <SidebarTrigger variant='outline' className='scale-125 sm:scale-100' />
       <Separator orientation='vertical' className='h-6' />
       {children}
     </header>
