@@ -4,13 +4,14 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
-  CommandList
+  CommandList,
 } from '@/common/components/ui/command'
 import { useSearch } from '@/common/contexts/search-context'
+import { sidebarSections } from '@/common/data/sidebar-data'
 import { ArrowRight } from 'lucide-react'
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { sidebarData } from './layout/data/sidebar-data'
+import { SidebarItem, SidebarSection } from '../data/sidebar-data'
 import { ScrollArea } from './ui/scroll-area'
 
 export function CommandMenu() {
@@ -27,44 +28,24 @@ export function CommandMenu() {
 
   return (
     <CommandDialog modal open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder='Type a command or search...' />
+      <CommandInput placeholder="Type a command or search..." />
       <CommandList>
-        <ScrollArea type='hover' className='h-72 pr-1'>
+        <ScrollArea type="hover" className="h-72 pr-1">
           <CommandEmpty>No results found.</CommandEmpty>
-          {sidebarData.navGroups.map((group) => (
-            <CommandGroup key={group.title} heading={group.title}>
-              {group.items.map((navItem, i) => {
-                if (navItem.url)
-                  return (
-                    <CommandItem
-                      key={`${navItem.url}-${i}`}
-                      value={navItem.title}
-                      onSelect={() => {
-                        runCommand(() => navigate(navItem.url))
-                      }}
-                    >
-                      <div className='mr-2 flex h-4 w-4 items-center justify-center'>
-                        <ArrowRight className='size-2 text-muted-foreground/80' />
-                      </div>
-                      {navItem.title}
-                    </CommandItem>
-                  )
-
-                return navItem.items?.map((subItem, i) => (
-                  <CommandItem
-                    key={`${subItem.url}-${i}`}
-                    value={subItem.title}
-                    onSelect={() => {
-                      runCommand(() => navigate(subItem.url))
-                    }}
-                  >
-                    <div className='mr-2 flex h-4 w-4 items-center justify-center'>
-                      <ArrowRight className='size-2 text-muted-foreground/80' />
-                    </div>
-                    {subItem.title}
-                  </CommandItem>
-                ))
-              })}
+          {sidebarSections.map((section: SidebarSection) => (
+            <CommandGroup key={section.label} heading={section.label}>
+              {section.items.map((item: SidebarItem) => (
+                <CommandItem
+                  key={item.url}
+                  value={item.title}
+                  onSelect={() => runCommand(() => navigate(item.url))}
+                >
+                  <div className="mr-2 flex h-4 w-4 items-center justify-center">
+                    <ArrowRight className="size-2 text-muted-foreground/80" />
+                  </div>
+                  {item.title}
+                </CommandItem>
+              ))}
             </CommandGroup>
           ))}
         </ScrollArea>

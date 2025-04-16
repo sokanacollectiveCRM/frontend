@@ -21,7 +21,6 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import * as React from 'react'
 import { useState } from 'react'
 import { User } from '../data/schema'
 import { DataTablePagination } from './data-table-pagination'
