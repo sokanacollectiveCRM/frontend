@@ -1,4 +1,4 @@
-import { AppSidebar } from "@/common/components/ui/app-sidebar";
+import { AppSidebar } from "@/common/components/navigation/sidebar/AppSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/common/components/ui/sidebar";
 import { Outlet } from "react-router-dom";
 import styled from 'styled-components';
