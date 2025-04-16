@@ -5,8 +5,7 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarHeader,
-  SidebarRail
+  SidebarHeader
 } from "@/common/components/ui/sidebar"
 import { sidebarSections } from '@/common/data/sidebar-data'
 
@@ -36,7 +35,6 @@ export function AppSidebar({ ...props}: React.ComponentProps<typeof Sidebar>) {
         <NavUser />
       </SidebarFooter>
 
-      <SidebarRail />
     </Sidebar>
   )
 }
