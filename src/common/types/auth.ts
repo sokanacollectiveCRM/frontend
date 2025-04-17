@@ -8,8 +8,10 @@ export interface SignupRequest {
 
 export interface User {
   id: string;
+  profile_picture: any;
   username: string;
   email: string;
+  role: string;
   firstname?: string;
   lastname?: string;
 }

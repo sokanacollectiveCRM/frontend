@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { STATES } from "./50States";
 
 export const imageSchema = z
   .instanceof(File)
@@ -7,16 +8,16 @@ export const imageSchema = z
 });
 
 export const profileFormSchema = z.object({
-  profilePicture: imageSchema.optional(),
+  profile_picture: imageSchema.optional(),
   bio: z.string().max(300).optional(),
 });
 
 export const accountFormSchema = z.object({
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
-  email: z.string().email().optional(),
-  address: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  dob: z.date().optional()
+  firstname: z.string().max(300).optional(),
+  lastname: z.string().max(300).optional(),
+  email: z.string().max(300).email().optional(),
+  address: z.string().max(300).optional(),
+  city: z.string().max(300).optional(),
+  state: z.string().max(300).optional(),
+  dob: z.string().max(300).optional()
 });

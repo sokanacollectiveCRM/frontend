@@ -1,15 +1,19 @@
-import { Calendar, FileText, Home, Inbox, LucideChartColumnIncreasing, LucideCircleDollarSign, LucideClock5, LucideCreditCard, LucideUsers, Search, LucideUser, LucideLogOut} from "lucide-react"
+import { Calendar, FileText, Home, Inbox, LucideChartColumnIncreasing, LucideCircleDollarSign, LucideClock5, LucideCreditCard, LucideUsers, Search } from "lucide-react"
 
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
-  SidebarMenuItem,
+  SidebarMenuItem
 } from "@/common/components/ui/sidebar"
+
+// import { UserCard } from "@/common/components/user/UserCard"
+import { NavUser } from "./nav-user"
 
 const GeneralItems = [
   {
@@ -70,8 +74,10 @@ const AnalyticsIcons = [
 ]
 
 export function AppSidebar() {
+
   return (
-    <Sidebar>
+    <Sidebar collapsible="icon">
+
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className="font-extrabold text-lg">General</SidebarGroupLabel>
@@ -107,7 +113,7 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <SidebarGroup className="mb-80">
+        <SidebarGroup>
           <SidebarGroupLabel className="font-extrabold text-lg">Analytics</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -124,31 +130,11 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <SidebarGroup className="pb-0">
-          <SidebarGroupLabel>
-              <SidebarMenuButton asChild>
-                <a href = "#" className="pl-0">
-                  <LucideUser></LucideUser>
-                  <span>My Account</span>
-                </a>
-              </SidebarMenuButton>
-             
-        </SidebarGroupLabel>
-        </SidebarGroup>
-        <SidebarGroup className="pt-0">
-          <SidebarGroupLabel>
-              <SidebarMenuButton asChild>
-                <a href = "#" className="pl-0">
-                  <LucideLogOut></LucideLogOut>
-                  <span>Log Out</span>
-                </a>
-              </SidebarMenuButton>
-             
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-          </SidebarGroupContent>
-        </SidebarGroup>
       </SidebarContent>
+
+      <SidebarFooter>
+        <NavUser />
+      </SidebarFooter>
     </Sidebar>
   )
 }

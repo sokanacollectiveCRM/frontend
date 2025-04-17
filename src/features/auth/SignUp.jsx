@@ -3,16 +3,16 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 // import { Input } from '@/common/components/form/Input';
-import { useUser } from '@/common/contexts/UserContext';
+import { useUser } from '@/common/hooks/useUser';
 
 
 import { RedSpan } from '@/common/components/form/styles';
 
 import SubmitButton from '@/common/components/form/SubmitButton';
-import GoogleButton from '@/common/components/GoogleButton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/common/components/ui/card';
 import { Input } from '@/common/components/ui/input';
 import { Label } from '@/common/components/ui/label';
+import GoogleButton from '@/features/auth/GoogleButton';
 
 
 export default function SignUp() {

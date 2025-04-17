@@ -63,7 +63,7 @@ const UsersPage = () => {
               <TableCell>{client.firstName + client.lastName}</TableCell>
               <TableCell>{client.serviceNeeded}</TableCell>
               <TableCell>{client.requestedAt}</TableCell>
-              <TableCell>{client.updatedAt}</TableCell>
+              <TableCell>{client.updated_at}</TableCell>
               <TableCell>{client.status}</TableCell>
               <TableCell><Button > Accept </Button> </TableCell>
             </TableRow>
