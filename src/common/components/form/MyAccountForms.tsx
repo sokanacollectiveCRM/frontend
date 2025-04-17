@@ -16,6 +16,7 @@ import { z } from "zod";
 import { accountFormSchema, profileFormSchema } from '../../utils/ZodSchemas';
 import UserAvatar from "../Users/UserAvatar";
 import { DatePicker } from "./DatePicker";
+import React from "react";
 
 const TwoInputs = styled.div`
   display: flex;
