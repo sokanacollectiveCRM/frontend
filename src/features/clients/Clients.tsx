@@ -16,7 +16,7 @@ export default function Users() {
 
   return (
     <UsersProvider>
-      <Header>
+      <Header fixed>
         <Search />
         <div className='ml-auto flex items-center space-x-4'>
           <ProfileDropdown />
