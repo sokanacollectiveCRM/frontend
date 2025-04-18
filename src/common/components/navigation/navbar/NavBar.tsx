@@ -1,12 +1,8 @@
-import { useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 
 import { Button } from '@/common/components/Button';
-import { useUser } from '@/common/hooks/useUser';
-
-import LogoutModal from './LogoutModal';
 
 const StyledNav = styled.nav`
   display: flex;
@@ -29,36 +25,13 @@ const LogoPlaceholder = styled(Button.Invisible)`
 `;
 
 export default function NavBar() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
-  const { user, logout } = useUser();
-
-  const handleLogoutClick = () => {
-    setIsModalOpen(true);
-  };
-
-  const handleModalClose = () => {
-    setIsModalOpen(false);
-  };
-
-  const handleLogoutConfirm = async () => {
-    try {
-      await logout();
-      setIsModalOpen(false);
-      navigate('/', { replace: true });
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
 
   return (
     <StyledNav>
       <LeftAligned>
         <LogoPlaceholder onClick={() => navigate('/')}>[LOGO]</LogoPlaceholder>
       </LeftAligned>
-      {user ? (
-        <Button.Secondary onClick={handleLogoutClick}>Log Out</Button.Secondary>
-      ) : (
         <>
           <Button.Primary onClick={() => navigate('/signup')}>
             Sign Up
@@ -67,12 +40,6 @@ export default function NavBar() {
             Login
           </Button.Secondary>
         </>
-      )}
-      <LogoutModal
-        isOpen={isModalOpen}
-        onClose={handleModalClose}
-        onLogout={handleLogoutConfirm}
-      />
     </StyledNav>
   );
 }

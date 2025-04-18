@@ -8,7 +8,6 @@ import {
 
 import { useUser } from '@/common/hooks/useUser'
 import { Link } from 'react-router-dom'
-import UserAvatar from "../user/UserAvatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,14 +16,19 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "./dropdown-menu"
+} from "../../ui/dropdown-menu"
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "./sidebar"
+} from "../../ui/sidebar"
+import UserAvatar from "../../user/UserAvatar"
 
+
+//
+// This is the user profile card at the footer of the sidebar
+//
 export function NavUser() {
   const { isMobile } = useSidebar()
   const { user, logout } = useUser();
