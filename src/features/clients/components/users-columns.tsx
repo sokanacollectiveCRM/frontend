@@ -46,7 +46,16 @@ export const columns: ColumnDef<User>[] = [
     cell: ({ row }) => {
       const { firstName, lastName } = row.original
       const fullName = `${firstName} ${lastName}`
-      return <LongText className='max-w-36'>{fullName}</LongText>
+      const initials = `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase();
+
+      return (
+        <div className="flex items-center gap-2 max-w-36 h-10">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-sm font-medium text-gray-700">
+            {initials}
+          </div>
+          <LongText className='max-w-36'>{fullName}</LongText>
+        </div>
+      );
     },
     filterFn: (row, _columnId, filterValue) => {
       const { firstName, lastName } = row.original
