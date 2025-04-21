@@ -1,4 +1,3 @@
-import * as React from 'react'
 import { useUsers } from '../context/clients-context'
 import { UsersActionDialog } from './users-action-dialog'
 import { UsersDeleteDialog } from './users-delete-dialog'

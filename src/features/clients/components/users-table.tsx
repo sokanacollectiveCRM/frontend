@@ -70,7 +70,7 @@ export function UsersTable({ columns, data }: DataTableProps) {
     <div className='space-y-4'>
       <DataTableToolbar table={table} />
       <div className='rounded-md border'>
-        <Table>
+        <Table className='table-fixed w-full'>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className='group/row'>

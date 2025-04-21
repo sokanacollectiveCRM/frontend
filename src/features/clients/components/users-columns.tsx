@@ -24,7 +24,7 @@ export const columns: ColumnDef<User>[] = [
     ),
     meta: {
       className: cn(
-        'sticky md:table-cell left-0 z-10 rounded-tl',
+        'sticky md:table-cell left-0 w-12 z-10 rounded-tl',
       ),
     },
     cell: ({ row }) => (
@@ -53,7 +53,7 @@ export const columns: ColumnDef<User>[] = [
       const fullName = `${firstName} ${lastName}`.toLowerCase()
       return fullName.includes((filterValue as string).toLowerCase())
     },
-    meta: { className: 'w-36' },
+    meta: { className: 'w-50' },
   },
   {
     accessorKey: 'contractType',
@@ -66,7 +66,6 @@ export const columns: ColumnDef<User>[] = [
     meta: {
       className: cn(
         'drop-shadow-[0_1px_2px_rgb(0_0_0_/_0.1)] dark:drop-shadow-[0_1px_2px_rgb(255_255_255_/_0.1)] lg:drop-shadow-none',
-        'sticky left-6 md:table-cell'
       ),
     },
     enableHiding: false,
@@ -79,7 +78,7 @@ export const columns: ColumnDef<User>[] = [
     ),
     cell: ({ row }) => {
       const requested = row.getValue('requestedAt') as Date;
-      <div className='w-fit text-nowrap'>{requested.toLocaleDateString()}</div>
+      return <div className='w-fit text-nowrap'>{requested.toLocaleDateString()}</div>;
     },
   },
   {
@@ -89,7 +88,7 @@ export const columns: ColumnDef<User>[] = [
     ),
     cell: ({ row }) => {
       const updated = row.getValue('updatedAt') as Date;
-      <div>{updated.toLocaleDateString()}</div>
+      return <div>{updated.toLocaleDateString()}</div>;
     },
     enableSorting: true,
   },
@@ -118,5 +117,6 @@ export const columns: ColumnDef<User>[] = [
   {
     id: 'actions',
     cell: DataTableRowActions,
+    meta: { className: 'sticky right-0 z-10 w-16' }
   },
 ]
