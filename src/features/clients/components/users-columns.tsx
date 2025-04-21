@@ -48,15 +48,20 @@ export const columns: ColumnDef<User>[] = [
       const fullName = `${firstName} ${lastName}`
       return <LongText className='max-w-36'>{fullName}</LongText>
     },
+    filterFn: (row, _columnId, filterValue) => {
+      const { firstName, lastName } = row.original
+      const fullName = `${firstName} ${lastName}`.toLowerCase()
+      return fullName.includes((filterValue as string).toLowerCase())
+    },
     meta: { className: 'w-36' },
   },
   {
-    accessorKey: 'contract',
+    accessorKey: 'contractType',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Contract' />
     ),
     cell: ({ row }) => (
-      <LongText className='max-w-36'>{row.getValue('contract')}</LongText>
+      <LongText className='max-w-36'>{row.getValue('contractType')}</LongText>
     ),
     meta: {
       className: cn(
@@ -68,20 +73,24 @@ export const columns: ColumnDef<User>[] = [
   },
 
   {
-    accessorKey: 'requested',
+    accessorKey: 'requestedAt',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Requested' />
     ),
-    cell: ({ row }) => (
-      <div className='w-fit text-nowrap'>{row.getValue('requested')}</div>
-    ),
+    cell: ({ row }) => {
+      const requested = row.getValue('requestedAt') as Date;
+      <div className='w-fit text-nowrap'>{requested.toLocaleDateString()}</div>
+    },
   },
   {
-    accessorKey: 'updated',
+    accessorKey: 'updatedAt',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Updated' />
     ),
-    cell: ({ row }) => <div>{row.getValue('updated')}</div>,
+    cell: ({ row }) => {
+      const updated = row.getValue('updatedAt') as Date;
+      <div>{updated.toLocaleDateString()}</div>
+    },
     enableSorting: true,
   },
   {

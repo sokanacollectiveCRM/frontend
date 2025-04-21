@@ -16,7 +16,6 @@ import { Link } from 'react-router-dom'
 
 export function ProfileDropdown() {
   const { user, logout } = useUser();
-  console.log("this is the user", user);
 
   if (!user) return null;
   const name = `${user.firstname ?? ""} ${user.lastname ?? ""}`.trim();

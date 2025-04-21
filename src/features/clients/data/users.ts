@@ -12,7 +12,7 @@ export const users = Array.from({ length: 20 }, () => {
       'Labor Support',
       'Lactation Support'
     ]),
-    requestedDate: faker.date.past(),
+    requestedAt: faker.date.past(),
     updatedAt: faker.date.recent(),
     status: faker.helpers.arrayElement([
       'In Progress',

@@ -19,7 +19,7 @@ const userSchema = z.object({
   firstName: z.string(),
   lastName: z.string(),
   contractType: contractTypeSchema,
-  requestedDate: z.coerce.date(),
+  requestedAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
   status: userStatusSchema,
 })
