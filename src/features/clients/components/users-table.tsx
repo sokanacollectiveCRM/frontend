@@ -6,6 +6,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/common/components/ui/table'
+import { useUsers } from '@/features/clients/context/users-context'
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -43,6 +44,7 @@ export function UsersTable({ columns, data }: DataTableProps) {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [sorting, setSorting] = useState<SortingState>([])
+  const { setOpen } = useUsers();
 
   const table = useReactTable({
     data,
@@ -99,7 +101,8 @@ export function UsersTable({ columns, data }: DataTableProps) {
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
-                  className='group/row'
+                  className='group/row cursor-pointer transition'
+                  onClick={() => setOpen('invite')}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell

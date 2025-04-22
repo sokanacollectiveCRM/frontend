@@ -21,11 +21,17 @@ export interface UserContextType {
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
-  logout: () => Promise<void>;
   loadUser: () => Promise<void>;
-  checkAuth: () => Promise<boolean>;
-  googleAuth: () => Promise<void>;
-  requestPasswordReset: (email: string) => Promise<boolean>;
-  updatePassword: (password: string, accessToken: string) => Promise<boolean>;
+  auth: {
+    login: (email: string, password: string) => Promise<boolean>;
+    logout: () => Promise<void>;
+    checkAuth: () => Promise<boolean>;
+    googleAuth: () => Promise<void>;
+    requestPasswordReset: (email: string) => Promise<boolean>;
+    updatePassword: (password: string, token: string) => Promise<boolean>;
+  };
+  data: {
+    getClients: () => Promise<User[] | null>;
+    // Add getDoulas, getUserById, etc. here later
+  };
 }

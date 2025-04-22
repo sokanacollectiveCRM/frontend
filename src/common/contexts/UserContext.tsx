@@ -11,13 +11,18 @@ export const UserContext = createContext<UserContextType>({
   setUser: () => {},
   isLoading: false,
   isAuthenticated: false,
-  login: async () => false,
-  logout: async () => {},
   loadUser: async () => {},
-  checkAuth: async () => false,
-  googleAuth: async () => {},
-  requestPasswordReset: async () => false,
-  updatePassword: async () => false,
+  auth: {
+    login: async () => false,
+    logout: async () => {},
+    checkAuth: async () => false,
+    googleAuth: async () => {},
+    requestPasswordReset: async () => false,
+    updatePassword: async () => false,
+  },
+  data: {
+    getClients: async () => null,
+  },
 });
 
 interface UserProviderProps {
@@ -56,13 +61,17 @@ export function UserProvider({ children }: UserProviderProps): React.ReactElemen
     isLoading,
     isAuthenticated,
     loadUser,
-    login,
-    logout,
-    checkAuth,
-    googleAuth,
-    requestPasswordReset,
-    updatePassword,
-    getClients,
+    auth: {
+      login,
+      logout,
+      checkAuth,
+      googleAuth,
+      requestPasswordReset,
+      updatePassword,
+    },
+    data: {
+      getClients,
+    },
   };
 
   return (
