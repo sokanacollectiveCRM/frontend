@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useEffect } from "react"
 import { ProfileDropdown } from '@/common/components/profile-dropdown'
 import { Search } from '@/common/components/Search'
 import { Header } from '@/common/layouts/Header'
@@ -11,12 +11,23 @@ import UsersProvider from './context/clients-context'
 import { userListSchema } from './data/schema'
 import { users } from './data/users'
 import useWorkLog from "@/common/hooks/useWorkLog"
+import { useUser } from "@/common/hooks/useUser"
 
 export default function Hours() {
   // Parse user list
   const userList = userListSchema.parse(users);
-  
-  const hours_data = useWorkLog()  
+  const { id, isLoading } = useUser();
+  const hours_data = useWorkLog(id); 
+  //  CURRENTLY HAVE BACKEND WORKING FOR GETTING HOURS, useUser() gets the userID and calling useWorkLog() gets the information.
+  // to do now is parsing the returned data type thing of useWorkLog and displaying that information based on if it's finished loading or not 
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  useEffect(() => {
+    
+  }), [isLoading]
 
   return (
     <UsersProvider>
@@ -41,6 +52,5 @@ export default function Hours() {
 
       <UsersDialogs />
     </UsersProvider>
-    {}
   )
 }
