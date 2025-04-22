@@ -19,7 +19,7 @@ const LoadingText = styled.p`
 
 export default function AuthCallback() {
   const navigate = useNavigate();
-  const { checkAuth } = useUser();
+  const { auth: {checkAuth } } = useUser();
 
   useEffect(() => {
     const handleCallback = async () => {

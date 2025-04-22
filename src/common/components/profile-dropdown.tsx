@@ -15,7 +15,7 @@ import { LogOut } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 export function ProfileDropdown() {
-  const { user, logout } = useUser();
+  const { user, auth: { logout } } = useUser();
 
   if (!user) return null;
   const name = `${user.firstname ?? ""} ${user.lastname ?? ""}`.trim();

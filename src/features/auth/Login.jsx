@@ -13,7 +13,7 @@ import { Label } from '@/common/components/ui/label';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, googleAuth } = useUser();
+  const { auth: { login, googleAuth } } = useUser();
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 

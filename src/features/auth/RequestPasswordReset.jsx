@@ -80,7 +80,7 @@ export default function RequestPasswordReset() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { requestPasswordReset } = useUser();
+  const { auth: { requestPasswordReset } } = useUser();
 
   const handleSubmit = async (e) => {
     e.preventDefault();

@@ -31,7 +31,7 @@ import UserAvatar from "../../user/UserAvatar"
 //
 export function NavUser() {
   const { isMobile } = useSidebar()
-  const { user, logout } = useUser();
+  const { user, auth: { logout } } = useUser();
 
   if (!user) return null;
   const name = `${user.firstname ?? ""} ${user.lastname ?? ""}`.trim();
