@@ -1,38 +1,55 @@
-import { DndContext, DragEndEvent } from '@dnd-kit/core'
-import { User, UserStatus } from '../data/schema'
-import { UserColumn } from './user-column'
+import { UserCard } from '@/features/pipeline/components/UserCard';
+import { UserColumn } from '@/features/pipeline/components/UserColumn';
+import {
+  closestCenter,
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+} from '@dnd-kit/core';
+import { useMemo, useState } from 'react';
+import { USER_STATUSES, UserStatus, UserSummary } from '../data/schema';
 
-const statuses: UserStatus[] = ['In Progress', 'Active', 'Completed']
+type Props = {
+  usersByStatus: Record<UserStatus, UserSummary[]>;
+  onStatusChange: (userId: string, newStatus: UserStatus) => void;
+};
 
-interface UsersBoardProps {
-  users: User[]
-  onStatusChange: (userId: string, newStatus: UserStatus) => void
-}
+export function UsersBoard({ usersByStatus, onStatusChange }: Props) {
+  const [activeId, setActiveId] = useState<string | null>(null);
 
-export function UsersBoard({ users, onStatusChange }: UsersBoardProps) {
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event
+  const activeUser = useMemo(() => {
+    return Object.values(usersByStatus).flat().find(u => u.id === activeId) ?? null;
+    }, [activeId, usersByStatus]);
 
-    if (!active || !over || active.id === over.id) return
-
-    const userId = active.id as string
-    const newStatus = over.id as UserStatus
-
-    onStatusChange(userId, newStatus)
-  }
 
   return (
-    <DndContext onDragEnd={handleDragEnd}>
-      <div className="flex gap-4 overflow-x-auto">
-        {statuses.map((status) => (
-          <UserColumn
-            key={status}
-            id={status}
-            label={status}
-            users={users.filter((user) => user.status === status)}
-          />
+    
+    <DndContext
+      collisionDetection={closestCenter}
+      onDragStart={(event) => setActiveId(event.active.id.toString())}
+      onDragEnd={(event: DragEndEvent) => {
+        const { active, over } = event;
+        setActiveId(null);
+        if (!over || !over.id || !active.id) return;
+        const userId = active.id.toString();
+        const newStatus = over.id.toString() as UserStatus;
+        onStatusChange(userId, newStatus);
+      }}
+      onDragCancel={() => setActiveId(null)}
+    >
+
+      <div className='flex gap-4 overflow-x-auto'>
+        {USER_STATUSES.map((status) => (
+          <UserColumn key={status} id={status} users={usersByStatus[status]} />
         ))}
       </div>
+
+      <DragOverlay>
+        {activeUser ? (
+          <UserCard key={activeId} user={activeUser} />
+        ) : null}
+      </DragOverlay>
+
     </DndContext>
-  )
+  );
 }

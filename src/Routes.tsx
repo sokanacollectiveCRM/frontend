@@ -1,7 +1,7 @@
 import { PrivateRoute, PublicOnlyRoute } from '@/common/components/routes/ProtectedRoutes';
 import NavLayout from "@/common/layouts/NavLayout";
 import { AuthPublicRoutes, AuthRoutes } from '@/features/auth/AuthRoutes';
-import ClientRoutes from "@/features/clients/ClientRoutes";
+import PipelineRoutes from '@/features/pipeline/PipelineRoutes';
 import RequestRoutes from "@/features/request/RequestRoutes";
 import Home from "@/pages/Home";
 import NotFound from "@/pages/NotFound";
@@ -23,8 +23,8 @@ const AppRoutes = () => (
     <Route element={<PrivateRoute />}>
       <Route element={<DashboardLayout />}>
         <Route index element={<Home />} />
-        {/* {PipelineRoutes()} */}
-        {ClientRoutes()}
+        {PipelineRoutes()}
+        {/* {ClientRoutes()} */}
         {RequestRoutes()}
         {AdminPayRoute()}
         <Route path='/my-account' element={<MyAccount />} />

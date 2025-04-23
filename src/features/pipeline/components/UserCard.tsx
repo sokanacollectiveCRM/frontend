@@ -1,27 +1,23 @@
 import { useDraggable } from '@dnd-kit/core'
-import { CSS } from '@dnd-kit/utilities'
 import { User } from '../data/schema'
 
 
 export function UserCard({ user }: { user: User }) {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: user.id,
   })
-
-  const style = {
-    transform: CSS.Transform.toString(transform)
-  }
 
   return (
     <div
       ref={setNodeRef}
-      {...attributes}
       {...listeners}
-      style={style}
-      className="rounded-md bg-white p-3 shadow-sm cursor-move"
+      {...attributes}
+      className={`cursor-grab rounded-md border bg-white p-3 shadow transition-opacity ${
+        isDragging ? 'opacity-50' : ''
+      }`}
     >
       <div className="font-medium">
-        {user.firstName} {user.lastName}
+        {user.firstname} {user.lastname}
       </div>
       <div className="text-sm text-muted-foreground">{user.serviceNeeded}</div>
     </div>
