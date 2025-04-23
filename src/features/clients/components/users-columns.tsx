@@ -44,9 +44,9 @@ export const columns: ColumnDef<User>[] = [
       <DataTableColumnHeader column={column} title='Client' />
     ),
     cell: ({ row }) => {
-      const { firstName, lastName } = row.original
-      const fullName = `${firstName} ${lastName}`
-      const initials = `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase();
+      const { firstname, lastname } = row.original
+      const fullName = `${firstname} ${lastname}`
+      const initials = `${firstname[0] ?? ''}${lastname[0] ?? ''}`.toUpperCase();
 
       return (
         <div className="flex items-center gap-2 max-w-36 h-10">
@@ -58,19 +58,19 @@ export const columns: ColumnDef<User>[] = [
       );
     },
     filterFn: (row, _columnId, filterValue) => {
-      const { firstName, lastName } = row.original
-      const fullName = `${firstName} ${lastName}`.toLowerCase()
+      const { firstname, lastname } = row.original
+      const fullName = `${firstname} ${lastname}`.toLowerCase()
       return fullName.includes((filterValue as string).toLowerCase())
     },
     meta: { className: 'w-50' },
   },
   {
-    accessorKey: 'contractType',
+    accessorKey: 'serviceNeeded',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Contract' />
     ),
     cell: ({ row }) => (
-      <LongText className='max-w-36'>{row.getValue('contractType')}</LongText>
+      <LongText className='max-w-36'>{row.getValue('serviceNeeded')}</LongText>
     ),
     meta: {
       className: cn(

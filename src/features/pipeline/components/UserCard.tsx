@@ -23,7 +23,7 @@ export function UserCard({ user }: { user: User }) {
       <div className="font-medium">
         {user.firstName} {user.lastName}
       </div>
-      <div className="text-sm text-muted-foreground">{user.contractType}</div>
+      <div className="text-sm text-muted-foreground">{user.serviceNeeded}</div>
     </div>
   )
 }

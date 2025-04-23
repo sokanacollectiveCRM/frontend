@@ -7,8 +7,8 @@ export const users = Array.from({ length: 20 }, () => {
     id: faker.string.uuid(),
     firstName,
     lastName,
-    contractType: faker.helpers.arrayElement([
-      'PostPartum',
+    serviceNeeded: faker.helpers.arrayElement([
+      'Postpartum',
       'Labor Support',
       'Lactation Support'
     ]),

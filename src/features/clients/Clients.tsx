@@ -1,18 +1,40 @@
 import { ProfileDropdown } from '@/common/components/profile-dropdown'
 import { Search } from '@/common/components/Search'
+import { useUser } from '@/common/hooks/useUser'
 import { Header } from '@/common/layouts/Header'
 import { Main } from '@/common/layouts/Main'
+import { User } from '@/common/types/auth'
+import { useEffect, useState } from 'react'
 import { columns } from './components/users-columns'
 import { UsersDialogs } from './components/users-dialogs'
 import { UsersPrimaryButtons } from './components/users-primary-buttons'
 import { UsersTable } from './components/users-table'
 import UsersProvider from './context/users-context'
-import { userListSchema } from './data/schema'
-import { users } from './data/users'
+import { userListSchema, UserSummary } from './data/schema'
 
 export default function Users() {
-  // Parse user list
-  const userList = userListSchema.parse(users)
+  
+  const { data: { getClients } } = useUser();
+  const [clients, setClients] = useState<User[] | null>(null);
+  const [userList, setUserList] = useState<UserSummary[]>([]);
+  
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        const result = await getClients();
+        console.log('clients fetched from backend', result);
+        setClients(result);
+  
+        const parsed = userListSchema.parse(result);
+        setUserList(parsed);
+      } catch (err) {
+        console.error('Failed to parse client list with Zod:', err);
+        setUserList([]); // fallback to empty list
+      }
+    };
+  
+    fetchClients();
+  }, [getClients]);
 
   return (
     <UsersProvider>

@@ -1,8 +1,8 @@
 
-import styled from 'styled-components';
-
 import { Subtitle, Title } from '@/common/components/Text';
 import UsersList from '@/common/components/user/UsersList';
+import { useUser } from '@/common/hooks/useUser';
+import styled from 'styled-components';
 
 const TextContainer = styled.div`
   display: flex;
