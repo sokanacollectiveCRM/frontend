@@ -1,10 +1,10 @@
 import { z } from 'zod'
 
-const userStatusSchema = z.union([
-  z.literal('In Progress'),
-  z.literal('Active'),
-  z.literal('Completed'),
-  z.literal('pending'),
+export const userStatusSchema = z.enum([
+  'In Progress',
+  'Active',
+  'Completed',
+  'pending',
 ])
 
 export type UserStatus = z.infer<typeof userStatusSchema>

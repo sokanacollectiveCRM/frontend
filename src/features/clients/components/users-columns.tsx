@@ -1,12 +1,14 @@
 import LongText from '@/common/components/long-text'
-import { Badge } from '@/common/components/ui/badge'
 import { Checkbox } from '@/common/components/ui/checkbox'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/common/components/ui/select'
 import { cn } from '@/lib/utils'
 import { ColumnDef } from '@tanstack/react-table'
 import { callTypes } from '../data/data'
-import { User } from '../data/schema'
+import { User, userStatusSchema } from '../data/schema'
 import { DataTableColumnHeader } from './data-table-column-header'
 import { DataTableRowActions } from './data-table-row-actions'
+
+const statusOptions = userStatusSchema.options;
 
 export const columns: ColumnDef<User>[] = [
   {
@@ -107,14 +109,32 @@ export const columns: ColumnDef<User>[] = [
       <DataTableColumnHeader column={column} title='Status' />
     ),
     cell: ({ row }) => {
-      const { status } = row.original
+      const { id, status } = row.original
       const badgeColor = callTypes.get(status)
+
+      // const handleStatusChange = async (newStatus: string) => {
+      //   try {
+      //     // hit backend or call mutation
+      //     await updateClientStatus(id, newStatus)
+      //     // ideally refetch or optimistic update here
+      //   } catch (err) {
+      //     console.error('Failed to update status:', err)
+      //   }
+      // }
+
       return (
-        <div className='flex space-x-2'>
-          <Badge variant='outline' className={cn('capitalize', badgeColor)}>
-            {row.getValue('status')}
-          </Badge>
-        </div>
+        <Select defaultValue={status}>
+          <SelectTrigger className={cn('w-[160px]', badgeColor)}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {statusOptions.map((option) => (
+              <SelectItem key={option} value={option}>
+                {option}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       )
     },
     filterFn: (row, id, value) => {
