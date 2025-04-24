@@ -20,7 +20,7 @@ export function UserColumn({ id, users }: Props) {
       <h3 className='mb-2 text-lg font-semibold'>{id}</h3>
       <div className='flex flex-col gap-3'>
         {users.map((user) => (
-          <UserCard key={user.id} user={user} />
+          <UserCard key={user.id} user={user} isOverlay={false} />
         ))}
       </div>
     </div>
