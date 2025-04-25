@@ -49,21 +49,6 @@ export default function Hours() {
     }
   }, [transformedData]);
 
-  // if(hours) {
-  //   return (
-  //     <div>
-  //       {hours.map(session => (
-  //         <div>
-  //           <h1>Doula: {session.doula.firstname}, {session.doula.lastname}</h1>
-  //           <h1>Client: {session.client.firstname}, {session.client.lastname}</h1>
-  //           <p>Start: {session.start_time}</p>
-  //           <p>End: {session.end_time}</p>
-  //         </div>
-  //       ))}
-  //     </div>
-  //   )
-  // }
-
   if (userLoading || hoursLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
