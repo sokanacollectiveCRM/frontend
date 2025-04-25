@@ -7,12 +7,11 @@ import useWorkLog from '@/common/hooks/useWorkLog';
 
 export function UsersPrimaryButtons() {
   const { user, isLoading } = useUser();
+  const data = useWorkLog(user?.id);
 
 
   const printUserStuff = () => {
-    console.log(user.id);
-    const data = useWorkLog(user.id);
-    console.log(data);
+    console.log("the data returned by useWorkLog(user.id)", data);
   }
 
   return (

@@ -44,19 +44,31 @@ export const columns: ColumnDef<User>[] = [
       <DataTableColumnHeader column={column} title='Client' />
     ),
     cell: ({ row }) => {
-      const { firstName, lastName } = row.original
+      const { firstName, lastName } = row.original.client
       const fullName = `${firstName} ${lastName}`
       return <LongText className='max-w-36'>{fullName}</LongText>
     },
     meta: { className: 'w-36' },
   },
   {
-    accessorKey: 'contract',
+    id: 'doula',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Contract' />
+      <DataTableColumnHeader column={column} title='Doula' />
+    ),
+    cell: ({ row }) => {
+      const { firstName, lastName } = row.original.doula
+      const fullName = `${firstName} ${lastName}`
+      return <LongText className='max-w-36'>{fullName}</LongText>
+    },
+    meta: { className: 'w-36' },
+  },
+  {
+    accessorKey: 'start_time',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Start' />
     ),
     cell: ({ row }) => (
-      <LongText className='max-w-36'>{row.getValue('contract')}</LongText>
+      <LongText className='max-w-36'>{row.getValue('start_time')}</LongText>
     ),
     meta: {
       className: cn(
@@ -68,42 +80,40 @@ export const columns: ColumnDef<User>[] = [
   },
 
   {
-    accessorKey: 'requested',
+    accessorKey: 'end_time',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Requested' />
+      <DataTableColumnHeader column={column} title='End' />
     ),
     cell: ({ row }) => (
-      <div className='w-fit text-nowrap'>{row.getValue('requested')}</div>
+      <div className='w-fit text-nowrap'>{row.getValue('end_time')}</div>
     ),
   },
   {
-    accessorKey: 'updated',
+    accessorKey: 'duration',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Updated' />
-    ),
-    cell: ({ row }) => <div>{row.getValue('updated')}</div>,
-    enableSorting: true,
-  },
-  {
-    accessorKey: 'status',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Status' />
+      <DataTableColumnHeader column={column} title='Duration' />
     ),
     cell: ({ row }) => {
-      const { status } = row.original
-      const badgeColor = callTypes.get(status)
-      return (
-        <div className='flex space-x-2'>
-          <Badge variant='outline' className={cn('capitalize', badgeColor)}>
-            {row.getValue('status')}
-          </Badge>
-        </div>
-      )
+      const start_time = row.getValue('start_time');
+      const end_time = row.getValue('end_time');
+      
+      if (!start_time || !end_time) {
+        return <div>N/A</div>;
+      }
+      
+      const startDate = new Date(start_time as string);
+      const endDate = new Date(end_time as string);
+      
+      // Calculate duration in milliseconds
+      const durationMs = endDate.getTime() - startDate.getTime();
+      const hours = Math.floor(durationMs / (1000 * 60 * 60));
+      const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+      
+      // Format the duration string
+      const durationStr = `${hours}h ${minutes}m`;
+      
+      return <div>{durationStr}</div>;     
     },
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id))
-    },
-    enableHiding: false,
     enableSorting: true,
   },
   {

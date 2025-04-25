@@ -1,30 +1,44 @@
-import { useState } from "react";
-import { User } from "../utils/User";
+import { useEffect, useState } from 'react';
 
-export default async function useWorkLog(id: string) {
-  const [isLoading, setIsLoading] = useState(true);
-  const [hours, setHours] = useState();
-
-  try {
-    const token = localStorage.getItem('authToken');
-    const response = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL}/users/${id}/hours`,
-      {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    if(!response.ok) {
-      throw new Error("Failed to save user");
+export default function useWorkLog(userId?: string) {
+  const [hours, setHours] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  
+  useEffect(() => {
+    if (!userId) {
+      setIsLoading(false);
+      return;
     }
-
-    const hoursResponse = await response.json();
-    return { hours, isLoading };
-  } catch(error) {
-    console.error("Error: couldn't save user", error);
-    throw(error);
-  }
+    
+    async function fetchWorkLog() {
+      try {
+        const token = localStorage.getItem('authToken');
+        
+        if (!token) {
+          throw new Error('Not authenticated');
+        }
+        
+        const response = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL}/users/${userId}/hours`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Error fetching work logs: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        setHours(data);
+      } catch (error) {
+        console.error('Error fetching work logs:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    fetchWorkLog();
+  }, [userId]);
+  
+  return { hours, isLoading };
 }
