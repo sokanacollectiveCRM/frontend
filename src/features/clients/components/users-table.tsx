@@ -103,7 +103,7 @@ export function UsersTable({ columns, data }: DataTableProps) {
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
-                      key={cell.id}
+                      key={cell.id}    //In the future, make sure to link cell id with users id in db to pull up accurate info
                       className={cell.column.columnDef.meta?.className ?? ''}
                     >
                       {flexRender(

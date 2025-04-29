@@ -7,6 +7,7 @@ import { callTypes } from '../data/data'
 import { User } from '../data/schema'
 import { DataTableColumnHeader } from './data-table-column-header'
 import { DataTableRowActions } from './data-table-row-actions'
+import { Link } from 'react-router-dom'
 
 export const columns: ColumnDef<User>[] = [
   {
@@ -46,7 +47,7 @@ export const columns: ColumnDef<User>[] = [
     cell: ({ row }) => {
       const { firstName, lastName } = row.original
       const fullName = `${firstName} ${lastName}`
-      return <LongText className='max-w-36'>{fullName}</LongText>
+      return <Link to = "/specified" state={{user: row.original}}><LongText className='max-w-36'>{fullName}</LongText></Link>
     },
     meta: { className: 'w-36' },
   },
