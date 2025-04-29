@@ -4,7 +4,7 @@ import Pipeline from './Pipeline';
 
 const PipelineRoutes = () => (
   <Route>
-      <Route path='clients' element = {<Pipeline />} />
+      <Route path='pipeline' element = {<Pipeline />} />
   </Route>
 )
 
