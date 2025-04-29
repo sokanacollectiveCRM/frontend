@@ -17,7 +17,7 @@ export function UserCard({ user, isOverlay = false, className = '' }: Props) {
 
   useEffect(() => {
     if (isOverlay) {
-      const timeout = setTimeout(() => setMounted(true), 10) // let DOM mount first
+      const timeout = setTimeout(() => setMounted(true), 20) // let DOM mount first
       return () => clearTimeout(timeout)
     }
   }, [isOverlay])
@@ -32,7 +32,7 @@ export function UserCard({ user, isOverlay = false, className = '' }: Props) {
       <div
         data-shadow-target
         className={clsx(
-          'rounded-md border bg-white p-3 transition-all duration-200 ease-[cubic-bezier(0.18,0.67,0.6,1.22)]',
+          'w-full rounded-md border bg-white p-3 transition-all duration-200 ease-[cubic-bezier(0.18,0.67,0.6,1.22)]',
           isOverlay && (mounted ? 'scale-110 shadow-xl opacity-90' : 'scale-100 shadow'),
           !isOverlay && 'shadow',
           className

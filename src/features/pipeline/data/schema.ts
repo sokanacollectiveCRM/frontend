@@ -1,14 +1,29 @@
 import { z } from 'zod';
 
 export const userStatusSchema = z.enum([
-  'In Progress',
-  'Active',
-  'Completed',
-  'pending',
-])
+  'lead',
+  'contacted',
+  'matching',
+  'interviewing',
+  'follow up',
+  'contract',
+  'active',
+  'complete',
+]);
 
-export type UserStatus = z.infer<typeof userStatusSchema>
+export type UserStatus = z.infer<typeof userStatusSchema>;
 export const USER_STATUSES = userStatusSchema.options;
+
+export const STATUS_LABELS: Record<UserStatus, string> = {
+  lead: 'Lead',
+  contacted: 'Contacted',
+  matching: 'Matching',
+  interviewing: 'Interviewing',
+  'follow up': 'Follow Up',
+  contract: 'Contract',
+  active: 'Active',
+  complete: 'Complete',
+};
 
 const serviceSchema = z.union([
   z.literal('Postpartum'),

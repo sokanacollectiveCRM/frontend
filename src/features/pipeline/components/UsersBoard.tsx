@@ -106,7 +106,8 @@ export function UsersBoard({ usersByStatus, onStatusChange }: Props) {
         setShowOverlay(false);
       }}
     >
-      <div className="flex gap-4 overflow-x-auto">
+
+      <div className="flex gap-4 overflow-x-auto min-h-[800px]">
         {USER_STATUSES.map((status) => (
           <UserColumn key={status} id={status} users={usersByStatus[status]} />
         ))}
@@ -115,15 +116,16 @@ export function UsersBoard({ usersByStatus, onStatusChange }: Props) {
       <DragOverlay
         dropAnimation={dropAnimationConfig}
         style={{ transformOrigin: 'center' }}
-      >
+        >
         {showOverlay && activeUser ? (
           <UserCard
-            user={activeUser}
-            isOverlay={true}
-            className="transition-transform duration-200 ease-out opacity-90"
+          user={activeUser}
+          isOverlay={true}
+          className="transition-transform duration-200 ease-out opacity-90"
           />
         ) : null}
       </DragOverlay>
+
     </DndContext>
   );
 }

@@ -36,10 +36,14 @@ export default function Pipeline() {
 
   const groupedUsers: Record<UserStatus, UserSummary[]> = useMemo(() => {
     const groups: Record<UserStatus, UserSummary[]> = {
-      'pending': [],
-      'In Progress': [],
-      'Active': [],
-      'Completed': [],
+      'lead': [],
+      'contacted': [],
+      'matching': [],
+      'interviewing': [],
+      'follow up': [],
+      'contract': [],
+      'active': [],
+      'complete': [],
     };
     for (const user of userList) {
       if (USER_STATUSES.includes(user.status as UserStatus)) {
@@ -76,7 +80,7 @@ export default function Pipeline() {
               setUserList((prev) =>
                 prev.map((u) => (u.id === userId ? { ...u, status: newStatus } : u))
               );
-              // Optional: make backend call to persist change
+              // Add backend call here to change status of user once we're done with logic
             }}
           />
 
