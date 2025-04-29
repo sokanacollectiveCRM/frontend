@@ -1,5 +1,5 @@
-import LongText from '@/common/components/long-text'
 import { Checkbox } from '@/common/components/ui/checkbox'
+import LongText from '@/common/components/ui/long-text'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/common/components/ui/select'
 import { cn } from '@/lib/utils'
 import { ColumnDef } from '@tanstack/react-table'

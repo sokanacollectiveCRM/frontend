@@ -1,5 +1,5 @@
-import { ProfileDropdown } from '@/common/components/profile-dropdown'
-import { Search } from '@/common/components/Search'
+import { Search } from '@/common/components/header/Search'
+import { ProfileDropdown } from '@/common/components/user/ProfileDropdown'
 import { useUser } from '@/common/hooks/useUser'
 import { Header } from '@/common/layouts/Header'
 import { Main } from '@/common/layouts/Main'

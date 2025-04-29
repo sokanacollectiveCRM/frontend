@@ -1,5 +1,3 @@
-
-import { Subtitle, Title } from '@/common/components/Text';
 import UsersList from '@/common/components/user/UsersList';
 import { useUser } from '@/common/hooks/useUser';
 import styled from 'styled-components';
@@ -25,8 +23,8 @@ export default function Home() {
   return (
     <HomePage>
       <TextContainer>
-        <Title>Home Page</Title>
-        <Subtitle>Welcome, {user?.firstname || 'User'}!</Subtitle>
+        <h1>Home Page</h1>
+        <h2>Welcome, {user?.firstname || 'User'}!</h2>
       </TextContainer>
       <UsersList />
     </HomePage>

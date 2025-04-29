@@ -1,7 +1,7 @@
 'use client'
 
-import { PasswordInput } from '@/common/components/password-input'
-import { SelectDropdown } from '@/common/components/select-dropdown'
+import { PasswordInput } from '@/common/components/form/PasswordInput'
+import { SelectDropdown } from '@/common/components/form/SelectDropdown'
 import { Button } from '@/common/components/ui/button'
 import {
   Dialog,

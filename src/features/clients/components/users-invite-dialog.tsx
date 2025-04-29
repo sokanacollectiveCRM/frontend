@@ -1,4 +1,4 @@
-import { SelectDropdown } from '@/common/components/select-dropdown'
+import { SelectDropdown } from '@/common/components/form/SelectDropdown'
 import { Button } from '@/common/components/ui/button'
 import {
   Dialog,
@@ -22,7 +22,6 @@ import { Textarea } from '@/common/components/ui/textarea'
 import { toast } from '@/common/hooks/use-toast'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { MailPlus, Send } from 'lucide-react'
-import * as React from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { userTypes } from '../data/data'

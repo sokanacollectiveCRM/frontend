@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 
-import { Button } from '@/common/components/Button';
+import { Button } from '@/common/components/ui/button';
 
 export const InputContainer = styled.div``;
 
@@ -39,7 +39,7 @@ export const IconContainer = styled.div`
   cursor: pointer;
 `;
 
-export const StyledButton = styled(Button.Primary)`
+export const StyledButton = styled(Button)`
   font-size: 1.1rem;
   width: 200px;
   font-align: center;
