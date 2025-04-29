@@ -6,7 +6,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/common/components/ui/table'
-import { useUsers } from '@/features/clients/context/users-context'
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -25,7 +24,6 @@ import {
 import { useState } from 'react'
 import { User } from '../data/schema'
 import { DataTablePagination } from './data-table-pagination'
-import { DataTableToolbar } from './data-table-toolbar'
 
 declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -44,7 +42,6 @@ export function UsersTable({ columns, data }: DataTableProps) {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [sorting, setSorting] = useState<SortingState>([])
-  const { setOpen } = useUsers();
 
   const table = useReactTable({
     data,
@@ -70,9 +67,8 @@ export function UsersTable({ columns, data }: DataTableProps) {
 
   return (
     <div className='space-y-4'>
-      <DataTableToolbar table={table} />
       <div className='rounded-md border'>
-        <Table className='table-fixed w-full'>
+        <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className='group/row'>
@@ -101,12 +97,11 @@ export function UsersTable({ columns, data }: DataTableProps) {
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
-                  className='group/row cursor-pointer transition'
-                  onClick={() => setOpen('invite')}
+                  className='group/row'
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
-                      key={cell.id}    //In the future, make sure to link cell id with users id in db to pull up accurate info
+                      key={cell.id}
                       className={cell.column.columnDef.meta?.className ?? ''}
                     >
                       {flexRender(

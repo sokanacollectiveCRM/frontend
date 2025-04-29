@@ -1,4 +1,5 @@
-import { Calendar, FileText, Home, Inbox, LucideChartColumnIncreasing, LucideCircleDollarSign, LucideClock5, LucideCreditCard, LucideUsers, Search } from "lucide-react"
+import { Calendar, FileText, Home, Inbox, LucideChartColumnIncreasing, LucideCircleDollarSign, LucideClock5, LucideCreditCard, LucideUsers, Search } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import {
   Sidebar,
@@ -10,10 +11,10 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem
-} from "@/common/components/ui/sidebar"
+} from "@/common/components/ui/sidebar";
 
 // import { UserCard } from "@/common/components/user/UserCard"
-import { NavUser } from "../navigation/sidebar/NavUser"
+import { NavUser } from "../navigation/sidebar/NavUser";
 
 const GeneralItems = [
   {
@@ -51,7 +52,7 @@ const ManageIcons = [
   },
   {
     title: "Hours",
-    url: "#",
+    url: "/hours",
     icon: LucideClock5
    },
    {
@@ -86,10 +87,10 @@ export function AppSidebar() {
               {GeneralItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url}>
+                    <Link to={`/${item.url}`}>
                       <item.icon />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -103,10 +104,10 @@ export function AppSidebar() {
               {ManageIcons.map((item) =>(
                 <SidebarMenuItem key = {item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url}>
+                    <Link to={`/${item.url}`}>
                       <item.icon />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -120,10 +121,10 @@ export function AppSidebar() {
               {AnalyticsIcons.map((item) =>(
                 <SidebarMenuItem key = {item.title}>
                 <SidebarMenuButton asChild>
-                  <a href = {item.url}>
+                  <Link to={`/${item.url}`}>
                     <item.icon />
                     <span>{item.title}</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

@@ -10,6 +10,8 @@ import { Route, Routes } from 'react-router-dom';
 import DashboardLayout from './common/layouts/DashboardLayout';
 import AdminPayRoute from './features/admin-payment/AdminPayRoute';
 import Hours from './features/hours/Hours';
+import HoursRoute from './features/hours/HoursRoute';
+import ProfileRoutes from './features/profiles/ProfileRoutes';
 import MyAccount from './pages/MyAccount';
 
 const AppRoutes = () => (
@@ -28,6 +30,8 @@ const AppRoutes = () => (
         {ClientRoutes()}
         {RequestRoutes()}
         {AdminPayRoute()}
+        {HoursRoute()}
+        {ProfileRoutes()}
         <Route path='/my-account' element={<MyAccount />} />
         <Route path='hours' element={<Hours />}/>
       </Route>

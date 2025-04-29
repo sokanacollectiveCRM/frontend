@@ -3,6 +3,7 @@ import { Checkbox } from '@/common/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/common/components/ui/select'
 import { cn } from '@/lib/utils'
 import { ColumnDef } from '@tanstack/react-table'
+import { Link } from 'react-router-dom'
 import { callTypes } from '../data/data'
 import { User, userStatusSchema } from '../data/schema'
 import { DataTableColumnHeader } from './data-table-column-header'
@@ -51,12 +52,14 @@ export const columns: ColumnDef<User>[] = [
       const initials = `${firstname[0] ?? ''}${lastname[0] ?? ''}`.toUpperCase();
 
       return (
-        <div className="flex items-center gap-2 max-w-36 h-10">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-sm font-medium text-gray-700">
-            {initials}
+        <Link to = "/specified" state={{user: row.original}}>
+          <div className="flex items-center gap-2 max-w-36 h-10">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-sm font-medium text-gray-700">
+              {initials}
+            </div>
+            <LongText className='max-w-36'>{fullName}</LongText>
           </div>
-          <LongText className='max-w-36'>{fullName}</LongText>
-        </div>
+        </Link>
       );
     },
     filterFn: (row, _columnId, filterValue) => {
