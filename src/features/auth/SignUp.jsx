@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 // import { Input } from '@/common/components/form/Input';
-import { useUser } from '@/common/hooks/useUser';
+import { useUser } from '@/common/hooks/user/useUser';
 
 
 import { RedSpan } from '@/common/components/form/styles';

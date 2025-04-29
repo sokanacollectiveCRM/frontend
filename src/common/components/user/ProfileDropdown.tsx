@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/common/components/ui/dropdown-menu'
 import UserAvatar from '@/common/components/user/UserAvatar'
-import { useUser } from '@/common/hooks/useUser'
+import { useUser } from '@/common/hooks/user/useUser'
 import { LogOut } from 'lucide-react'
 import { Link } from 'react-router-dom'
 

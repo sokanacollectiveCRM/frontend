@@ -1,4 +1,4 @@
-import { User } from "../utils/User";
+import { User } from "../../utils/User";
 
 export default async function useSaveUser(userData: User) {
   console.assert(userData.id !== undefined, `in useSaveUser, no userData.id provided. the userData is ${JSON.stringify(userData)}`);

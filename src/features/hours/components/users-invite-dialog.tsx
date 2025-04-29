@@ -19,7 +19,7 @@ import {
 } from '@/common/components/ui/form'
 import { Input } from '@/common/components/ui/input'
 import { Textarea } from '@/common/components/ui/textarea'
-import { toast } from '@/common/hooks/use-toast'
+import { toast } from '@/common/hooks/toast/use-toast'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { MailPlus, Send } from 'lucide-react'
 import { useForm } from 'react-hook-form'

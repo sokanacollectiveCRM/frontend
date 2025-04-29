@@ -1,6 +1,6 @@
 import { Search } from '@/common/components/header/Search'
 import { ProfileDropdown } from '@/common/components/user/ProfileDropdown'
-import { useUser } from '@/common/hooks/useUser'
+import { useUser } from '@/common/hooks/user/useUser'
 import { Header } from '@/common/layouts/Header'
 import { Main } from '@/common/layouts/Main'
 import { User } from '@/common/types/auth'

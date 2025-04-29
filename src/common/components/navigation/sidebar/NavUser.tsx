@@ -6,7 +6,7 @@ import {
   User
 } from "lucide-react"
 
-import { useUser } from '@/common/hooks/useUser'
+import { useUser } from '@/common/hooks/user/useUser'
 import { Link } from 'react-router-dom'
 import {
   DropdownMenu,

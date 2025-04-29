@@ -3,7 +3,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/common/components/ui/aler
 import { ConfirmDialog } from '@/common/components/ui/confirm-dialog'
 import { Input } from '@/common/components/ui/input'
 import { Label } from '@/common/components/ui/label'
-import { toast } from '@/common/hooks/use-toast'
+import { toast } from '@/common/hooks/toast/use-toast'
 import { TriangleAlert } from 'lucide-react'
 import { useState } from 'react'
 import { User } from '../data/schema'

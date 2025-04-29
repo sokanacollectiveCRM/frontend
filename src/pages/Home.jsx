@@ -1,5 +1,5 @@
 import UsersList from '@/common/components/user/UsersList';
-import { useUser } from '@/common/hooks/useUser';
+import { useUser } from '@/common/hooks/user/useUser';
 import styled from 'styled-components';
 
 const TextContainer = styled.div`
