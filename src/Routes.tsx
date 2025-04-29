@@ -9,6 +9,7 @@ import { Route, Routes } from 'react-router-dom';
 import DashboardLayout from './common/layouts/DashboardLayout';
 import AdminPayRoute from './features/admin-payment/AdminPayRoute';
 import MyAccount from './pages/MyAccount';
+import ProfileRoutes from './features/profiles/ProfileRoutes';
 import Hours from './features/hours/Hours';
 import React from 'react';
 
@@ -27,6 +28,7 @@ const AppRoutes = () => (
         {ClientRoutes()}
         {RequestRoutes()}
         {AdminPayRoute()}
+        {ProfileRoutes()}
         <Route path='/my-account' element={<MyAccount />} />
         <Route path='hours' element={<Hours />}/>
       </Route>
