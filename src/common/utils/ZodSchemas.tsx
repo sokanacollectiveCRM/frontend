@@ -21,3 +21,10 @@ export const accountFormSchema = z.object({
   state: z.string().max(300).optional(),
   dob: z.string().max(300).optional()
 });
+
+export const workLogSchema = z.object({
+  start_date: z.string().date(),
+  start_time: z.string().time(),
+  end_date: z.string().date(),
+  end_time: z.string().time(),
+})
