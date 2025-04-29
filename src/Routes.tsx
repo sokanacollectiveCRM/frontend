@@ -10,6 +10,7 @@ import DashboardLayout from './common/layouts/DashboardLayout';
 import AdminPayRoute from './features/admin-payment/AdminPayRoute';
 import MyAccount from './pages/MyAccount';
 import Hours from './features/hours/Hours';
+import HoursRoute from './features/hours/HoursRoute';
 import React from 'react';
 
 const AppRoutes = () => (
@@ -27,6 +28,7 @@ const AppRoutes = () => (
         {ClientRoutes()}
         {RequestRoutes()}
         {AdminPayRoute()}
+        {HoursRoute()}
         <Route path='/my-account' element={<MyAccount />} />
         <Route path='hours' element={<Hours />}/>
       </Route>
