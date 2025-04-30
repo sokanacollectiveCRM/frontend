@@ -88,7 +88,7 @@ export default function ResetPassword() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { auth: { updatePassword } } = useUser();
+  const { updatePassword } = useUser();
   const navigate = useNavigate();
 
   useEffect(() => {

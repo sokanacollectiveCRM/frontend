@@ -19,7 +19,7 @@ export default function SignUp() {
   const navigate = useNavigate();
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { auth: { googleAuth } } = useUser();
+  const {  googleAuth } = useUser();
 
   const [formState, setFormState] = useState({
     firstname: '',

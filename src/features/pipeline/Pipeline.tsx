@@ -1,9 +1,8 @@
 import { Search } from '@/common/components/header/Search'
 import { ProfileDropdown } from '@/common/components/user/ProfileDropdown'
-import { useUser } from '@/common/hooks/user/useUser'
+import { useClients } from '@/common/hooks/clients/useClients'
 import { Header } from '@/common/layouts/Header'
 import { Main } from '@/common/layouts/Main'
-import { User } from '@/common/types/auth'
 import { UsersBoard } from '@/features/pipeline/components/UsersBoard'
 import UsersProvider from '@/features/pipeline/context/users-context'
 import { useEffect, useMemo, useState } from 'react'
@@ -12,27 +11,27 @@ import { UsersPrimaryButtons } from './components/users-primary-buttons'
 import { USER_STATUSES, userListSchema, UserStatus, UserSummary } from './data/schema'
 
 export default function Pipeline() {
-  const { data: { getClients } } = useUser();
-  const [clients, setClients] = useState<User[] | null>(null);
+
+  const { clients, isLoading, getClients} = useClients();
   const [userList, setUserList] = useState<UserSummary[]>([]);
   
+  // fetch clients
   useEffect(() => {
-    const fetchClients = async () => {
-      try {
-        const result = await getClients();
-        console.log('clients fetched from backend', result);
-        setClients(result);
-  
-        const parsed = userListSchema.parse(result);
-        setUserList(parsed);
-      } catch (err) {
-        console.error('Failed to parse client list with Zod:', err);
-        setUserList([]); // fallback to empty list
-      }
-    };
-  
-    fetchClients();
+    getClients();
   }, []);
+
+  // parse clients and summarize profile for view
+  useEffect(() => {
+    if (clients.length === 0) return;
+
+    try {
+      const parsed = userListSchema.parse(clients);
+      setUserList(parsed);
+    } catch (err) {
+      console.error('Failed to parse client list with Zod:', err);
+      setUserList([]);
+    }
+  }, [clients]);
 
   const groupedUsers: Record<UserStatus, UserSummary[]> = useMemo(() => {
     const groups: Record<UserStatus, UserSummary[]> = {
