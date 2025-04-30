@@ -12,18 +12,19 @@ import { USER_STATUSES, userListSchema, UserStatus, UserSummary } from './data/s
 
 export default function Pipeline() {
 
-  const { clients, isLoading, getClients} = useClients();
+  const { clients, isLoading, getClients } = useClients();
   const [userList, setUserList] = useState<UserSummary[]>([]);
-  
+  const [showLoader, setShowLoader] = useState(true);
+
   // fetch clients
   useEffect(() => {
     getClients();
   }, []);
-
+  
   // parse clients and summarize profile for view
   useEffect(() => {
     if (clients.length === 0) return;
-
+    
     try {
       const parsed = userListSchema.parse(clients);
       setUserList(parsed);
@@ -32,6 +33,20 @@ export default function Pipeline() {
       setUserList([]);
     }
   }, [clients]);
+
+  // loading animation
+  useEffect(() => {
+    if (!isLoading) {
+      // Delay removal of the loader after fade-out animation
+      const timeout = setTimeout(() => {
+        setShowLoader(false);
+      }, 500); // match the duration of your fade-out
+
+      return () => clearTimeout(timeout);
+    } else {
+      setShowLoader(true); // In case it refetches and sets loading back
+    }
+  }, [isLoading]);
 
   const groupedUsers: Record<UserStatus, UserSummary[]> = useMemo(() => {
     const groups: Record<UserStatus, UserSummary[]> = {
@@ -61,6 +76,16 @@ export default function Pipeline() {
         </div>
       </Header>
 
+      {showLoader && (
+            <div
+              className={`fixed inset-0 z-50 flex items-center justify-center bg-background transition-opacity duration-500 ${
+                isLoading ? 'opacity-100' : 'opacity-0'
+              }`}
+            >
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary" />
+            </div>
+          )}
+        
         <Main>
           <div className='mb-2 flex flex-wrap items-center justify-between space-y-2'>
             <div>
@@ -82,7 +107,6 @@ export default function Pipeline() {
               // Add backend call here to change status of user once we're done with logic
             }}
           />
-
           </div>
         </Main>
 
