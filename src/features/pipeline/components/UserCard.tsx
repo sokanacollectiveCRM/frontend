@@ -1,3 +1,5 @@
+import LongText from '@/common/components/ui/long-text';
+import UserAvatar from '@/common/components/user/UserAvatar';
 import { useDraggable } from '@dnd-kit/core';
 import clsx from 'clsx';
 import { useEffect, useState } from 'react';
@@ -38,10 +40,20 @@ export function UserCard({ user, isOverlay = false, className = '' }: Props) {
           className
         )}
       >
-        <div className="font-medium">
+        {/* <div className="font-medium">
           {user.firstname} {user.lastname}
+        </div> */}
+        <div className="flex items-center gap-2 max-w-36 h-10">
+          <UserAvatar fullName={`${user.firstname} ${user.lastname}`} className='h-10 w-10' />
+          
+          <div>
+            <LongText className='max-w-36'>
+              {`${user.firstname} ${user.lastname}`}
+            </LongText>
+            <div className="text-sm text-muted-foreground">{user.serviceNeeded}</div>
+          </div>
         </div>
-        <div className="text-sm text-muted-foreground">{user.serviceNeeded}</div>
+        
       </div>
 
     </div>

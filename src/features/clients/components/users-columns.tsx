@@ -1,6 +1,7 @@
 import { Checkbox } from '@/common/components/ui/checkbox'
 import LongText from '@/common/components/ui/long-text'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/common/components/ui/select'
+import updateClientStatus from '@/common/utils/updateClientStatus'
 import { cn } from '@/lib/utils'
 import { ColumnDef } from '@tanstack/react-table'
 import { Link } from 'react-router-dom'
@@ -115,18 +116,16 @@ export const columns: ColumnDef<User>[] = [
       const { id, status } = row.original
       const badgeColor = callTypes.get(status)
 
-      // const handleStatusChange = async (newStatus: string) => {
-      //   try {
-      //     // hit backend or call mutation
-      //     await updateClientStatus(id, newStatus)
-      //     // ideally refetch or optimistic update here
-      //   } catch (err) {
-      //     console.error('Failed to update status:', err)
-      //   }
-      // }
+      const handleStatusChange = async (newStatus: string) => {
+        try {
+          await updateClientStatus(id, newStatus);
+        } catch (err) {
+          console.error('Failed to update status:', err)
+        }
+      }
 
       return (
-        <Select defaultValue={status}>
+        <Select defaultValue={status} onValueChange={handleStatusChange}>
           <SelectTrigger className={cn('w-[160px]', badgeColor)}>
             <SelectValue />
           </SelectTrigger>
