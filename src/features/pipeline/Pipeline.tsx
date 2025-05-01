@@ -1,8 +1,10 @@
 import { Search } from '@/common/components/header/Search'
+import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay'
 import { ProfileDropdown } from '@/common/components/user/ProfileDropdown'
 import { useClients } from '@/common/hooks/clients/useClients'
 import { Header } from '@/common/layouts/Header'
 import { Main } from '@/common/layouts/Main'
+import updateClientStatus from '@/common/utils/updateClientStatus'
 import { UsersBoard } from '@/features/pipeline/components/UsersBoard'
 import UsersProvider from '@/features/pipeline/context/users-context'
 import { useEffect, useMemo, useState } from 'react'
@@ -14,7 +16,6 @@ export default function Pipeline() {
 
   const { clients, isLoading, getClients } = useClients();
   const [userList, setUserList] = useState<UserSummary[]>([]);
-  const [showLoader, setShowLoader] = useState(true);
 
   // fetch clients
   useEffect(() => {
@@ -33,20 +34,6 @@ export default function Pipeline() {
       setUserList([]);
     }
   }, [clients]);
-
-  // loading animation
-  useEffect(() => {
-    if (!isLoading) {
-      // Delay removal of the loader after fade-out animation
-      const timeout = setTimeout(() => {
-        setShowLoader(false);
-      }, 500); // match the duration of your fade-out
-
-      return () => clearTimeout(timeout);
-    } else {
-      setShowLoader(true); // In case it refetches and sets loading back
-    }
-  }, [isLoading]);
 
   const groupedUsers: Record<UserStatus, UserSummary[]> = useMemo(() => {
     const groups: Record<UserStatus, UserSummary[]> = {
@@ -68,24 +55,16 @@ export default function Pipeline() {
   }, [userList]);
 
   return (
-    <UsersProvider>
-      <Header fixed>
-        <Search />
-        <div className='ml-auto flex items-center space-x-4'>
-          <ProfileDropdown />
-        </div>
-      </Header>
+      <UsersProvider>
+        <Header fixed>
+          <Search />
+          <div className='ml-auto flex items-center space-x-4'>
+            <ProfileDropdown />
+          </div>
+        </Header>
 
-      {showLoader && (
-            <div
-              className={`fixed inset-0 z-50 flex items-center justify-center bg-background transition-opacity duration-500 ${
-                isLoading ? 'opacity-100' : 'opacity-0'
-              }`}
-            >
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary" />
-            </div>
-          )}
-        
+        <LoadingOverlay isLoading={isLoading}/>
+
         <Main>
           <div className='mb-2 flex flex-wrap items-center justify-between space-y-2'>
             <div>
@@ -100,17 +79,27 @@ export default function Pipeline() {
 
           <UsersBoard
             usersByStatus={groupedUsers}
-            onStatusChange={(userId: string, newStatus: UserStatus) => {
+            onStatusChange={ async (userId: string, newStatus: UserStatus) => {
               setUserList((prev) =>
                 prev.map((u) => (u.id === userId ? { ...u, status: newStatus } : u))
               );
-              // Add backend call here to change status of user once we're done with logic
+
+              try {
+                const client = await updateClientStatus(userId, newStatus);
+                console.log('Client status updated successfully: ', client);
+              } catch (error) {
+                console.error('Failed to update user status:', error);
+                
+                setUserList((prev) =>
+                  prev.map((u) => (u.id === userId ? { ...u, status: u.status } : u))
+                );
+              }
             }}
           />
           </div>
         </Main>
 
-      <UsersDialogs />
-    </UsersProvider>
+        <UsersDialogs />
+      </UsersProvider>
   )
 }

@@ -1,4 +1,5 @@
 import { Search } from '@/common/components/header/Search'
+import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay'
 import { ProfileDropdown } from '@/common/components/user/ProfileDropdown'
 import { useClients } from '@/common/hooks/clients/useClients'
 import { Header } from '@/common/layouts/Header'
@@ -43,6 +44,8 @@ export default function Users() {
         </div>
       </Header>
 
+      <LoadingOverlay isLoading={isLoading} />
+      
       <Main>
         <div className='mb-2 flex flex-wrap items-center justify-between space-y-2'>
           <div>

@@ -22,8 +22,6 @@ type Props = {
 const dropAnimationConfig: DropAnimation = {
   keyframes({ transform }) {
     const scale = 0.91;
-    console.log("initial: ", transform.initial);
-    console.log("final: ", transform.final);
     return [
       { transform: CSS.Transform.toString(transform.initial) },
       {
