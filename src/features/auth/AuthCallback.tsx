@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 
+import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
 import { useUser } from '@/common/hooks/user/useUser';
 
 const Container = styled.div`
@@ -76,7 +77,7 @@ export default function AuthCallback() {
 
   return (
     <Container>
-      <LoadingText>Completing authentication...</LoadingText>
+      <LoadingOverlay isLoading={true}/>
     </Container>
   );
 }

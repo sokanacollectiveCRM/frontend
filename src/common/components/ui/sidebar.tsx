@@ -697,8 +697,10 @@ function SidebarMenuSubButton({
   )
 }
 
+const MemoizedSidebar = React.memo(Sidebar);
+
 export {
-  Sidebar,
+  MemoizedSidebar as Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,

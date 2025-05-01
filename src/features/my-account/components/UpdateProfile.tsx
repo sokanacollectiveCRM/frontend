@@ -7,7 +7,7 @@ import { Textarea } from "@/common/components/ui/textarea";
 import { useUser } from '@/common/hooks/user/useUser';
 import saveUser from '@/common/utils/saveUser';
 import { useForm } from "react-hook-form";
-import UserAvatar from "../../common/components/user/UserAvatar";
+import UserAvatar from "../../../common/components/user/UserAvatar";
 
 interface ProfileFormValues {
   bio?: string;
