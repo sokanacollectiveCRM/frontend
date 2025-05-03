@@ -88,7 +88,7 @@ export default function Login() {
                 required 
               />
             </div>
-            <SubmitButton disabled={isLoading} className="w-full">
+            <SubmitButton disabled={isLoading} onClick={handleSubmit} className="w-full">
               {isLoading ? "Logging in..." : "Log In"}
             </SubmitButton>
             <GoogleButton onClick={handleGoogleLogin} isLoading={isLoading} text="Sign in with Google" />
