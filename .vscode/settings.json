@@ -9,5 +9,8 @@
   "editor.formatOnSaveMode": "file",
   "vs-code-prettier-eslint.prettierLast": false,
   "editor.tabSize": 2,
-  "typescript.tsdk": "node_modules/typescript/lib"
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "vscode.typescript-language-features"
+  }
 }
