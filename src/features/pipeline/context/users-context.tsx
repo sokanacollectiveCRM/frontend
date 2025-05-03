@@ -1,4 +1,4 @@
-import useDialogState from '@/common/hooks/use-dialog-state'
+import useDialogState from '@/common/hooks/ui/use-dialog-state'
 import type { User } from '@/common/types/auth'
 import React, { useState } from 'react'
 

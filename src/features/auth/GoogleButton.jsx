@@ -1,4 +1,3 @@
-import React from 'react';
 
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
@@ -96,9 +95,4 @@ GoogleButton.propTypes = {
   isLoading: PropTypes.bool,
   onClick: PropTypes.func.isRequired,
   text: PropTypes.string,
-};
-
-GoogleButton.defaultProps = {
-  isLoading: false,
-  text: 'Sign in with Google',
 };

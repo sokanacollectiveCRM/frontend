@@ -1,11 +1,10 @@
 'use client'
-import { ConfirmDialog } from '@/common/components/confirm-dialog'
 import { Alert, AlertDescription, AlertTitle } from '@/common/components/ui/alert'
+import { ConfirmDialog } from '@/common/components/ui/confirm-dialog'
 import { Input } from '@/common/components/ui/input'
 import { Label } from '@/common/components/ui/label'
-import { toast } from '@/common/hooks/use-toast'
+import { toast } from '@/common/hooks/toast/use-toast'
 import { TriangleAlert } from 'lucide-react'
-import * as React from 'react'
 import { useState } from 'react'
 import { User } from '../data/schema'
 
@@ -19,7 +18,9 @@ export function UsersDeleteDialog({ open, onOpenChange, currentRow }: Props) {
   const [value, setValue] = useState('')
 
   const handleDelete = () => {
-    if (value.trim() !== currentRow.username) return
+    const { firstName, lastName } = currentRow;
+    const fullName = `${firstName} ${lastName}`
+    if (value.trim() !== fullName) return
 
     onOpenChange(false)
     toast({

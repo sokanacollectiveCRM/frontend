@@ -3,7 +3,7 @@ import { VariantProps, cva } from "class-variance-authority"
 import { PanelLeftIcon } from "lucide-react"
 import * as React from "react"
 
-import { useIsMobile } from "@/common/hooks/useMobile"
+import { useIsMobile } from "@/common/hooks/ui/useMobile"
 import { cn } from "@/lib/utils"
 
 import { Button } from "@/common/components/ui/button"
@@ -701,8 +701,10 @@ function SidebarMenuSubButton({
   )
 }
 
+const MemoizedSidebar = React.memo(Sidebar);
+
 export {
-  Sidebar,
+  MemoizedSidebar as Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,

@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 
 import SubmitButton from '@/common/components/form/SubmitButton';
 import { RedSpan } from '@/common/components/form/styles';
-import { useUser } from '@/common/hooks/useUser';
+import { useUser } from '@/common/hooks/user/useUser';
 import GoogleButton from '@/features/auth/GoogleButton';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/common/components/ui/card';
@@ -88,7 +88,7 @@ export default function Login() {
                 required 
               />
             </div>
-            <SubmitButton disabled={isLoading} className="w-full">
+            <SubmitButton disabled={isLoading} onClick={handleSubmit} className="w-full">
               {isLoading ? "Logging in..." : "Log In"}
             </SubmitButton>
             <GoogleButton onClick={handleGoogleLogin} isLoading={isLoading} text="Sign in with Google" />

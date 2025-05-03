@@ -1,4 +1,3 @@
-import { Avatar, AvatarFallback, AvatarImage } from '@/common/components/ui/avatar'
 import { Button } from '@/common/components/ui/button'
 import {
   DropdownMenu,
@@ -10,53 +9,45 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/common/components/ui/dropdown-menu'
-import * as React from 'react'
+import UserAvatar from '@/common/components/user/UserAvatar'
+import { useUser } from '@/common/hooks/user/useUser'
+import { LogOut } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 export function ProfileDropdown() {
+  const { user, logout } = useUser();
+
+  if (!user) return null;
+  const name = `${user.firstname ?? ""} ${user.lastname ?? ""}`.trim();
+
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button variant='ghost' className='relative h-8 w-8 rounded-full'>
-          <Avatar className='h-8 w-8'>
-            <AvatarImage src='/avatars/01.png' alt='@shadcn' />
-            <AvatarFallback>SN</AvatarFallback>
-          </Avatar>
+          <UserAvatar profile_picture={user?.profile_picture} fullName={name} className="h-8 w-8"/>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className='w-56' align='end' forceMount>
+      <DropdownMenuContent className='w-full' align='end' forceMount>
         <DropdownMenuLabel className='font-normal'>
           <div className='flex flex-col space-y-1'>
-            <p className='text-sm font-medium leading-none'>satnaing</p>
+            <p className='text-sm font-medium leading-none'>{name}</p>
             <p className='text-xs leading-none text-muted-foreground'>
-              satnaingdev@gmail.com
+              {user.email}
             </p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
-            <Link to='/settings'>
+            <Link to='/my-account'>
               Profile
               <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link to='/settings'>
-              Billing
-              <DropdownMenuShortcut>⌘B</DropdownMenuShortcut>
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link to='/settings'>
-              Settings
-              <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem>New Team</DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={logout}>
+          <LogOut />
           Log out
           <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
         </DropdownMenuItem>

@@ -4,10 +4,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/common/components/ui/input";
 import { Separator } from "@/common/components/ui/separator";
 import { Textarea } from "@/common/components/ui/textarea";
-import { useUser } from '@/common/hooks/useUser';
+import { useUser } from '@/common/hooks/user/useUser';
 import saveUser from '@/common/utils/saveUser';
 import { useForm } from "react-hook-form";
-import UserAvatar from "../../common/components/user/UserAvatar";
+import UserAvatar from "../../../common/components/user/UserAvatar";
 
 interface ProfileFormValues {
   bio?: string;

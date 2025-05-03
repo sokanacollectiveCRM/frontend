@@ -2,8 +2,6 @@ import { Button } from '@/common/components/ui/button'
 import { Input } from '@/common/components/ui/input'
 import { Table } from '@tanstack/react-table'
 import { X } from 'lucide-react'
-import * as React from 'react'
-import { userTypes } from '../data/data'
 import { DataTableFacetedFilter } from './data-table-faceted-filter'
 import { DataTableViewOptions } from './data-table-view-options'
 
@@ -18,14 +16,14 @@ export function DataTableToolbar<TData>({
 
   return (
     <div className='flex items-center justify-between'>
-      <div className='flex flex-1 flex-col-reverse items-start gap-y-2 sm:flex-row sm:items-center sm:space-x-2'>
+      <div className='flex flex-1 flex-row items-center gap-x-2'>
         <Input
-          placeholder='Filter users...'
+          placeholder='Filter clients...'
           value={
-            (table.getColumn('username')?.getFilterValue() as string) ?? ''
+            (table.getColumn('client')?.getFilterValue() as string) ?? ''
           }
           onChange={(event) =>
-            table.getColumn('username')?.setFilterValue(event.target.value)
+            table.getColumn('client')?.setFilterValue(event.target.value)
           }
           className='h-8 w-[150px] lg:w-[250px]'
         />
@@ -35,18 +33,10 @@ export function DataTableToolbar<TData>({
               column={table.getColumn('status')}
               title='Status'
               options={[
-                { label: 'Active', value: 'active' },
-                { label: 'Inactive', value: 'inactive' },
-                { label: 'Invited', value: 'invited' },
-                { label: 'Suspended', value: 'suspended' },
+                { label: 'Active', value: 'Active' },
+                { label: 'In Progress', value: 'In Progress' },
+                { label: 'Complete', value: 'Complete' },
               ]}
-            />
-          )}
-          {table.getColumn('role') && (
-            <DataTableFacetedFilter
-              column={table.getColumn('role')}
-              title='Role'
-              options={userTypes.map((t) => ({ ...t }))}
             />
           )}
         </div>

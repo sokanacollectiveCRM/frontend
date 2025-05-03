@@ -1,10 +1,6 @@
-import { useContext } from 'react';
-
-import styled from 'styled-components';
-
-import { Subtitle, Title } from '@/common/components/Text';
 import UsersList from '@/common/components/user/UsersList';
-import { UserContext } from '@/common/contexts/UserContext';
+import { useUser } from '@/common/hooks/user/useUser';
+import styled from 'styled-components';
 
 const TextContainer = styled.div`
   display: flex;
@@ -22,13 +18,13 @@ const HomePage = styled.div`
 `;
 
 export default function Home() {
-  const { user } = useContext(UserContext);
+  const { user } = useUser();
 
   return (
     <HomePage>
       <TextContainer>
-        <Title>Home Page</Title>
-        <Subtitle>Welcome, {user?.firstname || 'User'}!</Subtitle>
+        <h1>Home Page</h1>
+        <h2>Welcome, {user?.firstname || 'User'}!</h2>
       </TextContainer>
       <UsersList />
     </HomePage>

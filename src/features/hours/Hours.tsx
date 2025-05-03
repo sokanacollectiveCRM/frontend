@@ -1,10 +1,11 @@
-import { ProfileDropdown } from '@/common/components/profile-dropdown'
-import { Search } from '@/common/components/Search'
-import { useUser } from "@/common/hooks/useUser"
-import useWorkLog from "@/common/hooks/useWorkLog"
+import { Search } from '@/common/components/header/Search'
+import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay'
+import { ProfileDropdown } from '@/common/components/user/ProfileDropdown'
+import useWorkLog from "@/common/hooks/hours/useWorkLog"
+import { useUser } from "@/common/hooks/user/useUser"
 import { Header } from '@/common/layouts/Header'
 import { Main } from '@/common/layouts/Main'
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { columns } from './components/users-columns'
 import { UsersDialogs } from './components/users-dialogs'
 import { UsersPrimaryButtons } from './components/users-primary-buttons'
@@ -49,14 +50,6 @@ export default function Hours() {
     }
   }, [transformedData]);
 
-  if (userLoading || hoursLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        Loading...
-      </div>
-    )
-  }
-
   return (
     <UsersProvider>
       <Header fixed>
@@ -65,6 +58,8 @@ export default function Hours() {
           <ProfileDropdown />
         </div>
       </Header>
+
+      <LoadingOverlay isLoading={userLoading || hoursLoading} />
 
       <Main>
         <div className='mb-2 flex flex-wrap items-center justify-between space-y-2'>

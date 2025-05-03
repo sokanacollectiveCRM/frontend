@@ -1,18 +1,39 @@
-import { ProfileDropdown } from '@/common/components/profile-dropdown'
-import { Search } from '@/common/components/Search'
+import { Search } from '@/common/components/header/Search'
+import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay'
+import { ProfileDropdown } from '@/common/components/user/ProfileDropdown'
+import { useClients } from '@/common/hooks/clients/useClients'
 import { Header } from '@/common/layouts/Header'
 import { Main } from '@/common/layouts/Main'
+import { useEffect, useState } from 'react'
 import { columns } from './components/users-columns'
 import { UsersDialogs } from './components/users-dialogs'
 import { UsersPrimaryButtons } from './components/users-primary-buttons'
 import { UsersTable } from './components/users-table'
-import UsersProvider from './context/clients-context'
-import { userListSchema } from './data/schema'
-import { users } from './data/users'
+import UsersProvider from './context/users-context'
+import { userListSchema, UserSummary } from './data/schema'
 
 export default function Users() {
-  // Parse user list
-  const userList = userListSchema.parse(users)
+  
+  const { clients, isLoading, getClients} = useClients();
+  const [userList, setUserList] = useState<UserSummary[]>([]);
+  
+  // fetch clients
+  useEffect(() => {
+    getClients();
+  }, []);
+
+  // parse clients and summarize profile for view
+  useEffect(() => {
+    if (clients.length === 0) return;
+
+    try {
+      const parsed = userListSchema.parse(clients);
+      setUserList(parsed);
+    } catch (err) {
+      console.error('Failed to parse client list with Zod:', err);
+      setUserList([]);
+    }
+  }, [clients]);
 
   return (
     <UsersProvider>
@@ -23,12 +44,14 @@ export default function Users() {
         </div>
       </Header>
 
+      <LoadingOverlay isLoading={isLoading} />
+      
       <Main>
         <div className='mb-2 flex flex-wrap items-center justify-between space-y-2'>
           <div>
-            <h2 className='text-2xl font-bold tracking-tight'>User List</h2>
+            <h2 className='text-2xl font-bold tracking-tight'>Clients</h2>
             <p className='text-muted-foreground'>
-              Manage your users and their roles here.
+              Manage your clients and their status here.
             </p>
           </div>
           <UsersPrimaryButtons />

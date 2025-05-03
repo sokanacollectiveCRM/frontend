@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import styled from 'styled-components';
 
-import { Subtitle, Title } from '@/common/components/Text';
 
 const VerificationPage = styled.div`
   flex: 1 0 0;
@@ -33,17 +32,17 @@ export default function EmailVerification() {
 
   return (
     <VerificationPage>
-      {status === 'checking' && <Title>Checking verification status...</Title>}
+      {status === 'checking' && <h1>Checking verification status...</h1>}
       {status === 'success' && (
         <>
-          <Title>Email Verified!</Title>
-          <Subtitle>{"You'll be redirected to login in 3 seconds..."}</Subtitle>
+          <h1>Email Verified!</h1>
+          <h2>{"You'll be redirected to login in 3 seconds..."}</h2>
         </>
       )}
       {status === 'error' && (
         <>
-          <Title>Verification Failed</Title>
-          <Subtitle>Please try signing up again or contact support.</Subtitle>
+          <h1>Verification Failed</h1>
+          <h2>Please try signing up again or contact support.</h2>
         </>
       )}
     </VerificationPage>
