@@ -36,7 +36,7 @@ export const sidebarSections = [
     label: 'Manage',
     items: [
       { title: 'Team', url: '#', icon: LucideUsers },
-      { title: 'Contracts', url: '#', icon: FileText },
+      { title: 'Contracts', url: '/contracts', icon: FileText },
       { title: 'Hours', url: '/hours', icon: LucideClock5 },
       { title: 'Payments', url: '#', icon: LucideCreditCard },
     ],
