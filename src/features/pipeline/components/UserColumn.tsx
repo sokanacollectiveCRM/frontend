@@ -20,8 +20,8 @@ export function UserColumn({ id, users }: Props) {
     >
       <div
         className={clsx(
-          'flex flex-col gap-2 transition-transform duration-300 ease-in-out'
-          // isOver && 'scale-[.97]'
+          'flex flex-col gap-2 transition-transform duration-300 ease-in-out',
+          isOver && 'scale-[.97]'
         )}
       >
         <h3 className='mb-2 text-lg font-semibold'>{STATUS_LABELS[id]}</h3>
