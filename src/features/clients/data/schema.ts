@@ -45,3 +45,8 @@ export type User = z.infer<typeof userSchema>
 
 export type UserSummary = z.infer<typeof userSchema>;
 export const userListSchema = z.array(userSchema);
+
+export type ContractTemplate = {
+  id: string,
+  title: string,
+}
