@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 
+import { useUser } from '@/common/hooks/user/useUser';
 import { User } from '@/common/types/user';
 import styled from 'styled-components';
+import { LoadingOverlay } from '../loading/LoadingOverlay';
 
 const UsersContainer = styled.div`
   margin-top: 2rem;
@@ -49,6 +51,7 @@ const LoadingMessage = styled.div`
 `;
 
 export default function UsersList() {
+  const { isLoading: userLoading } = useUser(); 
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -84,28 +87,28 @@ export default function UsersList() {
     fetchUsers();
   }, []);
 
-  if (loading) {
-    return <LoadingMessage>Loading users...</LoadingMessage>;
-  }
-
   if (error) {
     return <ErrorMessage>Error: {error}</ErrorMessage>;
   }
 
   return (
-    <UsersContainer>
-      {users.map((user) => (
-        <UserCard key={user.email}>
-          <UserInfo>
-            <div>
-              <UserName>
-                {user.firstname} {user.lastname} (
-              </UserName>
-              <UserEmail>{user.email}</UserEmail>
-            </div>
-          </UserInfo>
-        </UserCard>
-      ))}
-    </UsersContainer>
+    <div>
+      <LoadingOverlay isLoading={loading || userLoading} />
+
+      <UsersContainer>
+        {users.map((user) => (
+          <UserCard key={user.email}>
+            <UserInfo>
+              <div>
+                <UserName>
+                  {user.firstname} {user.lastname} (
+                </UserName>
+                <UserEmail>{user.email}</UserEmail>
+              </div>
+            </UserInfo>
+          </UserCard>
+        ))}
+      </UsersContainer>
+    </div>
   );
 }
