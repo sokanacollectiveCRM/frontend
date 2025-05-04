@@ -1,0 +1,1 @@
+{"version":3,"file":"icons.d.ts","sourceRoot":"","sources":["../../../src/features/admin-payment/icons.tsx"],"names":[],"mappings":"AAAA,KAAK,SAAS,GAAG,KAAK,CAAC,cAAc,CAAC,UAAU,CAAC,CAAA;AAEjD,eAAO,MAAM,KAAK;kBACF,SAAS;qBA2BN,SAAS;oBAWV,SAAS;mBAQV,SAAS;kBAaV,SAAS;iBAKV,SAAS;kBAQR,SAAS;kBAQT,SAAS;mBAQR,SAAS;sBAQN,SAAS;oBAQX,SAAS;mBAQV,SAAS;oBAQR,SAAS;qBAQR,SAAS;CAgB3B,CAAA"}

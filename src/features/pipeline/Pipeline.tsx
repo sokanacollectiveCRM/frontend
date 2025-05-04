@@ -8,8 +8,6 @@ import updateClientStatus from '@/common/utils/updateClientStatus'
 import { UsersBoard } from '@/features/pipeline/components/UsersBoard'
 import UsersProvider from '@/features/pipeline/context/users-context'
 import { useEffect, useMemo, useState } from 'react'
-import { UsersDialogs } from './components/users-dialogs'
-import { UsersPrimaryButtons } from './components/users-primary-buttons'
 import { USER_STATUSES, userListSchema, UserStatus, UserSummary } from './data/schema'
 
 export default function Pipeline() {
@@ -73,7 +71,6 @@ export default function Pipeline() {
                 Drag and drop to manage your users here.
               </p>
             </div>
-            <UsersPrimaryButtons />
           </div>
           <div className='-mx-4 flex-1 overflow-auto px-4 py-1 lg:flex-row lg:space-x-12 lg:space-y-0'>
 
@@ -99,7 +96,6 @@ export default function Pipeline() {
           </div>
         </Main>
 
-        <UsersDialogs />
       </UsersProvider>
   )
 }

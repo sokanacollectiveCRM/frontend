@@ -1,0 +1,1 @@
+{"version":3,"file":"data-table-pagination.d.ts","sourceRoot":"","sources":["../../../../src/features/clients/components/data-table-pagination.tsx"],"names":[],"mappings":"AAcA,OAAO,EAAE,KAAK,EAAE,MAAM,uBAAuB,CAAA;AAG7C,UAAU,wBAAwB,CAAC,KAAK;IACtC,KAAK,EAAE,KAAK,CAAC,KAAK,CAAC,CAAA;CACpB;AAED,wBAAgB,mBAAmB,CAAC,KAAK,EAAE,EACzC,KAAK,GACN,EAAE,wBAAwB,CAAC,KAAK,CAAC,2CA4EjC"}

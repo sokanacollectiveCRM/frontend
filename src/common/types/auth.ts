@@ -1,3 +1,5 @@
+import { User } from '@/common/types/user';
+
 export interface SignupRequest {
   email: string;
   password: string;
@@ -6,22 +8,10 @@ export interface SignupRequest {
   lastname?: string;
 }
 
-export interface User {
-  id: string;
-  profile_picture: any;
-  username: string;
-  email: string;
-  role: string;
-  firstname?: string;
-  lastname?: string;
-}
-
 export interface UserContextType {
   user: User | null;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
   isLoading: boolean;
-  isAuthenticated: boolean;
-  loadUser: () => Promise<void>;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<boolean>;

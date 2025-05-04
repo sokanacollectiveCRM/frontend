@@ -1,5 +1,5 @@
 import useDialogState from '@/common/hooks/ui/use-dialog-state'
-import type { User } from '@/common/types/auth'
+import type { User } from '@/common/types/user'
 import React, { useState } from 'react'
 
 type UsersDialogType = 'invite' | 'add' | 'edit' | 'delete'

@@ -66,7 +66,7 @@ export default function AuthCallback() {
       } catch (error) {
         console.error('Auth callback error:', error);
         navigate('/login', {
-          state: { error: error.message },
+          state: { error: error instanceof Error ? error.message : error},
           replace: true,
         });
       }
