@@ -1,1 +1,0 @@
-{"version":3,"file":"UserColumn.d.ts","sourceRoot":"","sources":["../../../../src/features/pipeline/components/UserColumn.tsx"],"names":[],"mappings":"AAAA,OAAO,EAAiB,UAAU,EAAE,WAAW,EAAE,MAAM,iCAAiC,CAAA;AAIxF,KAAK,KAAK,GAAG;IACX,EAAE,EAAE,UAAU,CAAA;IACd,KAAK,EAAE,WAAW,EAAE,CAAA;CACrB,CAAA;AAED,wBAAgB,UAAU,CAAC,EAAE,EAAE,EAAE,KAAK,EAAE,EAAE,KAAK,2CA2B9C"}

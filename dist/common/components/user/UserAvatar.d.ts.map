@@ -1,1 +1,0 @@
-{"version":3,"file":"UserAvatar.d.ts","sourceRoot":"","sources":["../../../../src/common/components/user/UserAvatar.tsx"],"names":[],"mappings":"AAEA,UAAU,eAAe;IACvB,eAAe,CAAC,EAAE,MAAM,CAAC;IACzB,QAAQ,EAAE,MAAM,CAAC;IACjB,SAAS,CAAC,EAAE,MAAM,CAAC;CACpB;AAED,MAAM,CAAC,OAAO,UAAU,UAAU,CAAC,EAAE,eAAe,EAAE,QAAQ,EAAE,SAAS,EAAC,EAAE,eAAe,2CAoB1F"}
