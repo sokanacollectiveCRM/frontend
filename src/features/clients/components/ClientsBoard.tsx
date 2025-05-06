@@ -12,7 +12,6 @@ import { useEffect, useState } from 'react'
 export default function ClientsBoard() {
   const { clients, getClients } = useClients();
   const [userList, setUserList] = useState<UserSummary[]>([]);
-  const [sidebarVisible, setSidebarVisible] = useState<boolean>(true);
   const [draggedTemplate, setDraggedTemplate] = useState<ContractTemplate | null>(null);
   const { setOpen } = useUsers();
 
@@ -47,13 +46,13 @@ export default function ClientsBoard() {
   };
 
   return (
-    <div className='-mx-4 flex-1 overflow-auto px-4 py-1 lg:flex-row lg:space-x-12 lg:space-y-0'>
+    <div className='-mx-4 flex-1 overflow-auto py-1 lg:flex-row lg:space-x-12 lg:space-y-0'>
 
       <DndContext 
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}>
         <Main>
-
+        
           <ClientsTable data={userList} columns={columns} />
           <UsersDialogs />
         </Main>

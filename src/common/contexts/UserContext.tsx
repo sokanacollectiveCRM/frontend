@@ -37,6 +37,7 @@ export function UserProvider({ children }: UserProviderProps): React.ReactElemen
       });
 
       if (!response.ok) {
+        localStorage.removeItem('authToken');
         throw new Error('Auth check failed');
       }
 

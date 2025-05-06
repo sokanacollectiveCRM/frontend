@@ -1,7 +1,7 @@
 import { ContractTemplate } from '@/features/clients/data/schema';
 import { useDraggable } from '@dnd-kit/core';
 
-const mockTemplates: ContractTemplate[] = [
+export const mockTemplates: ContractTemplate[] = [
   { id: '1', title: 'Retainer Agreement' },
   { id: '2', title: 'Design Services' }
 ]

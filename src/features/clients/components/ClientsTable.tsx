@@ -6,7 +6,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/common/components/ui/table'
-import { useUsers } from '@/features/clients/context/users-context'
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -45,7 +44,6 @@ export function ClientsTable({ columns, data }: DataTableProps) {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [sorting, setSorting] = useState<SortingState>([])
-  const { setOpen } = useUsers();
 
   const table = useReactTable({
     data,
