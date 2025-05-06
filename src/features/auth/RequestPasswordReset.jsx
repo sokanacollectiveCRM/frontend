@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 
-import { useUser } from '@/common/hooks/useUser';
+import { useUser } from '@/common/hooks/user/useUser';
 
 const Container = styled.div`
   max-width: 400px;

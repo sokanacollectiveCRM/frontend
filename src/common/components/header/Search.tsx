@@ -1,8 +1,8 @@
+import { Button } from '@/common/components/ui/button'
 import { useSearch } from '@/common/contexts/search-context'
 import { cn } from '@/lib/utils'
 import { Search as SearchIcon } from 'lucide-react'
 import * as React from 'react'
-import { Button } from './ui/button'
 
 interface Props {
   className?: string

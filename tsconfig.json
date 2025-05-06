@@ -9,6 +9,7 @@
     "paths": {
       "@/*": ["src/*"]
     },
+    "types": ["vite/client"],
     "allowJs": true, 
     "jsx": "react-jsx", 
     "moduleResolution": "node",
@@ -16,7 +17,8 @@
     "skipLibCheck": true,
     "strict": true,
     "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "module": "esnext"
   },
   "include": ["src"]
 }

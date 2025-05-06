@@ -6,13 +6,12 @@ import {
   CommandItem,
   CommandList,
 } from '@/common/components/ui/command'
+import { ScrollArea } from '@/common/components/ui/scroll-area'
 import { useSearch } from '@/common/contexts/search-context'
-import { sidebarSections } from '@/common/data/sidebar-data'
+import { SidebarItem, SidebarSection, sidebarSections } from '@/common/data/sidebar-data'
 import { ArrowRight } from 'lucide-react'
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { SidebarItem, SidebarSection } from '../data/sidebar-data'
-import { ScrollArea } from './ui/scroll-area'
 
 export function CommandMenu() {
   const navigate = useNavigate()

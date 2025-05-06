@@ -2,7 +2,7 @@
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 
-import { Button } from '@/common/components/Button';
+import { Button } from '@/common/components/ui/button';
 
 const StyledNav = styled.nav`
   display: flex;
@@ -17,7 +17,7 @@ const LeftAligned = styled.div`
   gap: 10px;
 `;
 
-const LogoPlaceholder = styled(Button.Invisible)`
+const LogoPlaceholder = styled(Button)`
   padding: 0;
   font-size: 1.7rem;
   font-weight: bold;
@@ -33,12 +33,12 @@ export default function NavBar() {
         <LogoPlaceholder onClick={() => navigate('/')}>[LOGO]</LogoPlaceholder>
       </LeftAligned>
         <>
-          <Button.Primary onClick={() => navigate('/signup')}>
+          <Button onClick={() => navigate('/signup')}>
             Sign Up
-          </Button.Primary>
-          <Button.Secondary onClick={() => navigate('/login')}>
+          </Button>
+          <Button onClick={() => navigate('/login')}>
             Login
-          </Button.Secondary>
+          </Button>
         </>
     </StyledNav>
   );

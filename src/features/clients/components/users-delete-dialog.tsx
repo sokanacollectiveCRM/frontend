@@ -1,11 +1,10 @@
 'use client'
-import { ConfirmDialog } from '@/common/components/confirm-dialog'
 import { Alert, AlertDescription, AlertTitle } from '@/common/components/ui/alert'
+import { ConfirmDialog } from '@/common/components/ui/confirm-dialog'
 import { Input } from '@/common/components/ui/input'
 import { Label } from '@/common/components/ui/label'
-import { toast } from '@/common/hooks/use-toast'
+import { toast } from '@/common/hooks/toast/use-toast'
 import { TriangleAlert } from 'lucide-react'
-import * as React from 'react'
 import { useState } from 'react'
 import { User } from '../data/schema'
 
@@ -19,7 +18,9 @@ export function UsersDeleteDialog({ open, onOpenChange, currentRow }: Props) {
   const [value, setValue] = useState('')
 
   const handleDelete = () => {
-    if (value.trim() !== currentRow.username) return
+    const { firstname, lastname } = currentRow;
+    const fullName = `${firstname} ${lastname}`
+    if (value.trim() !== fullName) return
 
     onOpenChange(false)
     toast({
@@ -39,7 +40,6 @@ export function UsersDeleteDialog({ open, onOpenChange, currentRow }: Props) {
       open={open}
       onOpenChange={onOpenChange}
       handleConfirm={handleDelete}
-      disabled={value.trim() !== currentRow.username}
       title={
         <span className='text-destructive'>
           <TriangleAlert
@@ -53,12 +53,8 @@ export function UsersDeleteDialog({ open, onOpenChange, currentRow }: Props) {
         <div className='space-y-4'>
           <p className='mb-2'>
             Are you sure you want to delete{' '}
-            <span className='font-bold'>{currentRow.username}</span>?
             <br />
             This action will permanently remove the user with the role of{' '}
-            <span className='font-bold'>
-              {currentRow.role.toUpperCase()}
-            </span>{' '}
             from the system. This cannot be undone.
           </p>
 

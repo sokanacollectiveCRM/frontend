@@ -4,7 +4,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/common/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/common/components/ui/select";
 import { Separator } from "@/common/components/ui/separator";
-import { useUser } from '@/common/hooks/useUser';
+import { useUser } from '@/common/hooks/user/useUser';
 import { STATES } from "@/common/utils/50States";
 import { useForm } from "react-hook-form";
 import styled from 'styled-components';
@@ -81,7 +81,7 @@ export const Account = () => {
       </CardHeader>
       <CardContent className="flex flex-col flex-1">
         <Separator />
-        <Form {...accountForm} classname="flex-1">
+        <Form {...accountForm}>
           <form onSubmit={accountForm.handleSubmit(submitAccountForm)} className="flex flex-col flex-1 py-5 space-y-4">
             <TwoInputs>
               <FormField

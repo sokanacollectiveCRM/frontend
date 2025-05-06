@@ -1,7 +1,7 @@
 'use client'
 
-import { PasswordInput } from '@/common/components/password-input'
-import { SelectDropdown } from '@/common/components/select-dropdown'
+import { PasswordInput } from '@/common/components/form/PasswordInput'
+import { SelectDropdown } from '@/common/components/form/SelectDropdown'
 import { Button } from '@/common/components/ui/button'
 import {
   Dialog,
@@ -20,7 +20,7 @@ import {
   FormMessage,
 } from '@/common/components/ui/form'
 import { Input } from '@/common/components/ui/input'
-import { toast } from '@/common/hooks/use-toast'
+import { toast } from '@/common/hooks/toast/use-toast'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'

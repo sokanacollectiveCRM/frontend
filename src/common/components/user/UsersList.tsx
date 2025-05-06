@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { User } from '@/common/types/auth';
+import { User } from '@/common/types/user';
 import styled from 'styled-components';
 
 const UsersContainer = styled.div`
@@ -100,7 +100,6 @@ export default function UsersList() {
             <div>
               <UserName>
                 {user.firstname} {user.lastname} (
-                {user.username || 'No username'})
               </UserName>
               <UserEmail>{user.email}</UserEmail>
             </div>
