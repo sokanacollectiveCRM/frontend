@@ -1,46 +1,17 @@
-import { Checkbox } from '@/common/components/ui/checkbox'
 import LongText from '@/common/components/ui/long-text'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/common/components/ui/select'
 import updateClientStatus from '@/common/utils/updateClientStatus'
 import { cn } from '@/lib/utils'
 import { ColumnDef } from '@tanstack/react-table'
 import { Link } from 'react-router-dom'
-import { User, userStatusSchema } from '../data/schema'
+import { toast } from 'sonner'
+import { STATUS_LABELS, User, userStatusSchema } from '../data/schema'
 import { DataTableColumnHeader } from './data-table-column-header'
 import { DataTableRowActions } from './data-table-row-actions'
 
 const statusOptions = userStatusSchema.options;
 
 export const columns: ColumnDef<User>[] = [
-  {
-    id: 'select',
-    header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && 'indeterminate')
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label='Select all'
-        className='translate-y-[2px]'
-      />
-    ),
-    meta: {
-      className: cn(
-        'sticky md:table-cell left-0 w-12 z-10 rounded-tl',
-      ),
-    },
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label='Select row'
-        className='translate-y-[2px]'
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
   {
     id: 'client',
     header: ({ column }) => (
@@ -67,7 +38,7 @@ export const columns: ColumnDef<User>[] = [
       const fullName = `${firstname} ${lastname}`.toLowerCase()
       return fullName.includes((filterValue as string).toLowerCase())
     },
-    meta: { className: 'w-50' },
+    meta: { className: 'pl-10 w-60' },
   },
   {
     accessorKey: 'serviceNeeded',
@@ -94,6 +65,11 @@ export const columns: ColumnDef<User>[] = [
       const requested = row.getValue('requestedAt') as Date;
       return <div className='w-fit text-nowrap'>{requested.toLocaleDateString()}</div>;
     },
+    meta: {
+      className: cn(
+        ''
+      ),
+    }
   },
   {
     accessorKey: 'updatedAt',
@@ -117,20 +93,22 @@ export const columns: ColumnDef<User>[] = [
       const handleStatusChange = async (newStatus: string) => {
         try {
           await updateClientStatus(id, newStatus);
+          toast.success('Successfully updated client status');
         } catch (err) {
           console.error('Failed to update status:', err)
+          toast.error('Failed to update client status...');
         }
       }
 
       return (
         <Select defaultValue={status} onValueChange={handleStatusChange}>
-          <SelectTrigger className={cn('w-[160px]')}>
+          <SelectTrigger className={cn('w-[120px]')}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {statusOptions.map((option) => (
               <SelectItem key={option} value={option}>
-                {option}
+                {STATUS_LABELS[option]}
               </SelectItem>
             ))}
           </SelectContent>

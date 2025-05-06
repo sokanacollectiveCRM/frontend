@@ -2,6 +2,7 @@ import { Search } from '@/common/components/header/Search'
 import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay'
 import { ProfileDropdown } from '@/common/components/user/ProfileDropdown'
 import { useClients } from '@/common/hooks/clients/useClients'
+import { useUser } from '@/common/hooks/user/useUser'
 import { Header } from '@/common/layouts/Header'
 import { Main } from '@/common/layouts/Main'
 import updateClientStatus from '@/common/utils/updateClientStatus'
@@ -12,6 +13,7 @@ import { USER_STATUSES, userListSchema, UserStatus, UserSummary } from './data/s
 
 export default function Pipeline() {
 
+  const { isLoading: userLoading } = useUser(); 
   const { clients, isLoading, getClients } = useClients();
   const [userList, setUserList] = useState<UserSummary[]>([]);
 
@@ -61,7 +63,7 @@ export default function Pipeline() {
           </div>
         </Header>
 
-        <LoadingOverlay isLoading={isLoading}/>
+        <LoadingOverlay isLoading={isLoading || userLoading}/>
 
         <Main>
           <div className='mb-2 flex flex-wrap items-center justify-between space-y-2'>

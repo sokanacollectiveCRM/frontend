@@ -4,9 +4,9 @@ import { ConfirmDialog } from '@/common/components/ui/confirm-dialog'
 import { Input } from '@/common/components/ui/input'
 import { Label } from '@/common/components/ui/label'
 import { toast } from '@/common/hooks/toast/use-toast'
+import { User } from '@/features/clients/data/schema'
 import { TriangleAlert } from 'lucide-react'
 import { useState } from 'react'
-import { User } from '../data/schema'
 
 interface Props {
   open: boolean

@@ -2,8 +2,9 @@ import { Button } from '@/common/components/ui/button'
 import { Input } from '@/common/components/ui/input'
 import { Table } from '@tanstack/react-table'
 import { X } from 'lucide-react'
+import { STATUS_LABELS, USER_STATUSES } from '../data/schema'
 import { DataTableFacetedFilter } from './data-table-faceted-filter'
-import { DataTableViewOptions } from './data-table-view-options'
+import { UsersPrimaryButtons } from './users-primary-buttons'
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>
@@ -32,11 +33,11 @@ export function DataTableToolbar<TData>({
             <DataTableFacetedFilter
               column={table.getColumn('status')}
               title='Status'
-              options={[
-                { label: 'Active', value: 'Active' },
-                { label: 'In Progress', value: 'In Progress' },
-                { label: 'Complete', value: 'Complete' },
-              ]}
+              options={USER_STATUSES.map(status => ({
+                label: STATUS_LABELS[status],
+                value: status,
+              }))
+            }
             />
           )}
         </div>
@@ -51,7 +52,7 @@ export function DataTableToolbar<TData>({
           </Button>
         )}
       </div>
-      <DataTableViewOptions table={table} />
+      <UsersPrimaryButtons />
     </div>
   )
 }

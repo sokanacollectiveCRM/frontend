@@ -31,8 +31,8 @@ export function CommandMenu() {
       <CommandList>
         <ScrollArea type="hover" className="h-72 pr-1">
           <CommandEmpty>No results found.</CommandEmpty>
-          {sidebarSections.map((section: SidebarSection) => (
-            <CommandGroup key={section.label} heading={section.label}>
+          {sidebarSections.map((section: SidebarSection, index) => (
+            <CommandGroup key={`${section.label}-${index}`} heading={section.label}>
               {section.items.map((item: SidebarItem) => (
                 <CommandItem
                   key={item.url}
