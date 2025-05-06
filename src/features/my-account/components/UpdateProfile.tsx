@@ -6,6 +6,7 @@ import { Separator } from "@/common/components/ui/separator";
 import { Textarea } from "@/common/components/ui/textarea";
 import { useUser } from '@/common/hooks/user/useUser';
 import saveUser from '@/common/utils/saveUser';
+import { ChangeEvent } from "react";
 import { useForm } from "react-hook-form";
 import UserAvatar from "../../../common/components/user/UserAvatar";
 
@@ -52,19 +53,19 @@ export const Profile = () => {
         <Card>
           <CardContent>
             <UserAvatar 
-              profile_picture={user.profile_picture}
-              fullName={`${user.firstname || ''} ${user.lastname || ''}`}
+              profile_picture={user?.profile_picture}
+              fullName={`${user?.firstname || ''} ${user?.lastname || ''}`}
               className={'h-35 w-35'}
             />
           </CardContent>
           <CardHeader>
-            <CardTitle>{`${user.firstname || ''} ${user.lastname || ''}`}</CardTitle>
-            <CardDescription>{user.email || ''}</CardDescription>
+            <CardTitle>{`${user?.firstname || ''} ${user?.lastname || ''}`}</CardTitle>
+            <CardDescription>{user?.email || ''}</CardDescription>
           </CardHeader>
         </Card>
         <Separator />
 
-        <Form {...profileForm} className="flex-1">
+        <Form {...profileForm}>
           <form onSubmit={profileForm.handleSubmit(submitProfileForm)} className="flex flex-col flex-1 py-5 space-y-4">
             <FormField 
               control={profileForm.control}
@@ -95,7 +96,7 @@ export const Profile = () => {
                 <FormItem>
                   <FormLabel className="pb-1">Bio</FormLabel>
                   <FormControl>
-                    <Textarea placeholder={`Current: ${user.bio || ''}`} {...field} />
+                    <Textarea placeholder={`Current: ${user?.bio || ''}`} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

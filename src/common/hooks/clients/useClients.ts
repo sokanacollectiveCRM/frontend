@@ -1,4 +1,4 @@
-import { User } from '@/common/types/auth';
+import { User } from '@/common/types/user';
 import { useState } from 'react';
 
 export function useClients() {

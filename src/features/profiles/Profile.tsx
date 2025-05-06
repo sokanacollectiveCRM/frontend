@@ -1,7 +1,7 @@
-import { useLocation } from "react-router-dom";
 import { Card } from "@/common/components/ui/card";
-import { Edit2, Trash2, PlusCircle, Check, X, Calendar, Clock, Baby, Heart, Award, AlertCircle, Book } from "lucide-react"; 
+import { AlertCircle, Award, Baby, Book, Calendar, Check, Clock, Edit2, Heart, PlusCircle, Trash2, X } from "lucide-react";
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 
 // FIX TYPESCRIPT ERRORS
 // CHANGE THE USE STATE SPAM WHEN REAL DATA IS USED-- Use objects
@@ -18,7 +18,7 @@ export default function Profile() {
     const [showAddNote, setShowAddNote] = useState(false);
 
     
-    const [editingNoteId, setEditingNoteId] = useState(null);
+    const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
     const [editText, setEditText] = useState("");
     const [editCategory, setEditCategory] = useState("");
 
@@ -57,7 +57,7 @@ export default function Profile() {
       setNotes(notes.filter(note => note.id !== id));
     };
   
-    const startEdit = (note) => {
+    const startEdit = (note: { id: number, text: string, category: string} ) => {
       setEditingNoteId(note.id);
       setEditText(note.text);
       setEditCategory(note.category);
@@ -76,7 +76,7 @@ export default function Profile() {
       setEditingNoteId(null);
     };
 
-    const getCategoryColor = (category) => {
+    const getCategoryColor = (category: string) => {
       const colors = {
         general: "bg-gray-100 text-gray-800",
         support: "bg-blue-100 text-blue-800",
@@ -85,10 +85,10 @@ export default function Profile() {
         birth: "bg-purple-100 text-purple-800",
         postpartum: "bg-pink-100 text-pink-800"
       };
-      return colors[category] || colors.general;
+      return colors[category as keyof typeof colors] || colors.general;
     };
 
-    const getCategoryIcon = (category) => {
+    const getCategoryIcon = (category: string) => {
       switch(category) {
         case "support": return <Heart size={12} className="mr-1" />;
         case "nutrition": return <Award size={12} className="mr-1" />;

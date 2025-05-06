@@ -1,15 +1,12 @@
-
-import PropTypes from 'prop-types';
-
-// import { StyledButton } from './styles';
 import { Button } from '@/common/components/ui/button';
+import { ReactNode } from 'react';
 
-SubmitButton.propTypes = {
-  children: PropTypes.node.isRequired,
-  onClick: PropTypes.func.isRequired,
-};
+type SubmitButtonProps = {
+  children: ReactNode,
+  onClick: () => void,
+}
 
-export default function SubmitButton({ children, onClick }) {
+export default function SubmitButton({ children, onClick }: SubmitButtonProps) {
   return (
     <Button type='submit' onClick={onClick}>
       {children}

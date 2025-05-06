@@ -81,7 +81,7 @@ export const Account = () => {
       </CardHeader>
       <CardContent className="flex flex-col flex-1">
         <Separator />
-        <Form {...accountForm} classname="flex-1">
+        <Form {...accountForm}>
           <form onSubmit={accountForm.handleSubmit(submitAccountForm)} className="flex flex-col flex-1 py-5 space-y-4">
             <TwoInputs>
               <FormField

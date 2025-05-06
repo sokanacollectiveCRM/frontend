@@ -5,7 +5,6 @@ import updateClientStatus from '@/common/utils/updateClientStatus'
 import { cn } from '@/lib/utils'
 import { ColumnDef } from '@tanstack/react-table'
 import { Link } from 'react-router-dom'
-import { callTypes } from '../data/data'
 import { User, userStatusSchema } from '../data/schema'
 import { DataTableColumnHeader } from './data-table-column-header'
 import { DataTableRowActions } from './data-table-row-actions'
@@ -114,7 +113,6 @@ export const columns: ColumnDef<User>[] = [
     ),
     cell: ({ row }) => {
       const { id, status } = row.original
-      const badgeColor = callTypes.get(status)
 
       const handleStatusChange = async (newStatus: string) => {
         try {
@@ -126,7 +124,7 @@ export const columns: ColumnDef<User>[] = [
 
       return (
         <Select defaultValue={status} onValueChange={handleStatusChange}>
-          <SelectTrigger className={cn('w-[160px]', badgeColor)}>
+          <SelectTrigger className={cn('w-[160px]')}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
