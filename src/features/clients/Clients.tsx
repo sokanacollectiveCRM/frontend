@@ -5,9 +5,9 @@ import { useClients } from '@/common/hooks/clients/useClients'
 import { useUser } from '@/common/hooks/user/useUser'
 import { Header } from '@/common/layouts/Header'
 import { Main } from '@/common/layouts/Main'
+import UsersProvider from '../../common/contexts/UsersContext'
 import ClientsBoard from './components/ClientsBoard'
 import { UsersDialogs } from './components/dialog/UsersDialogs'
-import UsersProvider from './context/users-context'
 
 export default function Users() {
   
