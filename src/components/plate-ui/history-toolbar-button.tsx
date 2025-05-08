@@ -1,9 +1,9 @@
-"'use client'";
+'use client';
 
-import { useEditorRef, useEditorSelector, withRef } from "'@udecode/plate/react'";
-import { Redo2Icon, Undo2Icon } from "'lucide-react'";
+import { useEditorRef, useEditorSelector, withRef } from '@udecode/plate/react';
+import { Redo2Icon, Undo2Icon } from 'lucide-react';
 
-import { ToolbarButton } from "'./toolbar'";
+import { ToolbarButton } from './toolbar';
 
 export const RedoToolbarButton = withRef<typeof ToolbarButton>((props, ref) => {
   const editor = useEditorRef();

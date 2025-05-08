@@ -1,73 +1,73 @@
-"'use client'";
+'use client';
 
-import React, { useEffect, useMemo } from "'react'";
+import React, { useEffect, useMemo } from 'react';
 
-import { cn, withProps } from "'@udecode/cn'";
-import { type Value, nanoid, NodeApi } from "'@udecode/plate'";
-import { AIPlugin } from "'@udecode/plate-ai/react'";
+import { cn, withProps } from '@udecode/cn';
+import { type Value, nanoid, NodeApi } from '@udecode/plate';
+import { AIPlugin } from '@udecode/plate-ai/react';
 import {
   BasicMarksPlugin,
   BoldPlugin,
   ItalicPlugin,
   StrikethroughPlugin,
   UnderlinePlugin,
-} from "'@udecode/plate-basic-marks/react'";
-import { getCommentKey, getDraftCommentKey } from "'@udecode/plate-comments'";
-import { CommentsPlugin, useCommentId } from "'@udecode/plate-comments/react'";
-import { DatePlugin } from "'@udecode/plate-date/react'";
-import { EmojiInputPlugin } from "'@udecode/plate-emoji/react'";
-import { LinkPlugin } from "'@udecode/plate-link/react'";
-import { InlineEquationPlugin } from "'@udecode/plate-math/react'";
+} from '@udecode/plate-basic-marks/react';
+import { getCommentKey, getDraftCommentKey } from '@udecode/plate-comments';
+import { CommentsPlugin, useCommentId } from '@udecode/plate-comments/react';
+import { DatePlugin } from '@udecode/plate-date/react';
+import { EmojiInputPlugin } from '@udecode/plate-emoji/react';
+import { LinkPlugin } from '@udecode/plate-link/react';
+import { InlineEquationPlugin } from '@udecode/plate-math/react';
 import {
   MentionInputPlugin,
   MentionPlugin,
-} from "'@udecode/plate-mention/react'";
-import { Plate, useEditorRef, usePluginOption } from "'@udecode/plate/react'";
-import { type CreatePlateEditorOptions, PlateLeaf } from "'@udecode/plate/react'";
-import { ArrowUpIcon } from "'lucide-react'";
+} from '@udecode/plate-mention/react';
+import { Plate, useEditorRef, usePluginOption } from '@udecode/plate/react';
+import { type CreatePlateEditorOptions, PlateLeaf } from '@udecode/plate/react';
+import { ArrowUpIcon } from 'lucide-react';
 
 import {
   type TDiscussion,
   discussionPlugin,
-} from "'@/components/editor/plugins/discussion-plugin'";
-import { useCreateEditor } from "'@/components/editor/use-create-editor'";
+} from '@/components/editor/plugins/discussion-plugin';
+import { useCreateEditor } from '@/components/editor/use-create-editor';
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from "'@/components/plate-ui/avatar'";
+} from '@/components/plate-ui/avatar';
 
-import type { TComment } from "'./comment'";
+import type { TComment } from './comment';
 
-import { AILeaf } from "'./ai-leaf'";
-import { Button } from "'./button'";
-import { DateElement } from "'./date-element'";
-import { Editor, EditorContainer } from "'./editor'";
-import { EmojiInputElement } from "'./emoji-input-element'";
-import { InlineEquationElement } from "'./inline-equation-element'";
-import { LinkElement } from "'./link-element'";
-import { MentionElement } from "'./mention-element'";
-import { MentionInputElement } from "'./mention-input-element'";
+import { AILeaf } from './ai-leaf';
+import { Button } from './button';
+import { DateElement } from './date-element';
+import { Editor, EditorContainer } from './editor';
+import { EmojiInputElement } from './emoji-input-element';
+import { InlineEquationElement } from './inline-equation-element';
+import { LinkElement } from './link-element';
+import { MentionElement } from './mention-element';
+import { MentionInputElement } from './mention-input-element';
 
 export const useCommentEditor = (
-  options: Omit<CreatePlateEditorOptions, "'plugins'"> = {},
+  options: Omit<CreatePlateEditorOptions, 'plugins'> = {},
   deps: any[] = []
 ) => {
   const commentEditor = useCreateEditor(
     {
-      id: "'comment'",
+      id: 'comment',
       components: {
         [AIPlugin.key]: AILeaf,
-        [BoldPlugin.key]: withProps(PlateLeaf, { as: "'strong'" }),
+        [BoldPlugin.key]: withProps(PlateLeaf, { as: 'strong' }),
         [DatePlugin.key]: DateElement,
         [EmojiInputPlugin.key]: EmojiInputElement,
         [InlineEquationPlugin.key]: InlineEquationElement,
-        [ItalicPlugin.key]: withProps(PlateLeaf, { as: "'em'" }),
+        [ItalicPlugin.key]: withProps(PlateLeaf, { as: 'em' }),
         [LinkPlugin.key]: LinkElement,
         [MentionInputPlugin.key]: MentionInputElement,
         [MentionPlugin.key]: MentionElement,
-        [StrikethroughPlugin.key]: withProps(PlateLeaf, { as: "'s'" }),
-        [UnderlinePlugin.key]: withProps(PlateLeaf, { as: "'u'" }),
+        [StrikethroughPlugin.key]: withProps(PlateLeaf, { as: 's' }),
+        [UnderlinePlugin.key]: withProps(PlateLeaf, { as: 'u' }),
         // [SlashInputPlugin.key]: SlashInputElement,
       },
       plugins: [BasicMarksPlugin],
@@ -91,19 +91,19 @@ export function CommentCreateForm({
   discussionId?: string;
   focusOnMount?: boolean;
 }) {
-  const discussions = usePluginOption(discussionPlugin, "'discussions'");
+  const discussions = usePluginOption(discussionPlugin, 'discussions');
 
   const editor = useEditorRef();
   const commentId = useCommentId();
   const discussionId = discussionIdProp ?? commentId;
 
-  const userInfo = usePluginOption(discussionPlugin, "'currentUser'");
+  const userInfo = usePluginOption(discussionPlugin, 'currentUser');
   const [commentValue, setCommentValue] = React.useState<Value | undefined>();
   const commentContent = useMemo(
     () =>
       commentValue
-        ? NodeApi.string({ children: commentValue as any, type: "'p'" })
-        : "''",
+        ? NodeApi.string({ children: commentValue as any, type: 'p' })
+        : '',
     [commentValue]
   );
   const commentEditor = useCommentEditor({}, []);
@@ -133,15 +133,15 @@ export function CommentCreateForm({
               createdAt: new Date(),
               discussionId,
               isEdited: false,
-              userId: editor.getOption(discussionPlugin, "'currentUserId'"),
+              userId: editor.getOption(discussionPlugin, 'currentUserId'),
             },
           ],
           createdAt: new Date(),
           isResolved: false,
-          userId: editor.getOption(discussionPlugin, "'currentUserId'"),
+          userId: editor.getOption(discussionPlugin, 'currentUserId'),
         };
 
-        editor.setOption(discussionPlugin, "'discussions'", [
+        editor.setOption(discussionPlugin, 'discussions', [
           ...discussions,
           newDiscussion,
         ]);
@@ -155,7 +155,7 @@ export function CommentCreateForm({
         createdAt: new Date(),
         discussionId,
         isEdited: false,
-        userId: editor.getOption(discussionPlugin, "'currentUserId'"),
+        userId: editor.getOption(discussionPlugin, 'currentUserId'),
       };
 
       // Add reply to discussion comments
@@ -169,7 +169,7 @@ export function CommentCreateForm({
         .filter((d: any) => d.id !== discussionId)
         .concat(updatedDiscussion);
 
-      editor.setOption(discussionPlugin, "'discussions'", updatedDiscussions);
+      editor.setOption(discussionPlugin, 'discussions', updatedDiscussions);
 
       return;
     }
@@ -182,7 +182,7 @@ export function CommentCreateForm({
 
     const documentContent = commentsNodeEntry
       .map(([node]) => node.text)
-      .join("''");
+      .join('');
 
     const _discussionId = nanoid();
     // Mock creating new discussion
@@ -195,16 +195,16 @@ export function CommentCreateForm({
           createdAt: new Date(),
           discussionId: _discussionId,
           isEdited: false,
-          userId: editor.getOption(discussionPlugin, "'currentUserId'"),
+          userId: editor.getOption(discussionPlugin, 'currentUserId'),
         },
       ],
       createdAt: new Date(),
       documentContent,
       isResolved: false,
-      userId: editor.getOption(discussionPlugin, "'currentUserId'"),
+      userId: editor.getOption(discussionPlugin, 'currentUserId'),
     };
 
-    editor.setOption(discussionPlugin, "'discussions'", [
+    editor.setOption(discussionPlugin, 'discussions', [
       ...discussions,
       newDiscussion,
     ]);
@@ -223,7 +223,7 @@ export function CommentCreateForm({
   }, [commentValue, commentEditor.tf, discussionId, editor, discussions]);
 
   return (
-    <div className={cn("'flex w-full'", className)}>
+    <div className={cn('flex w-full', className)}>
       <div className="mt-1 mr-1 shrink-0">
         {/* Replace to your own backend or refer to potion */}
         <Avatar className="size-5">
@@ -244,7 +244,7 @@ export function CommentCreateForm({
               variant="comment"
               className="min-h-[25px] grow pt-0.5 pr-8"
               onKeyDown={(e) => {
-                if (e.key === "'Enter'" && !e.shiftKey) {
+                if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
                   onAddComment();
                 }

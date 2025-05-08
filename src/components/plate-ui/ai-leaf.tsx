@@ -1,11 +1,11 @@
-"'use client'";
+'use client';
 
-import React from "'react'";
+import React from 'react';
 
-import { cn } from "'@udecode/cn'";
-import { AIChatPlugin } from "'@udecode/plate-ai/react'";
-import { PlateText } from "'@udecode/plate/react'";
-import { cva } from "'class-variance-authority'";
+import { cn } from '@udecode/cn';
+import { AIChatPlugin } from '@udecode/plate-ai/react';
+import { PlateText } from '@udecode/plate/react';
+import { cva } from 'class-variance-authority';
 
 const aiIndicatorVariants = cva(
   "'after:ml-1.5 after:inline-block after:h-3 after:w-3 after:animate-pulse after:rounded-full after:bg-neutral-900 after:align-middle after:content-[]' dark:after:bg-neutral-50"
@@ -25,8 +25,8 @@ export function AILeaf({
     <PlateText
       className={cn(
         className,
-        "'border-b-2 border-b-purple-100 bg-purple-50 text-purple-800'",
-        "'transition-all duration-200 ease-in-out'",
+        'border-b-2 border-b-purple-100 bg-purple-50 text-purple-800',
+        'transition-all duration-200 ease-in-out',
         isLast && aiIndicatorVariants()
       )}
       {...props}

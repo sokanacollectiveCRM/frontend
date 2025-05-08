@@ -1,9 +1,9 @@
-"'use client'";
+'use client';
 
-import * as React from "'react'";
-import { useCallback, useState } from "'react'";
+import * as React from 'react';
+import { useCallback, useState } from 'react';
 
-import * as DropdownMenuPrimitive from "'@radix-ui/react-dropdown-menu'";
+import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
 import {
   cn,
   createPrimitiveElement,
@@ -11,9 +11,9 @@ import {
   withProps,
   withRef,
   withVariants,
-} from "'@udecode/cn'";
-import { cva } from "'class-variance-authority'";
-import { Check, ChevronRight } from "'lucide-react'";
+} from '@udecode/cn';
+import { cva } from 'class-variance-authority';
+import { Check, ChevronRight } from 'lucide-react';
 
 export const DropdownMenu = DropdownMenuPrimitive.Root;
 
@@ -29,8 +29,8 @@ export const DropdownMenuGroup = React.forwardRef<
     <>
       <DropdownMenuSeparator
         className={cn(
-          "'hidden'",
-          "'mb-0 shrink-0 peer-has-[[role=menuitem]]/menu-group:block peer-has-[[role=menuitemcheckbox]]/menu-group:block peer-has-[[role=option]]/menu-group:block'"
+          'hidden',
+          'mb-0 shrink-0 peer-has-[[role=menuitem]]/menu-group:block peer-has-[[role=menuitemcheckbox]]/menu-group:block peer-has-[[role=option]]/menu-group:block'
         )}
       />
 
@@ -38,8 +38,8 @@ export const DropdownMenuGroup = React.forwardRef<
         ref={ref}
         {...props}
         className={cn(
-          "'hidden'",
-          "'peer/menu-group group/menu-group my-1.5 has-[[role=menuitem]]:block has-[[role=menuitemcheckbox]]:block has-[[role=option]]:block'",
+          'hidden',
+          'peer/menu-group group/menu-group my-1.5 has-[[role=menuitem]]:block has-[[role=menuitemcheckbox]]:block has-[[role=option]]:block',
           props.className
         )}
       >
@@ -64,8 +64,8 @@ export const DropdownMenuRadioGroup = React.forwardRef<
     <>
       <DropdownMenuSeparator
         className={cn(
-          "'hidden'",
-          "'mb-0 shrink-0 peer-has-[[role=menuitemradio]]/menu-group:block peer-has-[[role=option]]/menu-group:block'"
+          'hidden',
+          'mb-0 shrink-0 peer-has-[[role=menuitemradio]]/menu-group:block peer-has-[[role=option]]/menu-group:block'
         )}
       />
 
@@ -73,8 +73,8 @@ export const DropdownMenuRadioGroup = React.forwardRef<
         ref={ref}
         {...props}
         className={cn(
-          "'hidden'",
-          "'peer/menu-group group/menu-group my-1.5 has-[[role=menuitemradio]]:block has-[[role=option]]:block'",
+          'hidden',
+          'peer/menu-group group/menu-group my-1.5 has-[[role=menuitemradio]]:block has-[[role=option]]:block',
           props.className
         )}
       >
@@ -95,7 +95,7 @@ export const DropdownMenuSubTrigger = withRef<
     ref={ref}
     className={cn(
       "'mx-1 flex cursor-default items-center gap-2 rounded-sm px-2 py-1 text-sm outline-none select-none focus:bg-neutral-100 data-disabled:pointer-events-none data-disabled:opacity-50 data-[state=open]:bg-neutral-100 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0' dark:focus:bg-neutral-800 dark:data-[state=open]:bg-neutral-800",
-      inset && "'pl-8'",
+      inset && 'pl-8',
       className
     )}
     {...props}
@@ -136,7 +136,7 @@ const menuItemVariants = cva(
   {
     variants: {
       inset: {
-        true: "'pl-8'",
+        true: 'pl-8',
       },
     },
   }
@@ -145,7 +145,7 @@ const menuItemVariants = cva(
 export const DropdownMenuItem = withVariants(
   DropdownMenuPrimitive.Item,
   menuItemVariants,
-  ["'inset'"]
+  ['inset']
 );
 
 export const DropdownMenuCheckboxItem = withRef<
@@ -155,7 +155,7 @@ export const DropdownMenuCheckboxItem = withRef<
     ref={ref}
     className={cn(
       "'relative mx-1 flex items-center gap-2 rounded-sm py-1 pr-2 pl-8 text-sm transition-colors outline-none select-none focus:bg-neutral-100 focus:text-neutral-900 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0' dark:focus:bg-neutral-800 dark:focus:text-neutral-50",
-      "'cursor-pointer'",
+      'cursor-pointer',
       className
     )}
     {...props}
@@ -201,7 +201,7 @@ const dropdownMenuLabelVariants = cva(
   {
     variants: {
       inset: {
-        true: "'pl-8'",
+        true: 'pl-8',
       },
     },
   }
@@ -210,17 +210,17 @@ const dropdownMenuLabelVariants = cva(
 export const DropdownMenuLabel = withVariants(
   DropdownMenuPrimitive.Label,
   dropdownMenuLabelVariants,
-  ["'inset'"]
+  ['inset']
 );
 
 export const DropdownMenuSeparator = withCn(
   DropdownMenuPrimitive.Separator,
-  "'-mx-1 my-1 h-px bg-muted'"
+  '-mx-1 my-1 h-px bg-muted'
 );
 
 export const DropdownMenuShortcut = withCn(
-  createPrimitiveElement("'span'"),
-  "'ml-auto text-xs tracking-widest opacity-60'"
+  createPrimitiveElement('span'),
+  'ml-auto text-xs tracking-widest opacity-60'
 );
 
 export const useOpenState = () => {

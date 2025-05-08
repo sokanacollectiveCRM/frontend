@@ -1,12 +1,12 @@
-"'use client'";
+'use client';
 
-import React, { useState } from "'react'";
+import React, { useState } from 'react';
 
-import type { DropdownMenuProps } from "'@radix-ui/react-dropdown-menu'";
+import type { DropdownMenuProps } from '@radix-ui/react-dropdown-menu';
 
-import { cn } from "'@udecode/cn'";
-import { TablePlugin, useTableMergeState } from "'@udecode/plate-table/react'";
-import { useEditorPlugin, useEditorSelector } from "'@udecode/plate/react'";
+import { cn } from '@udecode/cn';
+import { TablePlugin, useTableMergeState } from '@udecode/plate-table/react';
+import { useEditorPlugin, useEditorSelector } from '@udecode/plate/react';
 import {
   ArrowDown,
   ArrowLeft,
@@ -18,7 +18,7 @@ import {
   Trash2Icon,
   Ungroup,
   XIcon,
-} from "'lucide-react'";
+} from 'lucide-react';
 
 import {
   DropdownMenu,
@@ -30,8 +30,8 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
   useOpenState,
-} from "'./dropdown-menu'";
-import { ToolbarButton } from "'./toolbar'";
+} from './dropdown-menu';
+import { ToolbarButton } from './toolbar';
 
 export function TableDropdownMenu(props: DropdownMenuProps) {
   const tableSelected = useEditorSelector(
@@ -238,7 +238,7 @@ export function TablePicker() {
                 key={`(${rowIndex},${columIndex})`}
                 className={cn(
                   "'col-span-1 size-3 border border-neutral-200 border-solid bg-secondary' dark:border-neutral-800",
-                  !!value && "'border-current'"
+                  !!value && 'border-current'
                 )}
                 onMouseMove={() => {
                   onCellMove(rowIndex, columIndex);

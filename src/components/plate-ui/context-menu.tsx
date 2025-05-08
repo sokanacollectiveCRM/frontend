@@ -1,10 +1,10 @@
-"'use client'";
+'use client';
 
-import * as React from "'react'";
+import * as React from 'react';
 
-import * as ContextMenuPrimitive from "'@radix-ui/react-context-menu'";
-import { cn } from "'@udecode/cn'";
-import { Check, ChevronRight, Circle } from "'lucide-react'";
+import * as ContextMenuPrimitive from '@radix-ui/react-context-menu';
+import { cn } from '@udecode/cn';
+import { Check, ChevronRight, Circle } from 'lucide-react';
 
 const ContextMenu = ContextMenuPrimitive.Root;
 
@@ -20,8 +20,8 @@ const ContextMenuGroup = React.forwardRef<
     <>
       <ContextMenuSeparator
         className={cn(
-          "'hidden'",
-          "'mb-0 shrink-0 peer-has-[[role=menuitem]]/menu-group:block peer-has-[[role=menuitemcheckbox]]/menu-group:block peer-has-[[role=option]]/menu-group:block'"
+          'hidden',
+          'mb-0 shrink-0 peer-has-[[role=menuitem]]/menu-group:block peer-has-[[role=menuitemcheckbox]]/menu-group:block peer-has-[[role=option]]/menu-group:block'
         )}
       />
 
@@ -29,8 +29,8 @@ const ContextMenuGroup = React.forwardRef<
         ref={ref}
         {...props}
         className={cn(
-          "'hidden'",
-          "'peer/menu-group group/menu-group my-1.5 has-[[role=menuitem]]:block has-[[role=menuitemcheckbox]]:block has-[[role=option]]:block'",
+          'hidden',
+          'peer/menu-group group/menu-group my-1.5 has-[[role=menuitem]]:block has-[[role=menuitemcheckbox]]:block has-[[role=option]]:block',
           props.className
         )}
       >
@@ -57,7 +57,7 @@ const ContextMenuSubTrigger = React.forwardRef<
     ref={ref}
     className={cn(
       "'mx-1 flex h-[28px] cursor-default items-center rounded-sm px-2 text-sm outline-hidden select-none focus:bg-neutral-100 focus:text-neutral-900 data-[state=open]:bg-neutral-100 data-[state=open]:text-accent-foreground' dark:focus:bg-neutral-800 dark:focus:text-neutral-50 dark:data-[state=open]:bg-neutral-800",
-      inset && "'pl-8'",
+      inset && 'pl-8',
       className
     )}
     {...props}
@@ -110,7 +110,7 @@ const ContextMenuItem = React.forwardRef<
     ref={ref}
     className={cn(
       "'relative mx-1 flex h-[28px] cursor-default items-center rounded-sm px-2 text-sm outline-hidden select-none focus:bg-neutral-100 focus:text-neutral-900 data-disabled:pointer-events-none data-disabled:opacity-50' dark:focus:bg-neutral-800 dark:focus:text-neutral-50",
-      inset && "'pl-8'",
+      inset && 'pl-8',
       className
     )}
     {...props}
@@ -173,8 +173,8 @@ const ContextMenuLabel = React.forwardRef<
   <ContextMenuPrimitive.Label
     ref={ref}
     className={cn(
-      "'px-2 py-1.5 text-sm font-semibold text-foreground'",
-      inset && "'pl-8'",
+      'px-2 py-1.5 text-sm font-semibold text-foreground',
+      inset && 'pl-8',
       className
     )}
     {...props}
@@ -188,7 +188,7 @@ const ContextMenuSeparator = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ContextMenuPrimitive.Separator
     ref={ref}
-    className={cn("'-mx-1 my-1 h-px bg-border'", className)}
+    className={cn('-mx-1 my-1 h-px bg-border', className)}
     {...props}
   />
 ));
@@ -201,14 +201,14 @@ const ContextMenuShortcut = ({
   return (
     <span
       className={cn(
-        "'ml-auto text-xs tracking-widest text-muted-foreground'",
+        'ml-auto text-xs tracking-widest text-muted-foreground',
         className
       )}
       {...props}
     />
   );
 };
-ContextMenuShortcut.displayName = "'ContextMenuShortcut'";
+ContextMenuShortcut.displayName = 'ContextMenuShortcut';
 
 export {
   ContextMenu,

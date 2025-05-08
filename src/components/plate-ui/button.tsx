@@ -1,27 +1,27 @@
-import * as React from "'react'";
+import * as React from 'react';
 
-import { Slot } from "'@radix-ui/react-slot'";
-import { cn, withRef } from "'@udecode/cn'";
-import { type VariantProps, cva } from "'class-variance-authority'";
+import { Slot } from '@radix-ui/react-slot';
+import { cn, withRef } from '@udecode/cn';
+import { type VariantProps, cva } from 'class-variance-authority';
 
 export const buttonVariants = cva(
   "'inline-flex cursor-pointer items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap ring-offset-white transition-colors focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0' dark:ring-offset-neutral-950 dark:focus-visible:ring-neutral-300",
   {
     defaultVariants: {
-      size: "'sm'",
-      variant: "'default'",
+      size: 'sm',
+      variant: 'default',
     },
     variants: {
       isMenu: {
-        true: "'w-full cursor-pointer justify-start'",
+        true: 'w-full cursor-pointer justify-start',
       },
       size: {
-        icon: "'size-[28px] rounded-md px-1.5'",
-        lg: "'h-9 rounded-md px-4'",
-        md: "'h-8 px-3 text-sm'",
-        none: "''",
-        sm: "'h-[28px] rounded-md px-2.5'",
-        xs: "'h-8 rounded-md px-3 text-xs'",
+        icon: 'size-[28px] rounded-md px-1.5',
+        lg: 'h-9 rounded-md px-4',
+        md: 'h-8 px-3 text-sm',
+        none: '',
+        sm: 'h-[28px] rounded-md px-2.5',
+        xs: 'h-8 rounded-md px-3 text-xs',
       },
       variant: {
         default: "'bg-primary text-neutral-50 hover:bg-neutral-900/90' dark:text-neutral-900 dark:hover:bg-neutral-50/90'",
@@ -29,7 +29,7 @@ export const buttonVariants = cva(
           "'bg-destructive text-neutral-50 hover:bg-red-500/90' dark:text-neutral-50 dark:hover:bg-red-900/90'",
         ghost: "'hover:bg-neutral-100 hover:text-accent-foreground' dark:'hover:bg-neutral-800",
         inlineLink: "'text-base text-neutral-900 underline underline-offset-4' dark:text-neutral-50",
-        link: "'text-primary underline-offset-4 hover:underline'",
+        link: 'text-primary underline-offset-4 hover:underline',
         outline:
           "'border border-neutral-200 bg-white hover:bg-neutral-100 hover:text-accent-foreground' dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-800",
         secondary:
@@ -40,12 +40,12 @@ export const buttonVariants = cva(
 );
 
 export const Button = withRef<
-  "'button'",
+  'button',
   {
     asChild?: boolean;
   } & VariantProps<typeof buttonVariants>
 >(({ asChild = false, className, isMenu, size, variant, ...props }, ref) => {
-  const Comp = asChild ? Slot : "'button'";
+  const Comp = asChild ? Slot : 'button';
 
   return (
     <Comp

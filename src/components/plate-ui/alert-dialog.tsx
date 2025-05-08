@@ -1,11 +1,11 @@
-"'use client'";
+'use client';
 
-import * as React from "'react'";
+import * as React from 'react';
 
-import * as AlertDialogPrimitive from "'@radix-ui/react-alert-dialog'";
-import { cn } from "'@udecode/cn'";
+import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog';
+import { cn } from '@udecode/cn';
 
-import { buttonVariants } from "'./button'";
+import { buttonVariants } from './button';
 
 const AlertDialog = AlertDialogPrimitive.Root;
 
@@ -19,7 +19,7 @@ const AlertDialogOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <AlertDialogPrimitive.Overlay
     className={cn(
-      "'fixed inset-0 z-50 bg-black/80 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0'",
+      'fixed inset-0 z-50 bg-black/80 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0',
       className
     )}
     {...props}
@@ -52,13 +52,13 @@ const AlertDialogHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "'flex flex-col space-y-2 text-center sm:text-left'",
+      'flex flex-col space-y-2 text-center sm:text-left',
       className
     )}
     {...props}
   />
 );
-AlertDialogHeader.displayName = "'AlertDialogHeader'";
+AlertDialogHeader.displayName = 'AlertDialogHeader';
 
 const AlertDialogFooter = ({
   className,
@@ -66,13 +66,13 @@ const AlertDialogFooter = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "'flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2'",
+      'flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2',
       className
     )}
     {...props}
   />
 );
-AlertDialogFooter.displayName = "'AlertDialogFooter'";
+AlertDialogFooter.displayName = 'AlertDialogFooter';
 
 const AlertDialogTitle = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Title>,
@@ -80,7 +80,7 @@ const AlertDialogTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <AlertDialogPrimitive.Title
     ref={ref}
-    className={cn("'text-lg font-semibold'", className)}
+    className={cn('text-lg font-semibold', className)}
     {...props}
   />
 ));
@@ -92,7 +92,7 @@ const AlertDialogDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <AlertDialogPrimitive.Description
     ref={ref}
-    className={cn("'text-sm text-muted-foreground'", className)}
+    className={cn('text-sm text-muted-foreground', className)}
     {...props}
   />
 ));
@@ -105,7 +105,7 @@ const AlertDialogAction = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <AlertDialogPrimitive.Action
     ref={ref}
-    className={cn(buttonVariants({ size: "'md'" }), className)}
+    className={cn(buttonVariants({ size: 'md' }), className)}
     {...props}
   />
 ));
@@ -118,8 +118,8 @@ const AlertDialogCancel = React.forwardRef<
   <AlertDialogPrimitive.Cancel
     ref={ref}
     className={cn(
-      buttonVariants({ size: "'md'", variant: "'outline'" }),
-      "'mt-2 sm:mt-0'",
+      buttonVariants({ size: 'md', variant: 'outline' }),
+      'mt-2 sm:mt-0',
       className
     )}
     {...props}

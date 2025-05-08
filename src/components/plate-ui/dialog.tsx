@@ -1,10 +1,10 @@
-"'use client'";
+'use client';
 
-import * as React from "'react'";
+import * as React from 'react';
 
-import * as DialogPrimitive from "'@radix-ui/react-dialog'";
-import { cn, createPrimitiveElement, withCn, withRef } from "'@udecode/cn'";
-import { X } from "'lucide-react'";
+import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { cn, createPrimitiveElement, withCn, withRef } from '@udecode/cn';
+import { X } from 'lucide-react';
 
 export const Dialog = DialogPrimitive.Root;
 
@@ -16,7 +16,7 @@ export const DialogClose = DialogPrimitive.Close;
 
 export const DialogOverlay = withCn(
   DialogPrimitive.Overlay,
-  "'fixed inset-0 z-50 bg-black/80 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0'"
+  'fixed inset-0 z-50 bg-black/80 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0'
 );
 
 export const DialogContent = withRef<typeof DialogPrimitive.Content>(
@@ -42,21 +42,21 @@ export const DialogContent = withRef<typeof DialogPrimitive.Content>(
 );
 
 export const DialogHeader = withCn(
-  createPrimitiveElement("'div'"),
-  "'flex flex-col space-y-1.5 text-center sm:text-left'"
+  createPrimitiveElement('div'),
+  'flex flex-col space-y-1.5 text-center sm:text-left'
 );
 
 export const DialogFooter = withCn(
-  createPrimitiveElement("'div'"),
-  "'flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2'"
+  createPrimitiveElement('div'),
+  'flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2'
 );
 
 export const DialogTitle = withCn(
   DialogPrimitive.Title,
-  "'text-lg leading-none font-semibold tracking-tight'"
+  'text-lg leading-none font-semibold tracking-tight'
 );
 
 export const DialogDescription = withCn(
   DialogPrimitive.Description,
-  "'text-sm text-muted-foreground'"
+  'text-sm text-muted-foreground'
 );

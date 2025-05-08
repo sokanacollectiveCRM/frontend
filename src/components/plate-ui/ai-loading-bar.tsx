@@ -1,23 +1,23 @@
-"'use client'";
+'use client';
 
-import { cn } from "'@udecode/cn'";
-import { AIChatPlugin } from "'@udecode/plate-ai/react'";
-import { useEditorPlugin, usePluginOption } from "'@udecode/plate/react'";
-import { Pause } from "'lucide-react'";
+import { cn } from '@udecode/cn';
+import { AIChatPlugin } from '@udecode/plate-ai/react';
+import { useEditorPlugin, usePluginOption } from '@udecode/plate/react';
+import { Pause } from 'lucide-react';
 
-import { Button } from "'./button'";
+import { Button } from './button';
 
 export const AILoadingBar = () => {
-  const chat = usePluginOption(AIChatPlugin, "'chat'");
-  const mode = usePluginOption(AIChatPlugin, "'mode'");
+  const chat = usePluginOption(AIChatPlugin, 'chat');
+  const mode = usePluginOption(AIChatPlugin, 'mode');
 
   const { status } = chat;
 
   const { api } = useEditorPlugin(AIChatPlugin);
 
-  const isLoading = status === "'streaming'" || status === "'submitted'";
+  const isLoading = status === 'streaming' || status === 'submitted';
 
-  const visible = isLoading && mode === "'insert'";
+  const visible = isLoading && mode === 'insert';
 
   if (!visible) return null;
 
@@ -28,7 +28,7 @@ export const AILoadingBar = () => {
       )}
     >
       <span className="h-4 w-4 animate-spin rounded-full border-2 border-neutral-500 border-t-transparent dark:border-neutral-400" />
-      <span>{status === "'submitted'" ? "'Thinking...'" : "'Writing...'"}</span>
+      <span>{status === 'submitted' ? 'Thinking...' : 'Writing...'}</span>
       <Button
         size="sm"
         variant="ghost"

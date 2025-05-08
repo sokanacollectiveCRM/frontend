@@ -1,10 +1,10 @@
-"'use client'";
+'use client';
 
-import { cn, withRef } from "'@udecode/cn'";
-import { PlateElement, useReadOnly } from "'@udecode/plate/react'";
+import { cn, withRef } from '@udecode/cn';
+import { PlateElement, useReadOnly } from '@udecode/plate/react';
 
-import { Calendar } from "'./calendar'";
-import { Popover, PopoverContent, PopoverTrigger } from "'./popover'";
+import { Calendar } from './calendar';
+import { Popover, PopoverContent, PopoverTrigger } from './popover';
 
 export const DateElement = withRef<typeof PlateElement>(
   ({ children, className, ...props }, ref) => {
@@ -36,14 +36,14 @@ export const DateElement = withRef<typeof PlateElement>(
               new Date(today.setDate(today.getDate() + 2)).toDateString() ===
               elementDate.toDateString();
 
-            if (isToday) return "'Today'";
-            if (isYesterday) return "'Yesterday'";
-            if (isTomorrow) return "'Tomorrow'";
+            if (isToday) return 'Today';
+            if (isYesterday) return 'Yesterday';
+            if (isTomorrow) return 'Tomorrow';
 
             return elementDate.toLocaleDateString(undefined, {
-              day: "'numeric'",
-              month: "'long'",
-              year: "'numeric'",
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
             });
           })()
         ) : (
@@ -60,7 +60,7 @@ export const DateElement = withRef<typeof PlateElement>(
       <PlateElement
         {...props}
         ref={ref}
-        className={cn(className, "'inline-block'")}
+        className={cn(className, 'inline-block')}
         attributes={{
           ...props.attributes,
           contentEditable: false,

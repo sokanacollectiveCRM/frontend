@@ -1,45 +1,45 @@
-"'use client'";
+'use client';
 
-import * as React from "'react'";
+import * as React from 'react';
 
-import type { DialogProps } from "'@radix-ui/react-dialog'";
+import type { DialogProps } from '@radix-ui/react-dialog';
 
-import { Command as CommandPrimitive } from "'@udecode/cmdk'";
+import { Command as CommandPrimitive } from '@udecode/cmdk';
 import {
   cn,
   createPrimitiveElement,
   withCn,
   withRef,
   withVariants,
-} from "'@udecode/cn'";
-import { cva } from "'class-variance-authority'";
-import { Search } from "'lucide-react'";
+} from '@udecode/cn';
+import { cva } from 'class-variance-authority';
+import { Search } from 'lucide-react';
 
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogTitle,
-} from "'./dialog'";
-import { inputVariants } from "'./input'";
+} from './dialog';
+import { inputVariants } from './input';
 
 const commandVariants = cva(
   "'flex size-full flex-col rounded-md bg-white text-neutral-950 focus-visible:outline-hidden' dark:bg-neutral-950 dark:text-neutral-50",
   {
     defaultVariants: {
-      variant: "'default'",
+      variant: 'default',
     },
     variants: {
       variant: {
-        combobox: "'overflow-visible bg-transparent has-data-readonly:w-fit'",
-        default: "'overflow-hidden'",
+        combobox: 'overflow-visible bg-transparent has-data-readonly:w-fit',
+        default: 'overflow-hidden',
       },
     },
   }
 );
 
 export const Command = withVariants(CommandPrimitive, commandVariants, [
-  "'variant'",
+  'variant',
 ]);
 
 export function CommandDialog({ children, ...props }: DialogProps) {
@@ -77,17 +77,17 @@ export const CommandInput = withRef<typeof CommandPrimitive.Input>(
 export const InputCommand = withVariants(
   CommandPrimitive.Input,
   inputVariants,
-  ["'variant'"]
+  ['variant']
 );
 
 export const CommandList = withCn(
   CommandPrimitive.List,
-  "'max-h-[500px] overflow-x-hidden overflow-y-auto'"
+  'max-h-[500px] overflow-x-hidden overflow-y-auto'
 );
 
 export const CommandEmpty = withCn(
   CommandPrimitive.Empty,
-  "'py-6 text-center text-sm'"
+  'py-6 text-center text-sm'
 );
 
 export const CommandGroup = withCn(
@@ -97,7 +97,7 @@ export const CommandGroup = withCn(
 
 export const CommandSeparator = withCn(
   CommandPrimitive.Separator,
-  "'-mx-1 h-px bg-border'"
+  '-mx-1 h-px bg-border'
 );
 
 export const CommandItem = withCn(
@@ -106,6 +106,6 @@ export const CommandItem = withCn(
 );
 
 export const CommandShortcut = withCn(
-  createPrimitiveElement("'span'"),
-  "'ml-auto text-xs tracking-widest text-muted-foreground'"
+  createPrimitiveElement('span'),
+  'ml-auto text-xs tracking-widest text-muted-foreground'
 );

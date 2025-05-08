@@ -1,15 +1,15 @@
-"'use client'";
+'use client';
 
-import type { UseEmojiPickerType } from "'@udecode/plate-emoji/react'";
+import type { UseEmojiPickerType } from '@udecode/plate-emoji/react';
 
-import { cn } from "'@udecode/cn'";
+import { cn } from '@udecode/cn';
 
-import { Button } from "'./button'";
-import { emojiSearchIcons } from "'./emoji-icons'";
+import { Button } from './button';
+import { emojiSearchIcons } from './emoji-icons';
 
 export type EmojiPickerSearchAndClearProps = Pick<
   UseEmojiPickerType,
-  "'clearSearch'" | "'i18n'" | "'searchValue'"
+  'clearSearch' | 'i18n' | 'searchValue'
 >;
 
 export function EmojiPickerSearchAndClear({
@@ -21,7 +21,7 @@ export function EmojiPickerSearchAndClear({
     <div className="flex items-center text-neutral-950 dark:text-neutral-50">
       <div
         className={cn(
-          "'absolute top-1/2 left-2.5 z-10 flex size-5 -translate-y-1/2 items-center justify-center text-foreground'"
+          'absolute top-1/2 left-2.5 z-10 flex size-5 -translate-y-1/2 items-center justify-center text-foreground'
         )}
       >
         {emojiSearchIcons.loupe}

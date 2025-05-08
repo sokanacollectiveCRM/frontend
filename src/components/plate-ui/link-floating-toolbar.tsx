@@ -1,14 +1,14 @@
-"'use client'";
+'use client';
 
-import React from "'react'";
+import React from 'react';
 
-import { cn } from "'@udecode/cn'";
+import { cn } from '@udecode/cn';
 import {
   type UseVirtualFloatingOptions,
   flip,
   offset,
-} from "'@udecode/plate-floating'";
-import { type TLinkElement, getLinkAttributes } from "'@udecode/plate-link'";
+} from '@udecode/plate-floating';
+import { type TLinkElement, getLinkAttributes } from '@udecode/plate-link';
 import {
   type LinkFloatingToolbarState,
   FloatingLinkUrlInput,
@@ -17,39 +17,39 @@ import {
   useFloatingLinkEditState,
   useFloatingLinkInsert,
   useFloatingLinkInsertState,
-} from "'@udecode/plate-link/react'";
+} from '@udecode/plate-link/react';
 import {
   useEditorRef,
   useEditorSelection,
   useFormInputProps,
   usePluginOption,
-} from "'@udecode/plate/react'";
-import { ExternalLink, Link, Text, Unlink } from "'lucide-react'";
+} from '@udecode/plate/react';
+import { ExternalLink, Link, Text, Unlink } from 'lucide-react';
 
-import { buttonVariants } from "'./button'";
-import { inputVariants } from "'./input'";
-import { popoverVariants } from "'./popover'";
-import { Separator } from "'./separator'";
+import { buttonVariants } from './button';
+import { inputVariants } from './input';
+import { popoverVariants } from './popover';
+import { Separator } from './separator';
 
 export interface LinkFloatingToolbarProps {
   state?: LinkFloatingToolbarState;
 }
 
 export function LinkFloatingToolbar({ state }: LinkFloatingToolbarProps) {
-  const activeCommentId = usePluginOption({ key: "'comment'" }, "'activeId'");
-  const activeSuggestionId = usePluginOption({ key: "'suggestion'" }, "'activeId'");
+  const activeCommentId = usePluginOption({ key: 'comment' }, 'activeId');
+  const activeSuggestionId = usePluginOption({ key: 'suggestion' }, 'activeId');
 
   const floatingOptions: UseVirtualFloatingOptions = React.useMemo(() => {
     return {
       middleware: [
         offset(8),
         flip({
-          fallbackPlacements: ["'bottom-end'", "'top-start'", "'top-end'"],
+          fallbackPlacements: ['bottom-end', 'top-start', 'top-end'],
           padding: 12,
         }),
       ],
       placement:
-        activeSuggestionId || activeCommentId ? "'top-start'" : "'bottom-start'",
+        activeSuggestionId || activeCommentId ? 'top-start' : 'bottom-start',
     };
   }, [activeCommentId, activeSuggestionId]);
 
@@ -94,7 +94,7 @@ export function LinkFloatingToolbar({ state }: LinkFloatingToolbarProps) {
         </div>
 
         <FloatingLinkUrlInput
-          className={inputVariants({ h: "'sm'", variant: "'ghost'" })}
+          className={inputVariants({ h: 'sm', variant: 'ghost' })}
           placeholder="Paste link"
           data-plate-focus
         />
@@ -105,7 +105,7 @@ export function LinkFloatingToolbar({ state }: LinkFloatingToolbarProps) {
           <Text className="size-4" />
         </div>
         <input
-          className={inputVariants({ h: "'sm'", variant: "'ghost'" })}
+          className={inputVariants({ h: 'sm', variant: 'ghost' })}
           placeholder="Text to display"
           data-plate-focus
           {...textInputProps}
@@ -119,7 +119,7 @@ export function LinkFloatingToolbar({ state }: LinkFloatingToolbarProps) {
   ) : (
     <div className="box-content flex items-center">
       <button
-        className={buttonVariants({ size: "'sm'", variant: "'ghost'" })}
+        className={buttonVariants({ size: 'sm', variant: 'ghost' })}
         type="button"
         {...editButtonProps}
       >
@@ -134,8 +134,8 @@ export function LinkFloatingToolbar({ state }: LinkFloatingToolbarProps) {
 
       <button
         className={buttonVariants({
-          size: "'icon'",
-          variant: "'ghost'",
+          size: 'icon',
+          variant: 'ghost',
         })}
         type="button"
         {...unlinkButtonProps}
@@ -149,7 +149,7 @@ export function LinkFloatingToolbar({ state }: LinkFloatingToolbarProps) {
     <>
       <div
         ref={insertRef}
-        className={cn(popoverVariants(), "'w-auto p-1'")}
+        className={cn(popoverVariants(), 'w-auto p-1')}
         {...insertProps}
       >
         {input}
@@ -157,7 +157,7 @@ export function LinkFloatingToolbar({ state }: LinkFloatingToolbarProps) {
 
       <div
         ref={editRef}
-        className={cn(popoverVariants(), "'w-auto p-1'")}
+        className={cn(popoverVariants(), 'w-auto p-1')}
         {...editProps}
       >
         {editContent}
@@ -189,8 +189,8 @@ function LinkOpenButton() {
     <a
       {...attributes}
       className={buttonVariants({
-        size: "'icon'",
-        variant: "'ghost'",
+        size: 'icon',
+        variant: 'ghost',
       })}
       onMouseOver={(e) => {
         e.stopPropagation();

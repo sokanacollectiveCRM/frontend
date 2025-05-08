@@ -1,10 +1,10 @@
 import { Button } from '@/common/components/ui/button';
-import { Editor, EditorContainer } from '@/common/components/ui/editor';
-import {
-  Plate
-} from '@udecode/plate/react';
+import { useCreateEditor } from '@/components/editor/use-create-editor';
+import { Editor, EditorContainer } from '@/components/plate-ui/editor';
+import { Plate } from '@udecode/plate/react';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 import { handleDocxUpload, saveDocx } from './Docx';
-import { useCreateEditor } from './useCreateEditor';
 
 
 export default function PlateEditorDemo() {
@@ -20,11 +20,14 @@ export default function PlateEditorDemo() {
           if (file) handleDocxUpload(file, editor)
         }}
       />
-      <Plate editor={editor}>
-        <EditorContainer className='selection:bg-blue-200 border-solid border-1 '>
-          <Editor placeholder="Type..." />
-        </EditorContainer>
-      </Plate>
+      <DndProvider backend={HTML5Backend}>
+        <Plate editor={editor}>
+          <EditorContainer className='selection:bg-blue-200'>
+            <Editor />
+          </EditorContainer>
+
+        </Plate>
+      </DndProvider>
       <Button onClick={() => saveDocx(editor)}>
         Save
       </Button>

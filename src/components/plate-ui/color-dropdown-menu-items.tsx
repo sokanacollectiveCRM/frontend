@@ -1,20 +1,20 @@
-"'use client'";
+'use client';
 
-import React from "'react'";
+import React from 'react';
 
-import type { DropdownMenuItemProps } from "'@radix-ui/react-dropdown-menu'";
+import type { DropdownMenuItemProps } from '@radix-ui/react-dropdown-menu';
 
-import { cn } from "'@udecode/cn'";
-import { Check } from "'lucide-react'";
+import { cn } from '@udecode/cn';
+import { Check } from 'lucide-react';
 
-import { buttonVariants } from "'./button'";
-import { DropdownMenuItem } from "'./dropdown-menu'";
+import { buttonVariants } from './button';
+import { DropdownMenuItem } from './dropdown-menu';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "'./tooltip'";
+} from './tooltip';
 
 export type TColor = {
   isBrightColor: boolean;
@@ -44,11 +44,11 @@ export function ColorDropdownMenuItem({
       className={cn(
         buttonVariants({
           isMenu: true,
-          size: "'icon'",
-          variant: "'outline'",
+          size: 'icon',
+          variant: 'outline',
         }),
         "'my-1 flex size-6 items-center justify-center rounded-full border border-neutral-200 border-solid border-neutral-100 p-0 transition-all hover:scale-125' dark:border-neutral-800",
-        !isBrightColor && "'border-transparent text-white hover:text-white!'",
+        !isBrightColor && 'border-transparent text-white hover:text-white!',
         className
       )}
       style={{ backgroundColor: value }}
@@ -88,7 +88,7 @@ export function ColorDropdownMenuItems({
   return (
     <div
       className={cn(
-        "'grid grid-cols-[repeat(10,1fr)] place-items-center'",
+        'grid grid-cols-[repeat(10,1fr)] place-items-center',
         className
       )}
       {...props}
