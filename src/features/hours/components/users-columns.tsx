@@ -1,14 +1,15 @@
 import LongText from '@/common/components/long-text'
-import { Badge } from '@/common/components/ui/badge'
+// import { Badge } from '@/common/components/ui/badge'
 import { Checkbox } from '@/common/components/ui/checkbox'
 import { cn } from '@/lib/utils'
 import { ColumnDef } from '@tanstack/react-table'
-import { callTypes } from '../data/data'
-import { User } from '../data/schema'
+// import { callTypes } from '../data/data'
+// import { User } from '../data/schema'
 import { DataTableColumnHeader } from './data-table-column-header'
 import { DataTableRowActions } from './data-table-row-actions'
+import { HoursRows } from '../context/clients-context'
 
-export const columns: ColumnDef<User>[] = [
+export const columns: ColumnDef<HoursRows>[] = [
   {
     id: 'select',
     header: ({ table }) => (

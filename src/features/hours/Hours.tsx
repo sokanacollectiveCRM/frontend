@@ -4,23 +4,13 @@ import { useUser } from "@/common/hooks/useUser"
 import useWorkLog from "@/common/hooks/useWorkLog"
 import { Header } from '@/common/layouts/Header'
 import { Main } from '@/common/layouts/Main'
-import { useEffect, useState } from "react"
 import { columns } from './components/users-columns'
 import { UsersDialogs } from './components/users-dialogs'
 import { UsersPrimaryButtons } from './components/users-primary-buttons'
 import { UsersTable } from './components/users-table'
 import UsersProvider from './context/clients-context'
-import { userListSchema } from './data/schema'
-import { users } from './data/users'
 
 export default function Hours() {
-  // Parse user list
-
-  //  CURRENTLY HAVE BACKEND WORKING FOR GETTING HOURS, useUser() gets the userID and calling useWorkLog() gets the information.
-  // to do now is parsing the returned data type thing of useWorkLog and displaying that information based on if it's finished loading or not 
-  // const [hoursData, setHoursData] = useState<any[]>();
-
-  const userList = userListSchema.parse(users);
   const { user, isLoading: userLoading } = useUser();
   const { hours, isLoading: hoursLoading } = useWorkLog(user?.id);
 
@@ -42,12 +32,6 @@ export default function Hours() {
       // Add any other fields your table might need
   })) || [];
 
-  // Log directly when hours change
-  useEffect(() => {
-    if (hours) {
-      console.log("Transformed hours data:", transformedData);
-    }
-  }, [transformedData]);
 
   if (userLoading || hoursLoading) {
     return (
