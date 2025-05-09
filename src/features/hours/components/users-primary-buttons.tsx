@@ -9,20 +9,19 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/common/components/ui/sheet"
-import { SquarePlus } from 'lucide-react'
-import { useState } from 'react'
+import { Calendar } from "@/common/components/ui/calendar"
+import { workLogSchema } from '@/common/utils/ZodSchemas';
+import ChooseDate from './add-date-dialog'
 
 
 export function UsersPrimaryButtons() {
-  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [startDate, setStartDate] = React.useState<Date | undefined>(new Date());
   const [startTime, setStartTime] = useState<string | undefined>(undefined);
-  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = React.useState<Date | undefined>(new Date());
   const [endTime, setEndTime] = useState<string | undefined>(undefined);
 
-
-  
   // CURRENT STATE: CREATED AND IMPORTED ZODSCHEMA FOR THE 'ADD HOURS' FEATURE, CURRENTLY MODIFYING THE INSIDE OF SHEETCONTENT TO ACTUALLY CONTAIN THE FORMS (THE 4 USESTATES ABOVE)
-  // USE Shadcn's Calendar, maybe Form? idk, so figure that out
+  // HAVE THE CALENDAR PART IMPLEMNETED, IMPLEMENT THE TIME ENTRY FOR EACH DAY
 
   const printUserStuff = () => {
     console.log("ADD HOURS BUTTON CLICKED");
@@ -45,21 +44,26 @@ export function UsersPrimaryButtons() {
         </SheetHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
-            {/* <Label htmlFor="name" className="text-right">
-              Date
-            </Label>
-            <Input id="name" value="Pedro Duarte" className="col-span-3" /> */}
+            <ChooseDate 
+              trigger_text="Select start date"
+              dialog_title="When did you START work?"
+              date={startDate}
+              setDate={setStartDate}
+            />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            {/* <Label htmlFor="username" className="text-right">
-              Username
-            </Label>
-            <Input id="username" value="@peduarte" className="col-span-3" /> */}
+            <ChooseDate 
+              trigger_text="Select end date"
+              dialog_title="When did you END work?"
+              date={endDate}
+              setDate={setEndDate}
+            />
+
           </div>
         </div>
         <SheetFooter>
           <SheetClose asChild>
-            <Button type="submit">Save changes</Button>
+            <Button type="submit" onClick={() => {console.log("start time", startDate); console.log("end time", endDate);}}>Save changes</Button>
           </SheetClose>
         </SheetFooter>
       </SheetContent>

@@ -11,6 +11,22 @@ interface UsersContextType {
   setCurrentRow: React.Dispatch<React.SetStateAction<User | null>>
 }
 
+export type HoursRows = {
+  id: string,
+  client: {
+    firstName: string,
+    lastName: string,
+  },
+  // Doula fields
+  doula: {
+    firstName: string,
+    lastName: string,
+  },
+  // Time fields
+  start_time: string,
+  end_time: string,
+}
+
 const UsersContext = React.createContext<UsersContextType | null>(null)
 
 interface Props {
