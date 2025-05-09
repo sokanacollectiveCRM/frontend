@@ -6,6 +6,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/common/components/ui/sidebar'
+import { Link, useLocation } from 'react-router-dom'
 
 interface SidebarSectionProps {
   label: string
@@ -17,21 +18,27 @@ interface SidebarSectionProps {
 }
 
 export function SidebarSection({ label, items }: SidebarSectionProps) {
+  const location = useLocation();
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel className="font-extrabold text-lg">{label}</SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
-          {items.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild>
-                <a href={item.url}>
+          {items.map((item) => {
+            const isActive = location.pathname === item.url;
+            
+            return (<SidebarMenuItem key={item.title}>
+              <SidebarMenuButton 
+                asChild
+                className={isActive ? 'bg-gray-200/50' : ''}>
+                <Link to={item.url}>
                   <item.icon />
                   <span>{item.title}</span>
-                </a>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-          ))}
+            )})}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>

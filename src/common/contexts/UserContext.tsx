@@ -1,14 +1,12 @@
 import type { UserContextType } from '@/common/types/auth';
+import { User } from '@/common/types/user';
 import React, { createContext, ReactNode, useEffect, useState } from 'react';
-
 export const UserContext = createContext<UserContextType>({
   user: null,
   setUser: () => {},
   isLoading: false,
-  isAuthenticated: false,
   login: async () => false,
   logout: async () => {},
-  loadUser: async () => {},
   checkAuth: async () => false,
   googleAuth: async () => {},
   requestPasswordReset: async () => false,
@@ -20,7 +18,7 @@ interface UserProviderProps {
 };
 
 export function UserProvider({ children }: UserProviderProps): React.ReactElement {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const buildUrl = (endpoint: string): string =>
@@ -39,6 +37,7 @@ export function UserProvider({ children }: UserProviderProps): React.ReactElemen
       });
 
       if (!response.ok) {
+        localStorage.removeItem('authToken');
         throw new Error('Auth check failed');
       }
 

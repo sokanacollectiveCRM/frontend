@@ -1,6 +1,7 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { forwardRef } from 'react'
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
@@ -50,18 +51,18 @@ function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
   )
 }
 
-function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
+const TableRow = forwardRef<
+  HTMLTableRowElement,
+  React.HTMLAttributes<HTMLTableRowElement>
+>(function TableRow({ className, ...props }, ref) {
   return (
     <tr
-      data-slot="table-row"
-      className={cn(
-        "hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors",
-        className
-      )}
+      ref={ref}
+      className={cn('border-b transition-colors hover:bg-muted/50', className)}
       {...props}
     />
-  )
-}
+  );
+});
 
 function TableHead({ className, ...props }: React.ComponentProps<"th">) {
   return (
@@ -103,12 +104,7 @@ function TableCaption({
 }
 
 export {
-  Table,
-  TableHeader,
-  TableBody,
-  TableFooter,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableCaption,
+  Table, TableBody, TableCaption, TableCell, TableFooter,
+  TableHead, TableHeader, TableRow
 }
+

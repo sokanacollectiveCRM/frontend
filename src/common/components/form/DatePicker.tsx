@@ -5,7 +5,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/common/components/ui/
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
-import React from "react";
 import { ControllerRenderProps, FieldValues, Path } from "react-hook-form";
 
 export interface DatePickerProps<TFieldValues extends FieldValues = FieldValues> {
@@ -56,7 +55,7 @@ export function DatePicker<TFieldValues extends FieldValues = FieldValues>({
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {field.value instanceof Date ? format(field.value, dateFormat) : <span>{placeholder}</span>}
+              {format(field.value, dateFormat)}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">

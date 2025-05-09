@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 
-import { Button } from '@/common/components/Button';
+import { Button } from '@/common/components/ui/button';
 
 export const StyledForm = styled.form`
   display: flex;
@@ -39,7 +39,7 @@ export const StyledPage = styled.div`
   align-items: center;
 `;
 
-export const StyledButton = styled(Button.Primary)`
+export const StyledButton = styled(Button)`
   font-size: 1.1rem;
   width: content;
   padding-left: 30px;
