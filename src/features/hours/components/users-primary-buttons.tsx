@@ -1,12 +1,7 @@
 import { Button } from '@/common/components/ui/button'
-import { MailPlus, UserPlus, SquarePlus } from 'lucide-react'
+import { SquarePlus } from 'lucide-react'
 import * as React from 'react'
 import { useState } from 'react'
-import { useUsers } from '../context/clients-context'
-import { useUser } from '@/common/hooks/useUser';
-import useWorkLog from '@/common/hooks/useWorkLog';
-import { Input } from "@/common/components/ui/input"
-import { Label } from "@/common/components/ui/label"
 import {
   Sheet,
   SheetClose,
@@ -17,9 +12,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/common/components/ui/sheet"
-import { Calendar } from "@/common/components/ui/calendar"
-import { workLogSchema } from '@/common/utils/ZodSchemas';
 import ChooseDate from './add-date-dialog'
+import { DateTimePicker } from './time-date-pick'
 
 
 export function UsersPrimaryButtons() {
@@ -50,8 +44,8 @@ export function UsersPrimaryButtons() {
             Please enter your start and end time 
           </SheetDescription>
         </SheetHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
+        <div className="flex flex-col gap-10 justify-center items-center mt-10">
+          <div className="items-center flex items-center justify-center">
             <ChooseDate 
               trigger_text="Select start date"
               dialog_title="When did you START work?"
@@ -59,7 +53,10 @@ export function UsersPrimaryButtons() {
               setDate={setStartDate}
             />
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
+          <div className="items-center flex items-center justify-center">
+            <DateTimePicker />
+          </div>
+          <div className="items-center flex items-center justify-center">
             <ChooseDate 
               trigger_text="Select end date"
               dialog_title="When did you END work?"
