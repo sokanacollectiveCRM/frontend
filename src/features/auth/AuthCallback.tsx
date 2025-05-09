@@ -3,7 +3,8 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 
-import { useUser } from '@/common/hooks/useUser';
+import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
+import { useUser } from '@/common/hooks/user/useUser';
 
 const Container = styled.div`
   display: flex;
@@ -65,7 +66,7 @@ export default function AuthCallback() {
       } catch (error) {
         console.error('Auth callback error:', error);
         navigate('/login', {
-          state: { error: error.message },
+          state: { error: error instanceof Error ? error.message : error},
           replace: true,
         });
       }
@@ -76,7 +77,7 @@ export default function AuthCallback() {
 
   return (
     <Container>
-      <LoadingText>Completing authentication...</LoadingText>
+      <LoadingOverlay isLoading={true}/>
     </Container>
   );
 }

@@ -10,8 +10,7 @@ import {
 import { DotsHorizontalIcon } from '@radix-ui/react-icons'
 import { Row } from '@tanstack/react-table'
 import { Settings2, Trash2 } from 'lucide-react'
-import * as React from 'react'
-import { useUsers } from '../context/clients-context'
+import { useUsers } from '../context/users-context'
 import { User } from '../data/schema'
 
 interface DataTableRowActionsProps {
