@@ -11,6 +11,7 @@ import {
 } from "@/common/components/ui/dialog"
 import * as React from "react"
 import { useState } from "react"
+import { DateTimePicker } from "./time-date-pick"
 
 export default function ChooseDate({ trigger_text, dialog_title, date, setDate }: { trigger_text: string, dialog_title: string, date: Date | undefined, setDate: React.Dispatch<React.SetStateAction<Date | undefined>> }) {
   const [open, setOpen] = useState(false)
@@ -29,14 +30,15 @@ export default function ChooseDate({ trigger_text, dialog_title, date, setDate }
         <DialogHeader>
           <DialogTitle>{dialog_title}</DialogTitle>
         </DialogHeader>
-        <div className="flex justify-center w-full py-10">
+          <DateTimePicker />
+        {/* <div className="flex justify-center w-full py-10">
           <Calendar
             mode="single"
             selected={date}
             onSelect={setDate}
             className="rounded-md border"
           />
-        </div>
+        </div> */}
         <DialogFooter>
           <Button type="button" onClick={handleSave}>Save and exit</Button>
         </DialogFooter>

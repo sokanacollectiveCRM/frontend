@@ -15,7 +15,6 @@ import {
 import ChooseDate from './add-date-dialog'
 import { DateTimePicker } from './time-date-pick'
 
-
 export function UsersPrimaryButtons() {
   const [startDate, setStartDate] = React.useState<Date | undefined>(new Date());
   const [startTime, setStartTime] = useState<string | undefined>(undefined);
@@ -54,7 +53,6 @@ export function UsersPrimaryButtons() {
             />
           </div>
           <div className="items-center flex items-center justify-center">
-            <DateTimePicker />
           </div>
           <div className="items-center flex items-center justify-center">
             <ChooseDate 
@@ -73,7 +71,6 @@ export function UsersPrimaryButtons() {
         </SheetFooter>
       </SheetContent>
     </Sheet>
-
     </div>
   )
 }

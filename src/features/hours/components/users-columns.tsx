@@ -1,4 +1,3 @@
-import LongText from '@/common/components/long-text'
 import { Checkbox } from '@/common/components/ui/checkbox'
 import LongText from '@/common/components/ui/long-text'
 import { cn } from '@/lib/utils'

@@ -65,7 +65,12 @@ export function DateTimePicker() {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0">
+      <PopoverContent 
+        className="w-auto p-0"
+        align="center"
+        sideOffset={4}
+        style={{ zIndex: 9999 }} 
+      >
         <div className="sm:flex">
           <Calendar
             mode="single"
