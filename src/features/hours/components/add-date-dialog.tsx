@@ -26,7 +26,10 @@ export default function ChooseDate({ trigger_text, dialog_title, date, setDate }
       <DialogTrigger asChild>
         <Button variant="outline">{trigger_text}</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent 
+        className="sm:max-w-[425px]"
+        onPointerDownOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>{dialog_title}</DialogTitle>
         </DialogHeader>

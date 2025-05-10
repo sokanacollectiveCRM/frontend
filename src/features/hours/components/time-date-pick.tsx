@@ -48,7 +48,7 @@ export function DateTimePicker() {
   };
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover open={isOpen} onOpenChange={setIsOpen} modal={true}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -66,38 +66,49 @@ export function DateTimePicker() {
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-auto p-0"
+        className="w-auto p-0 flex flex-row"
         align="center"
         sideOffset={4}
-        style={{ zIndex: 9999 }} 
+        style={{ 
+          zIndex: 9999,
+          pointerEvents: "auto" 
+         }} 
+        onPointerDownOutside={(e) => {
+          e.preventDefault()
+        }}
+        onClick={(e) => {
+          e.stopPropagation()
+        }}
       >
-        <div className="sm:flex">
+        <div className="flex flex-row sm:flex">
           <Calendar
             mode="single"
             selected={date}
             onSelect={handleDateSelect}
             initialFocus
           />
-          <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
-            <ScrollArea className="w-64 sm:w-auto">
-              <div className="flex sm:flex-col p-2">
-                {hours.reverse().map((hour) => (
-                  <Button
+          <div className="flex flex-row sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
+            <ScrollArea type="always" className="w-64 h-[300px] sm:w-auto">
+              <div className="h-full overflow-auto">
+                <div className="flex sm:flex-col p-2">
+                  {hours.reverse().map((hour) => (
+                    <Button
                     key={hour}
                     size="icon"
                     variant={
                       date && date.getHours() % 12 === hour % 12
-                        ? "default"
-                        : "ghost"
+                      ? "default"
+                      : "ghost"
                     }
                     className="sm:w-full shrink-0 aspect-square"
                     onClick={() => handleTimeChange("hour", hour.toString())}
-                  >
-                    {hour}
-                  </Button>
-                ))}
+                    >
+                      {hour}
+                    </Button>
+                  ))}
+                </div>
               </div>
-              <ScrollBar orientation="horizontal" className="sm:hidden" />
+              <ScrollBar orientation="vertical" className="sm:hidden" />
             </ScrollArea>
             <ScrollArea className="w-64 sm:w-auto">
               <div className="flex sm:flex-col p-2">

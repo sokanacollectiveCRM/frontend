@@ -26,6 +26,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { userTypes } from '../data/data'
 import { User } from '../data/schema'
+import { HoursRows } from '../context/clients-context'
 
 const formSchema = z
   .object({
