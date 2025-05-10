@@ -8,7 +8,6 @@ import RequestRoutes from "@/features/request/RequestRoutes";
 import { Route, Routes } from 'react-router-dom';
 import DashboardLayout from './common/layouts/DashboardLayout';
 import AdminPayRoute from './features/admin-payment/AdminPayRoute';
-import ContractRoutes from "./features/contracts/ContractsRoutes";
 import Hours from './features/hours/Hours';
 import HoursRoute from './features/hours/HoursRoute';
 import MyAccount from './features/my-account/MyAccount';
@@ -32,7 +31,6 @@ const AppRoutes = () => (
         {AdminPayRoute()}
         {HoursRoute()}
         {ProfileRoutes()}
-        {ContractRoutes()}
         <Route path='/my-account' element={<MyAccount />} />
         <Route path='/hours' element={<Hours />}/>
       </Route>

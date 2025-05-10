@@ -1,5 +1,4 @@
 import useDialogState from '@/common/hooks/ui/use-dialog-state'
-import type { User } from '@/common/types/user'
 import React, { useState } from 'react'
 
 type UsersDialogType = 'invite' | 'add' | 'edit' | 'delete'
@@ -7,8 +6,24 @@ type UsersDialogType = 'invite' | 'add' | 'edit' | 'delete'
 interface UsersContextType {
   open: UsersDialogType | null
   setOpen: (str: UsersDialogType | null) => void
-  currentRow: User | null
-  setCurrentRow: React.Dispatch<React.SetStateAction<User | null>>
+  currentRow: HoursRows | null
+  setCurrentRow: React.Dispatch<React.SetStateAction<HoursRows | null>>
+}
+
+export type HoursRows = {
+  id: string,
+  client: {
+    firstName: string,
+    lastName: string,
+  },
+  // Doula fields
+  doula: {
+    firstName: string,
+    lastName: string,
+  },
+  // Time fields
+  start_time: string,
+  end_time: string,
 }
 
 const UsersContext = React.createContext<UsersContextType | null>(null)
@@ -19,7 +34,7 @@ interface Props {
 
 export default function UsersProvider({ children }: Props) {
   const [open, setOpen] = useDialogState<UsersDialogType>(null)
-  const [currentRow, setCurrentRow] = useState<User | null>(null)
+  const [currentRow, setCurrentRow] = useState<HoursRows | null>(null)
 
   return (
     <UsersContext.Provider value={{ open, setOpen, currentRow, setCurrentRow }}>

@@ -2,11 +2,11 @@ import { Checkbox } from '@/common/components/ui/checkbox'
 import LongText from '@/common/components/ui/long-text'
 import { cn } from '@/lib/utils'
 import { ColumnDef } from '@tanstack/react-table'
-import { User } from '../data/schema'
 import { DataTableColumnHeader } from './data-table-column-header'
 import { DataTableRowActions } from './data-table-row-actions'
+import { HoursRows } from '../context/clients-context'
 
-export const columns: ColumnDef<User>[] = [
+export const columns: ColumnDef<HoursRows>[] = [
   {
     id: 'select',
     header: ({ table }) => (

@@ -13,6 +13,20 @@ const DialogPortal = DialogPrimitive.Portal
 
 const DialogClose = DialogPrimitive.Close
 
+const DialogFooter = ({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) => (
+  <div
+    className={cn(
+      'flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2',
+      className
+    )}
+    {...props}
+  />
+)
+DialogFooter.displayName = 'DialogFooter'
+
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
@@ -96,10 +110,7 @@ export {
   Dialog,
   DialogClose,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogOverlay,
+  DialogDescription, DialogFooter, DialogHeader, DialogOverlay,
   DialogPortal,
   DialogTitle,
   DialogTrigger

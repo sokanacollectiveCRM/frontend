@@ -1,4 +1,4 @@
-import { ContractCreationDialog } from '@/features/contracts/components/ContractCreationDialog'
+import { ContractCreationDialog } from '@/features/clients/components/dialog/ContractCreationDialog'
 import { useUsers } from '../../context/users-context'
 
 export function UsersDialogs() {

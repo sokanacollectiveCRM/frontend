@@ -10,16 +10,13 @@ import {
 import { DotsHorizontalIcon } from '@radix-ui/react-icons'
 import { Row } from '@tanstack/react-table'
 import { Settings2, Trash2 } from 'lucide-react'
-import * as React from 'react'
-import { useUsers } from '../context/clients-context'
-import { User } from '../data/schema'
+import { HoursRows } from '../context/clients-context'
 
 interface DataTableRowActionsProps {
-  row: Row<User>
+  row: Row<HoursRows>
 }
 
 export function DataTableRowActions({ row }: DataTableRowActionsProps) {
-  const { setOpen, setCurrentRow } = useUsers()
   return (
     <>
       <DropdownMenu modal={false}>
@@ -34,10 +31,6 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align='end' className='w-[160px]'>
           <DropdownMenuItem
-            onClick={() => {
-              setCurrentRow(row.original)
-              setOpen('edit')
-            }}
           >
             Edit
             <DropdownMenuShortcut>
@@ -46,10 +39,6 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            onClick={() => {
-              setCurrentRow(row.original)
-              setOpen('delete')
-            }}
             className='!text-red-500'
           >
             Delete

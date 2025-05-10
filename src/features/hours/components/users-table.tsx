@@ -22,19 +22,18 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 import { useState } from 'react'
-import { User } from '../data/schema'
 import { DataTablePagination } from './data-table-pagination'
+import { HoursRows } from '../context/clients-context'
 
 declare module '@tanstack/react-table' {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData extends RowData, TValue> {
     className: string
   }
 }
 
 interface DataTableProps {
-  columns: ColumnDef<User>[]
-  data: User[]
+  columns: ColumnDef<HoursRows>[]
+  data: HoursRows[]
 }
 
 export function UsersTable({ columns, data }: DataTableProps) {
@@ -82,9 +81,9 @@ export function UsersTable({ columns, data }: DataTableProps) {
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                     </TableHead>
                   )
                 })}
