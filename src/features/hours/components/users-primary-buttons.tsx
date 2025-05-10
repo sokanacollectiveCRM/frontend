@@ -13,16 +13,12 @@ import {
   SheetTrigger,
 } from "@/common/components/ui/sheet"
 import ChooseDate from './add-date-dialog'
-import { DateTimePicker } from './time-date-pick'
 
 export function UsersPrimaryButtons() {
   const [startDate, setStartDate] = React.useState<Date | undefined>(new Date());
   const [startTime, setStartTime] = useState<string | undefined>(undefined);
   const [endDate, setEndDate] = React.useState<Date | undefined>(new Date());
   const [endTime, setEndTime] = useState<string | undefined>(undefined);
-
-  // CURRENT STATE: CREATED AND IMPORTED ZODSCHEMA FOR THE 'ADD HOURS' FEATURE, CURRENTLY MODIFYING THE INSIDE OF SHEETCONTENT TO ACTUALLY CONTAIN THE FORMS (THE 4 USESTATES ABOVE)
-  // HAVE THE CALENDAR PART IMPLEMNETED, IMPLEMENT THE TIME ENTRY FOR EACH DAY
 
   const printUserStuff = () => {
     console.log("ADD HOURS BUTTON CLICKED");

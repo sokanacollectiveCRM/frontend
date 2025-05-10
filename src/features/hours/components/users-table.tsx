@@ -26,7 +26,6 @@ import { DataTablePagination } from './data-table-pagination'
 import { HoursRows } from '../context/clients-context'
 
 declare module '@tanstack/react-table' {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData extends RowData, TValue> {
     className: string
   }
