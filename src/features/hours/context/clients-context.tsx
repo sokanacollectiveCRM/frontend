@@ -7,8 +7,8 @@ type UsersDialogType = 'invite' | 'add' | 'edit' | 'delete'
 interface UsersContextType {
   open: UsersDialogType | null
   setOpen: (str: UsersDialogType | null) => void
-  currentRow: User | null
-  setCurrentRow: React.Dispatch<React.SetStateAction<User | null>>
+  currentRow: HoursRows | null
+  setCurrentRow: React.Dispatch<React.SetStateAction<HoursRows | null>>
 }
 
 export type HoursRows = {
@@ -35,7 +35,7 @@ interface Props {
 
 export default function UsersProvider({ children }: Props) {
   const [open, setOpen] = useDialogState<UsersDialogType>(null)
-  const [currentRow, setCurrentRow] = useState<User | null>(null)
+  const [currentRow, setCurrentRow] = useState<HoursRows | null>(null)
 
   return (
     <UsersContext.Provider value={{ open, setOpen, currentRow, setCurrentRow }}>

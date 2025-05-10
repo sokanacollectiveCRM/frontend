@@ -89,7 +89,7 @@ const formSchema = z
 type UserForm = z.infer<typeof formSchema>
 
 interface Props {
-  currentRow?: User
+  currentRow?: HoursRows
   open: boolean
   onOpenChange: (open: boolean) => void
 }
