@@ -35,6 +35,7 @@ export default [
     rules: {
       ...pluginTs.configs.recommended.rules,
       ...pluginTs.configs['recommended-type-checked'].rules,
+      '@typescript-eslint/quotes': 'off',
     },
   },
 
@@ -54,6 +55,7 @@ export default [
         2,
         { extensions: ['.jsx', '.tsx'], allow: 'as-needed', ignoreFilesWithoutCode: true },
       ],
+      'react/jsx-quotes': 'off',
     },
   },
 
@@ -76,7 +78,14 @@ export default [
         'error',
         { allowSameFolder: true, rootDir: 'src' },
       ],
-      'prettier/prettier': 'error',
+      'prettier/prettier': [
+        'error',
+        {
+          singleQuote: true,
+          jsxSingleQuote: true,
+        }
+      ],
+      'quotes': 'off',
     },
   },
 ];

@@ -22,7 +22,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 import { useState } from 'react'
-import { User } from '../data/schema'
+import { ContractTemplate, User } from '../data/schema'
 import { DataTablePagination } from './data-table-pagination'
 import { DataTableToolbar } from './data-table-toolbar'
 import { DroppableTableRow } from './DroppableTableRow'
@@ -37,9 +37,10 @@ declare module '@tanstack/react-table' {
 interface DataTableProps {
   columns: ColumnDef<User>[]
   data: User[]
+  draggedTemplate: ContractTemplate | null
 }
 
-export function ClientsTable({ columns, data }: DataTableProps) {
+export function ClientsTable({ columns, data, draggedTemplate}: DataTableProps) {
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -69,7 +70,7 @@ export function ClientsTable({ columns, data }: DataTableProps) {
 
   return (
       <div className='space-y-4'>
-        <DataTableToolbar table={table} />
+        <DataTableToolbar table={table} draggedTemplate={draggedTemplate}/>
         <div className='rounded-md border'>
           <Table className='table-fixed w-full'>
             <TableHeader>

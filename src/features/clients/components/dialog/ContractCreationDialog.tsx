@@ -16,11 +16,21 @@ import {
   FormMessage,
 } from '@/common/components/ui/form';
 import { Input } from '@/common/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/common/components/ui/select';
 import { Textarea } from '@/common/components/ui/textarea';
+import { useUsers } from '@/common/contexts/UsersContext';
 import { toast } from '@/common/hooks/toast/use-toast';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { mockTemplates } from '../DraggableTemplate';
 
 const formSchema = z.object({
   client: z.string().min(1, { message: 'Client is required.' }),
@@ -38,6 +48,8 @@ interface Props {
 }
 
 export function ContractCreationDialog({ open, onOpenChange }: Props) {
+  const { dialogTemplate, currentRow } = useUsers();
+
   const form = useForm<ContractForm>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -48,6 +60,18 @@ export function ContractCreationDialog({ open, onOpenChange }: Props) {
       deposit: '',
     },
   });
+  
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        client: currentRow ? `${currentRow.firstname} ${currentRow.lastname}` : '',
+        template: dialogTemplate?.title ?? '',
+        note: '',
+        fee: '',
+        deposit: '',
+      })
+    }
+  }, [open, currentRow, dialogTemplate])
 
   const onSubmit = (values: ContractForm) => {
     form.reset();
@@ -99,13 +123,27 @@ export function ContractCreationDialog({ open, onOpenChange }: Props) {
               />
               <FormField
                 control={form.control}
-                name='template'
+                name="template"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Template</FormLabel>
-                    <FormControl>
-                      <Input placeholder='Design Services' {...field} />
-                    </FormControl>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select a template" />
+                        </SelectTrigger>
+                      </FormControl>  
+                      <SelectContent className='z-[9999]'>
+                        {mockTemplates.map((template) => (
+                          <SelectItem key={template.id} value={template.title}>
+                            {template.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

@@ -10,12 +10,19 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/common/components/ui/popover'
+import { ContractTemplate } from '@/features/clients/data/schema'
 import { CommandGroup } from 'cmdk'
 import { SquarePlus } from 'lucide-react'
-import { DraggableTemplate, mockTemplates } from './TemplateSidebar'
+import { useState } from 'react'
+import { DraggableTemplate, mockTemplates } from './DraggableTemplate'
 
-export function UsersPrimaryButtons() {
-  const templates = mockTemplates; // assume it returns a list of { id, title }
+export function UsersPrimaryButtons( { draggedTemplate }: { draggedTemplate: ContractTemplate | null}) {
+  const templates = mockTemplates;
+  const [search, setSearch] = useState<string>('');
+
+  const filteredTemplates = templates.filter((template) =>
+    template.title.toLowerCase().includes(search.toLowerCase())
+  )
 
   return (
     <div className="flex gap-2">
@@ -27,17 +34,32 @@ export function UsersPrimaryButtons() {
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-64 p-0" align="start">
-          <Command>
-            <CommandInput placeholder="Search templates..." />
-            <CommandList>
-              <CommandEmpty>No templates found.</CommandEmpty>
-              <CommandGroup>
-                {templates.map((template) => (
-                  <DraggableTemplate template={template}/>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
+          {draggedTemplate ? (
+            <div className="p-4 text-sm text-muted-foreground">
+              Drag a template onto a user to initiate a contract.
+            </div>
+          ) : (
+            <Command shouldFilter={false}>
+              <CommandInput
+                placeholder="Search templates..."
+                onValueChange={setSearch}
+              />
+              <CommandList>
+                {filteredTemplates.length === 0 ? (
+                  <CommandEmpty>No templates found.</CommandEmpty>
+                ) : (
+                  <CommandGroup>
+                    {filteredTemplates.map((template) => (
+                      <DraggableTemplate
+                        key={template.id}
+                        template={template}
+                      />
+                    ))}
+                  </CommandGroup>
+                )}
+              </CommandList>
+            </Command>
+          )}
         </PopoverContent>
       </Popover>
     </div>

@@ -2,16 +2,17 @@ import { Button } from '@/common/components/ui/button'
 import { Input } from '@/common/components/ui/input'
 import { Table } from '@tanstack/react-table'
 import { X } from 'lucide-react'
-import { STATUS_LABELS, USER_STATUSES } from '../data/schema'
+import { ContractTemplate, STATUS_LABELS, USER_STATUSES } from '../data/schema'
 import { DataTableFacetedFilter } from './data-table-faceted-filter'
 import { UsersPrimaryButtons } from './users-primary-buttons'
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>
+  draggedTemplate: ContractTemplate | null,
 }
 
 export function DataTableToolbar<TData>({
-  table,
+  table, draggedTemplate
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0
 
@@ -52,7 +53,7 @@ export function DataTableToolbar<TData>({
           </Button>
         )}
       </div>
-      <UsersPrimaryButtons />
+      <UsersPrimaryButtons draggedTemplate={draggedTemplate}/>
     </div>
   )
 }
