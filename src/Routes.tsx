@@ -6,12 +6,13 @@ import NotFound from "@/features/not-found/NotFound";
 import PipelineRoutes from '@/features/pipeline/PipelineRoutes';
 import RequestRoutes from "@/features/request/RequestRoutes";
 import { Route, Routes } from 'react-router-dom';
+import { PrivateRoute, PublicOnlyRoute } from "./common/components/routes/ProtectedRoutes";
 import DashboardLayout from './common/layouts/DashboardLayout';
 import AdminPayRoute from './features/admin-payment/AdminPayRoute';
+import ContractRoutes from "./features/contracts/ContractRoutes";
 import EditTemplateRoutes from "./features/edit-template/EditTemplateRoutes";
-import Hours from './features/hours/Hours';
-import HoursRoute from './features/hours/HoursRoute';
-import MyAccount from './features/my-account/MyAccount';
+import { default as HoursRoute, default as HoursRoutes } from './features/hours/HoursRoute';
+import MyAccountRoutes from "./features/my-account/MyAccountRoutes";
 import ProfileRoutes from './features/profiles/ProfileRoutes';
 
 const AppRoutes = () => (
@@ -19,13 +20,17 @@ const AppRoutes = () => (
 
     <Route>
       <Route element={<NavLayout />}>
+      <Route element={<PublicOnlyRoute />} >
         {AuthPublicRoutes()}
+      </Route>
       </Route>
     </Route>
 
     <Route>
       <Route element={<DashboardLayout />}>
+      <Route element={<PrivateRoute />} >
         <Route index element={<Home />} />
+        {ContractRoutes()}
         {PipelineRoutes()}
         {ClientRoutes()}
         {RequestRoutes()}
@@ -33,8 +38,9 @@ const AppRoutes = () => (
         {HoursRoute()}
         {ProfileRoutes()}
         {EditTemplateRoutes()}
-        <Route path='/my-account' element={<MyAccount />} />
-        <Route path='/hours' element={<Hours />}/>
+        {MyAccountRoutes()}
+        {HoursRoutes()}
+      </Route>
       </Route>
     </Route>
 
