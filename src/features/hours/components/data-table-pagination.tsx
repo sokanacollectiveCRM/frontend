@@ -13,7 +13,6 @@ import {
   DoubleArrowRightIcon,
 } from '@radix-ui/react-icons'
 import { Table } from '@tanstack/react-table'
-import * as React from 'react'
 
 interface DataTablePaginationProps<TData> {
   table: Table<TData>
