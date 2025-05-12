@@ -10,7 +10,6 @@ import { PrivateRoute, PublicOnlyRoute } from "./common/components/routes/Protec
 import DashboardLayout from './common/layouts/DashboardLayout';
 import AdminPayRoute from './features/admin-payment/AdminPayRoute';
 import ContractRoutes from "./features/contracts/ContractRoutes";
-import EditTemplateRoutes from "./features/edit-template/EditTemplateRoutes";
 import { default as HoursRoute, default as HoursRoutes } from './features/hours/HoursRoute';
 import MyAccountRoutes from "./features/my-account/MyAccountRoutes";
 import ProfileRoutes from './features/profiles/ProfileRoutes';
@@ -20,27 +19,26 @@ const AppRoutes = () => (
 
     <Route>
       <Route element={<NavLayout />}>
-      <Route element={<PublicOnlyRoute />} >
-        {AuthPublicRoutes()}
-      </Route>
+        <Route element={<PublicOnlyRoute />} >
+          {AuthPublicRoutes()}
+        </Route>
       </Route>
     </Route>
 
     <Route>
       <Route element={<DashboardLayout />}>
-      <Route element={<PrivateRoute />} >
-        <Route index element={<Home />} />
-        {ContractRoutes()}
-        {PipelineRoutes()}
-        {ClientRoutes()}
-        {RequestRoutes()}
-        {AdminPayRoute()}
-        {HoursRoute()}
-        {ProfileRoutes()}
-        {EditTemplateRoutes()}
-        {MyAccountRoutes()}
-        {HoursRoutes()}
-      </Route>
+        <Route element={<PrivateRoute />} >
+          <Route index element={<Home />} />
+          {ContractRoutes()}
+          {PipelineRoutes()}
+          {ClientRoutes()}
+          {RequestRoutes()}
+          {AdminPayRoute()}
+          {HoursRoute()}
+          {ProfileRoutes()}
+          {MyAccountRoutes()}
+          {HoursRoutes()}
+        </Route>
       </Route>
     </Route>
 
