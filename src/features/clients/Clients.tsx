@@ -10,8 +10,8 @@ import ClientsBoard from './components/ClientsBoard'
 import { UsersDialogs } from './components/dialog/UsersDialogs'
 
 export default function Users() {
-  
-  const { isLoading: userLoading } = useUser(); 
+
+  const { isLoading: userLoading } = useUser();
   const { isLoading } = useClients();
 
   return (
@@ -24,7 +24,7 @@ export default function Users() {
       </Header>
 
       <LoadingOverlay isLoading={isLoading || userLoading} />
-      
+
       <Main>
         <div className="flex-1 overflow-auto p-4">
           <div className='mb-2 flex flex-wrap items-center justify-between space-y-2'>
@@ -35,7 +35,7 @@ export default function Users() {
               </p>
             </div>
           </div>
-          
+
           <ClientsBoard />
         </div>
       </Main>

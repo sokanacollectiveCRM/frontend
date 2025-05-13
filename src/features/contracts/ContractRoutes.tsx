@@ -1,10 +1,10 @@
 import { Route } from 'react-router-dom';
 
-import EditTemplate from './Contracts';
+import Contracts from './Contracts';
 
 const ContractRoutes = () => (
   <Route>
-      <Route path="contracts" element={<EditTemplate />} />
+    <Route path="contracts" element={<Contracts />} />
   </Route>
 )
 export default ContractRoutes

@@ -1,15 +1,26 @@
 import { Search } from '@/common/components/header/Search'
 import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay'
-import { Button } from '@/common/components/ui/button'
 import { ProfileDropdown } from '@/common/components/user/ProfileDropdown'
 import UsersProvider from '@/common/contexts/UsersContext'
 import { useUser } from '@/common/hooks/user/useUser'
 import { Header } from '@/common/layouts/Header'
 import { Main } from '@/common/layouts/Main'
 import { useState } from 'react'
+import { Viewport } from './components/Viewport'
+
+const dummyTemplates = [
+  { id: 1, name: 'NDA Template' },
+  { id: 2, name: 'Employment Offer' },
+  { id: 3, name: 'Freelancer Agreement' },
+  { id: 4, name: 'Partnership Terms' },
+  { id: 5, name: 'Contractor Agreement' },
+  { id: 6, name: 'Internship Offer' },
+  { id: 7, name: 'Consulting Agreement' },
+  { id: 8, name: 'Lease Agreement' },
+  { id: 9, name: 'Sales Agreement' },
+]
 
 export default function EditTemplate() {
-  
   const { isLoading: userLoading } = useUser();
   const [uploading, setUploading] = useState(false);
   const [contractName, setContractName] = useState<string>('')
@@ -17,11 +28,11 @@ export default function EditTemplate() {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-  
+
     const formData = new FormData()
     formData.append('contract', file);
     formData.append('name', contractName);
-  
+
     try {
       const token = localStorage.getItem('authToken');
       const res = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL}/contracts`, {
@@ -31,7 +42,6 @@ export default function EditTemplate() {
         },
         body: formData,
       })
-  
       if (!res.ok) throw new Error('Upload failed')
       const result = await res.json()
       console.log('Uploaded:', result)
@@ -42,7 +52,6 @@ export default function EditTemplate() {
 
   const handleGenerate = async () => {
     const token = localStorage.getItem('authToken');
-
     const res = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL}/contracts/generate`, {
       method: 'POST',
       headers: {
@@ -82,7 +91,7 @@ export default function EditTemplate() {
       </Header>
 
       <LoadingOverlay isLoading={userLoading} />
-      
+
       <Main>
         <div className="flex-1 overflow-auto p-4">
           <div className='mb-2 flex flex-wrap items-center justify-between space-y-2'>
@@ -94,7 +103,7 @@ export default function EditTemplate() {
             </div>
           </div>
 
-          <input
+          {/* <input
             type="text"
             placeholder="Contract name"
             value={contractName}
@@ -104,11 +113,14 @@ export default function EditTemplate() {
           <input type='file' accept='.docx' onChange={handleUpload} disabled={uploading} />
           <Button onClick={handleGenerate}>
             Generate Contract
-          </Button>
+          </Button> */}
+
+          <Viewport />
         </div>
       </Main>
 
-
-    </UsersProvider>
+    </UsersProvider >
   )
 }
+
+
