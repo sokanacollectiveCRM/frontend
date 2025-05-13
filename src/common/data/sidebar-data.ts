@@ -7,6 +7,7 @@ import {
   LucideCircleDollarSign,
   LucideClock5,
   LucideCreditCard,
+  LucideLink,
   LucideUsers,
   Search,
 } from 'lucide-react'
@@ -39,6 +40,16 @@ export const sidebarSections = [
       { title: 'Contracts', url: '#', icon: FileText },
       { title: 'Hours', url: '/hours', icon: LucideClock5 },
       { title: 'Payments', url: '#', icon: LucideCreditCard },
+    ],
+  },
+  {
+    label: 'Integrations',            // ⬅️  NEW SECTION
+    items: [
+      {
+        title: 'QuickBooks',
+        url:   '/integrations/quickbooks',
+        icon:  LucideLink,
+      },
     ],
   },
   {
