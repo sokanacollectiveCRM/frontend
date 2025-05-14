@@ -9,7 +9,7 @@ export default function DashboardLayout() {
     <SearchProvider>
       <SidebarProvider>
           <AppSidebar />
-          <main>
+          <main style={{width: '100%'}}>
             <Outlet />
           </main>
       </SidebarProvider>

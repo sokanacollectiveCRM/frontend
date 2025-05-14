@@ -1,35 +1,68 @@
 // src/integrations/quickbooks/QuickBooksConnectPage.tsx
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import SubmitButton from '../../common/components/form/SubmitButton'
+import { useQuickBooksConnect } from '../../common/hooks/useQuickBooksIntegration/useQuickBooksIntegration'
+
+const API_BASE = import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050'
 
 export default function QuickBooksConnectPage() {
-  const [loading, setLoading] = useState(false)
+  const { connectQuickBooks, isLoading, error } = useQuickBooksConnect()
+  const [connected, setConnected] = useState<boolean | null>(null)
 
-  const handleConnect = () => {
-    if (loading) return
-    setLoading(true)
+  // Fetch initial connection status
+  useEffect(() => {
+    let alive = true
+    ;(async () => {
+      try {
+        const token = localStorage.getItem('authToken')
+        const res = await fetch(`${API_BASE}/quickbooks/status`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        const { connected: isConn } = res.ok
+          ? await res.json()
+          : { connected: false }
+        if (alive) setConnected(isConn)
+      } catch (err) {
+        console.error('Could not load QuickBooks status', err)
+        if (alive) setConnected(false)
+      }
+    })()
+    return () => { alive = false }
+  }, [])
 
-    // 1️⃣  Open our backend’s auth route directly in a popup
-    const popup = window.open(
-      'http://localhost:5050/quickbooks/auth',
-      '_blank',
-      'width=600,height=700'
-    )
+  // Show errors from the hook
+  useEffect(() => {
+    if (error) toast.error(error)
+  }, [error])
 
-    // 2️⃣  Listen for the postMessage from your callback handler
-    const onMessage = (e: MessageEvent) => {
-      if (e.origin !== window.location.origin) return
-      popup?.close()
-      window.removeEventListener('message', onMessage)
-      setLoading(false)
-
-      e.data.success
-        ? toast.success('QuickBooks connected 🎉')
-        : toast.error(`Oops: ${e.data.error}`)
+  // Listen for the popup’s postMessage
+  useEffect(() => {
+    function onMessage(e: MessageEvent) {
+      // Only accept messages from your frontend or backend origins
+      if (e.origin !== 'http://localhost:3001' && e.origin !== 'http://localhost:5050') {
+        return
+      }
+      if (e.data?.success) {
+        setConnected(true)
+        toast.success('QuickBooks connected 🎉')
+      } else {
+        toast.error('QuickBooks connection failed')
+      }
     }
     window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [])
+
+  const handleClick = useCallback(async () => {
+    setConnected((prev) => prev) // no-op to satisfy linter
+    setConnected((prev) => prev) // keep connected state
+    await connectQuickBooks()
+  }, [connectQuickBooks])
+
+  if (connected === null) {
+    return <p>Loading QuickBooks status…</p>
   }
 
   return (
@@ -37,12 +70,19 @@ export default function QuickBooksConnectPage() {
       <section className="max-w-md w-full space-y-6 text-center">
         <h1 className="text-3xl font-bold">QuickBooks Integration</h1>
         <p className="text-sm text-gray-500">
-          Connect your QuickBooks company to sync customers, send invoices, and
-          accept card payments directly inside Sokana Collective CRM.
+          {connected
+            ? 'Your QuickBooks account is connected.'
+            : 'QuickBooks is currently disconnected.'}
         </p>
 
-        <SubmitButton onClick={handleConnect}>
-          {loading ? 'Connecting…' : 'Connect QuickBooks'}
+        <SubmitButton onClick={handleClick} disabled={isLoading}>
+          {isLoading
+            ? connected
+              ? 'Disconnecting…'
+              : 'Connecting…'
+            : connected
+              ? 'Disconnect QuickBooks'
+              : 'Connect QuickBooks'}
         </SubmitButton>
       </section>
 
