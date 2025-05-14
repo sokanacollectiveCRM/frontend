@@ -1,8 +1,10 @@
 // src/integrations/quickbooks/QuickBooksConnectPage.tsx
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useContext, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import SubmitButton from '../../common/components/form/SubmitButton'
+import { UserContext } from '../../common/contexts/UserContext'; // ← import
 import { useQuickBooksConnect } from '../../common/hooks/useQuickBooksIntegration/useQuickBooksIntegration'
 
 const API_BASE = import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050'
@@ -10,6 +12,16 @@ const API_BASE = import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050'
 export default function QuickBooksConnectPage() {
   const { connectQuickBooks, isLoading, error } = useQuickBooksConnect()
   const [connected, setConnected] = useState<boolean | null>(null)
+  const { user, isLoading: authLoading } = useContext(UserContext)  // ← get user
+  const navigate = useNavigate()                                   // ← get navigate
+
+  // Redirect non‑admins away
+  useEffect(() => {
+    if (!authLoading && user?.role !== 'admin') {
+      toast.error('You do not have permission to access this page.')
+      navigate('/')
+    }
+  }, [authLoading, user, navigate])
 
   // Fetch initial connection status
   useEffect(() => {
@@ -56,10 +68,35 @@ export default function QuickBooksConnectPage() {
   }, [])
 
   const handleClick = useCallback(async () => {
-    setConnected((prev) => prev) // no-op to satisfy linter
-    setConnected((prev) => prev) // keep connected state
-    await connectQuickBooks()
-  }, [connectQuickBooks])
+    if (isLoading) return
+
+    if (!connected) {
+      // Connect flow
+      await connectQuickBooks()
+      return
+    }
+
+    // Disconnect flow
+    try {
+      const token = localStorage.getItem('authToken')
+      const res = await fetch(`${API_BASE}/quickbooks/disconnect`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      })
+      if (!res.ok) {
+        const text = await res.text()
+        throw new Error(text || 'Disconnect failed')
+      }
+      setConnected(false)
+      toast.info('QuickBooks disconnected')
+    } catch (err: any) {
+      console.error('Disconnect error:', err)
+      toast.error(err.message || 'Could not disconnect QuickBooks')
+    }
+  }, [connected, connectQuickBooks, isLoading])
 
   if (connected === null) {
     return <p>Loading QuickBooks status…</p>
