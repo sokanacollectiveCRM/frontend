@@ -6,7 +6,7 @@ import { useUser } from '@/common/hooks/user/useUser'
 import { Header } from '@/common/layouts/Header'
 import { Main } from '@/common/layouts/Main'
 import { useState } from 'react'
-import { Viewport } from './components/Viewport'
+import { Viewport } from './components/common/Viewport'
 
 const dummyTemplates = [
   { id: 1, name: 'NDA Template' },
@@ -35,7 +35,7 @@ export default function EditTemplate() {
 
     try {
       const token = localStorage.getItem('authToken');
-      const res = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL}/contracts`, {
+      const res = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL}/contracts/templates`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -52,7 +52,7 @@ export default function EditTemplate() {
 
   const handleGenerate = async () => {
     const token = localStorage.getItem('authToken');
-    const res = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL}/contracts/generate`, {
+    const res = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL}/contracts/templates/generate?download=true`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -76,7 +76,7 @@ export default function EditTemplate() {
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'filled-contract.docx'
+    a.download = 'contract.pdf'
     a.click()
     window.URL.revokeObjectURL(url)
   }

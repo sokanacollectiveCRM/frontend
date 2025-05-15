@@ -1,8 +1,9 @@
-import * as React from "react"
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog"
+import { Overlay as AlertDialogPrimitiveOverlay } from '@radix-ui/react-alert-dialog'
+import * as React from "react"
 
-import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/common/components/ui/button"
+import { cn } from "@/lib/utils"
 
 function AlertDialog({
   ...props
@@ -26,12 +27,13 @@ function AlertDialogPortal({
   )
 }
 
-function AlertDialogOverlay({
-  className,
-  ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Overlay>) {
+const AlertDialogOverlay = React.forwardRef<
+  React.ElementRef<typeof AlertDialogPrimitiveOverlay>,
+  React.ComponentPropsWithoutRef<typeof AlertDialogPrimitiveOverlay>
+>(({ className, ...props }, ref) => {
   return (
-    <AlertDialogPrimitive.Overlay
+    <AlertDialogPrimitiveOverlay
+      ref={ref}
       data-slot="alert-dialog-overlay"
       className={cn(
         "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
@@ -40,7 +42,9 @@ function AlertDialogOverlay({
       {...props}
     />
   )
-}
+})
+
+AlertDialogOverlay.displayName = AlertDialogPrimitiveOverlay.displayName
 
 function AlertDialogContent({
   className,
@@ -141,15 +145,7 @@ function AlertDialogCancel({
 }
 
 export {
-  AlertDialog,
-  AlertDialogPortal,
-  AlertDialogOverlay,
-  AlertDialogTrigger,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogFooter,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogAction,
-  AlertDialogCancel,
+  AlertDialog, AlertDialogAction,
+  AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertDialogPortal, AlertDialogTitle, AlertDialogTrigger
 }
+

@@ -1,9 +1,8 @@
-import { Button } from "@/common/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/common/components/ui/card";
-import { ScrollArea, ScrollBar } from "@/common/components/ui/scroll-area";
-import { Separator } from "@/common/components/ui/separator";
-import { Plus } from "lucide-react";
-import { useState } from "react";
+import { useTemplates } from "@/common/hooks/contracts/useTemplates";
+import { useEffect, useState } from "react";
+import { NewTemplateDialog } from "../dialog/NewTemplateDialog";
+import { PdfPreview } from "../pdf/PdfPreview";
 import { TemplateItem } from "./TemplateItem";
 
 const dummyTemplates = [
@@ -17,20 +16,20 @@ const dummyTemplates = [
 ]
 
 export function Viewport() {
-  const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null)
+  const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
+  const { templates, isLoading, getTemplates } = useTemplates();
+
+  // grab templates
+  useEffect(() => {
+    getTemplates()
+  }, []);
 
   return (
     <div className="flex flex-row lg:flex-row w-full flex-1 overflow-hidden px-4 py-10 gap-6">
       <div className="flex-1 overflow-y-auto">
         {selectedTemplateId ? (
           <>
-            <h2 className="text-xl font-bold mb-2">
-              Preview: {dummyTemplates.find(t => t.id === selectedTemplateId)?.name}
-            </h2>
-            <Separator className="my-4" />
-            <div className="min-h-[500px] p-4 border rounded-lg">
-              <p className="text-muted-foreground">Template content would be shown here.</p>
-            </div>
+            <PdfPreview />
           </>
         ) : (
           <div className="flex items-center justify-center h-[500px] border rounded-lg">
@@ -45,25 +44,21 @@ export function Viewport() {
             <CardTitle className='text-l pb-1'> Templates </CardTitle>
             <CardDescription> Click on a template to view or edit </CardDescription>
           </div>
-          <Button size="icon" variant="outline">
-            <Plus className="h-4 w-4" />
-          </Button>
+          <NewTemplateDialog onUploadSuccess={getTemplates} />
         </CardHeader>
 
         <CardContent className="p-4 pt-0">
-          <ScrollArea className="pr-2">
-            <div className="flex flex-col gap-2">
-              {dummyTemplates.map((template) => (
-                <TemplateItem
-                  key={template.id}
-                  template={template}
-                  isSelected={selectedTemplateId === template.id}
-                  onSelect={() => setSelectedTemplateId(template.id)}
-                />
-              ))}
-            </div>
-            <ScrollBar orientation="vertical" />
-          </ScrollArea>
+          <div className="flex flex-col gap-2">
+
+            {templates.map((template) => (
+              <TemplateItem
+                key={template.id}
+                template={template}
+                isSelected={selectedTemplateId === template.id}
+                onSelect={() => setSelectedTemplateId(template.id)}
+              />
+            ))}
+          </div>
         </CardContent>
       </Card>
     </div>
