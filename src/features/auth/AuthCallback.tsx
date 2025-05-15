@@ -13,11 +13,6 @@ const Container = styled.div`
   min-height: 100vh;
 `;
 
-const LoadingText = styled.p`
-  font-size: 1rem;
-  color: ${(props) => props.theme.colors?.text || '#000'};
-`;
-
 export default function AuthCallback() {
   const navigate = useNavigate();
   const { checkAuth } = useUser();
@@ -66,7 +61,7 @@ export default function AuthCallback() {
       } catch (error) {
         console.error('Auth callback error:', error);
         navigate('/login', {
-          state: { error: error instanceof Error ? error.message : error},
+          state: { error: error instanceof Error ? error.message : error },
           replace: true,
         });
       }
@@ -77,7 +72,7 @@ export default function AuthCallback() {
 
   return (
     <Container>
-      <LoadingOverlay isLoading={true}/>
+      <LoadingOverlay isLoading={true} />
     </Container>
   );
 }

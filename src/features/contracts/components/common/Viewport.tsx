@@ -54,8 +54,8 @@ export function Viewport() {
               <TemplateItem
                 key={template.id}
                 template={template}
-                isSelected={selectedTemplateId === template.id}
-                onSelect={() => setSelectedTemplateId(template.id)}
+                isSelected={selectedTemplateId === Number(template.id)}
+                onSelect={() => setSelectedTemplateId(Number(template.id))}
               />
             ))}
           </div>
