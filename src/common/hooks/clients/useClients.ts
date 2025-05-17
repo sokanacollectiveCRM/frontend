@@ -12,7 +12,7 @@ export function useClients() {
     setError(null);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL}/clients`, {
+      const response = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL}clients`, {
         credentials: 'include',
         headers: {
           Authorization: `Bearer ${token}`,
