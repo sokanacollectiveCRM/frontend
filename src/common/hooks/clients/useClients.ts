@@ -1,44 +1,43 @@
-import { User } from '@/common/types/user';
-import { useState } from 'react';
+// src/common/hooks/clients/useClients.ts
+import { useCallback, useState } from 'react'
+import type { Client } from '../../types/client'
 
 export function useClients() {
-  const [clients, setClients] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+  const [clients, setClients] = useState<Client[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const getClients = async (): Promise<User[]> => {
-    const token = localStorage.getItem('authToken');
-    setIsLoading(true);
-    setError(null);
+  const getClients = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL}clients`, {
+      const rawBase = import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050'
+      const BASE = rawBase.replace(/\/+$/, '')
+      const token = localStorage.getItem('authToken')
+
+      const res = await fetch(`${BASE}/clients`, {
         credentials: 'include',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+        headers: { Authorization: `Bearer ${token}` },
+      })
 
-      if (!response.ok) throw new Error('Could not grab clients');
+      if (!res.ok) {
+        const txt = await res.text()
+        throw new Error(`Failed (${res.status}): ${txt || res.statusText}`)
+      }
 
-      const data = await response.json();
-      setClients(data as User[]);
-      return data as User[];
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error grabbing clients';
-      console.error(message);
-      setError(message);
-      setClients([]);
-      return [];
+      // cast it to Client[] so setClients has the right shape
+      const data = (await res.json()) as Client[]
+      setClients(data)
+      return data
+    } catch (err: any) {
+      setError(err.message)
+      setClients([])
+      return []
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }, [])
 
-  return {
-    clients,
-    isLoading,
-    error,
-    getClients,
-  };
+  return { clients, isLoading, error, getClients }
 }
