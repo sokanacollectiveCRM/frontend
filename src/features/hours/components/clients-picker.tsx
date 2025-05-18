@@ -44,7 +44,7 @@ const frameworks = [
   },
 ]
 
-export function ClientsPicker() {
+export function ClientsPicker({client, setClient}: { client: User | undefined; setClient: (client: User) => void }) {
   const [clients, setClients] = React.useState<User[]>([]);
   const [open, setOpen] = React.useState(false);
   const [value, setValue] = React.useState("");
@@ -62,7 +62,7 @@ export function ClientsPicker() {
   }, [hookClients]);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={setOpen} modal={true}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -80,20 +80,21 @@ export function ClientsPicker() {
           <CommandList>
             <CommandEmpty>No clients found.</CommandEmpty>
             <CommandGroup>
-              {clients.map((client) => (
+              {clients.map((listClient) => (
                 <CommandItem
-                  key={`${client.firstname} ${client.lastname}`}
-                  value={`${client.firstname} ${client.lastname}`}
+                  key={`${listClient.firstname} ${listClient.lastname}`}
+                  value={`${listClient.firstname} ${listClient.lastname}`}
                   onSelect={(currentValue) => {
                     setValue(currentValue === value ? "" : currentValue)
                     setOpen(false)
+                    setClient(listClient)
                   }}
                 >
-                  {`${client.firstname} ${client.lastname}`}
+                  {`${listClient.firstname} ${listClient.lastname}`}
                   <Check
                     className={cn(
                       "ml-auto",
-                      value === `${client.firstname} ${client.lastname}` ? "opacity-100" : "opacity-0"
+                      value === `${listClient.firstname} ${listClient.lastname}` ? "opacity-100" : "opacity-0"
                     )}
                   />
                 </CommandItem>

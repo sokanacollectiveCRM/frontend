@@ -25,19 +25,7 @@ export function UsersPrimaryButtons() {
   
   const [startDate, setStartDate] = React.useState<Date>();
   const [endDate, setEndDate] = React.useState<Date | undefined>(new Date());
-  const [client, setClients] = React.useState<User[]>([]);
-
-  const { clients, isLoading, error, getClients} = useClients();
-
-  React.useEffect(() => {
-    getClients();
-  }, []);
-
-  React.useEffect(() => {
-    if (clients && clients.length > 0) {
-      setClients(clients);
-    }
-  }, [clients]);
+  const [client, setClient] = React.useState<User>();
 
 
   function handleSave() {
@@ -64,21 +52,24 @@ export function UsersPrimaryButtons() {
           <div className="flex flex-col gap-10 justify-center items-center mt-10">
             <div className="items-center flex items-center justify-center">
               <div className='flex flex-col gap-10'>
-                <div>
+                <div className='flex flex-col items-center'>
                   <h1 className='text-lg'>When did you <span className='font-bold'>start</span> work?</h1>
                   <DateTimePicker 
                     date={startDate}
                     setDate={setStartDate}
                   />
                 </div>
-                <div>
+                <div className='flex flex-col items-center'>
                   <h1 className='text-lg'>When did you <span className='font-bold'>end</span> work?</h1>
                   <DateTimePicker 
                     date={endDate}
                     setDate={setEndDate}
                   />
                 </div>
-                <ClientsPicker />
+                <div className='flex flex-col items-center'>
+                  <h1 className='text-lg'>Who was your <span className='font-bold'>client</span>?</h1>
+                  <ClientsPicker />
+                </div>
               </div>
             </div>
           </div>
