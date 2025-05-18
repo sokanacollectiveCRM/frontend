@@ -1,7 +1,6 @@
 import { Button } from '@/common/components/ui/button'
 import { SquarePlus } from 'lucide-react'
 import * as React from 'react'
-import { useState } from 'react'
 import {
   Sheet,
   SheetClose,
@@ -13,21 +12,38 @@ import {
   SheetTrigger,
 } from "@/common/components/ui/sheet"
 import { DateTimePicker } from './time-date-pick'
+import { ClientsPicker } from './clients-picker'
+import { User } from '@/common/types/user';
+import { useClients } from '@/common/hooks/clients/useClients'
 
 export function UsersPrimaryButtons() {
   // const [startDate, setStartDate] = React.useState<Date | undefined>(new Date());
   // const [startTime, setStartTime] = useState<string | undefined>(undefined);
   // const [endDate, setEndDate] = React.useState<Date | undefined>(new Date());
   // const [endTime, setEndTime] = useState<string | undefined>(undefined);
+
   
   const [startDate, setStartDate] = React.useState<Date>();
   const [endDate, setEndDate] = React.useState<Date | undefined>(new Date());
+  const [client, setClients] = React.useState<User[]>([]);
+
+  const { clients, isLoading, error, getClients} = useClients();
+
+  React.useEffect(() => {
+    getClients();
+  }, []);
+
+  React.useEffect(() => {
+    if (clients && clients.length > 0) {
+      setClients(clients);
+    }
+  }, [clients]);
+
 
   function handleSave() {
     console.log("start time", startDate); 
     console.log("end time", endDate);
-
-    
+    console.log("selected client", client);
   }
 
   return (
@@ -62,6 +78,7 @@ export function UsersPrimaryButtons() {
                     setDate={setEndDate}
                   />
                 </div>
+                <ClientsPicker />
               </div>
             </div>
           </div>
