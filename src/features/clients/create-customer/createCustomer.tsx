@@ -63,7 +63,8 @@ console.log(clients)
       // await createQuickBooksCustomer({ ... });
 
       toast.success('Client converted and synced to QuickBooks!')
-      getClients()
+     
+      
     } catch (err: any) {
       toast.error(err.message)
     } finally {
@@ -102,13 +103,19 @@ console.log(clients)
                     {client.status}
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <SubmitButton
-                      onClick={() => convert(client)}
-                      disabled={convertingIds.includes(client.id)}
-                      className="px-4 py-1"
-                    >
-                      {convertingIds.includes(client.id) ? 'Converting…' : 'Convert'}
-                    </SubmitButton>
+                  <SubmitButton
+  onClick={() => convert(client)}
+  // Disable if already a customer or converting
+  disabled={client.status === 'customer' || convertingIds.includes(client.id)}
+  className="px-4 py-1"
+>
+  {client.status === 'customer'
+    ? 'Already Customer'
+    : convertingIds.includes(client.id)
+      ? 'Creating…'
+      : 'Create Customer'}
+</SubmitButton>
+
                   </td>
                 </tr>
               ))}
