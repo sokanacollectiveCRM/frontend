@@ -21,35 +21,12 @@ import { useClients } from "@/common/hooks/clients/useClients"
 import { User } from "@/common/types/user"
 import { cn } from "@/lib/utils"
 
-const frameworks = [
-  {
-    value: "next.js",
-    label: "Next.js",
-  },
-  {
-    value: "sveltekit",
-    label: "SvelteKit",
-  },
-  {
-    value: "nuxt.js",
-    label: "Nuxt.js",
-  },
-  {
-    value: "remix",
-    label: "Remix",
-  },
-  {
-    value: "astro",
-    label: "Astro",
-  },
-]
-
 export function ClientsPicker({client, setClient}: { client: User | undefined; setClient: (client: User) => void }) {
   const [clients, setClients] = React.useState<User[]>([]);
   const [open, setOpen] = React.useState(false);
   const [value, setValue] = React.useState("");
 
-  const { clients: hookClients, isLoading, error, getClients } = useClients();
+  const { clients: hookClients, getClients } = useClients();
 
   React.useEffect(() => {
     getClients();
@@ -70,7 +47,7 @@ export function ClientsPicker({client, setClient}: { client: User | undefined; s
           aria-expanded={open}
           className="w-[200px] justify-between"
         >
-          {value ? value : "Select clients..."}
+          {client ? `${client.firstname} ${client.lastname}` : "Select clients..."}
           <ChevronsUpDown className="opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -84,10 +61,10 @@ export function ClientsPicker({client, setClient}: { client: User | undefined; s
                 <CommandItem
                   key={`${listClient.firstname} ${listClient.lastname}`}
                   value={`${listClient.firstname} ${listClient.lastname}`}
-                  onSelect={(currentValue) => {
-                    setValue(currentValue === value ? "" : currentValue)
+                  onSelect={() => {
                     setOpen(false)
                     setClient(listClient)
+                    console.log("onSelect clicked");
                   }}
                 >
                   {`${listClient.firstname} ${listClient.lastname}`}
