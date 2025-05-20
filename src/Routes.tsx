@@ -12,7 +12,7 @@ import Hours from './features/hours/Hours';
 import HoursRoute from './features/hours/HoursRoute';
 import MyAccount from './features/my-account/MyAccount';
 import ProfileRoutes from './features/profiles/ProfileRoutes';
-
+import TeamRoutes from './features/teams/teamRoutes';
 const AppRoutes = () => (
   <Routes>
 
@@ -31,6 +31,7 @@ const AppRoutes = () => (
         {AdminPayRoute()}
         {HoursRoute()}
         {ProfileRoutes()}
+        {TeamRoutes()}
         <Route path='/my-account' element={<MyAccount />} />
         <Route path='/hours' element={<Hours />}/>
       </Route>
