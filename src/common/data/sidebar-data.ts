@@ -42,6 +42,7 @@ export const sidebarSections = [
       { title: 'Contracts', url: '#', icon: FileText },
       { title: 'Hours', url: '/hours', icon: LucideClock5 },
       { title: 'Payments', url: '#', icon: LucideCreditCard },
+      { title: 'Invoices', url: '/invoices', icon: FileText }, // ← Add here!
     ],
   },
   {

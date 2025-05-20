@@ -12,6 +12,7 @@ import CreateCustomerRoutes from './features/clients/create-customer/createCusto
 import Hours from './features/hours/Hours';
 import HoursRoute from './features/hours/HoursRoute';
 import QuickBooksRoutes from './features/integrations/QuickBooksRoutes';
+import InvoiceRoute from './features/InvoicesPage/InvoiceRoute';
 import MyAccount from './features/my-account/MyAccount';
 import ProfileRoutes from './features/profiles/ProfileRoutes';
 
@@ -35,6 +36,7 @@ const AppRoutes = () => (
         {ProfileRoutes()}
         {QuickBooksRoutes()}
         {CreateCustomerRoutes()}
+        {InvoiceRoute()}
         <Route path='/my-account' element={<MyAccount />} />
         <Route path='/hours' element={<Hours />}/>
       </Route>
