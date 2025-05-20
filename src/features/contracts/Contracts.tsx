@@ -103,18 +103,6 @@ export default function EditTemplate() {
             </div>
           </div>
 
-          {/* <input
-            type="text"
-            placeholder="Contract name"
-            value={contractName}
-            onChange={(e) => setContractName(e.target.value)}
-            className="mb-2 block border px-2 py-1"
-          />
-          <input type='file' accept='.docx' onChange={handleUpload} disabled={uploading} />
-          <Button onClick={handleGenerate}>
-            Generate Contract
-          </Button> */}
-
           <Viewport />
         </div>
       </Main>

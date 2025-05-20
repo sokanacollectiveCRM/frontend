@@ -1,6 +1,6 @@
 import { AppSidebar } from "@/common/components/navigation/sidebar/AppSidebar";
 import { SidebarProvider } from "@/common/components/ui/sidebar";
-import { SearchProvider } from '@/common/contexts/search-context';
+import { SearchProvider } from '@/common/contexts/SearchContext';
 import { Outlet } from "react-router-dom";
 
 export default function DashboardLayout() {

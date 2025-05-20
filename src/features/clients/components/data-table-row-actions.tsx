@@ -7,10 +7,10 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/common/components/ui/dropdown-menu'
-import { useUsers } from '@/common/contexts/UsersContext'
 import { DotsHorizontalIcon } from '@radix-ui/react-icons'
 import { Row } from '@tanstack/react-table'
-import { Settings2, Trash2 } from 'lucide-react'
+import { Archive, Trash2 } from 'lucide-react'
+import { useClientsTable } from '../contexts/ClientsContext'
 import { User } from '../data/schema'
 
 interface DataTableRowActionsProps {
@@ -18,7 +18,7 @@ interface DataTableRowActionsProps {
 }
 
 export function DataTableRowActions({ row }: DataTableRowActionsProps) {
-  const { setOpen, setCurrentRow } = useUsers()
+  const { setOpen, setCurrentRow } = useClientsTable()
   return (
     <>
       <DropdownMenu modal={false}>
@@ -35,12 +35,12 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           <DropdownMenuItem
             onClick={() => {
               setCurrentRow(row.original)
-              setOpen('edit')
+              setOpen('archive')
             }}
           >
-            Edit
+            Archive
             <DropdownMenuShortcut>
-              <Settings2 size={16} />
+              <Archive size={16} />
             </DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuSeparator />

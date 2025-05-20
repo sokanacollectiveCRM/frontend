@@ -22,7 +22,7 @@ export function useTemplates() {
       if (!response.ok) throw new Error('Could not fetch templates');
 
       const data = await response.json();
-      console.log(data);
+      console.log("template",data);
       setTemplates(data as Template[]);
       return data as Template[];
     } catch (err) {

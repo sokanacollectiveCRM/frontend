@@ -18,7 +18,7 @@ export function PdfPreview() {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const [numPages, setNumPages] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [templateName] = useState('LaborSupport.docx')
+  const [templateName] = useState('')
 
   useEffect(() => {
     const fetchPdf = async () => {
@@ -34,8 +34,8 @@ export function PdfPreview() {
           body: JSON.stringify({
             name: templateName,
             fields: {
-              clientname: 'Jane Smith',
-              deposit: '$500',
+              clientname: 'CLIENT_NAME',
+              deposit: 'DEPOSIT',
             },
           }),
         })

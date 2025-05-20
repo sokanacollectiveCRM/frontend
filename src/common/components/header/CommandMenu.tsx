@@ -7,7 +7,7 @@ import {
   CommandList,
 } from '@/common/components/ui/command'
 import { ScrollArea } from '@/common/components/ui/scroll-area'
-import { useSearch } from '@/common/contexts/search-context'
+import { useSearch } from '@/common/contexts/SearchContext'
 import { SidebarItem, SidebarSection, sidebarSections } from '@/common/data/sidebar-data'
 import { ArrowRight } from 'lucide-react'
 import React from 'react'

@@ -24,13 +24,13 @@ import {
   SelectValue,
 } from '@/common/components/ui/select';
 import { Textarea } from '@/common/components/ui/textarea';
-import { useUsers } from '@/common/contexts/UsersContext';
 import { toast } from '@/common/hooks/toast/use-toast';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { mockTemplates } from '../DraggableTemplate';
+import { useClientsTable } from '../../contexts/ClientsContext';
+import { useTemplatesContext } from '../../contexts/TemplatesContext';
 
 const formSchema = z.object({
   client: z.string().min(1, { message: 'Client is required.' }),
@@ -48,7 +48,8 @@ interface Props {
 }
 
 export function ContractCreationDialog({ open, onOpenChange }: Props) {
-  const { dialogTemplate, currentRow } = useUsers();
+  const { dialogTemplate, currentRow } = useClientsTable();
+  const { templates } = useTemplatesContext();
 
   const form = useForm<ContractForm>({
     resolver: zodResolver(formSchema),
@@ -60,12 +61,12 @@ export function ContractCreationDialog({ open, onOpenChange }: Props) {
       deposit: '',
     },
   });
-  
+
   useEffect(() => {
     if (open) {
       form.reset({
         client: currentRow ? `${currentRow.firstname} ${currentRow.lastname}` : '',
-        template: dialogTemplate?.title ?? '',
+        template: dialogTemplate?.name ?? '',
         note: '',
         fee: '',
         deposit: '',
@@ -135,11 +136,11 @@ export function ContractCreationDialog({ open, onOpenChange }: Props) {
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select a template" />
                         </SelectTrigger>
-                      </FormControl>  
+                      </FormControl>
                       <SelectContent className='z-[9999]'>
-                        {mockTemplates.map((template) => (
-                          <SelectItem key={template.id} value={template.title}>
-                            {template.title}
+                        {templates.map((template) => (
+                          <SelectItem key={template.id} value={template.name}>
+                            {template.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -168,7 +169,7 @@ export function ContractCreationDialog({ open, onOpenChange }: Props) {
                   <FormItem>
                     <FormLabel>Fee</FormLabel>
                     <FormControl>
-                      <Input placeholder='Default - $3000' {...field} />
+                      <Input placeholder={`Default - $3000`} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

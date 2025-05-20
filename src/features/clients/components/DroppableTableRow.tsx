@@ -4,10 +4,10 @@ import {
   TableCell,
   TableRow,
 } from '@/common/components/ui/table';
-import { useUsers } from '@/common/contexts/UsersContext';
 import { useDroppable } from '@dnd-kit/core';
 import { flexRender, Row } from '@tanstack/react-table';
 import { forwardRef } from 'react';
+import { useClientsTable } from '../contexts/ClientsContext';
 import { User } from '../data/schema';
 
 interface Props {
@@ -16,7 +16,7 @@ interface Props {
 
 export const DroppableTableRow = forwardRef<HTMLTableRowElement, Props>(
   ({ row }, ref) => {
-    const { setOpen } = useUsers();
+    const { setOpenTemplates } = useClientsTable();
 
     const { setNodeRef, isOver } = useDroppable({
       id: `user-${row.original.id}`,
@@ -37,10 +37,9 @@ export const DroppableTableRow = forwardRef<HTMLTableRowElement, Props>(
       <TableRow
         ref={combinedRef}
         data-state={row.getIsSelected() && 'selected'}
-        className={`group/row cursor-pointer transition transition-transform duration-300 ease-in-out ${
-          isOver ? 'bg-accent scale-[.97]' : ''
-        }`}
-        onClick={() => setOpen('add')}
+        className={`group/row cursor-pointer transition transition-transform duration-300 ease-in-out ${isOver ? 'bg-accent scale-[.97]' : ''
+          }`}
+        onClick={() => setOpenTemplates(true)}
       >
         {row.getVisibleCells().map((cell) => (
           <TableCell

@@ -40,5 +40,6 @@ export function useClients() {
     isLoading,
     error,
     getClients,
+    setIsLoading,
   };
 }
