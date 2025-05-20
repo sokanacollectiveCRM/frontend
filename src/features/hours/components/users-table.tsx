@@ -22,8 +22,9 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 import { useState } from 'react'
-import { DataTablePagination } from './data-table-pagination'
 import { HoursRows } from '../context/clients-context'
+import { DataTablePagination } from './data-table-pagination'
+import { UsersPrimaryButtons } from './users-primary-buttons'
 
 declare module '@tanstack/react-table' {
   interface ColumnMeta<TData extends RowData, TValue> {
@@ -66,6 +67,9 @@ export function UsersTable({ columns, data }: DataTableProps) {
 
   return (
     <div className='space-y-4'>
+      <div className='flex justify-end'>
+        <UsersPrimaryButtons />
+      </div>
       <div className='rounded-md border'>
         <Table>
           <TableHeader>

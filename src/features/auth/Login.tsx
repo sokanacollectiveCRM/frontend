@@ -2,14 +2,15 @@ import { useState } from 'react';
 
 import { Link, useNavigate } from 'react-router-dom';
 
-import SubmitButton from '@/common/components/form/SubmitButton';
 import { RedSpan } from '@/common/components/form/styles';
 import { useUser } from '@/common/hooks/user/useUser';
 import GoogleButton from '@/features/auth/GoogleButton';
 
+import { Button } from '@/common/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/common/components/ui/card';
 import { Input } from '@/common/components/ui/input';
 import { Label } from '@/common/components/ui/label';
+import { Loader2 } from 'lucide-react';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -22,12 +23,12 @@ export default function Login() {
     password: '',
   });
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormState({ ...formState, [e.target.name]: e.target.value });
     setError('');
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
@@ -36,7 +37,7 @@ export default function Login() {
       await login(formState.email, formState.password);
       navigate('/', { replace: true });
     } catch (error) {
-      setError(error.message || 'Failed to login. Please try again.');
+      setError(error instanceof Error ? error.message : 'Failed to login. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -46,7 +47,7 @@ export default function Login() {
     try {
       await googleAuth();
     } catch (error) {
-      setError(error.message);
+      setError(error instanceof Error ? error.message : 'Failed to login. Please try again.');
     }
   };
 
@@ -62,14 +63,14 @@ export default function Login() {
             {error && <RedSpan>{error}</RedSpan>}
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                name="email" 
-                placeholder="jsmith or j@example.com" 
-                value={formState.email} 
-                onChange={handleChange} 
-                required 
+              <Input
+                id="email"
+                type="email"
+                name="email"
+                placeholder="jsmith or j@example.com"
+                value={formState.email}
+                onChange={handleChange}
+                required
               />
             </div>
             <div className="grid gap-2">
@@ -79,18 +80,18 @@ export default function Login() {
                   Forgot your password?
                 </Link>
               </div>
-              <Input 
-                id="password" 
-                type="password" 
-                name="password" 
-                value={formState.password} 
-                onChange={handleChange} 
-                required 
+              <Input
+                id="password"
+                type="password"
+                name="password"
+                value={formState.password}
+                onChange={handleChange}
+                required
               />
             </div>
-            <SubmitButton disabled={isLoading} onClick={handleSubmit} className="w-full">
-              {isLoading ? "Logging in..." : "Log In"}
-            </SubmitButton>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'Log In'}
+            </Button>
             <GoogleButton onClick={handleGoogleLogin} isLoading={isLoading} text="Sign in with Google" />
           </form>
           <div className="mt-4 text-center text-sm">
