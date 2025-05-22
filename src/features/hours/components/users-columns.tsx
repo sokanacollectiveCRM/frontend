@@ -8,35 +8,6 @@ import { HoursRows } from '../context/clients-context'
 
 export const columns: ColumnDef<HoursRows>[] = [
   {
-    id: 'select',
-    header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && 'indeterminate')
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label='Select all'
-        className='translate-y-[2px]'
-      />
-    ),
-    meta: {
-      className: cn(
-        'sticky md:table-cell left-0 z-10 rounded-tl',
-      ),
-    },
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label='Select row'
-        className='translate-y-[2px]'
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
     id: 'client',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Client' />
@@ -47,7 +18,7 @@ export const columns: ColumnDef<HoursRows>[] = [
       return <LongText className='max-w-36'>{fullName}</LongText>
     },
     meta: { className: 'w-36' },
-  },
+  }, 
   {
     id: 'doula',
     header: ({ column }) => (
@@ -83,7 +54,7 @@ export const columns: ColumnDef<HoursRows>[] = [
       <DataTableColumnHeader column={column} title='End' />
     ),
     cell: ({ row }) => (
-      <div className='w-fit text-nowrap'>{row.getValue('end_time')}</div>
+      <div className='w-fit text-nowrap flex flex-row items-center h-8 w-8'>{row.getValue('end_time')}</div>
     ),
   },
   {
@@ -113,9 +84,5 @@ export const columns: ColumnDef<HoursRows>[] = [
       return <div>{durationStr}</div>;     
     },
     enableSorting: true,
-  },
-  {
-    id: 'actions',
-    cell: DataTableRowActions,
   },
 ]
