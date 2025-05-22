@@ -7,7 +7,7 @@ import { useUser } from "@/common/hooks/user/useUser"
 import { Header } from '@/common/layouts/Header'
 import { Main } from '@/common/layouts/Main'
 import { columns } from './components/users-columns'
-import { UsersDialogs } from './components/users-dialogs'
+// import { UsersDialogs } from './components/users-dialogs'
 import { UsersPrimaryButtons } from './components/users-primary-buttons'
 import { UsersTable } from './components/users-table'
 
@@ -57,7 +57,6 @@ export default function Hours() {
         </div>
       </Main>
 
-      <UsersDialogs />
     </UsersProvider>
   )
 }
