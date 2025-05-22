@@ -4,7 +4,7 @@ import {
   TableCell,
   TableRow,
 } from '@/common/components/ui/table';
-import { useUsers } from '@/features/clients/context/users-context';
+import { useUsers } from '@/common/contexts/UsersContext';
 import { useDroppable } from '@dnd-kit/core';
 import { flexRender, Row } from '@tanstack/react-table';
 import { forwardRef } from 'react';
@@ -40,7 +40,7 @@ export const DroppableTableRow = forwardRef<HTMLTableRowElement, Props>(
         className={`group/row cursor-pointer transition transition-transform duration-300 ease-in-out ${
           isOver ? 'bg-accent scale-[.97]' : ''
         }`}
-        onClick={() => setOpen('invite')}
+        onClick={() => setOpen('add')}
       >
         {row.getVisibleCells().map((cell) => (
           <TableCell

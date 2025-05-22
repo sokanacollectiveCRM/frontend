@@ -1,6 +1,7 @@
 import { Search } from '@/common/components/header/Search'
 import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay'
 import { ProfileDropdown } from '@/common/components/user/ProfileDropdown'
+import UsersProvider from '@/common/contexts/UsersContext'
 import useWorkLog from "@/common/hooks/hours/useWorkLog"
 import { useUser } from "@/common/hooks/user/useUser"
 import { Header } from '@/common/layouts/Header'
@@ -9,7 +10,6 @@ import { columns } from './components/users-columns'
 import { UsersDialogs } from './components/users-dialogs'
 import { UsersPrimaryButtons } from './components/users-primary-buttons'
 import { UsersTable } from './components/users-table'
-import UsersProvider from './context/clients-context'
 
 export default function Hours() {
   const { user, isLoading: userLoading } = useUser();
@@ -30,7 +30,7 @@ export default function Hours() {
     // Time fields
     start_time: new Date(session.start_time).toLocaleString(),
     end_time: new Date(session.end_time).toLocaleString(),
-      // Add any other fields your table might need
+    // Add any other fields your table might need
   })) || [];
 
 

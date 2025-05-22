@@ -97,11 +97,11 @@ export default function UsersList() {
 
       <UsersContainer>
         {users.map((user) => (
-          <UserCard key={user.email}>
+          <UserCard key={user.email ? user.email : `${user.firstname}@gmail.com`}>
             <UserInfo>
               <div>
                 <UserName>
-                  {user.firstname} {user.lastname} (
+                  {user.firstname} {user.lastname} 
                 </UserName>
                 <UserEmail>{user.email}</UserEmail>
               </div>

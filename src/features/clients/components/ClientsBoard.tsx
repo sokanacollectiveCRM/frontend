@@ -1,10 +1,10 @@
+import { useUsers } from '@/common/contexts/UsersContext'
 import { useClients } from '@/common/hooks/clients/useClients'
 import { Main } from '@/common/layouts/Main'
 import { ClientsTable } from '@/features/clients/components/ClientsTable'
 import { UsersDialogs } from '@/features/clients/components/dialog/UsersDialogs'
-import { DraggableTemplate } from '@/features/clients/components/TemplateSidebar'
+import { DraggableTemplate } from '@/features/clients/components/DraggableTemplate'
 import { columns } from '@/features/clients/components/users-columns'
-import { useUsers } from '@/features/clients/context/users-context'
 import { ContractTemplate, userListSchema, UserSummary } from '@/features/clients/data/schema'
 import { DndContext, DragOverlay } from '@dnd-kit/core'
 import { useEffect, useState } from 'react'
@@ -13,7 +13,7 @@ export default function ClientsBoard() {
   const { clients, getClients } = useClients();
   const [userList, setUserList] = useState<UserSummary[]>([]);
   const [draggedTemplate, setDraggedTemplate] = useState<ContractTemplate | null>(null);
-  const { setOpen } = useUsers();
+  const { setOpen, setDialogTemplate, setCurrentRow } = useUsers();
 
   useEffect(() => { getClients(); }, []);
   useEffect(() => {
@@ -22,7 +22,6 @@ export default function ClientsBoard() {
       const parsed = userListSchema.parse(clients);
       setUserList(parsed);
     } catch (err) {
-      console.error('Failed to parse client list with Zod:', err);
       setUserList([]);
     }
   }, [clients]);
@@ -39,8 +38,10 @@ export default function ClientsBoard() {
     setDraggedTemplate(null);
 
     if (!active || !over) return;
-    
-    if (active.data.current?.type === 'template' && over.data?.current?.type === 'user') {
+  
+    if (draggedTemplate && over.data?.current?.type === 'user') {
+      setDialogTemplate(draggedTemplate);
+      setCurrentRow(over.data.current.user);
       setOpen('add');
     }
   };
@@ -53,7 +54,7 @@ export default function ClientsBoard() {
         onDragEnd={handleDragEnd}>
         <Main>
         
-          <ClientsTable data={userList} columns={columns} />
+          <ClientsTable data={userList} columns={columns} draggedTemplate={draggedTemplate}/>
           <UsersDialogs />
         </Main>
 

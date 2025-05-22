@@ -7,10 +7,10 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/common/components/ui/dropdown-menu'
+import { useUsers } from '@/common/contexts/UsersContext'
 import { DotsHorizontalIcon } from '@radix-ui/react-icons'
 import { Row } from '@tanstack/react-table'
 import { Settings2, Trash2 } from 'lucide-react'
-import { useUsers } from '../context/users-context'
 import { User } from '../data/schema'
 
 interface DataTableRowActionsProps {

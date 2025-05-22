@@ -12,7 +12,7 @@
     "types": ["vite/client"],
     "allowJs": true, 
     "jsx": "react-jsx", 
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "strict": true,

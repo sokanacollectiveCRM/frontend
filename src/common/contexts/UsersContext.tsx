@@ -1,5 +1,6 @@
 import useDialogState from '@/common/hooks/ui/use-dialog-state'
 import type { User } from '@/features/clients/data/schema'
+import { ContractTemplate } from '@/features/clients/data/schema'
 import React, { useState } from 'react'
 
 type UsersDialogType = 'invite' | 'add' | 'edit' | 'delete'
@@ -9,6 +10,8 @@ interface UsersContextType {
   setOpen: (str: UsersDialogType | null) => void
   currentRow: User | null
   setCurrentRow: React.Dispatch<React.SetStateAction<User | null>>
+  dialogTemplate: ContractTemplate | null
+  setDialogTemplate: React.Dispatch<React.SetStateAction<ContractTemplate | null>>
 }
 
 const UsersContext = React.createContext<UsersContextType | null>(null)
@@ -20,9 +23,10 @@ interface Props {
 export default function UsersProvider({ children }: Props) {
   const [open, setOpen] = useDialogState<UsersDialogType>(null)
   const [currentRow, setCurrentRow] = useState<User | null>(null)
+  const [dialogTemplate, setDialogTemplate] = useState<ContractTemplate | null>(null)
 
   return (
-    <UsersContext.Provider value={{ open, setOpen, currentRow, setCurrentRow }}>
+    <UsersContext.Provider value={{ open, setOpen, currentRow, setCurrentRow, dialogTemplate, setDialogTemplate }}>
       {children}
     </UsersContext.Provider>
   )
