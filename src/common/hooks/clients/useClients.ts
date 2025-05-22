@@ -2,7 +2,7 @@ import { User } from '@/common/types/user';
 import { useState } from 'react';
 
 export function useClients() {
-  const [clients, setClients] = useState<User[]>([]);
+  const [clients, setClients] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
