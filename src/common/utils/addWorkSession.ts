@@ -1,5 +1,3 @@
-import { useEffect, useState } from "react"
-
 export default async function addWorkSession(doula_id: string | undefined, client_id: string | undefined, start_time: Date | undefined, end_time: Date | undefined) {
 
   if(!doula_id || !client_id ||  !start_time || !end_time) {

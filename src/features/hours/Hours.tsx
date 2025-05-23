@@ -7,7 +7,6 @@ import { Header } from '@/common/layouts/Header'
 import { Main } from '@/common/layouts/Main'
 import UsersProvider from '@/features/hours/context/clients-context'
 import { columns } from './components/users-columns'
-import { UsersDialogs } from './components/users-dialogs'
 import { UsersTable } from './components/users-table'
 
 export default function Hours() {
@@ -55,22 +54,11 @@ export default function Hours() {
               </p>
             </div>
           </div>
-
           <UsersTable data={transformedData} columns={columns} />
 
         </div>
-        {/* <div className='mb-2 flex flex-wrap items-center justify-between space-y-2'>
-          <div>
-            <h2 className='text-2xl font-bold tracking-tight'>Your Hours</h2>
-          </div>
-          <UsersPrimaryButtons />
-        </div>
-        <div className='-mx-4 flex-1 overflow-auto px-4 py-1 lg:flex-row lg:space-x-12 lg:space-y-0'>
-          <UsersTable data={transformedData} columns={columns} />
-        </div> */}
       </Main>
 
-      <UsersDialogs />
     </UsersProvider>
   )
 }

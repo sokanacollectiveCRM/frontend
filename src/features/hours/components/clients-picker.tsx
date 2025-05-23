@@ -21,8 +21,8 @@ import { useClients } from "@/common/hooks/clients/useClients"
 import { User } from "@/common/types/user"
 import { cn } from "@/lib/utils"
 
-export function ClientsPicker({client, setClient}: { client: User | undefined; setClient: (client: User) => void }) {
-  const [clients, setClients] = React.useState<User[]>([]);
+export function ClientsPicker({client, setClient}: { client: any; setClient: (client: User) => void }) {
+  const [clients, setClients] = React.useState<any[]>([]);
   const [open, setOpen] = React.useState(false);
   const [value, setValue] = React.useState("");
 
@@ -34,6 +34,7 @@ export function ClientsPicker({client, setClient}: { client: User | undefined; s
 
   React.useEffect(() => {
     if (hookClients && hookClients.length > 0) {
+      console.log("in client-picker, hookClients is", hookClients);
       setClients(hookClients);
     }
   }, [hookClients]);
@@ -47,7 +48,7 @@ export function ClientsPicker({client, setClient}: { client: User | undefined; s
           aria-expanded={open}
           className="w-[200px] justify-between"
         >
-          {client ? `${client.firstname} ${client.lastname}` : "Select clients..."}
+          {client ? `${client.user.firstname} ${client.user.lastname}` : "Select clients..."}
           <ChevronsUpDown className="opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -59,19 +60,19 @@ export function ClientsPicker({client, setClient}: { client: User | undefined; s
             <CommandGroup>
               {clients.map((listClient) => (
                 <CommandItem
-                  key={`${listClient.firstname} ${listClient.lastname}`}
-                  value={`${listClient.firstname} ${listClient.lastname}`}
+                  key={`${listClient.user.firstname} ${listClient.user.lastname}`}
+                  value={`${listClient.user.firstname} ${listClient.user.lastname}`}
                   onSelect={() => {
                     setOpen(false)
                     setClient(listClient)
                     console.log("onSelect clicked");
                   }}
                 >
-                  {`${listClient.firstname} ${listClient.lastname}`}
+                  {`${listClient.user.firstname} ${listClient.user.lastname}`}
                   <Check
                     className={cn(
                       "ml-auto",
-                      value === `${listClient.firstname} ${listClient.lastname}` ? "opacity-100" : "opacity-0"
+                      value === `${listClient.user.firstname} ${listClient.user.lastname}` ? "opacity-100" : "opacity-0"
                     )}
                   />
                 </CommandItem>

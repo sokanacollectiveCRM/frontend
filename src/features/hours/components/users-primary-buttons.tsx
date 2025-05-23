@@ -20,7 +20,7 @@ export function UsersPrimaryButtons() {
   const [startDate, setStartDate] = React.useState<Date>(new Date());
   const [endDate, setEndDate] = React.useState<Date>(new Date());
   const [hoursWorked, setHoursWorked] = React.useState<number>(0);
-  const [client, setClient] = React.useState<User>();
+  const [client, setClient] = React.useState<any>();
   const [error, setError] = React.useState<string | null>(null);
   const [open, setOpen] = React.useState(false);
   const { user } = useUser();
@@ -49,7 +49,7 @@ export function UsersPrimaryButtons() {
       return;
     }
     try {
-      await addWorkSession(user?.id, client?.id, startDate, endDate);
+      await addWorkSession(user?.id, client.user.id, startDate, endDate);
       setOpen(false);
     } catch(error) {
       console.error(error);
