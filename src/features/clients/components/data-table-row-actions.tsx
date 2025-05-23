@@ -7,47 +7,54 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/common/components/ui/dropdown-menu'
-import { useUsers } from '@/common/contexts/UsersContext'
 import { DotsHorizontalIcon } from '@radix-ui/react-icons'
 import { Row } from '@tanstack/react-table'
-import { Settings2, Trash2 } from 'lucide-react'
-import { User } from '../data/schema'
+import { Archive, Trash2 } from 'lucide-react'
+import { useClientsTable } from '../contexts/ClientsContext'
+import { Client } from '../data/schema'
 
 interface DataTableRowActionsProps {
-  row: Row<User>
+  row: Row<Client>
 }
 
 export function DataTableRowActions({ row }: DataTableRowActionsProps) {
-  const { setOpen, setCurrentRow } = useUsers()
+  const { setOpen, setCurrentRow } = useClientsTable()
   return (
     <>
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant='ghost'
-            className='flex h-8 w-8 p-0 data-[state=open]:bg-muted'
+          <div
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
           >
-            <DotsHorizontalIcon className='h-4 w-4' />
-            <span className='sr-only'>Open menu</span>
-          </Button>
+            <Button
+              variant='ghost'
+              className='flex h-8 w-8 p-0 data-[state=open]:bg-muted'
+            >
+              <DotsHorizontalIcon className='h-4 w-4' />
+              <span className='sr-only'>Open menu</span>
+            </Button>
+          </div>
         </DropdownMenuTrigger>
         <DropdownMenuContent align='end' className='w-[160px]'>
           <DropdownMenuItem
-            onClick={() => {
-              setCurrentRow(row.original)
-              setOpen('edit')
+            onClick={(e) => {
+              e.stopPropagation();
+              setCurrentRow(row.original);
+              setOpen('archive');
             }}
           >
-            Edit
+            Archive
             <DropdownMenuShortcut>
-              <Settings2 size={16} />
+              <Archive size={16} />
             </DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            onClick={() => {
-              setCurrentRow(row.original)
-              setOpen('delete')
+            onClick={(e) => {
+              e.stopPropagation(); // ✅ prevent row click
+              setCurrentRow(row.original);
+              setOpen('delete');
             }}
             className='!text-red-500'
           >

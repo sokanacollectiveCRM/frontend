@@ -1,14 +1,11 @@
 import {
-  Calendar,
   FileText,
   Home,
   Inbox,
-  LucideChartColumnIncreasing,
-  LucideCircleDollarSign,
   LucideClock5,
   LucideCreditCard,
   LucideUsers,
-  Search,
+  Search
 } from 'lucide-react'
 
 export interface SidebarItem {
@@ -27,9 +24,8 @@ export const sidebarSections = [
     label: 'General',
     items: [
       { title: 'Dashboard', url: '/', icon: Home },
-      { title: 'Inbox', url: 'inbox', icon: Inbox },
+      { title: 'Inbox', url: '/inbox', icon: Inbox },
       { title: 'Clients', url: '/clients', icon: Search },
-      { title: 'Calendar', url: '/calendar', icon: Calendar },
     ],
   },
   {
@@ -39,13 +35,6 @@ export const sidebarSections = [
       { title: 'Contracts', url: '/contracts', icon: FileText },
       { title: 'Hours', url: '/hours', icon: LucideClock5 },
       { title: 'Payments', url: '/payments', icon: LucideCreditCard },
-    ],
-  },
-  {
-    label: 'Analytics',
-    items: [
-      { title: 'Financial', url: '/financial', icon: LucideCircleDollarSign },
-      { title: 'Demographics', url: '/demographics', icon: LucideChartColumnIncreasing },
     ],
   },
 ]

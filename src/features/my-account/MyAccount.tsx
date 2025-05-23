@@ -15,13 +15,19 @@ export default function MyAccount() {
       </Header>
 
       <Main>
-        <div className="mb-2 flex flex-col space-y-2">
-          <h2 className="text-2xl font-bold tracking-tight">My Account</h2>
-          <p className="text-muted-foreground">Manage your account and profile settings.</p>
-        </div>
+        <div className="flex-1 overflow-auto p-4">
+          <div className='mb-2 flex flex-wrap items-center justify-between space-y-2'>
+            <div>
+              <h2 className='text-2xl font-bold tracking-tight'>Account</h2>
+              <p className='text-muted-foreground'>
+                Make changes to your profile.
+              </p>
+            </div>
+          </div>
 
-        <div className="-mx-4 flex-1 overflow-auto px-4 py-1 lg:flex-row lg:space-x-12 lg:space-y-0">
-          <MyAccountForms />
+          <div className="-mx-4 flex-1 overflow-auto px-4 py-1 lg:flex-row lg:space-x-12 lg:space-y-0">
+            <MyAccountForms />
+          </div>
         </div>
       </Main>
     </>

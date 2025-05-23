@@ -14,8 +14,8 @@ import {
 } from "@/common/components/ui/popover";
 import { ScrollArea, ScrollBar } from "@/common/components/ui/scroll-area";
 
-export function DateTimePicker() {
-  const [date, setDate] = React.useState<Date>();
+export function DateTimePicker({ date, setDate }: { date: Date | undefined; setDate: (date: Date) => void }) {
+  // const [date, setDate] = React.useState<Date>();
   const [isOpen, setIsOpen] = React.useState(false);
 
   const hours = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -66,19 +66,9 @@ export function DateTimePicker() {
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-auto p-0 flex flex-row"
+        className="w-auto p-0"
         align="center"
         sideOffset={4}
-        style={{ 
-          zIndex: 9999,
-          pointerEvents: "auto" 
-         }} 
-        onPointerDownOutside={(e) => {
-          e.preventDefault()
-        }}
-        onClick={(e) => {
-          e.stopPropagation()
-        }}
       >
         <div className="flex flex-row sm:flex">
           <Calendar

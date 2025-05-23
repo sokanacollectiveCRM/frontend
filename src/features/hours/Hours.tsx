@@ -1,14 +1,13 @@
 import { Search } from '@/common/components/header/Search'
 import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay'
 import { ProfileDropdown } from '@/common/components/user/ProfileDropdown'
-import UsersProvider from '@/common/contexts/UsersContext'
 import useWorkLog from "@/common/hooks/hours/useWorkLog"
 import { useUser } from "@/common/hooks/user/useUser"
 import { Header } from '@/common/layouts/Header'
 import { Main } from '@/common/layouts/Main'
+import UsersProvider from '@/features/hours/context/clients-context'
 import { columns } from './components/users-columns'
 import { UsersDialogs } from './components/users-dialogs'
-import { UsersPrimaryButtons } from './components/users-primary-buttons'
 import { UsersTable } from './components/users-table'
 
 export default function Hours() {
@@ -46,7 +45,21 @@ export default function Hours() {
       <LoadingOverlay isLoading={userLoading || hoursLoading} />
 
       <Main>
-        <div className='mb-2 flex flex-wrap items-center justify-between space-y-2'>
+
+        <div className="flex-1 overflow-auto p-4">
+          <div className='mb-2 flex flex-wrap items-center justify-between space-y-2'>
+            <div>
+              <h2 className='text-2xl font-bold tracking-tight'>Hours</h2>
+              <p className='text-muted-foreground'>
+                Manage doula hours.
+              </p>
+            </div>
+          </div>
+
+          <UsersTable data={transformedData} columns={columns} />
+
+        </div>
+        {/* <div className='mb-2 flex flex-wrap items-center justify-between space-y-2'>
           <div>
             <h2 className='text-2xl font-bold tracking-tight'>Your Hours</h2>
           </div>
@@ -54,7 +67,7 @@ export default function Hours() {
         </div>
         <div className='-mx-4 flex-1 overflow-auto px-4 py-1 lg:flex-row lg:space-x-12 lg:space-y-0'>
           <UsersTable data={transformedData} columns={columns} />
-        </div>
+        </div> */}
       </Main>
 
       <UsersDialogs />

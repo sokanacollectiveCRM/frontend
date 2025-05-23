@@ -10,18 +10,20 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/common/components/ui/popover'
-import { ContractTemplate } from '@/features/clients/data/schema'
+import { Template } from '@/common/types/template'
 import { CommandGroup } from 'cmdk'
 import { SquarePlus } from 'lucide-react'
 import { useState } from 'react'
-import { DraggableTemplate, mockTemplates } from './DraggableTemplate'
+import { useTemplatesContext } from '../contexts/TemplatesContext'
+import { DraggableTemplate } from './DraggableTemplate'
 
-export function UsersPrimaryButtons( { draggedTemplate }: { draggedTemplate: ContractTemplate | null}) {
-  const templates = mockTemplates;
+export function UsersPrimaryButtons({ draggedTemplate }: { draggedTemplate: Template | null }) {
+  const { templates } = useTemplatesContext();
+
   const [search, setSearch] = useState<string>('');
 
   const filteredTemplates = templates.filter((template) =>
-    template.title.toLowerCase().includes(search.toLowerCase())
+    template.name.toLowerCase().includes(search.toLowerCase())
   )
 
   return (

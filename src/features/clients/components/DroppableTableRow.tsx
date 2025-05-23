@@ -4,22 +4,22 @@ import {
   TableCell,
   TableRow,
 } from '@/common/components/ui/table';
-import { useUsers } from '@/common/contexts/UsersContext';
 import { useDroppable } from '@dnd-kit/core';
 import { flexRender, Row } from '@tanstack/react-table';
 import { forwardRef } from 'react';
-import { User } from '../data/schema';
+import { useNavigate } from 'react-router-dom';
+import { Client } from '../data/schema';
 
 interface Props {
-  row: Row<User>;
+  row: Row<Client>;
 }
 
 export const DroppableTableRow = forwardRef<HTMLTableRowElement, Props>(
   ({ row }, ref) => {
-    const { setOpen } = useUsers();
+    let navigate = useNavigate();
 
     const { setNodeRef, isOver } = useDroppable({
-      id: `user-${row.original.id}`,
+      id: `user-${row.original.user.id}`,
       data: {
         type: 'user',
         user: row.original,
@@ -37,10 +37,10 @@ export const DroppableTableRow = forwardRef<HTMLTableRowElement, Props>(
       <TableRow
         ref={combinedRef}
         data-state={row.getIsSelected() && 'selected'}
-        className={`group/row cursor-pointer transition transition-transform duration-300 ease-in-out ${
-          isOver ? 'bg-accent scale-[.97]' : ''
-        }`}
-        onClick={() => setOpen('add')}
+        className={`group/row cursor-pointer transition transition-transform duration-300 ease-in-out ${isOver ? 'bg-accent scale-[.97]' : ''
+          }`}
+        onClick={() => navigate('/specified', {
+        })}
       >
         {row.getVisibleCells().map((cell) => (
           <TableCell

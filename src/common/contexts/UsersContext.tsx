@@ -1,17 +1,17 @@
 import useDialogState from '@/common/hooks/ui/use-dialog-state'
-import type { User } from '@/features/clients/data/schema'
-import { ContractTemplate } from '@/features/clients/data/schema'
+import type { Client } from '@/features/clients/data/schema'
 import React, { useState } from 'react'
+import { Template } from '../types/template'
 
 type UsersDialogType = 'invite' | 'add' | 'edit' | 'delete'
 
 interface UsersContextType {
   open: UsersDialogType | null
   setOpen: (str: UsersDialogType | null) => void
-  currentRow: User | null
-  setCurrentRow: React.Dispatch<React.SetStateAction<User | null>>
-  dialogTemplate: ContractTemplate | null
-  setDialogTemplate: React.Dispatch<React.SetStateAction<ContractTemplate | null>>
+  currentRow: Client | null
+  setCurrentRow: React.Dispatch<React.SetStateAction<Client | null>>
+  dialogTemplate: Template | null
+  setDialogTemplate: React.Dispatch<React.SetStateAction<Template | null>>
 }
 
 const UsersContext = React.createContext<UsersContextType | null>(null)
@@ -22,8 +22,8 @@ interface Props {
 
 export default function UsersProvider({ children }: Props) {
   const [open, setOpen] = useDialogState<UsersDialogType>(null)
-  const [currentRow, setCurrentRow] = useState<User | null>(null)
-  const [dialogTemplate, setDialogTemplate] = useState<ContractTemplate | null>(null)
+  const [currentRow, setCurrentRow] = useState<Client | null>(null)
+  const [dialogTemplate, setDialogTemplate] = useState<Template | null>(null)
 
   return (
     <UsersContext.Provider value={{ open, setOpen, currentRow, setCurrentRow, dialogTemplate, setDialogTemplate }}>

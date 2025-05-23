@@ -11,6 +11,7 @@ import DashboardLayout from './common/layouts/DashboardLayout';
 import AdminPayRoute from './features/admin-payment/AdminPayRoute';
 import ContractRoutes from "./features/contracts/ContractRoutes";
 import { default as HoursRoute, default as HoursRoutes } from './features/hours/HoursRoute';
+import InboxRoutes from "./features/inbox/InboxRoutes";
 import MyAccountRoutes from "./features/my-account/MyAccountRoutes";
 import ProfileRoutes from './features/profiles/ProfileRoutes';
 
@@ -20,7 +21,9 @@ const AppRoutes = () => (
     <Route>
       <Route element={<NavLayout />}>
         <Route element={<PublicOnlyRoute />} >
+          {AuthRoutes()}
           {AuthPublicRoutes()}
+          {RequestRoutes()}
         </Route>
       </Route>
     </Route>
@@ -32,17 +35,17 @@ const AppRoutes = () => (
           {ContractRoutes()}
           {PipelineRoutes()}
           {ClientRoutes()}
-          {RequestRoutes()}
           {AdminPayRoute()}
           {HoursRoute()}
           {ProfileRoutes()}
           {MyAccountRoutes()}
           {HoursRoutes()}
+          {InboxRoutes()}
         </Route>
       </Route>
     </Route>
 
-    {AuthRoutes()}
+
     <Route path='*' element={<NotFound />} />
   </Routes>
 );

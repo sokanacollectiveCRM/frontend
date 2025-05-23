@@ -6,6 +6,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/common/components/ui/table'
+import { Template } from '@/common/types/template'
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -22,7 +23,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 import { useState } from 'react'
-import { ContractTemplate, User } from '../data/schema'
+import { Client } from '../data/schema'
 import { DataTablePagination } from './data-table-pagination'
 import { DataTableToolbar } from './data-table-toolbar'
 import { DroppableTableRow } from './DroppableTableRow'
@@ -35,12 +36,12 @@ declare module '@tanstack/react-table' {
 }
 
 interface DataTableProps {
-  columns: ColumnDef<User>[]
-  data: User[]
-  draggedTemplate: ContractTemplate | null
+  columns: ColumnDef<Client>[]
+  data: Client[]
+  draggedTemplate: Template | null
 }
 
-export function ClientsTable({ columns, data, draggedTemplate}: DataTableProps) {
+export function ClientsTable({ columns, data, draggedTemplate }: DataTableProps) {
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -69,53 +70,53 @@ export function ClientsTable({ columns, data, draggedTemplate}: DataTableProps) 
   })
 
   return (
-      <div className='space-y-4'>
-        <DataTableToolbar table={table} draggedTemplate={draggedTemplate}/>
-        <div className='rounded-md border'>
-          <Table className='table-fixed w-full'>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id} className='group/row'>
-                  {headerGroup.headers.map((header) => {
-                    return (
-                      <TableHead
-                        key={header.id}
-                        colSpan={header.colSpan}
-                        className={header.column.columnDef.meta?.className ?? ''}
-                      >
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                      </TableHead>
-                    )
-                  })}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <DroppableTableRow
-                    key={row.id}
-                    row={row}
-                  /> ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className='h-24 text-center'
-                  >
-                    No results.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-        <DataTablePagination table={table} />
+    <div className='space-y-4'>
+      <DataTableToolbar table={table} draggedTemplate={draggedTemplate} />
+      <div className='rounded-md border'>
+        <Table className='table-fixed w-full'>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id} className='group/row'>
+                {headerGroup.headers.map((header) => {
+                  return (
+                    <TableHead
+                      key={header.id}
+                      colSpan={header.colSpan}
+                      className={header.column.columnDef.meta?.className ?? ''}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                    </TableHead>
+                  )
+                })}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <DroppableTableRow
+                  key={row.id}
+                  row={row}
+                />))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className='h-24 text-center'
+                >
+                  No results.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </div>
+      <DataTablePagination table={table} />
+    </div>
   )
 }
