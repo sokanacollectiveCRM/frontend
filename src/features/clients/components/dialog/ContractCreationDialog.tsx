@@ -24,13 +24,14 @@ import {
   SelectValue,
 } from '@/common/components/ui/select';
 import { Textarea } from '@/common/components/ui/textarea';
-import { useUsers } from '@/common/contexts/UsersContext';
 import { toast } from '@/common/hooks/toast/use-toast';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { mockTemplates } from '../DraggableTemplate';
+import { useClientsTable } from '../../contexts/ClientsContext';
+import { useTemplatesContext } from '../../contexts/TemplatesContext';
+import { ClientDropdown } from '../ClientDropdown';
 
 const formSchema = z.object({
   client: z.string().min(1, { message: 'Client is required.' }),
@@ -44,11 +45,12 @@ type ContractForm = z.infer<typeof formSchema>;
 
 interface Props {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChange: (open: string) => void;
 }
 
 export function ContractCreationDialog({ open, onOpenChange }: Props) {
-  const { dialogTemplate, currentRow } = useUsers();
+  const { dialogTemplate, currentRow } = useClientsTable();
+  const { templates } = useTemplatesContext();
 
   const form = useForm<ContractForm>({
     resolver: zodResolver(formSchema),
@@ -60,12 +62,12 @@ export function ContractCreationDialog({ open, onOpenChange }: Props) {
       deposit: '',
     },
   });
-  
+
   useEffect(() => {
     if (open) {
       form.reset({
-        client: currentRow ? `${currentRow.firstname} ${currentRow.lastname}` : '',
-        template: dialogTemplate?.title ?? '',
+        client: currentRow ? `${currentRow.user.firstname} ${currentRow.user.lastname}` : '',
+        template: dialogTemplate?.name ?? '',
         note: '',
         fee: '',
         deposit: '',
@@ -83,7 +85,7 @@ export function ContractCreationDialog({ open, onOpenChange }: Props) {
         </pre>
       ),
     });
-    onOpenChange(false);
+    onOpenChange('');
   };
 
   return (
@@ -91,7 +93,7 @@ export function ContractCreationDialog({ open, onOpenChange }: Props) {
       open={open}
       onOpenChange={(state) => {
         form.reset();
-        onOpenChange(state);
+        onOpenChange(state ? 'new-contract' : '');
       }}
     >
       <DialogContent className='sm:max-w-lg'>
@@ -112,10 +114,13 @@ export function ContractCreationDialog({ open, onOpenChange }: Props) {
                 control={form.control}
                 name='client'
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="flex flex-col">
                     <FormLabel>Client</FormLabel>
                     <FormControl>
-                      <Input placeholder='Jane Smith' {...field} />
+                      <ClientDropdown
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -135,11 +140,11 @@ export function ContractCreationDialog({ open, onOpenChange }: Props) {
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select a template" />
                         </SelectTrigger>
-                      </FormControl>  
+                      </FormControl>
                       <SelectContent className='z-[9999]'>
-                        {mockTemplates.map((template) => (
-                          <SelectItem key={template.id} value={template.title}>
-                            {template.title}
+                        {templates.map((template) => (
+                          <SelectItem key={template.id} value={template.name}>
+                            {template.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -168,7 +173,7 @@ export function ContractCreationDialog({ open, onOpenChange }: Props) {
                   <FormItem>
                     <FormLabel>Fee</FormLabel>
                     <FormControl>
-                      <Input placeholder='Default - $3000' {...field} />
+                      <Input placeholder={`Default - $${dialogTemplate?.serviceFee}`} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -181,7 +186,7 @@ export function ContractCreationDialog({ open, onOpenChange }: Props) {
                   <FormItem>
                     <FormLabel>Deposit</FormLabel>
                     <FormControl>
-                      <Input placeholder='Default - $1000' {...field} />
+                      <Input placeholder={`Default - $${dialogTemplate?.depositFee}`} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

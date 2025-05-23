@@ -1,47 +1,17 @@
 import { useEffect, useState } from 'react';
-
 import { useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
 
 import { useUser } from '@/common/hooks/user/useUser';
+import { toast } from 'sonner';
 
-const Container = styled.div`
-  max-width: 400px;
-  margin: 40px auto;
-  padding: 20px;
-`;
+import { Button } from '@/common/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/common/components/ui/card';
+import { Input } from '@/common/components/ui/input';
+import { Label } from '@/common/components/ui/label';
 
-const Form = styled.form`
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-`;
+import styled from 'styled-components';
 
-const Input = styled.input`
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-`;
-
-const Button = styled.button`
-  padding: 10px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-
-  &:disabled {
-    background-color: #ccc;
-  }
-`;
-
-const ErrorMessage = styled.div`
-  color: red;
-  margin-top: 10px;
-`;
-
-const PasswordStrength = styled.div`
+const PasswordStrength = styled.div<{ strength: string }>`
   height: 5px;
   margin-top: 5px;
   background-color: ${({ strength }) => {
@@ -68,6 +38,7 @@ const PasswordStrength = styled.div`
         return '0%';
     }
   }};
+  border-radius: 4px;
   transition: all 0.3s ease;
 `;
 
@@ -78,44 +49,27 @@ const PasswordRequirements = styled.ul`
   padding-left: 20px;
 `;
 
-const PasswordContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-`;
-
 export default function ResetPassword() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { updatePassword } = useUser();
   const navigate = useNavigate();
 
   useEffect(() => {
     const hash = window.location.hash.substring(1);
-
     const hashParams = new URLSearchParams(hash);
-
     const access_token = hashParams.get('access_token');
     const type = hashParams.get('type');
 
-    console.log('Hash parameters:', {
-      hasAccessToken: !!access_token,
-      type,
-    });
-
     if (!access_token) {
-      setError(
-        'No reset token found. Please request a new password reset link.'
-      );
+      toast.error('No reset token found. Please request a new link.');
     } else if (type !== 'recovery') {
-      setError(
-        'Invalid reset link type. Please request a new password reset link.'
-      );
+      toast.error('Invalid reset link type.');
     }
   }, []);
 
-  const checkPasswordStrength = (password) => {
+  const checkPasswordStrength = (password: string) => {
     const hasUpperCase = /[A-Z]/.test(password);
     const hasLowerCase = /[a-z]/.test(password);
     const hasNumbers = /\d/.test(password);
@@ -133,7 +87,7 @@ export default function ResetPassword() {
     return 'weak';
   };
 
-  const validatePassword = (password) => {
+  const validatePassword = (password: string) => {
     const requirements = [];
 
     if (password.length < 8) {
@@ -155,85 +109,93 @@ export default function ResetPassword() {
     return requirements;
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     const hash = window.location.hash.substring(1);
     const hashParams = new URLSearchParams(hash);
     const access_token = hashParams.get('access_token');
 
     if (!access_token) {
-      setError(
-        'Reset token not found. Please request a new password reset link.'
-      );
+      toast.error('Reset token not found. Please request a new link.');
       return;
     }
 
     const requirements = validatePassword(password);
     if (requirements.length > 0) {
-      setError(requirements.join(', '));
+      toast.error(requirements.join(', '));
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      toast.error('Passwords do not match');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      console.log('Attempting password reset with token');
       await updatePassword(password, access_token);
-
+      toast.success('Password updated! You can now log in.');
       navigate('/login', {
         state: {
-          message:
-            'Password has been reset successfully. Please login with your new password.',
+          message: 'Password has been reset successfully.',
         },
         replace: true,
       });
-    } catch (err) {
-      console.error('Password reset error:', err);
-      setError(err.message || 'Failed to reset password. Please try again.');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to reset password. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Container>
-      <h2>Set New Password</h2>
-      <Form onSubmit={handleSubmit}>
-        <PasswordContainer>
-          <Input
-            type='password'
-            placeholder='New Password'
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <PasswordStrength strength={checkPasswordStrength(password)} />
-          {password && (
-            <PasswordRequirements>
-              {validatePassword(password).map((req, index) => (
-                <li key={index}>{req}</li>
-              ))}
-            </PasswordRequirements>
-          )}
-        </PasswordContainer>
-        <Input
-          type='password'
-          placeholder='Confirm New Password'
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          required
-        />
-        <Button type='submit' disabled={isLoading}>
-          {isLoading ? 'Updating...' : 'Update Password'}
-        </Button>
-        {error && <ErrorMessage>{error}</ErrorMessage>}
-      </Form>
-    </Container>
+    <div className="flex flex-col gap-6 max-w-md mx-auto">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-2xl">Set New Password</CardTitle>
+          <CardDescription>Enter a new password below to complete your reset.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+            <div className="grid gap-2">
+              <Label htmlFor="password">New Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="New Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <PasswordStrength strength={checkPasswordStrength(password)} />
+              {password && (
+                <PasswordRequirements>
+                  {validatePassword(password).map((req, index) => (
+                    <li key={index}>{req}</li>
+                  ))}
+                </PasswordRequirements>
+              )}
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="Confirm New Password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+            </div>
+
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? 'Updating...' : 'Update Password'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

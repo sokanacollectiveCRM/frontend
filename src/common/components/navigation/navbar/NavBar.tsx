@@ -17,29 +17,24 @@ const LeftAligned = styled.div`
   gap: 10px;
 `;
 
-const LogoPlaceholder = styled(Button)`
-  padding: 0;
-  font-size: 1.7rem;
-  font-weight: bold;
-  font-family: monospace;
-`;
-
 export default function NavBar() {
   const navigate = useNavigate();
 
   return (
     <StyledNav>
       <LeftAligned>
-        <LogoPlaceholder onClick={() => navigate('/')}>[LOGO]</LogoPlaceholder>
+        <Button className='w-25' onClick={() => navigate('/login')} variant="ghost">
+          <img src="/logo.jpeg" alt="Logo" className="h-10 w-full" />
+        </Button>
       </LeftAligned>
-        <>
-          <Button onClick={() => navigate('/signup')}>
-            Sign Up
-          </Button>
-          <Button onClick={() => navigate('/login')}>
-            Login
-          </Button>
-        </>
+      <>
+        <Button variant="ghost" onClick={() => navigate('/signup')}>
+          Sign Up
+        </Button>
+        <Button variant="ghost" onClick={() => navigate('/login')}>
+          Login
+        </Button>
+      </>
     </StyledNav>
   );
 }

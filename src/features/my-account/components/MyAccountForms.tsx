@@ -11,7 +11,7 @@ export default function MyAccount() {
       </TabsList>
       <TabsContent value="profile">
         <Profile />
-      </TabsContent>  
+      </TabsContent>
       <TabsContent value="account">
         <Account />
       </TabsContent>
