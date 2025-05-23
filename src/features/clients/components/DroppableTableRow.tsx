@@ -7,19 +7,19 @@ import {
 import { useDroppable } from '@dnd-kit/core';
 import { flexRender, Row } from '@tanstack/react-table';
 import { forwardRef } from 'react';
-import { useClientsTable } from '../contexts/ClientsContext';
-import { User } from '../data/schema';
+import { useNavigate } from 'react-router-dom';
+import { Client } from '../data/schema';
 
 interface Props {
-  row: Row<User>;
+  row: Row<Client>;
 }
 
 export const DroppableTableRow = forwardRef<HTMLTableRowElement, Props>(
   ({ row }, ref) => {
-    const { setOpenTemplates } = useClientsTable();
+    let navigate = useNavigate();
 
     const { setNodeRef, isOver } = useDroppable({
-      id: `user-${row.original.id}`,
+      id: `user-${row.original.user.id}`,
       data: {
         type: 'user',
         user: row.original,
@@ -39,7 +39,8 @@ export const DroppableTableRow = forwardRef<HTMLTableRowElement, Props>(
         data-state={row.getIsSelected() && 'selected'}
         className={`group/row cursor-pointer transition transition-transform duration-300 ease-in-out ${isOver ? 'bg-accent scale-[.97]' : ''
           }`}
-        onClick={() => setOpenTemplates(true)}
+        onClick={() => navigate('/specified', {
+        })}
       >
         {row.getVisibleCells().map((cell) => (
           <TableCell

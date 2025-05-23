@@ -1,7 +1,7 @@
 export type Template = {
   id: string,
   name: string;
-  deposit: number;
-  fee: number;
+  depositFee: number;
+  serviceFee: number;
   storagePath: string;
 };

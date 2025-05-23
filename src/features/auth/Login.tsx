@@ -1,8 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
-import { RedSpan } from '@/common/components/form/styles';
 import { useUser } from '@/common/hooks/user/useUser';
 import GoogleButton from '@/features/auth/GoogleButton';
 
@@ -11,12 +10,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/common/components/ui/input';
 import { Label } from '@/common/components/ui/label';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function Login() {
   const navigate = useNavigate();
   const { login, googleAuth } = useUser();
-  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [searchParams] = useSearchParams();
+  const oauthError = searchParams.get('error');
+
+  useEffect(() => {
+    if (oauthError) {
+      toast.error(oauthError);
+    }
+  }, [oauthError]);
 
   const [formState, setFormState] = useState({
     email: '',
@@ -25,19 +32,18 @@ export default function Login() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormState({ ...formState, [e.target.name]: e.target.value });
-    setError('');
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
 
     try {
       await login(formState.email, formState.password);
       navigate('/', { replace: true });
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to login. Please try again.');
+    } catch (submitError) {
+      console.error('Login Error', submitError);
+      toast.error(submitError instanceof Error ? submitError.message : 'Failed to sign up. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -46,8 +52,8 @@ export default function Login() {
   const handleGoogleLogin = async () => {
     try {
       await googleAuth();
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to login. Please try again.');
+    } catch (googleError) {
+      toast.error(googleError instanceof Error ? googleError.message : 'Failed to sign up using Google. Please try again.');
     }
   };
 
@@ -60,7 +66,6 @@ export default function Login() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-            {error && <RedSpan>{error}</RedSpan>}
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input

@@ -1,14 +1,14 @@
 import { Template } from '@/common/types/template'
-import type { User } from '@/features/clients/data/schema'
+import type { Client } from '@/features/clients/data/schema'
 import React, { useState } from 'react'
 
 type ClientsDialogType = 'new-contract' | 'archive' | 'delete'
 
 interface ClientsContextType {
-  open: ClientsDialogType | null,
-  setOpen: (str: ClientsDialogType | null) => void
-  currentRow: User | null
-  setCurrentRow: React.Dispatch<React.SetStateAction<User | null>>
+  open: ClientsDialogType | '',
+  setOpen: (str: ClientsDialogType | '') => void
+  currentRow: Client | null
+  setCurrentRow: React.Dispatch<React.SetStateAction<Client | null>>
   dialogTemplate: Template | null
   setDialogTemplate: React.Dispatch<React.SetStateAction<Template | null>>
 }
@@ -20,8 +20,8 @@ interface Props {
 }
 
 export default function ClientsProvider({ children }: Props) {
-  const [open, setOpen] = useState<ClientsDialogType | null>(null);
-  const [currentRow, setCurrentRow] = useState<User | null>(null)
+  const [open, setOpen] = useState<ClientsDialogType | ''>('');
+  const [currentRow, setCurrentRow] = useState<Client | null>(null)
   const [dialogTemplate, setDialogTemplate] = useState<Template | null>(null)
 
   return (

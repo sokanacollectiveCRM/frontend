@@ -7,10 +7,9 @@ import { Badge } from '@/common/components/ui/badge'
 import { ScrollArea } from '@/common/components/ui/scroll-area'
 import { Separator } from '@/common/components/ui/separator'
 
-import { Button } from '@/common/components/ui/button'
-import { Pencil } from 'lucide-react'
 import 'react-pdf/dist/Page/AnnotationLayer.css'
 import 'react-pdf/dist/Page/TextLayer.css'
+import { useTemplatesContext } from '../../contexts/TemplatesContext'
 
 pdfjs.GlobalWorkerOptions.workerSrc = workerSrc
 
@@ -18,12 +17,13 @@ export function PdfPreview() {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const [numPages, setNumPages] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [templateName] = useState('')
+  const { selectedTemplateName } = useTemplatesContext();
 
   useEffect(() => {
     const fetchPdf = async () => {
       setIsLoading(true)
       try {
+        console.log(selectedTemplateName)
         const token = localStorage.getItem('authToken')
         const res = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL}/contracts/templates/generate`, {
           method: 'POST',
@@ -32,7 +32,7 @@ export function PdfPreview() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            name: templateName,
+            name: selectedTemplateName,
             fields: {
               clientname: 'CLIENT_NAME',
               deposit: 'DEPOSIT',
@@ -53,7 +53,7 @@ export function PdfPreview() {
     }
 
     fetchPdf()
-  }, [templateName])
+  }, [selectedTemplateName])
 
   return (
     <div className="relative w-full">
@@ -62,15 +62,7 @@ export function PdfPreview() {
       <div className="flex items-center justify-between px-4 py-2 bg-white border rounded-t-md">
         <div className="flex items-center gap-2 text-sm font-medium">
           <span className="text-muted-foreground">Template:</span>
-          <Badge variant="outline">{templateName}</Badge>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
-            onClick={() => console.log('Edit clicked')} // 🔧 replace with real logic later
-          >
-            <Pencil className="h-4 w-4 text-muted-foreground" />
-          </Button>
+          <Badge variant="outline">{selectedTemplateName}</Badge>
         </div>
         {numPages && (
           <div className="text-muted-foreground text-sm">

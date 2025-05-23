@@ -1,9 +1,8 @@
 {
   "$schema": "https://ui.shadcn.com/schema.json",
-  "style": "new-york",
+  "style": "default",
   "rsc": false,
   "tsx": true,
-  "path": "@/common/components/ui",
   "tailwind": {
     "config": "",
     "css": "src/App.css",
@@ -12,24 +11,11 @@
     "prefix": ""
   },
   "aliases": {
-    "components": "@/common/components/ui",
+    "components": "@/common/components",
     "utils": "@/lib/utils",
     "ui": "@/common/components/ui",
     "lib": "@/lib",
     "hooks": "@/common/hooks"
   },
-  "iconLibrary": "lucide",
-  "registries": {
-    "plate": {
-      "path": "@/common/components",
-      "style": "default",
-      "tailwind": {
-        "cssVariables": false
-      },
-      "aliases": {
-        "ui": "@/common/components/ui"
-      },
-      "url": "https://platejs.org/r"
-    }
-  }
+  "iconLibrary": "lucide"
 }

@@ -1,19 +1,13 @@
-import { useState } from 'react';
-
-import { Link } from 'react-router-dom';
-
-// import { Input } from '@/common/components/form/Input';
-import { useUser } from '@/common/hooks/user/useUser';
-
-
-
 import { Alert, AlertDescription, AlertTitle } from '@/common/components/ui/alert';
 import { Button } from '@/common/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/common/components/ui/card';
 import { Input } from '@/common/components/ui/input';
 import { Label } from '@/common/components/ui/label';
+import { useUser } from '@/common/hooks/user/useUser';
 import GoogleButton from '@/features/auth/GoogleButton';
 import { Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
 
@@ -32,14 +26,18 @@ export default function SignUp() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormState({ ...formState, [e.target.name]: e.target.value });
-    setError('');
   };
 
   const handleGoogleSignup = async () => {
     try {
       await googleAuth();
-    } catch (error) {
-      setError(error instanceof Error ? error.message : '');
+    } catch (googleError) {
+      const message = googleError instanceof Error
+        ? googleError.message
+        : 'Failed to login. Please try again.'
+
+      setError(message)
+      toast.error(message)
     }
   };
 
@@ -71,9 +69,14 @@ export default function SignUp() {
         throw new Error(data.error || 'Failed to create account');
       }
       toast.success('Account created successfully! Please check your email to verify your account')
-    } catch (error) {
-      console.error('Signup error:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to create account. Please try again.')
+    } catch (submitError) {
+      const message = submitError instanceof Error
+        ? submitError.message
+        : 'Failed to sign up. Please try again.'
+
+      setError(message)
+      console.error('Signup error:', message)
+      toast.error(message)
     } finally {
       setIsLoading(false);
     }

@@ -1,16 +1,14 @@
 import { LoadingOverlay } from "@/common/components/loading/LoadingOverlay";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/common/components/ui/card";
-import { useTemplates } from "@/common/hooks/contracts/useTemplates";
-import { useEffect, useState } from "react";
+import { useTemplatesContext } from "@/features/contracts/contexts/TemplatesContext";
+import { useEffect } from "react";
 import { NewTemplateDialog } from "../dialog/NewTemplateDialog";
 import { PdfPreview } from "../pdf/PdfPreview";
 import { TemplateItem } from "./TemplateItem";
 
 export function Viewport() {
-  const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
-  const { templates, isLoading, getTemplates } = useTemplates();
+  const { templates, isLoading, getTemplates, selectedTemplateName, setSelectedTemplateName } = useTemplatesContext();
 
-  // grab templates
   useEffect(() => {
     getTemplates()
   }, []);
@@ -21,10 +19,8 @@ export function Viewport() {
 
       <div className="flex flex-row lg:flex-row w-full flex-1 overflow-hidden px-4 py-10 gap-6">
         <div className="flex-1 overflow-y-auto">
-          {selectedTemplateId ? (
-            <>
-              <PdfPreview />
-            </>
+          {selectedTemplateName ? (
+            <PdfPreview />
           ) : (
             <div className="flex items-center justify-center h-[500px] border rounded-lg">
               <p className="text-muted-foreground">Select a template to preview.</p>
@@ -43,13 +39,12 @@ export function Viewport() {
 
           <CardContent className="p-4 pt-0">
             <div className="flex flex-col gap-2">
-
               {templates.map((template) => (
                 <TemplateItem
                   key={template.id}
                   template={template}
-                  isSelected={selectedTemplateId === Number(template.id)}
-                  onSelect={() => setSelectedTemplateId(Number(template.id))}
+                  isSelected={selectedTemplateName === template.name}
+                  onSelect={() => setSelectedTemplateName(template.name)}
                 />
               ))}
             </div>
@@ -57,5 +52,5 @@ export function Viewport() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

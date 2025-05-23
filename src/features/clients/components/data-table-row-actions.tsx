@@ -11,10 +11,10 @@ import { DotsHorizontalIcon } from '@radix-ui/react-icons'
 import { Row } from '@tanstack/react-table'
 import { Archive, Trash2 } from 'lucide-react'
 import { useClientsTable } from '../contexts/ClientsContext'
-import { User } from '../data/schema'
+import { Client } from '../data/schema'
 
 interface DataTableRowActionsProps {
-  row: Row<User>
+  row: Row<Client>
 }
 
 export function DataTableRowActions({ row }: DataTableRowActionsProps) {
@@ -23,19 +23,25 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
     <>
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant='ghost'
-            className='flex h-8 w-8 p-0 data-[state=open]:bg-muted'
+          <div
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
           >
-            <DotsHorizontalIcon className='h-4 w-4' />
-            <span className='sr-only'>Open menu</span>
-          </Button>
+            <Button
+              variant='ghost'
+              className='flex h-8 w-8 p-0 data-[state=open]:bg-muted'
+            >
+              <DotsHorizontalIcon className='h-4 w-4' />
+              <span className='sr-only'>Open menu</span>
+            </Button>
+          </div>
         </DropdownMenuTrigger>
         <DropdownMenuContent align='end' className='w-[160px]'>
           <DropdownMenuItem
-            onClick={() => {
-              setCurrentRow(row.original)
-              setOpen('archive')
+            onClick={(e) => {
+              e.stopPropagation();
+              setCurrentRow(row.original);
+              setOpen('archive');
             }}
           >
             Archive
@@ -45,9 +51,10 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            onClick={() => {
-              setCurrentRow(row.original)
-              setOpen('delete')
+            onClick={(e) => {
+              e.stopPropagation(); // ✅ prevent row click
+              setCurrentRow(row.original);
+              setOpen('delete');
             }}
             className='!text-red-500'
           >

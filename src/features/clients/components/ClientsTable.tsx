@@ -23,7 +23,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 import { useState } from 'react'
-import { User } from '../data/schema'
+import { Client } from '../data/schema'
 import { DataTablePagination } from './data-table-pagination'
 import { DataTableToolbar } from './data-table-toolbar'
 import { DroppableTableRow } from './DroppableTableRow'
@@ -36,8 +36,8 @@ declare module '@tanstack/react-table' {
 }
 
 interface DataTableProps {
-  columns: ColumnDef<User>[]
-  data: User[]
+  columns: ColumnDef<Client>[]
+  data: Client[]
   draggedTemplate: Template | null
 }
 
