@@ -55,8 +55,8 @@ export function TemplateItem({
         <EditTemplateDialog
           templateId={template.id}
           templateName={template.name}
-          currentDeposit={template.deposit}
-          currentFee={template.fee}
+          currentDeposit={template.depositFee}
+          currentFee={template.serviceFee}
           onUpdateSuccess={() => {
             toast.success(`${template.name} was updated successfully`);
           }}

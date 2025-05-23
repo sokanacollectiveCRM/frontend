@@ -1,6 +1,7 @@
 import type { UserContextType } from '@/common/types/auth';
 import { User } from '@/common/types/user';
 import React, { createContext, ReactNode, useEffect, useState } from 'react';
+
 export const UserContext = createContext<UserContextType>({
   user: null,
   setUser: () => { },
