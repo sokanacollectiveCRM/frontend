@@ -1,5 +1,6 @@
 import { Button } from '@/common/components/ui/button'
 import { Input } from '@/common/components/ui/input'
+import { Template } from '@/common/types/template'
 import { Table } from '@tanstack/react-table'
 import { X } from 'lucide-react'
 import { STATUS_LABELS, USER_STATUSES } from '../data/schema'
@@ -8,10 +9,11 @@ import { UsersPrimaryButtons } from './users-primary-buttons'
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>
+  draggedTemplate: Template | null,
 }
 
 export function DataTableToolbar<TData>({
-  table,
+  table, draggedTemplate
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0
 
@@ -37,7 +39,7 @@ export function DataTableToolbar<TData>({
                 label: STATUS_LABELS[status],
                 value: status,
               }))
-            }
+              }
             />
           )}
         </div>
@@ -52,7 +54,7 @@ export function DataTableToolbar<TData>({
           </Button>
         )}
       </div>
-      <UsersPrimaryButtons />
+      <UsersPrimaryButtons draggedTemplate={draggedTemplate} />
     </div>
   )
 }

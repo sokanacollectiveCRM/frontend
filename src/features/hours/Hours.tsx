@@ -5,23 +5,11 @@ import useWorkLog from "@/common/hooks/hours/useWorkLog"
 import { useUser } from "@/common/hooks/user/useUser"
 import { Header } from '@/common/layouts/Header'
 import { Main } from '@/common/layouts/Main'
-import { useEffect } from "react"
+import UsersProvider from '@/features/hours/context/clients-context'
 import { columns } from './components/users-columns'
-import { UsersDialogs } from './components/users-dialogs'
-import { UsersPrimaryButtons } from './components/users-primary-buttons'
 import { UsersTable } from './components/users-table'
-import UsersProvider from './context/clients-context'
-import { userListSchema } from './data/schema'
-import { users } from './data/users'
 
 export default function Hours() {
-  // Parse user list
-
-  //  CURRENTLY HAVE BACKEND WORKING FOR GETTING HOURS, useUser() gets the userID and calling useWorkLog() gets the information.
-  // to do now is parsing the returned data type thing of useWorkLog and displaying that information based on if it's finished loading or not 
-  // const [hoursData, setHoursData] = useState<any[]>();
-
-  const userList = userListSchema.parse(users);
   const { user, isLoading: userLoading } = useUser();
   const { hours, isLoading: hoursLoading } = useWorkLog(user?.id);
 
@@ -40,15 +28,9 @@ export default function Hours() {
     // Time fields
     start_time: new Date(session.start_time).toLocaleString(),
     end_time: new Date(session.end_time).toLocaleString(),
-      // Add any other fields your table might need
+    // Add any other fields your table might need
   })) || [];
 
-  // Log directly when hours change
-  useEffect(() => {
-    if (hours) {
-      console.log("Transformed hours data:", transformedData);
-    }
-  }, [transformedData]);
 
   return (
     <UsersProvider>
@@ -62,18 +44,21 @@ export default function Hours() {
       <LoadingOverlay isLoading={userLoading || hoursLoading} />
 
       <Main>
-        <div className='mb-2 flex flex-wrap items-center justify-between space-y-2'>
-          <div>
-            <h2 className='text-2xl font-bold tracking-tight'>Your Hours</h2>
+
+        <div className="flex-1 overflow-auto p-4">
+          <div className='mb-2 flex flex-wrap items-center justify-between space-y-2'>
+            <div>
+              <h2 className='text-2xl font-bold tracking-tight'>Hours</h2>
+              <p className='text-muted-foreground'>
+                Manage doula hours.
+              </p>
+            </div>
           </div>
-          <UsersPrimaryButtons />
-        </div>
-        <div className='-mx-4 flex-1 overflow-auto px-4 py-1 lg:flex-row lg:space-x-12 lg:space-y-0'>
           <UsersTable data={transformedData} columns={columns} />
+
         </div>
       </Main>
 
-      <UsersDialogs />
     </UsersProvider>
   )
 }

@@ -47,7 +47,11 @@ export function DatePicker<TFieldValues extends FieldValues = FieldValues>({
               type="button"
               variant="outline"
               disabled={disabled}
-              aria-label={`Select ${label}: ${field.value ? format(field.value, dateFormat) : 'No date selected'}`}
+              aria-label={`Select ${label}: ${(field.value as unknown) instanceof Date &&
+                  !isNaN((field.value as Date).getTime())
+                  ? format(field.value as Date, dateFormat)
+                  : placeholder
+                }`}
               className={cn(
                 "w-50 justify-start text-left font-normal",
                 !field.value && "text-muted-foreground",
@@ -55,7 +59,10 @@ export function DatePicker<TFieldValues extends FieldValues = FieldValues>({
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {format(field.value, dateFormat)}
+              {(field.value as unknown) instanceof Date &&
+                !isNaN((field.value as Date).getTime())
+                ? format(field.value as Date, dateFormat)
+                : placeholder}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">

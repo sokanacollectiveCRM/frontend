@@ -1,25 +1,20 @@
-import { useState } from 'react';
-
-import { Link, useNavigate } from 'react-router-dom';
-
-// import { Input } from '@/common/components/form/Input';
-import { useUser } from '@/common/hooks/user/useUser';
-
-
-import { RedSpan } from '@/common/components/form/styles';
-
-import SubmitButton from '@/common/components/form/SubmitButton';
+import { Alert, AlertDescription, AlertTitle } from '@/common/components/ui/alert';
+import { Button } from '@/common/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/common/components/ui/card';
 import { Input } from '@/common/components/ui/input';
 import { Label } from '@/common/components/ui/label';
+import { useUser } from '@/common/hooks/user/useUser';
 import GoogleButton from '@/features/auth/GoogleButton';
+import { Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 
 
 export default function SignUp() {
-  const navigate = useNavigate();
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
-  const {  googleAuth } = useUser();
+  const { googleAuth } = useUser();
 
   const [formState, setFormState] = useState({
     firstname: '',
@@ -29,40 +24,24 @@ export default function SignUp() {
     username: '',
   });
 
-  const handleChangeFirstname = (e) => {
-    setFormState({ ...formState, firstname: e.target.value });
-    setError('');
-  };
-
-  const handleChangeLastname = (e) => {
-    setFormState({ ...formState, lastname: e.target.value });
-    setError('');
-  };
-
-  const handleChangeEmail = (e) => {
-    setFormState({ ...formState, email: e.target.value });
-    setError('');
-  };
-
-  const handleChangePassword = (e) => {
-    setFormState({ ...formState, password: e.target.value });
-    setError('');
-  };
-
-  const handleChangeUsername = (e) => {
-    setFormState({ ...formState, username: e.target.value });
-    setError('');
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormState({ ...formState, [e.target.name]: e.target.value });
   };
 
   const handleGoogleSignup = async () => {
     try {
       await googleAuth();
-    } catch (error) {
-      setError(error.message);
+    } catch (googleError) {
+      const message = googleError instanceof Error
+        ? googleError.message
+        : 'Failed to login. Please try again.'
+
+      setError(message)
+      toast.error(message)
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
@@ -78,7 +57,6 @@ export default function SignUp() {
           body: JSON.stringify({
             email: formState.email,
             password: formState.password,
-            username: formState.username || undefined,
             firstname: formState.firstname || undefined,
             lastname: formState.lastname || undefined,
           }),
@@ -90,18 +68,15 @@ export default function SignUp() {
       if (!response.ok) {
         throw new Error(data.error || 'Failed to create account');
       }
-      alert(
-        'Account created successfully! Please check your email to verify your account.'
-      );
-      navigate('/login', {
-        state: {
-          message:
-            'Account created successfully! Please check your email to verify your account.',
-        },
-      });
-    } catch (error) {
-      console.error('Signup error:', error);
-      setError(error.message || 'Failed to create account. Please try again.');
+      toast.success('Account created successfully! Please check your email to verify your account')
+    } catch (submitError) {
+      const message = submitError instanceof Error
+        ? submitError.message
+        : 'Failed to sign up. Please try again.'
+
+      setError(message)
+      console.error('Signup error:', message)
+      toast.error(message)
     } finally {
       setIsLoading(false);
     }
@@ -113,10 +88,15 @@ export default function SignUp() {
         <CardHeader>
           <CardTitle className="text-2xl">Sign Up</CardTitle>
           <CardDescription>Enter your details below to create your account</CardDescription>
+          <Alert className='mt-5' variant={'destructive'}>
+            <AlertTitle>Heads up!</AlertTitle>
+            <AlertDescription>
+              You must be invited by an admin before you can create an account.
+            </AlertDescription>
+          </Alert>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-            {error && <RedSpan>{error}</RedSpan>}
             <div className="grid gap-2">
               <Label htmlFor="firstname">First Name</Label>
               <Input
@@ -124,7 +104,7 @@ export default function SignUp() {
                 name="firstname"
                 placeholder="First Name"
                 value={formState.firstname}
-                onChange={handleChangeFirstname}
+                onChange={handleChange}
               />
             </div>
 
@@ -135,9 +115,9 @@ export default function SignUp() {
                 name="lastname"
                 placeholder="Last Name"
                 value={formState.lastname}
-                onChange={handleChangeLastname}
+                onChange={handleChange}
               />
-            </div>  
+            </div>
 
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
@@ -147,19 +127,8 @@ export default function SignUp() {
                 name="email"
                 placeholder="j@example.com"
                 value={formState.email}
-                onChange={handleChangeEmail}
+                onChange={handleChange}
                 required
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                name="username"
-                placeholder="johnsmith"
-                value={formState.username}
-                onChange={handleChangeUsername}
               />
             </div>
 
@@ -171,18 +140,19 @@ export default function SignUp() {
                 name="password"
                 placeholder="Password"
                 value={formState.password}
-                onChange={handleChangePassword}
+                onChange={handleChange}
                 required
               />
             </div>
-            <SubmitButton disabled={isLoading} className="w-full">
-              {isLoading ? "Logging in..." : "Log In"}
-            </SubmitButton>
+
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'Sign Up'}
+            </Button>
             <GoogleButton
               onClick={handleGoogleSignup}
               isLoading={isLoading}
               text='Sign up with Google'
-  />
+            />
           </form>
           <div className="mt-4 text-center text-sm">
             Already have an account?{" "}

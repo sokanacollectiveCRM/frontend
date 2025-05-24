@@ -10,12 +10,21 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/common/components/ui/popover'
+import { Template } from '@/common/types/template'
 import { CommandGroup } from 'cmdk'
 import { SquarePlus } from 'lucide-react'
-import { DraggableTemplate, mockTemplates } from './TemplateSidebar'
+import { useState } from 'react'
+import { useTemplatesContext } from '../contexts/TemplatesContext'
+import { DraggableTemplate } from './DraggableTemplate'
 
-export function UsersPrimaryButtons() {
-  const templates = mockTemplates; // assume it returns a list of { id, title }
+export function UsersPrimaryButtons({ draggedTemplate }: { draggedTemplate: Template | null }) {
+  const { templates } = useTemplatesContext();
+
+  const [search, setSearch] = useState<string>('');
+
+  const filteredTemplates = templates.filter((template) =>
+    template.name.toLowerCase().includes(search.toLowerCase())
+  )
 
   const fetchCSV = async() => {
     const token = localStorage.getItem('authToken');
@@ -52,17 +61,32 @@ export function UsersPrimaryButtons() {
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-64 p-0" align="start">
-          <Command>
-            <CommandInput placeholder="Search templates..." />
-            <CommandList>
-              <CommandEmpty>No templates found.</CommandEmpty>
-              <CommandGroup>
-                {templates.map((template) => (
-                  <DraggableTemplate template={template}/>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
+          {draggedTemplate ? (
+            <div className="p-4 text-sm text-muted-foreground">
+              Drag a template onto a user to initiate a contract.
+            </div>
+          ) : (
+            <Command shouldFilter={false}>
+              <CommandInput
+                placeholder="Search templates..."
+                onValueChange={setSearch}
+              />
+              <CommandList>
+                {filteredTemplates.length === 0 ? (
+                  <CommandEmpty>No templates found.</CommandEmpty>
+                ) : (
+                  <CommandGroup>
+                    {filteredTemplates.map((template) => (
+                      <DraggableTemplate
+                        key={template.id}
+                        template={template}
+                      />
+                    ))}
+                  </CommandGroup>
+                )}
+              </CommandList>
+            </Command>
+          )}
         </PopoverContent>
       </Popover>
       <Button className="space-x-1" onClick={fetchCSV}>

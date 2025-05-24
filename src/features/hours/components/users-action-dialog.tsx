@@ -25,7 +25,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { userTypes } from '../data/data'
-import { User } from '../data/schema'
+import { HoursRows } from '../context/clients-context'
 
 const formSchema = z
   .object({
@@ -88,7 +88,7 @@ const formSchema = z
 type UserForm = z.infer<typeof formSchema>
 
 interface Props {
-  currentRow?: User
+  currentRow?: HoursRows
   open: boolean
   onOpenChange: (open: boolean) => void
 }

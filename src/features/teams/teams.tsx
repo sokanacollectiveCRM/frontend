@@ -3,7 +3,6 @@ import { Search, UserPlus, Download, Mail, Phone, MoreHorizontal } from 'lucide-
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/common/components/ui/card'
 import { Input } from '@/common/components/ui/input'
 import { Button } from '@/common/components/ui/button'
-import {Avatar, AvatarFallback } from '@/common/components/ui/avatar'
 import UserAvatar from '@/common/components/user/UserAvatar'
 import { Badge } from '@/common/components/ui/badge'
 import { 
@@ -29,7 +28,6 @@ interface TeamMember { //Team member interface
 }
 
 
-const rand:number = Math.floor(Math.random() * 4)
 
 
 export default function Teams() {
@@ -52,7 +50,7 @@ export default function Teams() {
         return
       }
 
-      const response = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL}/clients/team`, {
+      const response = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL}/clients/team/all`, {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -76,6 +74,7 @@ export default function Teams() {
         bio: member.bio
       }))
       setTeamMembers(teamMemberData)
+
     } catch (error) {
       console.error('Error fetching team members:', error)
     } finally {
@@ -112,12 +111,14 @@ export default function Teams() {
           'Content-Type': 'application/json'
         },
       })
-
       if (!response.ok) {
         throw new Error('Failed to delete member')
-      }
+      }else{
 
-      fetchTeam()
+        setTeamMembers(teamMembers => teamMembers.filter(member => member.id != memberId)   
+      )
+        fetchTeam()
+      }
     } catch (error) {
       console.error('Error deleting member:', error)
     }
@@ -201,7 +202,7 @@ export default function Teams() {
   }, [])
 
   return (
-    <div className="min-h-screen w-full space-y-8">
+    <div className="h-full w-full">
       <div className="p-6 flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center">
         <h2 className="text-2xl font-bold tracking-tight">Team Members</h2>
         
@@ -283,23 +284,22 @@ export default function Teams() {
         </div>
       </div>
 
-      <div className="w-full h-full">
-        {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-pulse">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="bg-gray-100 rounded-lg h-48"></div>
-            ))}
+      <div className="h-full w-full space-y-8 overflow-y-auto pb-8">
+        {isLoading ? (<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-pulse">
+            {[...Array(8)].map((_, i) => ( <div key={i} className="bg-gray-100 rounded-lg h-48"></div>))}
           </div>
-        ) : filteredMembers.length > 0 ? (
+        ) 
+        :
+         filteredMembers.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full h-full">
             {filteredMembers.map((member, index) => {
               return (
-                <Card key={index} className="overflow-hidden hover:shadow-md transition-all border border-gray-200 w-350 flex flex-col">
+                <Card key={index} className="overflow-hidden hover:shadow-md transition-all border border-gray-200 w-350 h-50 flex flex-col">
                   <CardHeader className="flex flex-row items-center gap-4 pb-2">
                     <UserAvatar 
-                                  fullName={`${member?.firstname || ''} ${member?.lastname || ''}`} 
-                                  className={'h-12 w-12'}
-                                />
+                    fullName={`${member?.firstname || ''} ${member?.lastname || ''}`} 
+                    className={'h-12 w-12'}
+                     />
                     <div className="flex-1 w-full">
                       <CardTitle className="text-lg w-full">
                         {member.firstname} {member.lastname}
@@ -320,7 +320,7 @@ export default function Teams() {
                         <DropdownMenuItem>Message</DropdownMenuItem>
                         <DropdownMenuItem 
                           className="text-red-600"
-                          onClick={() => deleteMember(member.id)}
+                          onClick={()=>{deleteMember(member.id)}}
                         >
                           Remove
                         </DropdownMenuItem>
@@ -349,7 +349,8 @@ export default function Teams() {
               )
             })}
           </div>
-        ) : (
+        ) : 
+        (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <div className="rounded-full bg-gray-100 p-3 mb-4">
               <Search className="h-6 w-6 text-gray-400" />

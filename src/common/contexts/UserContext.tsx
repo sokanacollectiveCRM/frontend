@@ -1,14 +1,15 @@
 import type { UserContextType } from '@/common/types/auth';
 import { User } from '@/common/types/user';
 import React, { createContext, ReactNode, useEffect, useState } from 'react';
+
 export const UserContext = createContext<UserContextType>({
   user: null,
-  setUser: () => {},
+  setUser: () => { },
   isLoading: false,
   login: async () => false,
-  logout: async () => {},
+  logout: async () => { },
   checkAuth: async () => false,
-  googleAuth: async () => {},
+  googleAuth: async () => { },
   requestPasswordReset: async () => false,
   updatePassword: async () => false,
 });
@@ -25,6 +26,7 @@ export function UserProvider({ children }: UserProviderProps): React.ReactElemen
     `${import.meta.env.VITE_APP_BACKEND_URL.replace(/\/$/, '')}${endpoint}`;
 
   const checkAuth = async (): Promise<boolean> => {
+    setIsLoading(true);
     const token = localStorage.getItem('authToken');
     console.log('Token from localStorage:', token);
 
@@ -54,7 +56,7 @@ export function UserProvider({ children }: UserProviderProps): React.ReactElemen
     }
   };
 
-  const login = async (email: string, password:string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<boolean> => {
     try {
       const response = await fetch(buildUrl('/auth/login'), {
         method: 'POST',
@@ -143,7 +145,7 @@ export function UserProvider({ children }: UserProviderProps): React.ReactElemen
     }
   };
 
-  const updatePassword = async (password:string , accessToken: string): Promise<boolean> => {
+  const updatePassword = async (password: string, accessToken: string): Promise<boolean> => {
     try {
       const response = await fetch(buildUrl('/auth/reset-password'), {
         method: 'PUT',

@@ -3,38 +3,35 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import updateClientStatus from '@/common/utils/updateClientStatus'
 import { cn } from '@/lib/utils'
 import { ColumnDef } from '@tanstack/react-table'
-import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
-import { STATUS_LABELS, User, userStatusSchema } from '../data/schema'
+import { Client, STATUS_LABELS, userStatusSchema } from '../data/schema'
 import { DataTableColumnHeader } from './data-table-column-header'
 import { DataTableRowActions } from './data-table-row-actions'
 
 const statusOptions = userStatusSchema.options;
 
-export const columns: ColumnDef<User>[] = [
+export const columns: ColumnDef<Client>[] = [
   {
     id: 'client',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Client' />
     ),
     cell: ({ row }) => {
-      const { firstname, lastname } = row.original
+      const { user: { firstname, lastname } } = row.original
       const fullName = `${firstname} ${lastname}`
       const initials = `${firstname[0] ?? ''}${lastname[0] ?? ''}`.toUpperCase();
 
       return (
-        <Link to = "/specified" state={{user: row.original}}>
-          <div className="flex items-center gap-2 max-w-36 h-10">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-sm font-medium text-gray-700">
-              {initials}
-            </div>
-            <LongText className='max-w-36'>{fullName}</LongText>
+        <div className="flex items-center gap-2 max-w-36 h-10">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-sm font-medium text-gray-700">
+            {initials}
           </div>
-        </Link>
+          <LongText className='max-w-36'>{fullName}</LongText>
+        </div>
       );
     },
     filterFn: (row, _columnId, filterValue) => {
-      const { firstname, lastname } = row.original
+      const { user: { firstname, lastname } } = row.original
       const fullName = `${firstname} ${lastname}`.toLowerCase()
       return fullName.includes((filterValue as string).toLowerCase())
     },
@@ -62,8 +59,8 @@ export const columns: ColumnDef<User>[] = [
       <DataTableColumnHeader column={column} title='Requested' />
     ),
     cell: ({ row }) => {
-      const requested = row.getValue('requestedAt') as Date;
-      return <div className='w-fit text-nowrap'>{requested.toLocaleDateString()}</div>;
+      const { requestedAt } = row.original;
+      return <div className='w-fit text-nowrap'>{requestedAt.toLocaleDateString() ?? '-'}</div>
     },
     meta: {
       className: cn(

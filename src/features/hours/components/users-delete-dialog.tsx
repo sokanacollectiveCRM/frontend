@@ -6,19 +6,19 @@ import { Label } from '@/common/components/ui/label'
 import { toast } from '@/common/hooks/toast/use-toast'
 import { TriangleAlert } from 'lucide-react'
 import { useState } from 'react'
-import { User } from '../data/schema'
+import { HoursRows } from '../context/clients-context'
 
 interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
-  currentRow: User
+  currentRow: HoursRows
 }
 
 export function UsersDeleteDialog({ open, onOpenChange, currentRow }: Props) {
   const [value, setValue] = useState('')
 
   const handleDelete = () => {
-    if (value.trim() !== currentRow.firstName) return
+    if (value.trim() !== currentRow.client.firstName) return
 
     onOpenChange(false)
     toast({
@@ -38,7 +38,7 @@ export function UsersDeleteDialog({ open, onOpenChange, currentRow }: Props) {
       open={open}
       onOpenChange={onOpenChange}
       handleConfirm={handleDelete}
-      disabled={value.trim() !== currentRow.firstName}
+      disabled={value.trim() !== currentRow.client.firstName}
       title={
         <span className='text-destructive'>
           <TriangleAlert
@@ -52,7 +52,7 @@ export function UsersDeleteDialog({ open, onOpenChange, currentRow }: Props) {
         <div className='space-y-4'>
           <p className='mb-2'>
             Are you sure you want to delete{' '}
-            <span className='font-bold'>{currentRow.firstName}</span>?
+            <span className='font-bold'>{currentRow.client.firstName}</span>?
             <br />
             This action will permanently remove the user with the role of{' '}
             from the system. This cannot be undone.

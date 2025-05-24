@@ -1,5 +1,5 @@
 import { ContractCreationDialog } from '@/features/clients/components/dialog/ContractCreationDialog'
-import { useUsers } from '../../context/users-context'
+import { useUsers } from '@/features/pipeline/context/users-context'
 
 export function UsersDialogs() {
   const { open, setOpen, currentRow, setCurrentRow } = useUsers()
