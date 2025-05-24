@@ -78,7 +78,7 @@ export function PdfPreview() {
           {pdfUrl ? (
             <Document
               file={pdfUrl}
-              onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+              onLoadSuccess={({ numPages }: { numPages: number }) => setNumPages(numPages)}
               loading=""
             >
               <div className="flex flex-col items-center gap-6 py-4">
