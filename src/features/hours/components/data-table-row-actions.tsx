@@ -17,7 +17,6 @@ interface DataTableRowActionsProps {
 }
 
 export function DataTableRowActions({ row }: DataTableRowActionsProps) {
-  return (<div className='flex h-8 w-8 p-0 data-[state=open]:bg-muted'></div>)
   return (
     <>
       <DropdownMenu modal={false}>

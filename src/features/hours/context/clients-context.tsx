@@ -24,6 +24,7 @@ export type HoursRows = {
   // Time fields
   start_time: string,
   end_time: string,
+  note: any
 }
 
 const UsersContext = React.createContext<UsersContextType | null>(null)

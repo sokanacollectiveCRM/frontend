@@ -1,4 +1,5 @@
 import { Button } from '@/common/components/ui/button'
+import { Textarea } from "@/common/components/ui/textarea"
 import { SquarePlus } from 'lucide-react'
 import * as React from 'react'
 import {
@@ -12,7 +13,6 @@ import {
 } from "@/common/components/ui/sheet"
 import { DateTimePicker } from './time-date-pick'
 import { ClientsPicker } from './clients-picker'
-import { User } from '@/common/types/user';
 import addWorkSession from '@/common/utils/addWorkSession'
 import { useUser } from '@/common/hooks/user/useUser'
 
@@ -23,6 +23,7 @@ export function UsersPrimaryButtons() {
   const [client, setClient] = React.useState<any>();
   const [error, setError] = React.useState<string | null>(null);
   const [open, setOpen] = React.useState(false);
+  const [note, setNote] = React.useState<string>("");
   const { user } = useUser();
 
 
@@ -49,7 +50,7 @@ export function UsersPrimaryButtons() {
       return;
     }
     try {
-      await addWorkSession(user?.id, client.user.id, startDate, endDate);
+      await addWorkSession(user?.id, client.user.id, startDate, endDate, note);
       setOpen(false);
     } catch(error) {
       console.error(error);
@@ -61,7 +62,7 @@ export function UsersPrimaryButtons() {
       const oneHour = 60 * 60 * 1000; // milliseconds in one hour
       const diffInMilliseconds = endDate?.getTime() - startDate.getTime();
       const hoursWorked = Math.round((diffInMilliseconds / oneHour) * 100) / 100;
-      setHoursWorked(hoursWorked)
+      setHoursWorked(hoursWorked);
     } 
     else {
       setHoursWorked(0);
@@ -114,6 +115,13 @@ export function UsersPrimaryButtons() {
                 </div>
                 <div className='flex flex-col items-center'>
                   <h1 className='text-lg'>Hours worked: <span className='font-bold'>{hoursWorked}</span> hours</h1>
+                </div>
+                <div className='flex flex-col items-center'>
+                  <h1 className='text-lg'>Add notes?</h1>
+                  <Textarea 
+                    placeholder="Type your notes here." 
+                    onChange={(e) => setNote(e.target.value)}
+                  />
                 </div>
               </div>
             </div>
