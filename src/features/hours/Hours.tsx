@@ -13,23 +13,30 @@ export default function Hours() {
   const { user, isLoading: userLoading } = useUser();
   const { hours, isLoading: hoursLoading } = useWorkLog(user?.id);
 
-  const transformedData = hours?.map(session => ({
-    id: session.id,
-    // Client fields
-    client: {
-      firstName: session.client.firstname,
-      lastName: session.client.lastname
-    },
-    // Doula fields
-    doula: {
-      firstName: session.doula.firstname,
-      lastName: session.doula.lastname
-    },
-    // Time fields
-    start_time: new Date(session.start_time).toLocaleString(),
-    end_time: new Date(session.end_time).toLocaleString(),
-    // Add any other fields your table might need
-  })) || [];
+  const transformedData = hours?.map(session => {
+    console.log("session note: ", session.note);
+    return {
+      id: session.id,
+      // Client fields
+      client: {
+        firstName: session.client.firstname,
+        lastName: session.client.lastname
+      },
+      // Doula fields
+      doula: {
+        firstName: session.doula.firstname,
+        lastName: session.doula.lastname
+      },
+      // Time fields
+      start_time: new Date(session.start_time).toLocaleString(),
+      end_time: new Date(session.end_time).toLocaleString(),
+      note: session.note
+    }
+  }) || [];
+
+  if(!hoursLoading) {
+    console.log("hours is", hours)
+  }
 
 
   return (
@@ -44,7 +51,6 @@ export default function Hours() {
       <LoadingOverlay isLoading={userLoading || hoursLoading} />
 
       <Main>
-
         <div className="flex-1 overflow-auto p-4">
           <div className='mb-2 flex flex-wrap items-center justify-between space-y-2'>
             <div>

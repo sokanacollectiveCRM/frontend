@@ -1,8 +1,8 @@
 import LongText from '@/common/components/ui/long-text'
 import { cn } from '@/lib/utils'
 import { ColumnDef } from '@tanstack/react-table'
-import { DataTableColumnHeader } from './data-table-column-header'
 import { HoursRows } from '../context/clients-context'
+import { DataTableColumnHeader } from './data-table-column-header'
 
 export const columns: ColumnDef<HoursRows>[] = [
   {
@@ -16,7 +16,7 @@ export const columns: ColumnDef<HoursRows>[] = [
       return <LongText className='max-w-36'>{fullName}</LongText>
     },
     meta: { className: 'w-36' },
-  }, 
+  },
   {
     id: 'doula',
     header: ({ column }) => (
@@ -45,7 +45,6 @@ export const columns: ColumnDef<HoursRows>[] = [
     },
     enableHiding: false,
   },
-
   {
     accessorKey: 'end_time',
     header: ({ column }) => (
@@ -63,24 +62,40 @@ export const columns: ColumnDef<HoursRows>[] = [
     cell: ({ row }) => {
       const start_time = row.getValue('start_time');
       const end_time = row.getValue('end_time');
-      
+
       if (!start_time || !end_time) {
         return <div>N/A</div>;
       }
-      
+
       const startDate = new Date(start_time as string);
       const endDate = new Date(end_time as string);
-      
+
       // Calculate duration in milliseconds
       const durationMs = endDate.getTime() - startDate.getTime();
       const hours = Math.floor(durationMs / (1000 * 60 * 60));
       const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-      
+
       // Format the duration string
       const durationStr = `${hours}h ${minutes}m`;
-      
-      return <div>{durationStr}</div>;     
+
+      return <div>{durationStr}</div>;
     },
+    enableSorting: true,
+  },
+  {
+    accessorKey: 'note',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Notes' />
+    ),
+    cell: ({ row }) => {
+      const noteContent = row.original.note?.content || "";
+      return <LongText className='max-w-36'>{noteContent}</LongText>
+    }
+    ,
+    meta: {
+      className: 'w-36'
+    },
+    enableHiding: false,
     enableSorting: true,
   },
 ]
