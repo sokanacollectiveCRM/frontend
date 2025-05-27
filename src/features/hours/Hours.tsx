@@ -8,13 +8,15 @@ import { Main } from '@/common/layouts/Main'
 import UsersProvider from '@/features/hours/context/clients-context'
 import { columns } from './components/users-columns'
 import { UsersTable } from './components/users-table'
+import { useEffect, useState } from 'react'
+import { TotalHoursHoverCard } from './components/total-hours-hover-card'
 
 export default function Hours() {
   const { user, isLoading: userLoading } = useUser();
   const { hours, isLoading: hoursLoading } = useWorkLog(user?.id);
+  const [totalHours, setTotalHours] = useState<string>("");
 
   const transformedData = hours?.map(session => {
-    console.log("session note: ", session.note);
     return {
       id: session.id,
       // Client fields
@@ -38,6 +40,19 @@ export default function Hours() {
     console.log("hours is", hours)
   }
 
+  useEffect(() => {
+    if(hours && hours.length > 0) {
+      const durationMs = hours.reduce((acc, session) => {
+        const startDate = new Date(session.start_time);
+        const endDate = new Date(session.end_time); // Fixed: use end_time
+        const durationMs = endDate.getTime() - startDate.getTime();
+        return acc + durationMs;
+      }, 0);
+      const num_hours = Math.floor(durationMs / (1000 * 60 * 60));
+      const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+      setTotalHours(`${num_hours}h ${minutes}m`);
+    }
+  }, [hours])
 
   return (
     <UsersProvider>
@@ -61,7 +76,9 @@ export default function Hours() {
             </div>
           </div>
           <UsersTable data={transformedData} columns={columns} />
-
+          <TotalHoursHoverCard
+            text={totalHours} 
+          />
         </div>
       </Main>
 
