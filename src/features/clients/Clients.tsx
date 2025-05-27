@@ -4,38 +4,41 @@ import { Header } from '@/common/layouts/Header'
 import { Main } from '@/common/layouts/Main'
 import ClientsBoard from './components/ClientsBoard'
 import { TableDialogs } from './components/dialog/TableDialogs'
-import ClientsProvider from './contexts/ClientsContext'
+import { ClientsProvider } from './contexts/ClientsContext'
+import TableProvider from './contexts/TableContext'
 import { TemplatesProvider } from './contexts/TemplatesContext'
 
 export default function Clients() {
 
   return (
     <TemplatesProvider>
-      <ClientsProvider>
-        <Header fixed>
-          <Search />
-          <div className='ml-auto flex items-center space-x-4'>
-            <ProfileDropdown />
-          </div>
-        </Header>
-
-        <Main>
-          <div className="flex-1 overflow-auto p-4">
-            <div className='mb-2 flex flex-wrap items-center justify-between space-y-2'>
-              <div>
-                <h2 className='text-2xl font-bold tracking-tight'>Clients</h2>
-                <p className='text-muted-foreground'>
-                  Manage your clients and their status here.
-                </p>
-              </div>
+      <TableProvider>
+        <ClientsProvider>
+          <Header fixed>
+            <Search />
+            <div className='ml-auto flex items-center space-x-4'>
+              <ProfileDropdown />
             </div>
+          </Header>
 
-            <ClientsBoard />
-          </div>
-        </Main>
+          <Main>
+            <div className="flex-1 overflow-auto p-4">
+              <div className='mb-2 flex flex-wrap items-center justify-between space-y-2'>
+                <div>
+                  <h2 className='text-2xl font-bold tracking-tight'>Clients</h2>
+                  <p className='text-muted-foreground'>
+                    Manage your clients and their status here.
+                  </p>
+                </div>
+              </div>
 
-        <TableDialogs />
-      </ClientsProvider>
+              <ClientsBoard />
+            </div>
+          </Main>
+
+          <TableDialogs />
+        </ClientsProvider>
+      </TableProvider>
     </TemplatesProvider>
   )
 }

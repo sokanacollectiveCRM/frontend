@@ -24,18 +24,21 @@ import {
   SelectValue,
 } from '@/common/components/ui/select';
 import { Textarea } from '@/common/components/ui/textarea';
-import { toast } from '@/common/hooks/toast/use-toast';
+import { createContract } from '@/common/utils/createContract';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect } from 'react';
+import { Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { z } from 'zod';
-import { useClientsTable } from '../../contexts/ClientsContext';
+import { useTable } from '../../contexts/TableContext';
 import { useTemplatesContext } from '../../contexts/TemplatesContext';
+import { clientSchema } from '../../data/schema';
 import { ClientDropdown } from '../ClientDropdown';
 
 const formSchema = z.object({
-  client: z.string().min(1, { message: 'Client is required.' }),
-  template: z.string().min(1, { message: 'Template is required.' }),
+  client: clientSchema,
+  template: z.string().min(1, { message: "Template is required" }),
   note: z.string().optional(),
   fee: z.string().optional(),
   deposit: z.string().optional(),
@@ -49,13 +52,14 @@ interface Props {
 }
 
 export function ContractCreationDialog({ open, onOpenChange }: Props) {
-  const { dialogTemplate, currentRow } = useClientsTable();
+  const { dialogTemplate, currentRow } = useTable();
   const { templates } = useTemplatesContext();
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const form = useForm<ContractForm>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      client: '',
+      client: currentRow!,
       template: '',
       note: '',
       fee: '',
@@ -66,26 +70,41 @@ export function ContractCreationDialog({ open, onOpenChange }: Props) {
   useEffect(() => {
     if (open) {
       form.reset({
-        client: currentRow ? `${currentRow.user.firstname} ${currentRow.user.lastname}` : '',
-        template: dialogTemplate?.name ?? '',
+        client: currentRow ?? undefined,
+        template: dialogTemplate?.name ?? undefined,
         note: '',
-        fee: '',
-        deposit: '',
-      })
+        fee: dialogTemplate?.serviceFee.toString() ?? '',
+        deposit: dialogTemplate?.depositFee.toString() ?? '',
+      });
     }
-  }, [open, currentRow, dialogTemplate])
+  }, [open, currentRow, dialogTemplate]);
 
-  const onSubmit = (values: ContractForm) => {
+  const onSubmit = async (values: ContractForm) => {
+    setIsLoading(true);
     form.reset();
-    toast({
-      title: 'New Contract Submitted',
-      description: (
-        <pre className='mt-2 w-[340px] rounded-md bg-slate-950 p-4'>
-          <code className='text-white'>{JSON.stringify(values, null, 2)}</code>
-        </pre>
-      ),
-    });
-    onOpenChange('');
+
+    const fullTemplate = templates.find((t) => t.name === values.template);
+    if (!fullTemplate) {
+      toast.error('Selected template not found');
+      return;
+    }
+
+    try {
+      await createContract({
+        templateId: fullTemplate.id,
+        client: values.client,
+        note: values.note,
+        fee: values.fee,
+        deposit: values.deposit
+      });
+      setIsLoading(false);
+      onOpenChange('');
+      toast.success(`Created ${fullTemplate.name} agreement with ${values.client.user.firstname} ${values.client.user.lastname}.`);
+    }
+    catch (err) {
+      setIsLoading(false);
+      toast.error(`Something went wrong. ${err instanceof Error ? err.message : ''}`)
+    }
   };
 
   return (
@@ -97,13 +116,13 @@ export function ContractCreationDialog({ open, onOpenChange }: Props) {
       }}
     >
       <DialogContent className='sm:max-w-lg'>
-        <DialogHeader className='text-left'>
+        <DialogHeader className='text-left mt-2'>
           <DialogTitle>Create New Contract</DialogTitle>
           <DialogDescription>
             Fill out the contract details. Click save when you're done.
           </DialogDescription>
         </DialogHeader>
-        <div className='-mr-4 h-[26.25rem] w-full overflow-y-auto py-1 pr-4'>
+        <div className=' h-[26.25rem] w-full overflow-y-auto py-1 '>
           <Form {...form}>
             <form
               id='contract-form'
@@ -196,8 +215,12 @@ export function ContractCreationDialog({ open, onOpenChange }: Props) {
           </Form>
         </div>
         <DialogFooter>
-          <Button type='submit' form='contract-form'>
-            Save Contract
+          <Button type="submit" form='contract-form' className="w-full" disabled={isLoading}>
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+            ) : (
+              'Save Contract'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

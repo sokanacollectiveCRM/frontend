@@ -1,43 +1,44 @@
-import { Template } from '@/common/types/template'
-import type { Client } from '@/features/clients/data/schema'
-import React, { useState } from 'react'
-
-type ClientsDialogType = 'new-contract' | 'archive' | 'delete'
+import { useClients } from '@/common/hooks/clients/useClients'
+import { Client, clientListSchema } from '@/features/clients/data/schema'
+import { createContext, useContext, useEffect, useState } from 'react'
 
 interface ClientsContextType {
-  open: ClientsDialogType | '',
-  setOpen: (str: ClientsDialogType | '') => void
-  currentRow: Client | null
-  setCurrentRow: React.Dispatch<React.SetStateAction<Client | null>>
-  dialogTemplate: Template | null
-  setDialogTemplate: React.Dispatch<React.SetStateAction<Template | null>>
+  clients: Client[]
+  isLoading: boolean
+  refreshClients: () => void
 }
 
-const ClientsContext = React.createContext<ClientsContextType | null>(null)
+const ClientsContext = createContext<ClientsContextType | undefined>(undefined)
 
-interface Props {
-  children: React.ReactNode
-}
+export function ClientsProvider({ children }: { children: React.ReactNode }) {
+  const { clients: rawClients, getClients, isLoading } = useClients()
+  const [clients, setClients] = useState<Client[]>([])
 
-export default function ClientsProvider({ children }: Props) {
-  const [open, setOpen] = useState<ClientsDialogType | ''>('');
-  const [currentRow, setCurrentRow] = useState<Client | null>(null)
-  const [dialogTemplate, setDialogTemplate] = useState<Template | null>(null)
+  useEffect(() => {
+    getClients()
+  }, [])
+
+  useEffect(() => {
+    try {
+      const parsed = clientListSchema.parse(rawClients)
+      setClients(parsed)
+    } catch (err) {
+      console.error('Client list schema parse failed:', err)
+      setClients([])
+    }
+  }, [rawClients])
 
   return (
-    <ClientsContext.Provider value={{ open, setOpen, currentRow, setCurrentRow, dialogTemplate, setDialogTemplate }}>
+    <ClientsContext.Provider value={{ clients, isLoading, refreshClients: getClients }}>
       {children}
     </ClientsContext.Provider>
   )
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
-export const useClientsTable = () => {
-  const clientsContext = React.useContext(ClientsContext)
-
-  if (!clientsContext) {
-    throw new Error('useUsers has to be used within <UsersContext>')
+export function useClientsContext() {
+  const context = useContext(ClientsContext)
+  if (!context) {
+    throw new Error('useClientsContext must be used within a ClientsProvider')
   }
-
-  return clientsContext
+  return context
 }

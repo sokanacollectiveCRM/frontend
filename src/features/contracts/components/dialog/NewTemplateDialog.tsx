@@ -11,9 +11,9 @@ import {
 } from '@/common/components/ui/dialog'
 import { Input } from '@/common/components/ui/input'
 import { Label } from '@/common/components/ui/label'
-import { useToast } from '@/common/hooks/toast/use-toast'
 import { Loader2, Plus } from 'lucide-react'
 import { useRef, useState } from 'react'
+import { toast } from 'sonner'
 
 type Props = {
   onUploadSuccess: () => void
@@ -21,7 +21,6 @@ type Props = {
 
 export function NewTemplateDialog({ onUploadSuccess }: Props) {
   const [isLoading, setIsLoading] = useState(false)
-  const { toast } = useToast()
   const closeRef = useRef<HTMLButtonElement | null>(null)
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -57,9 +56,11 @@ export function NewTemplateDialog({ onUploadSuccess }: Props) {
       if (!res.ok) throw new Error('Upload failed.')
 
       onUploadSuccess()
+      toast.success(`Successfully created ${nameInput}.`);
       closeRef.current?.click()
     } catch (err) {
       console.error(err)
+      toast.error(`Something went wrong. ${err instanceof Error ? err.message : err}`)
     } finally {
       setIsLoading(false)
     }

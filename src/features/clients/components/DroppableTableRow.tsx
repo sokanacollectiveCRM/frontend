@@ -39,7 +39,7 @@ export const DroppableTableRow = forwardRef<HTMLTableRowElement, Props>(
         data-state={row.getIsSelected() && 'selected'}
         className={`group/row cursor-pointer transition transition-transform duration-300 ease-in-out ${isOver ? 'bg-accent scale-[.97]' : ''
           }`}
-        onClick={() => navigate('/specified', {
+        onClick={() => navigate(`/specified/${row.original.id}`, {
         })}
       >
         {row.getVisibleCells().map((cell) => (
