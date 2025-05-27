@@ -18,30 +18,22 @@ import {
   PopoverTrigger,
 } from "@/common/components/ui/popover"
 import { cn } from "@/lib/utils"
-
-type Client = {
-  id: string
-  name: string
-}
-
-const dummyClients: Client[] = [
-  { id: "1", name: "Jane Smith" },
-  { id: "2", name: "John Doe" },
-  { id: "3", name: "Alice Johnson" },
-  { id: "4", name: "Bob Lee" },
-  { id: "5", name: "Maria Garcia" },
-]
+import { useClientsContext } from "../contexts/ClientsContext"
+import { Client } from "../data/schema"
 
 export const ClientDropdown = React.forwardRef<
   HTMLButtonElement,
   {
-    value: string
-    onChange: (value: string) => void
+    value: Client | null
+    onChange: (client: Client) => void
   }
 >(({ value, onChange }, ref) => {
   const [open, setOpen] = React.useState(false)
+  const { clients } = useClientsContext();
 
-  const selectedLabel = dummyClients.find((c) => c.id === value)?.name
+  const selectedLabel = value
+    ? `${value.user.firstname} ${value.user.lastname}`
+    : "Select a client..."
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -57,26 +49,26 @@ export const ClientDropdown = React.forwardRef<
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0 z-[9999]">
+      <PopoverContent className="w-110 p-0 z-[9999]">
         <Command>
           <CommandInput placeholder="Search client..." />
           <CommandList>
             <CommandEmpty>No clients found.</CommandEmpty>
             <CommandGroup>
-              {dummyClients.map((client) => (
+              {clients.map((client) => (
                 <CommandItem
                   key={client.id}
-                  value={client.name}
+                  value={`${client.user.firstname} ${client.user.lastname}`}
                   onSelect={() => {
-                    onChange(client.id)
+                    onChange(client)
                     setOpen(false)
                   }}
                 >
-                  {client.name}
+                  {client.user.firstname} {client.user.lastname}
                   <Check
                     className={cn(
                       "ml-auto h-4 w-4",
-                      value === client.id ? "opacity-100" : "opacity-0"
+                      value?.id === client.id ? "opacity-100" : "opacity-0"
                     )}
                   />
                 </CommandItem>

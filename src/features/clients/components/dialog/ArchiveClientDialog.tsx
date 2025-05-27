@@ -27,10 +27,12 @@ export function ArchiveClientDialog({ open, onOpenChange, client }: Props) {
   const fullName = `${client.user.firstname} ${client.user.lastname}`
 
   const handleArchive = async () => {
-    if (value.trim() !== fullName) return
+    if (value.trim() !== fullName) {
+      toast.error("Please enter full name to continue.");
+      return
+    }
 
-    // TODO: Call archive endpoint
-    // await api.archiveClient(client.id)
+    // TODO: ADD BACKEND LOGIC TO ACTUALLY ARCHIVE
 
     onOpenChange(false)
 
@@ -44,15 +46,16 @@ export function ArchiveClientDialog({ open, onOpenChange, client }: Props) {
       onOpenChange={onOpenChange}
       handleConfirm={handleArchive}
       confirmText="Archive"
+      className='max-w-sm'
       destructive
       title={
-        <span className="text-yellow-600">
-          <TriangleAlert className="mr-1 inline-block stroke-yellow-600" size={18} />
+        <span>
+          <TriangleAlert className="mr-1 inline-block" size={18} />
           Archive Client
         </span>
       }
       desc={
-        <div className="max-w-sm space-y-4">
+        <div className="space-y-4">
           <p>
             Are you sure you want to archive <strong>{fullName}</strong>?<br />
             This will disable their account and hide them from active views.

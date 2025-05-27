@@ -1,10 +1,10 @@
-import { useClientsTable } from "../../contexts/ClientsContext"
+import { useTable } from "../../contexts/TableContext"
 import { ArchiveClientDialog } from "./ArchiveClientDialog"
 import { ContractCreationDialog } from "./ContractCreationDialog"
 import { DeleteClientDialog } from "./DeleteClientDialog"
 
 export function TableDialogs() {
-  const { open, setOpen, currentRow, setCurrentRow } = useClientsTable()
+  const { open, setOpen, currentRow, setCurrentRow } = useTable()
   return (
     <>
       <ContractCreationDialog

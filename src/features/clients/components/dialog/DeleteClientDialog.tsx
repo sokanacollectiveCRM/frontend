@@ -29,13 +29,16 @@ export function DeleteClientDialog({ open, onOpenChange, client }: Props) {
   const fullName = `${client.user.firstname} ${client.user.lastname}`
 
   const handleDelete = () => {
-    if (value.trim() !== fullName) return
+    if (value.trim() !== fullName) {
+      toast.error("Please enter full name to continue");
+      return
+    }
+
+    // TODO: ADD BACKEND LOGIC TO DELETE USER HERE
 
     onOpenChange(false)
 
     toast.success(`${client.user.firstname} was successfully deleted.`);
-
-    console.log("Deleted");
   }
 
   return (

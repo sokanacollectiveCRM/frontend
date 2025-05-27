@@ -13,7 +13,7 @@ export function useClientProfileData(clientId: string): UseClientProfileDataResu
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!clientId) return
+    if (!clientId || client) return;
 
     const fetchClient = async () => {
       try {
@@ -30,7 +30,8 @@ export function useClientProfileData(clientId: string): UseClientProfileDataResu
 
         if (!res.ok) throw new Error('Failed to fetch client details')
         const data = await res.json()
-        setClient(data.client)
+        console.log(data);
+        setClient(data)
       } catch (err: any) {
         setError(err.message || 'Unknown error')
       } finally {

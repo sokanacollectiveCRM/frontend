@@ -12,10 +12,10 @@ import {
 } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { useMemo, useState } from 'react';
-import { USER_STATUSES, UserStatus, UserSummary } from '../data/schema';
+import { Client, USER_STATUSES, UserStatus } from '../data/schema';
 
 type Props = {
-  usersByStatus: Record<UserStatus, UserSummary[]>;
+  usersByStatus: Record<UserStatus, Client[]>;
   onStatusChange: (userId: string, newStatus: UserStatus) => void;
 };
 
@@ -95,7 +95,7 @@ export function UsersBoard({ usersByStatus, onStatusChange }: Props) {
           const newStatus = over.id.toString() as UserStatus;
           onStatusChange(userId, newStatus);
         }
-      
+
         setActiveId(null);
         setShowOverlay(false);
       }}
@@ -114,12 +114,12 @@ export function UsersBoard({ usersByStatus, onStatusChange }: Props) {
       <DragOverlay
         dropAnimation={dropAnimationConfig}
         style={{ transformOrigin: 'center' }}
-        >
+      >
         {showOverlay && activeUser ? (
           <UserCard
-          user={activeUser}
-          isOverlay={true}
-          className="transition-transform duration-200 ease-out opacity-90"
+            client={activeUser}
+            isOverlay={true}
+            className="transition-transform duration-200 ease-out opacity-90"
           />
         ) : null}
       </DragOverlay>

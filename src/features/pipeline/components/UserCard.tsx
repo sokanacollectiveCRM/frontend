@@ -3,17 +3,17 @@ import UserAvatar from '@/common/components/user/UserAvatar';
 import { useDraggable } from '@dnd-kit/core';
 import clsx from 'clsx';
 import { useEffect, useState } from 'react';
-import { User } from '../data/schema';
+import { Client } from '../data/schema';
 
 type Props = {
-  user: User
+  client: Client
   isOverlay?: boolean
   className?: string
 }
 
-export function UserCard({ user, isOverlay = false, className = '' }: Props) {
-  const { attributes, listeners, setNodeRef, isDragging, } = useDraggable({
-    id: user.id,
+export function UserCard({ client, isOverlay = false, className = '' }: Props) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: client.id,
   })
   const [mounted, setMounted] = useState(false)
 
@@ -44,16 +44,16 @@ export function UserCard({ user, isOverlay = false, className = '' }: Props) {
           {user.firstname} {user.lastname}
         </div> */}
         <div className="flex items-center gap-2 max-w-36 h-10">
-          <UserAvatar fullName={`${user.firstname} ${user.lastname}`} className='h-10 w-10' />
-          
+          <UserAvatar fullName={`${client.user.firstname} ${client.user.lastname}`} className='h-10 w-10' />
+
           <div>
             <LongText className='max-w-36'>
-              {`${user.firstname} ${user.lastname}`}
+              {`${client.user.firstname} ${client.user.lastname}`}
             </LongText>
-            <div className="text-sm text-muted-foreground">{user.serviceNeeded}</div>
+            <div className="text-sm text-muted-foreground">{client.serviceNeeded}</div>
           </div>
         </div>
-        
+
       </div>
 
     </div>

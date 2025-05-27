@@ -1,10 +1,11 @@
 import { Button } from '@/common/components/ui/button'
 import { DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/common/components/ui/dialog'
 import { Input } from '@/common/components/ui/input'
-import { useToast } from '@/common/hooks/toast/use-toast'
 import { Dialog, DialogTrigger } from '@radix-ui/react-dialog'
 import { Loader2, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
+import { toast } from 'sonner'
+import { useTemplatesContext } from '../../contexts/TemplatesContext'
 
 type Props = {
   templateName: string
@@ -15,7 +16,7 @@ export function DeleteTemplateDialog({ templateName, onDelete }: Props) {
   const [confirmation, setConfirmation] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const closeRef = useRef<HTMLButtonElement>(null)
-  const { toast } = useToast()
+  const { getTemplates } = useTemplatesContext();
 
   const isMatch = confirmation.trim() === templateName.trim()
 
@@ -32,16 +33,13 @@ export function DeleteTemplateDialog({ templateName, onDelete }: Props) {
 
       if (!res.ok) throw new Error('Failed to delete template')
 
-      toast({ title: 'Template deleted successfully.' })
+      toast.success(`${templateName} was deleted successfully.`)
       onDelete()
       closeRef.current?.click()
+      getTemplates();
     } catch (err) {
       console.error(err)
-      toast({
-        title: 'Delete failed',
-        description: 'Could not delete template. Please try again.',
-        variant: 'destructive',
-      })
+      toast.error(`Something went wrong. ${err instanceof Error ? err.message : err}.`)
     } finally {
       setIsLoading(false)
     }
