@@ -10,7 +10,7 @@ import {
 import { DotsHorizontalIcon } from '@radix-ui/react-icons'
 import { Row } from '@tanstack/react-table'
 import { Archive, Trash2 } from 'lucide-react'
-import { useClientsTable } from '../contexts/ClientsContext'
+import { useTable } from '../contexts/TableContext'
 import { Client } from '../data/schema'
 
 interface DataTableRowActionsProps {
@@ -18,7 +18,7 @@ interface DataTableRowActionsProps {
 }
 
 export function DataTableRowActions({ row }: DataTableRowActionsProps) {
-  const { setOpen, setCurrentRow } = useClientsTable()
+  const { setOpen, setCurrentRow } = useTable()
   return (
     <>
       <DropdownMenu modal={false}>

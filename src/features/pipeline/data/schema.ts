@@ -26,22 +26,37 @@ export const STATUS_LABELS: Record<UserStatus, string> = {
 };
 
 const serviceSchema = z.union([
-  z.literal('Postpartum'),
   z.literal('Labor Support'),
-  z.literal('Lactation Support')
+  z.literal('1st Night Care'),
+  z.literal('Postpartum Support'),
+  z.literal('Lactation Support'),
+  z.literal('Perinatal Support'),
+  z.literal('Abortion Support'),
+  z.literal('Other'),
 ])
 export type serviceNeeded = z.infer<typeof serviceSchema>
 
-const userSchema = z.object({
+const userDetailsSchema = z.object({
   id: z.string(),
+  email: z.string().optional(), 
   firstname: z.string(),
   lastname: z.string(),
-  serviceNeeded: serviceSchema,
+  profile_picture: z.string().nullable().optional(), 
+});
+
+export const clientSchema = z.object({
+  id: z.string(),
+  serviceNeeded: serviceSchema.nullable(), 
   requestedAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
   status: userStatusSchema,
-})
-export type User = z.infer<typeof userSchema>
+  user: userDetailsSchema,
+});
 
-export type UserSummary = z.infer<typeof userSchema>;
-export const userListSchema = z.array(userSchema);
+export type Client = z.infer<typeof clientSchema>;
+export const clientListSchema = z.array(clientSchema);
+
+export type ContractTemplate = {
+  id: string,
+  title: string,
+}
