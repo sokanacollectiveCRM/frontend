@@ -1,4 +1,4 @@
-export default async function addWorkSession(doula_id: string | undefined, client_id: string | undefined, start_time: Date | undefined, end_time: Date | undefined) {
+export default async function addWorkSession(doula_id: string | undefined, client_id: string | undefined, start_time: Date | undefined, end_time: Date | undefined, note: string) {
 
   if(!doula_id || !client_id ||  !start_time || !end_time) {
     return;
@@ -22,15 +22,20 @@ export default async function addWorkSession(doula_id: string | undefined, clien
           doula_id: doula_id,
           client_id: client_id,
           start_time: start_time,
-          end_time: end_time
+          end_time: end_time,
+          note: note
         })
       });
       
       if(!response.ok) {
         throw new Error(`Could not create new work session: ${response.status}`);
       }
+
+      if(note != "") {
+        //add backend call right here
+      }
     } catch(error) {
-      console.error('Error trying to add work session:', error);
+      console.error('Error trying to add work session or adding new note:', error);
     } 
   }
   addSession();

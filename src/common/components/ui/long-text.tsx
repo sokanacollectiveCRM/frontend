@@ -45,7 +45,7 @@ export default function LongText({
 
   return (
     <>
-      <div className='hidden sm:block'>
+      <div className=''>
         <TooltipProvider delayDuration={0}>
           <Tooltip>
             <TooltipTrigger asChild>

@@ -14,7 +14,7 @@ import { default as HoursRoute, default as HoursRoutes } from './features/hours/
 import InboxRoutes from "./features/inbox/InboxRoutes";
 import MyAccountRoutes from "./features/my-account/MyAccountRoutes";
 import ProfileRoutes from './features/profiles/ProfileRoutes';
-
+import TeamRoutes from "./features/teams/teamRoutes";
 const AppRoutes = () => (
   <Routes>
 
@@ -40,6 +40,7 @@ const AppRoutes = () => (
           {ProfileRoutes()}
           {MyAccountRoutes()}
           {HoursRoutes()}
+          {TeamRoutes()}
           {InboxRoutes()}
         </Route>
       </Route>
