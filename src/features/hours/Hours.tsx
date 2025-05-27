@@ -17,6 +17,7 @@ export default function Hours() {
   const [totalHours, setTotalHours] = useState<string>("");
 
   const transformedData = hours?.map(session => {
+    console.log("session is ", session);
     return {
       id: session.id,
       // Client fields
