@@ -100,6 +100,9 @@ export function UsersPrimaryButtons() {
                   />
                 </div>
                 <div className='flex flex-col items-center'>
+                  <h1 className='text-lg'>Hours worked: <span className='font-bold'>{hoursWorked}</span> hours</h1>
+                </div>
+                <div className='flex flex-col items-center'>
                   <h1 className='text-lg'>When did you <span className='font-bold'>start</span> work?</h1>
                   <DateTimePicker 
                     date={startDate}
@@ -112,9 +115,6 @@ export function UsersPrimaryButtons() {
                     date={endDate}
                     setDate={setEndDate}
                   />
-                </div>
-                <div className='flex flex-col items-center'>
-                  <h1 className='text-lg'>Hours worked: <span className='font-bold'>{hoursWorked}</span> hours</h1>
                 </div>
                 <div className='flex flex-col items-center'>
                   <h1 className='text-lg'>Add notes?</h1>
