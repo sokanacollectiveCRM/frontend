@@ -26,10 +26,10 @@ export function UsersPrimaryButtons({ draggedTemplate }: { draggedTemplate: Temp
     template.name.toLowerCase().includes(search.toLowerCase())
   )
 
-  const fetchCSV = async() => {
+  const fetchCSV = async () => {
     const token = localStorage.getItem('authToken');
     try {
-      const data = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL}clients/fetchCSV`,{
+      const data = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL}/clients/fetchCSV`, {
         credentials: 'include',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -41,7 +41,7 @@ export function UsersPrimaryButtons({ draggedTemplate }: { draggedTemplate: Temp
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "demographics.csv"; 
+      a.download = "demographics.csv";
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -90,8 +90,8 @@ export function UsersPrimaryButtons({ draggedTemplate }: { draggedTemplate: Temp
         </PopoverContent>
       </Popover>
       <Button className="space-x-1" onClick={fetchCSV}>
-            <span>Export Demographics</span>
-            <SquarePlus size={18} />
+        <span>Export Demographics</span>
+        <SquarePlus size={18} />
       </Button>
     </div>
   )
