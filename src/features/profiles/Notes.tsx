@@ -1,7 +1,12 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/common/components/ui/card";
 import { Input } from "@/common/components/ui/input";
-import { Heart, Award, AlertCircle, Baby, Book, PlusCircle, X, Check, Edit2, Trash2 } from "lucide-react";
+import { Heart, Award, AlertCircle, Baby, Book, PlusCircle, X, Check, Edit2, Trash2, Pencil } from "lucide-react";
+import { Button } from "@/common/components/ui/button";
+import { Badge } from "@/common/components/ui/badge";
+import { Textarea } from "@/common/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/common/components/ui/select";
+import { Label } from "@/common/components/ui/label";
 
 interface Note {
   id: number;
@@ -26,8 +31,6 @@ interface AppointmentsProps {
   editCategory: string;
   setEditCategory: React.Dispatch<React.SetStateAction<string>>;
 }
-
-
 
 export default function Appointments({
   notes,
@@ -105,143 +108,182 @@ export default function Appointments({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between mb-4">
-        <Input
-          placeholder="Search by name..."
-          className="max-w-sm"
-        />
-        <button 
-          onClick={() => setShowAddNote(!showAddNote)}
-          className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-        >
-          <PlusCircle size={16} className="mr-2" />
-          Add Note
-        </button>
-      </div>
+      <div className="bg-white p-6 rounded-xl border shadow-sm">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-lg font-semibold">Notes</h3>
+          <Button 
+            onClick={() => setShowAddNote(!showAddNote)}
+            variant="outline"
+            className="text-primary border-primary/20 hover:bg-primary/10"
+          >
+            <PlusCircle size={16} className="mr-2" />
+            Add Note
+          </Button>
+        </div>
 
-      {showAddNote && (
-        <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <textarea
-            value={newNote}
-            onChange={(e) => setNewNote(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded-md text-sm resize-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            rows={3}
-            placeholder="Type your note here..."
-          />
-          <div className="flex items-center justify-between mt-2">
-            <select
-              value={noteCategory}
-              onChange={(e) => setNoteCategory(e.target.value)}
-              className="text-sm border border-gray-300 rounded-md p-2 focus:ring-indigo-500 focus:border-indigo-500"
-            >
-              <option value="general">General</option>
-              <option value="support">Support</option>
-              <option value="nutrition">Nutrition</option>
-              <option value="medical">Medical</option>
-              <option value="birth">Birth</option>
-              <option value="postpartum">Postpartum</option>
-            </select>
-            <div className="flex space-x-2">
-              <button 
-                onClick={() => setShowAddNote(false)}
-                className="px-3 py-1 text-sm text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={addNote}
-                className="px-3 py-1 text-sm text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
-              >
-                Save
-              </button>
+        <div className="space-y-4">
+          {notes.map((note) => (
+            <div key={note.id} className="p-4 border border-input rounded-lg hover:bg-accent/50 transition-colors">
+              <div className="flex justify-between items-start mb-2">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                    {note.category}
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">{note.date}</span>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setEditingNoteId(note.id);
+                      setEditText(note.text);
+                      setEditCategory(note.category);
+                    }}
+                    className="text-muted-foreground hover:text-primary"
+                  >
+                    <Pencil size={14} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setNotes(notes.filter(n => n.id !== note.id))}
+                    className="text-destructive hover:text-destructive/80"
+                  >
+                    <Trash2 size={14} />
+                  </Button>
+                </div>
+              </div>
+              <p className="text-sm">{note.text}</p>
+            </div>
+          ))}
+        </div>
+
+        {showAddNote && (
+          <div className="mt-6 p-4 border border-input rounded-lg">
+            <h4 className="text-sm font-medium mb-4">Add New Note</h4>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="note-text">Note</Label>
+                <Textarea
+                  id="note-text"
+                  value={newNote}
+                  onChange={(e) => setNewNote(e.target.value)}
+                  placeholder="Enter your note here..."
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="note-category">Category</Label>
+                <Select value={noteCategory} onValueChange={setNoteCategory}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="general">General</SelectItem>
+                    <SelectItem value="support">Support</SelectItem>
+                    <SelectItem value="nutrition">Nutrition</SelectItem>
+                    <SelectItem value="medical">Medical</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowAddNote(false)}
+                  className="text-muted-foreground hover:text-primary"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (newNote.trim()) {
+                      setNotes([
+                        ...notes,
+                        {
+                          id: Date.now(),
+                          text: newNote,
+                          date: new Date().toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                          }),
+                          category: noteCategory
+                        }
+                      ]);
+                      setNewNote('');
+                      setNoteCategory('general');
+                      setShowAddNote(false);
+                    }
+                  }}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  Save Note
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <h3 className="text-lg font-semibold mb-3">Client Notes</h3>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {notes.map((note) => (
-          <Card key={note.id} className="overflow-visible">
-            {editingNoteId === note.id ? (
-              <CardContent className="p-4">
-                <textarea
+        {editingNoteId !== null && (
+          <div className="mt-6 p-4 border border-input rounded-lg">
+            <h4 className="text-sm font-medium mb-4">Edit Note</h4>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-note-text">Note</Label>
+                <Textarea
+                  id="edit-note-text"
                   value={editText}
                   onChange={(e) => setEditText(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md text-sm resize-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  rows={3}
+                  className="mt-1"
                 />
-                <div className="flex items-center justify-between mt-2">
-                  <select
-                    value={editCategory}
-                    onChange={(e) => setEditCategory(e.target.value)}
-                    className="text-xs border border-gray-300 rounded-md p-1 focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    <option value="general">General</option>
-                    <option value="support">Support</option>
-                    <option value="nutrition">Nutrition</option>
-                    <option value="medical">Medical</option>
-                    <option value="birth">Birth</option>
-                    <option value="postpartum">Postpartum</option>
-                  </select>
-                  <div className="flex space-x-2">
-                    <button 
-                      onClick={cancelEdit}
-                      className="p-1 text-gray-500 hover:text-gray-700"
-                    >
-                      <X size={16} />
-                    </button>
-                    <button 
-                      onClick={saveEdit}
-                      className="p-1 text-green-500 hover:text-green-700"
-                    >
-                      <Check size={16} />
-                    </button>
-                  </div>
-                </div>
-              </CardContent>
-            ) : (
-              <>
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-indigo-600 font-medium">{note.date}</span>
-                    <div className="flex space-x-1">
-                      <button 
-                        onClick={() => startEdit(note)}
-                        className="p-1 text-gray-500 hover:text-indigo-600"
-                      >
-                        <Edit2 size={14} />
-                      </button>
-                      <button 
-                        onClick={() => deleteNote(note.id)}
-                        className="p-1 text-gray-500 hover:text-red-600"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full flex items-center w-fit ${getCategoryColor(note.category)}`}>
-                    {getCategoryIcon(note.category)}
-                    {note.category.charAt(0).toUpperCase() + note.category.slice(1)}
-                  </span>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-800 text-sm">{note.text}</p>
-                </CardContent>
-              </>
-            )}
-          </Card>
-        ))}
-        
-        {notes.length === 0 && (
-          <div className="col-span-full text-center py-6 text-gray-500 italic text-sm border border-dashed border-gray-300 rounded-lg">
-            No notes available. Click "Add note" to create one.
+              </div>
+              <div>
+                <Label htmlFor="edit-note-category">Category</Label>
+                <Select value={editCategory} onValueChange={setEditCategory}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="general">General</SelectItem>
+                    <SelectItem value="support">Support</SelectItem>
+                    <SelectItem value="nutrition">Nutrition</SelectItem>
+                    <SelectItem value="medical">Medical</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setEditingNoteId(null);
+                    setEditText('');
+                    setEditCategory('');
+                  }}
+                  className="text-muted-foreground hover:text-primary"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    setNotes(notes.map(note =>
+                      note.id === editingNoteId
+                        ? { ...note, text: editText, category: editCategory }
+                        : note
+                    ));
+                    setEditingNoteId(null);
+                    setEditText('');
+                    setEditCategory('');
+                  }}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  Save Changes
+                </Button>
+              </div>
+            </div>
           </div>
         )}
       </div>
-
-     
     </div>
   );
 }

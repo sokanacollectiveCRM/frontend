@@ -46,15 +46,19 @@ export function UsersPrimaryButtons({ draggedTemplate }: { draggedTemplate: Temp
       a.click();
       a.remove();
 
-
     } catch (error) {
       throw new Error(`Error Retrieving CSV${error}`)
     }
   }
   return (
     <div className="flex gap-2">
+      <Button variant = "outline" className='space-x-1' onClick={fetchCSV}>
+            <span>Export</span>
+            <SquarePlus size={18} />
+      </Button>
       <Popover>
         <PopoverTrigger asChild>
+          
           <Button className="space-x-1">
             <span>Create Contract</span>
             <SquarePlus size={18} />
@@ -89,10 +93,6 @@ export function UsersPrimaryButtons({ draggedTemplate }: { draggedTemplate: Temp
           )}
         </PopoverContent>
       </Popover>
-      <Button className="space-x-1" onClick={fetchCSV}>
-            <span>Export Demographics</span>
-            <SquarePlus size={18} />
-      </Button>
     </div>
   )
 }

@@ -25,7 +25,6 @@ export default function AdminPay() {
   return (
     <div className="container">
       <div className="pb-25">
-        <Button className="white">asd</Button>
       </div>
     <div className="flex gap-6">
     <div className="w-1/4">
