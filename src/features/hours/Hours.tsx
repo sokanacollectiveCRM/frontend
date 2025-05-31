@@ -54,6 +54,24 @@ export default function Hours() {
     }
   }, [hours])
 
+  if(!hoursLoading) {
+    // console.log("hours is", hours)
+  }
+
+  useEffect(() => {
+    if(hours && hours.length > 0) {
+      const durationMs = hours.reduce((acc, session) => {
+        const startDate = new Date(session.start_time);
+        const endDate = new Date(session.end_time); // Fixed: use end_time
+        const durationMs = endDate.getTime() - startDate.getTime();
+        return acc + durationMs;
+      }, 0);
+      const num_hours = Math.floor(durationMs / (1000 * 60 * 60));
+      const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+      setTotalHours(`${num_hours}h ${minutes}m`);
+    }
+  }, [hours])
+
   return (
     <UsersProvider>
       <Header fixed>
@@ -76,6 +94,9 @@ export default function Hours() {
             </div>
           </div>
           <UsersTable data={transformedData} columns={columns} />
+          <TotalHoursHoverCard
+            text={totalHours} 
+          />
           <TotalHoursHoverCard
             text={totalHours} 
           />

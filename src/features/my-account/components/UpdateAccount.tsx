@@ -57,7 +57,7 @@ export const Account = () => {
 
     try {
       const savedUser = await saveUser(userFormData);
-      console.log("User saved successfully:", savedUser);
+      // console.log("User saved successfully:", savedUser);
       toast.success('Changes saved')
       await checkAuth();
       accountForm.reset();
