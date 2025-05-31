@@ -17,7 +17,6 @@ export default function Hours() {
   const [totalHours, setTotalHours] = useState<string>("");
 
   const transformedData = hours?.map(session => {
-    // console.log("session is ", session);
     return {
       id: session.id,
       // Client fields
@@ -36,6 +35,24 @@ export default function Hours() {
       note: session.note
     }
   }) || [];
+
+  if(!hoursLoading) {
+    console.log("hours is", hours)
+  }
+
+  useEffect(() => {
+    if(hours && hours.length > 0) {
+      const durationMs = hours.reduce((acc, session) => {
+        const startDate = new Date(session.start_time);
+        const endDate = new Date(session.end_time); // Fixed: use end_time
+        const durationMs = endDate.getTime() - startDate.getTime();
+        return acc + durationMs;
+      }, 0);
+      const num_hours = Math.floor(durationMs / (1000 * 60 * 60));
+      const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+      setTotalHours(`${num_hours}h ${minutes}m`);
+    }
+  }, [hours])
 
   if(!hoursLoading) {
     // console.log("hours is", hours)
@@ -77,6 +94,9 @@ export default function Hours() {
             </div>
           </div>
           <UsersTable data={transformedData} columns={columns} />
+          <TotalHoursHoverCard
+            text={totalHours} 
+          />
           <TotalHoursHoverCard
             text={totalHours} 
           />
