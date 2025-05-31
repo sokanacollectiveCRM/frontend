@@ -106,7 +106,7 @@ export default function RequestForm() {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL}requestService/requestSubmission`, {
+      const response = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL}/requestService/requestSubmission`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

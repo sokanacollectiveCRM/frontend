@@ -5,6 +5,7 @@ import {
   LucideClock5,
   LucideCreditCard,
   LucideUsers,
+  RectangleVertical,
   Search
 } from 'lucide-react'
 
@@ -26,6 +27,7 @@ export const sidebarSections = [
       { title: 'Dashboard', url: '/', icon: Home },
       { title: 'Inbox', url: '/inbox', icon: Inbox },
       { title: 'Clients', url: '/clients', icon: Search },
+      { title: 'Pipeline', url:'/pipeline', icon: RectangleVertical }
     ],
   },
   {
