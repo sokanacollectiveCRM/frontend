@@ -7,8 +7,10 @@ import {
 } from "@/common/components/file-input";
 import { Label } from "@radix-ui/react-label";
 import { Paperclip } from "lucide-react";
+import { Button } from "@/common/components/ui/button";
+import { FileText, Receipt, FileText as FileContract, CreditCard, Upload, Trash2 } from "lucide-react";
 
-const FileSvgDraw: React.FC = () => {
+const FileSvgDraw = () => {
   return (
     <>
       <svg
@@ -36,14 +38,28 @@ const FileSvgDraw: React.FC = () => {
     </>
   );
 };
-   
+
 interface DocumentsProps {
-  files: File[];
-  setFiles: (files: File[]) => void;
+  formFiles: File[];
+  setFormFiles: (files: File[]) => void;
+  invoiceFiles: File[];
+  setInvoiceFiles: (files: File[]) => void;
+  contractFiles: File[];
+  setContractFiles: (files: File[]) => void;
+  paymentFiles: File[];
+  setPaymentFiles: (files: File[]) => void;
 }
 
-const Documents: React.FC<DocumentsProps> = ({ files, setFiles }) => {
- 
+function Documents({ 
+  formFiles, 
+  setFormFiles, 
+  invoiceFiles, 
+  setInvoiceFiles, 
+  contractFiles, 
+  setContractFiles, 
+  paymentFiles, 
+  setPaymentFiles 
+}: DocumentsProps) {
   const dropZoneConfig = {
     maxFiles: 5,
     maxSize: 1024 * 1024 * 4,
@@ -51,110 +67,204 @@ const Documents: React.FC<DocumentsProps> = ({ files, setFiles }) => {
   };
 
   return (
-    <div className="p-6">
-      <div className="flex items-start mb-6">
-        <Label className="w-24 pt-2 font-medium">Forms</Label>
-        <FileUploader
-          value={files}
-          onValueChange={(newFiles) => setFiles(newFiles || [])}
-          dropzoneOptions={dropZoneConfig}
-          className="relative bg-background rounded-lg p-2 flex-1"
-        >
-          <FileInput className="outline-dashed outline-1 outline-gray-300 rounded-md">
-            <div className="flex items-center justify-center flex-col pt-3 pb-4 w-full">
-              <FileSvgDraw />
-            </div>
-          </FileInput>
-          <FileUploaderContent>
-            {files &&
-              files.length > 0 &&
-              files.map((file, i) => (
-                <FileUploaderItem key={i} index={i} className="py-2 px-3">
-                  <Paperclip className="h-4 w-4 stroke-current mr-2" />
-                  <span>{file.name}</span>
-                </FileUploaderItem>
-              ))}
-          </FileUploaderContent>
-        </FileUploader>
+    <div className="space-y-6">
+      <div className="bg-white p-6 rounded-xl border shadow-sm">
+        <h3 className="text-lg font-semibold mb-4">Forms</h3>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {formFiles.map((file, index) => (
+              <div key={index} className="p-4 border border-input rounded-lg hover:bg-accent/50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <FileText className="w-5 h-5 text-primary" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{file.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {(file.size / 1024).toFixed(1)} KB
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setFormFiles(formFiles.filter((_, i) => i !== index))}
+                    className="text-destructive hover:text-destructive/80"
+                  >
+                    <Trash2 size={14} />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-center">
+            <Button
+              variant="outline"
+              onClick={() => document.getElementById('form-upload')?.click()}
+              className="text-primary border-primary/20 hover:bg-primary/10"
+            >
+              <Upload size={16} className="mr-2" />
+              Upload Form
+            </Button>
+            <input
+              id="form-upload"
+              type="file"
+              className="hidden"
+              onChange={(e) => {
+                const files = Array.from(e.target.files || []);
+                setFormFiles([...formFiles, ...files]);
+              }}
+              multiple
+            />
+          </div>
+        </div>
       </div>
 
-      <div className="flex items-start mb-6">
-        <Label className="w-24 pt-2 font-medium">Invoices</Label>
-        <FileUploader
-          value={files}
-          onValueChange={(newFiles) => setFiles(newFiles || [])}
-          dropzoneOptions={dropZoneConfig}
-          className="relative bg-background rounded-lg p-2 flex-1"
-        >
-          <FileInput className="outline-dashed outline-1 outline-gray-300 rounded-md">
-            <div className="flex items-center justify-center flex-col pt-3 pb-4 w-full">
-              <FileSvgDraw />
-            </div>
-          </FileInput>
-          <FileUploaderContent>
-            {files &&
-              files.length > 0 &&
-              files.map((file, i) => (
-                <FileUploaderItem key={i} index={i} className="py-2 px-3">
-                  <Paperclip className="h-4 w-4 stroke-current mr-2" />
-                  <span>{file.name}</span>
-                </FileUploaderItem>
-              ))}
-          </FileUploaderContent>
-        </FileUploader>
+      <div className="bg-white p-6 rounded-xl border shadow-sm">
+        <h3 className="text-lg font-semibold mb-4">Invoices</h3>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {invoiceFiles.map((file, index) => (
+              <div key={index} className="p-4 border border-input rounded-lg hover:bg-accent/50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <Receipt className="w-5 h-5 text-primary" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{file.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {(file.size / 1024).toFixed(1)} KB
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setInvoiceFiles(invoiceFiles.filter((_, i) => i !== index))}
+                    className="text-destructive hover:text-destructive/80"
+                  >
+                    <Trash2 size={14} />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-center">
+            <Button
+              variant="outline"
+              onClick={() => document.getElementById('invoice-upload')?.click()}
+              className="text-primary border-primary/20 hover:bg-primary/10"
+            >
+              <Upload size={16} className="mr-2" />
+              Upload Invoice
+            </Button>
+            <input
+              id="invoice-upload"
+              type="file"
+              className="hidden"
+              onChange={(e) => {
+                const files = Array.from(e.target.files || []);
+                setInvoiceFiles([...invoiceFiles, ...files]);
+              }}
+              multiple
+            />
+          </div>
+        </div>
       </div>
-      <div className="flex items-start mb-6">
-        <Label className="w-24 pt-2 font-medium">Contracts</Label>
-        <FileUploader
-          value={files}
-          onValueChange={(newFiles) => setFiles(newFiles || [])}
-          dropzoneOptions={dropZoneConfig}
-          className="relative bg-background rounded-lg p-2 flex-1"
-        >
-          <FileInput className="outline-dashed outline-1 outline-gray-300 rounded-md">
-            <div className="flex items-center justify-center flex-col pt-3 pb-4 w-full">
-              <FileSvgDraw />
-            </div>
-          </FileInput>
-          <FileUploaderContent>
-            {files &&
-              files.length > 0 &&
-              files.map((file, i) => (
-                <FileUploaderItem key={i} index={i} className="py-2 px-3">
-                  <Paperclip className="h-4 w-4 stroke-current mr-2" />
-                  <span>{file.name}</span>
-                </FileUploaderItem>
-              ))}
-          </FileUploaderContent>
-        </FileUploader>
+
+      <div className="bg-white p-6 rounded-xl border shadow-sm">
+        <h3 className="text-lg font-semibold mb-4">Contracts</h3>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {contractFiles.map((file, index) => (
+              <div key={index} className="p-4 border border-input rounded-lg hover:bg-accent/50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <FileContract className="w-5 h-5 text-primary" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{file.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {(file.size / 1024).toFixed(1)} KB
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setContractFiles(contractFiles.filter((_, i) => i !== index))}
+                    className="text-destructive hover:text-destructive/80"
+                  >
+                    <Trash2 size={14} />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-center">
+            <Button
+              variant="outline"
+              onClick={() => document.getElementById('contract-upload')?.click()}
+              className="text-primary border-primary/20 hover:bg-primary/10"
+            >
+              <Upload size={16} className="mr-2" />
+              Upload Contract
+            </Button>
+            <input
+              id="contract-upload"
+              type="file"
+              className="hidden"
+              onChange={(e) => {
+                const files = Array.from(e.target.files || []);
+                setContractFiles([...contractFiles, ...files]);
+              }}
+              multiple
+            />
+          </div>
+        </div>
       </div>
-      <div className="flex items-start mb-6">
-        <Label className="w-24 pt-2 font-medium">Payments</Label>
-        <FileUploader
-          value={files}
-          onValueChange={(newFiles) => setFiles(newFiles || [])}
-          dropzoneOptions={dropZoneConfig}
-          className="relative bg-background rounded-lg p-2 flex-1"
-        >
-          <FileInput className="outline-dashed outline-1 outline-gray-300 rounded-md">
-            <div className="flex items-center justify-center flex-col pt-3 pb-4 w-full">
-              <FileSvgDraw />
-            </div>
-          </FileInput>
-          <FileUploaderContent>
-            {files &&
-              files.length > 0 &&
-              files.map((file, i) => (
-                <FileUploaderItem key={i} index={i} className="py-2 px-3">
-                  <Paperclip className="h-4 w-4 stroke-current mr-2" />
-                  <span>{file.name}</span>
-                </FileUploaderItem>
-              ))}
-          </FileUploaderContent>
-        </FileUploader>
+
+      <div className="bg-white p-6 rounded-xl border shadow-sm">
+        <h3 className="text-lg font-semibold mb-4">Payment Records</h3>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {paymentFiles.map((file, index) => (
+              <div key={index} className="p-4 border border-input rounded-lg hover:bg-accent/50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <CreditCard className="w-5 h-5 text-primary" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{file.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {(file.size / 1024).toFixed(1)} KB
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPaymentFiles(paymentFiles.filter((_, i) => i !== index))}
+                    className="text-destructive hover:text-destructive/80"
+                  >
+                    <Trash2 size={14} />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-center">
+            <Button
+              variant="outline"
+              onClick={() => document.getElementById('payment-upload')?.click()}
+              className="text-primary border-primary/20 hover:bg-primary/10"
+            >
+              <Upload size={16} className="mr-2" />
+              Upload Payment Record
+            </Button>
+            <input
+              id="payment-upload"
+              type="file"
+              className="hidden"
+              onChange={(e) => {
+                const files = Array.from(e.target.files || []);
+                setPaymentFiles([...paymentFiles, ...files]);
+              }}
+              multiple
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
-};
+}
 
 export default Documents;

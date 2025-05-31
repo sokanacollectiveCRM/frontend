@@ -3,6 +3,7 @@ import { Search, UserPlus, Download, Mail, Phone, MoreHorizontal } from 'lucide-
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/common/components/ui/card'
 import { Input } from '@/common/components/ui/input'
 import { Button } from '@/common/components/ui/button'
+import { Header } from '@/common/layouts/Header'
 import UserAvatar from '@/common/components/user/UserAvatar'
 import { Badge } from '@/common/components/ui/badge'
 import { 
@@ -17,6 +18,8 @@ import {
   DropdownMenuTrigger
 } from '@/common/components/ui/dropdown-menu'
 import { Label } from '@/common/components/ui/label'
+import { ProfileDropdown } from '@/common/components/user/ProfileDropdown'
+import { toast } from 'sonner'
 
 interface TeamMember { //Team member interface
   id: string,
@@ -114,10 +117,7 @@ export default function Teams() {
       if (!response.ok) {
         throw new Error('Failed to delete member')
       }else{
-
-        setTeamMembers(teamMembers => teamMembers.filter(member => member.id != memberId)   
-      )
-        fetchTeam()
+        setTeamMembers(prevMembers => prevMembers.filter(member => member.id !== memberId))
       }
     } catch (error) {
       console.error('Error deleting member:', error)
@@ -202,7 +202,7 @@ export default function Teams() {
   }, [])
 
   return (
-    <div className="h-full w-full">
+    <div className="h-screen flex flex-col">
       <div className="p-6 flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center">
         <h2 className="text-2xl font-bold tracking-tight">Team Members</h2>
         
@@ -284,73 +284,66 @@ export default function Teams() {
         </div>
       </div>
 
-      <div className="h-full w-full space-y-8 overflow-y-auto pb-8">
-        {isLoading ? (<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-pulse">
-            {[...Array(8)].map((_, i) => ( <div key={i} className="bg-gray-100 rounded-lg h-48"></div>))}
+      <div className="flex-1 overflow-y-auto px-6 pb-6">
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-pulse">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="bg-gray-100 rounded-lg h-48"></div>
+            ))}
           </div>
-        ) 
-        :
-         filteredMembers.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full h-full">
-            {filteredMembers.map((member, index) => {
-              return (
-                <Card key={index} className="overflow-hidden hover:shadow-md transition-all border border-gray-200 w-350 h-50 flex flex-col">
-                  <CardHeader className="flex flex-row items-center gap-4 pb-2">
-                    <UserAvatar 
+        ) : filteredMembers.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredMembers.map((member, index) => (
+              <Card key={index} className="overflow-hidden hover:shadow-md transition-all border border-gray-200">
+                <CardHeader className="flex flex-row items-center gap-4 pb-2">
+                  <UserAvatar 
                     fullName={`${member?.firstname || ''} ${member?.lastname || ''}`} 
                     className={'h-12 w-12'}
-                     />
-                    <div className="flex-1 w-full">
-                      <CardTitle className="text-lg w-full">
-                        {member.firstname} {member.lastname}
-                      </CardTitle>
-                      <Badge variant="outline" className="mt-1 font-normal">
-                        {member.role}
-                      </Badge>
-                    </div>
-                    
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuItem>Message</DropdownMenuItem>
-                        <DropdownMenuItem 
-                          className="text-red-600"
-                          onClick={()=>{deleteMember(member.id)}}
-                        >
-                          Remove
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </CardHeader>
+                  />
+                  <div className="flex-1 w-full">
+                    <CardTitle className="text-lg w-full">
+                      {member.firstname} {member.lastname}
+                    </CardTitle>
+                    <Badge variant="outline" className="mt-1 font-normal">
+                      {member.role}
+                    </Badge>
+                  </div>
                   
-                  <CardContent className="pt-2 flex-grow">
-                    <div className="space-y-3 text-sm">
-                      <div className="flex items-center text-gray-500">
-                        <Mail className="mr-2 h-4 w-4" />
-                        <span className="truncate">{member.email}</span>
-                      </div>
-                      <div className="flex items-center text-gray-500">
-                        <Phone className="mr-2 h-4 w-4" />
-                        <span className="text-gray-400 italic">No phone listed</span>
-                      </div>
-                      {member.bio && (
-                        <div className="text-gray-500 mt-2">
-                          <p className="text-sm line-clamp-2">{member.bio}</p>
-                        </div>
-                      )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem>Edit</DropdownMenuItem>
+                      <DropdownMenuItem>Message</DropdownMenuItem>
+                      <DropdownMenuItem 
+                        className="text-red-600"
+                        onClick={()=>{deleteMember(member.id)}}
+                      >
+                        Remove
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </CardHeader>
+                
+                <CardContent className="pt-2">
+                  <div className="space-y-3 text-sm">
+                    <div className="flex items-center text-gray-500">
+                      <Mail className="mr-2 h-4 w-4" />
+                      <span className="truncate">{member.email}</span>
                     </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
+                    <div className="flex items-center text-gray-500">
+                      <Phone className="mr-2 h-4 w-4" />
+                      <span className="text-gray-400 italic">No phone listed</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-        ) : 
-        (
+        ) : (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <div className="rounded-full bg-gray-100 p-3 mb-4">
               <Search className="h-6 w-6 text-gray-400" />
