@@ -34,7 +34,7 @@ export function ClientsPicker({client, setClient}: { client: any; setClient: (cl
 
   React.useEffect(() => {
     if (hookClients && hookClients.length > 0) {
-      console.log("in client-picker, hookClients is", hookClients);
+      // console.log("in client-picker, hookClients is", hookClients);
       setClients(hookClients);
     }
   }, [hookClients]);
@@ -65,7 +65,6 @@ export function ClientsPicker({client, setClient}: { client: any; setClient: (cl
                   onSelect={() => {
                     setOpen(false)
                     setClient(listClient)
-                    console.log("onSelect clicked");
                   }}
                 >
                   {`${listClient.user.firstname} ${listClient.user.lastname}`}

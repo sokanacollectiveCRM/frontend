@@ -19,7 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/common/components/ui/select"
-import { Container } from "lucide-react"
 
 export default function AdminPay() {
   return (

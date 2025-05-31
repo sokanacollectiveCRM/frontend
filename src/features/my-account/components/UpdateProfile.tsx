@@ -37,7 +37,7 @@ export const Profile = () => {
 
     try {
       const savedUser = await saveUser(formData);
-      console.log("User saved successfully:", savedUser);
+      // console.log("User saved successfully:", savedUser);
       toast.success('Changes saved.');
       await checkAuth();
       profileForm.reset();
