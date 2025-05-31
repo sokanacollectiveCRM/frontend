@@ -1,13 +1,22 @@
 import { Tabs, TabsList, TabsContent, TabsTrigger } from "@/common/components/ui/tabs";
 import { Textarea } from "@/common/components/ui/textarea";
-import { Label } from "@/common/components/ui/label"; // Fixed import
+import { Label } from "@/common/components/ui/label";
 import { Input } from "@/common/components/ui/input";
 import { Card } from "@/common/components/ui/card";
+import { Button } from "@/common/components/ui/button";
+import { useState } from "react";
 
-export default function ClientInfo(user:any) {
+export default function ClientInfo({ client }: any) {
+  const [birthDate, setBirthDate] = useState("");
+
+  const handleBirthDateSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // TODO: Implement birth date submission
+    console.log("Birth date submitted:", birthDate);
+  };
+
   return (
     <div className="w-full">
-      
       <Tabs defaultValue="Contact" className="w-full">
         <TabsList className="mb-4 flex w-full">
           <TabsTrigger value="Contact">Contact</TabsTrigger>
@@ -26,7 +35,7 @@ export default function ClientInfo(user:any) {
                   type="email" 
                   id="email" 
                   placeholder="Email address" 
-                  defaultValue={`${user.firstName}${user.lastName}@gmail.com`}
+                  defaultValue={client.user.email}
                 />
               </div>
               <div className="space-y-2">
@@ -56,7 +65,7 @@ export default function ClientInfo(user:any) {
                   defaultValue="08/09/1992"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="contact-notes">Additional Contact Notes</Label>
                 <Textarea 
                   id="contact-notes" 
@@ -158,6 +167,27 @@ export default function ClientInfo(user:any) {
         <TabsContent value="PostBirth">
           <Card className="p-6">
             <div className="grid grid-cols-1 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="birth-date">Baby's Birth Date</Label>
+                <div className="flex gap-4">
+                  <Input 
+                    type="date" 
+                    id="birth-date" 
+                    value={birthDate}
+                    onChange={(e) => setBirthDate(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button 
+                    onClick={handleBirthDateSubmit}
+                    disabled={!birthDate}
+                  >
+                    Submit Birth Date
+                  </Button>
+                </div>
+                <p className="text-sm text-gray-500 mt-1">
+                  Once submitted, the pregnancy timer will stop and the status will be updated.
+                </p>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="postpartum-preferences">Postpartum Preferences</Label>
                 <Textarea 

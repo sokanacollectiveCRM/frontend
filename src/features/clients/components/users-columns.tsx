@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { Client, STATUS_LABELS, userStatusSchema } from '../data/schema'
 import { DataTableColumnHeader } from './data-table-column-header'
 import { DataTableRowActions } from './data-table-row-actions'
+import { Badge } from '@/common/components/ui/badge'
 
 const statusOptions = userStatusSchema.options;
 
@@ -42,9 +43,10 @@ export const columns: ColumnDef<Client>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Contract' />
     ),
-    cell: ({ row }) => (
-      <LongText className='max-w-36'>{row.getValue('serviceNeeded')}</LongText>
-    ),
+    cell: ({ row }) => {
+      const { serviceNeeded } = row.original;
+     return  <Badge variant='outline' className='max-w-36'>{serviceNeeded}</Badge>
+    },
     meta: {
       className: cn(
         'drop-shadow-[0_1px_2px_rgb(0_0_0_/_0.1)] dark:drop-shadow-[0_1px_2px_rgb(255_255_255_/_0.1)] lg:drop-shadow-none',

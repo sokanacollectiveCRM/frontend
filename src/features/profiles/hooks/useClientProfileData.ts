@@ -30,7 +30,7 @@ export function useClientProfileData(clientId: string): UseClientProfileDataResu
 
         if (!res.ok) throw new Error('Failed to fetch client details')
         const data = await res.json()
-        console.log(data);
+        // console.log(data);
         setClient(data)
       } catch (err: any) {
         setError(err.message || 'Unknown error')
