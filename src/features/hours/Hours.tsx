@@ -97,9 +97,6 @@ export default function Hours() {
           <TotalHoursHoverCard
             text={totalHours} 
           />
-          <TotalHoursHoverCard
-            text={totalHours} 
-          />
         </div>
       </Main>
 
