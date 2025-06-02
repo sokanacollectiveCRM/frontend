@@ -45,7 +45,9 @@ export function ClientsTable({ columns, data, draggedTemplate }: DataTableProps)
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-  const [sorting, setSorting] = useState<SortingState>([])
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: 'requestedAt', desc: true }
+  ])
 
   const table = useReactTable({
     data,
