@@ -509,12 +509,12 @@ export default function RequestForm() {
                             <SelectValue placeholder="Select" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Labor">Labor Support</SelectItem>
-                            <SelectItem value="1st Night">1st Night Care</SelectItem>
-                            <SelectItem value="Postpartum">Postpartum Support</SelectItem>
-                            <SelectItem value="Lactation">Lactation Support</SelectItem>
-                            <SelectItem value="Perinatal">Perinatal Support</SelectItem>
-                            <SelectItem value="Abortion">Abortion Support</SelectItem>
+                            <SelectItem value="Labor Support">Labor Support</SelectItem>
+                            <SelectItem value="1st Night Care">1st Night Care</SelectItem>
+                            <SelectItem value="Postpartum Support">Postpartum Support</SelectItem>
+                            <SelectItem value="Lactation Support">Lactation Support</SelectItem>
+                            <SelectItem value="Perinatal Support">Perinatal Support</SelectItem>
+                            <SelectItem value="Abortion Support">Abortion Support</SelectItem>
                             <SelectItem value="Other">Other</SelectItem>
                           </SelectContent>
                         </Select>
