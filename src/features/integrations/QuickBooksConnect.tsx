@@ -3,8 +3,10 @@ import { useCallback, useContext, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
+import { getQuickBooksStatus } from '../../api/quickbooks/auth/qbo'
+import { withTokenRefresh } from '../../api/quickbooks/auth/utils'
 import SubmitButton from '../../common/components/form/SubmitButton'
-import { UserContext } from '../../common/contexts/UserContext'; // ← import
+import { UserContext } from '../../common/contexts/UserContext'
 import { useQuickBooksConnect } from '../../common/hooks/useQuickBooksIntegration/useQuickBooksIntegration'
 
 const API_BASE = import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050'
@@ -12,8 +14,8 @@ const API_BASE = import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050'
 export default function QuickBooksConnectPage() {
   const { connectQuickBooks, isLoading, error } = useQuickBooksConnect()
   const [connected, setConnected] = useState<boolean | null>(null)
-  const { user, isLoading: authLoading } = useContext(UserContext)  // ← get user
-  const navigate = useNavigate()                                   // ← get navigate
+  const { user, isLoading: authLoading } = useContext(UserContext)
+  const navigate = useNavigate()
 
   // Redirect non‑admins away
   useEffect(() => {
@@ -28,13 +30,7 @@ export default function QuickBooksConnectPage() {
     let alive = true
     ;(async () => {
       try {
-        const token = localStorage.getItem('authToken')
-        const res = await fetch(`${API_BASE}/quickbooks/status`, {
-          headers: { Authorization: `Bearer ${token}` }
-        })
-        const { connected: isConn } = res.ok
-          ? await res.json()
-          : { connected: false }
+        const { connected: isConn } = await withTokenRefresh(getQuickBooksStatus);
         if (alive) setConnected(isConn)
       } catch (err) {
         console.error('Could not load QuickBooks status', err)
@@ -49,7 +45,7 @@ export default function QuickBooksConnectPage() {
     if (error) toast.error(error)
   }, [error])
 
-  // Listen for the popup’s postMessage
+  // Listen for the popup's postMessage
   useEffect(() => {
     function onMessage(e: MessageEvent) {
       // Only accept messages from your frontend or backend origins
@@ -79,6 +75,8 @@ export default function QuickBooksConnectPage() {
     // Disconnect flow
     try {
       const token = localStorage.getItem('authToken')
+      if (!token) throw new Error('Not authenticated')
+
       const res = await fetch(`${API_BASE}/quickbooks/disconnect`, {
         method: 'POST',
         headers: {
@@ -90,6 +88,7 @@ export default function QuickBooksConnectPage() {
         const text = await res.text()
         throw new Error(text || 'Disconnect failed')
       }
+      
       setConnected(false)
       toast.info('QuickBooks disconnected')
     } catch (err: any) {
