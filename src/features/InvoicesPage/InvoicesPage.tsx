@@ -9,12 +9,66 @@ import {
 import {
   CreateInvoiceParams,
   createQuickBooksInvoice,
+  getQuickBooksInvoices,
   InvoiceLineItem,
 } from "../../api/quickbooks/auth/invoice";
 import SubmitButton from "../../common/components/form/SubmitButton";
 import { UserContext } from "../../common/contexts/UserContext";
 
-// local shape for editing line-items
+// shape for rows from your `quickbooks_invoices` table
+type SavedInvoice = {
+  id: string;
+  customer_id: string;
+  line_items: {
+    Id?: string;
+    Amount: number;
+    LineNum?: number;
+    DetailType: string;
+    Description?: string;
+    SalesItemLineDetail?: {
+      Qty: number;
+      ItemRef: {
+        name: string;
+        value: string;
+      };
+      UnitPrice: number;
+    };
+  }[];
+  due_date: string;
+  memo: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+};
+
+// QuickBooks API response type
+interface QuickBooksInvoiceResponse {
+  Id: string;
+  DocNumber: string;
+  CustomerRef: {
+    value: string;
+    name: string;
+  };
+  TotalAmt: number;
+  Balance: number;
+  DueDate: string;
+  Line: Array<{
+    Id?: string;
+    Amount: number;
+    Description?: string;
+    DetailType: string;
+    SalesItemLineDetail?: {
+      ItemRef: {
+        value: string;
+        name: string;
+      };
+      UnitPrice: number;
+      Qty: number;
+    };
+  }>;
+}
+
+// local form–item
 type LocalLineItem = {
   description: string;
   quantity: number;
@@ -23,27 +77,137 @@ type LocalLineItem = {
 
 export default function InvoicesPage() {
   const { user, isLoading: authLoading } = useContext(UserContext);
+  const [invoices, setInvoices] = useState<SavedInvoice[]>([]);
+  const [customers, setCustomers] = useState<Record<string, InvoiceableCustomer>>({});
+  const [loadingInv, setLoadingInv] = useState(false);
+  const [loadingCust, setLoadingCust] = useState(false);
   const [showModal, setShowModal] = useState(false);
+
+  const fetchCustomers = useCallback(async () => {
+    setLoadingCust(true);
+    try {
+      const data = await getInvoiceableCustomers();
+      const customerMap = data.reduce((acc, customer) => {
+        acc[customer.id] = customer;
+        return acc;
+      }, {} as Record<string, InvoiceableCustomer>);
+      setCustomers(customerMap);
+    } catch (err: any) {
+      toast.error(`Could not load customers: ${err.message}`);
+    } finally {
+      setLoadingCust(false);
+    }
+  }, []);
+
+  const fetchInvoices = useCallback(async () => {
+    setLoadingInv(true);
+    try {
+      const data = await getQuickBooksInvoices();
+      setInvoices(data);
+    } catch (err: any) {
+      toast.error(`Could not load invoices: ${err.message}`);
+    } finally {
+      setLoadingInv(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!authLoading && user?.role === "admin") {
+      fetchInvoices();
+      fetchCustomers();
+    }
+  }, [authLoading, user, fetchInvoices, fetchCustomers]);
 
   if (!authLoading && user?.role !== "admin") {
     toast.error("You do not have permission.");
     return null;
   }
 
-  const openModal = useCallback(() => setShowModal(true), []);
-
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">Invoices</h1>
-        <SubmitButton onClick={openModal}>New Invoice</SubmitButton>
+        <SubmitButton onClick={() => setShowModal(true)}>
+          New Invoice
+        </SubmitButton>
       </div>
 
-      {/* your existing invoice table here… */}
+      <div className="rounded-xl shadow border bg-white overflow-x-auto mb-6">
+        {loadingInv || loadingCust ? (
+          <div className="p-8 text-center">Loading…</div>
+        ) : invoices.length === 0 ? (
+          <div className="p-8 text-center text-gray-500">
+            No invoices found.
+          </div>
+        ) : (
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr>
+                <th className="px-5 py-3 bg-gray-50 font-semibold text-left">Invoice #</th>
+                <th className="px-5 py-3 bg-gray-50 font-semibold text-left">Customer</th>
+                <th className="px-5 py-3 bg-gray-50 font-semibold text-center">Date</th>
+                <th className="px-5 py-3 bg-gray-50 font-semibold text-center">Due Date</th>
+                <th className="px-5 py-3 bg-gray-50 font-semibold text-right">Total</th>
+                <th className="px-5 py-3 bg-gray-50 font-semibold text-left">Line Items</th>
+              </tr>
+            </thead>
+            <tbody>
+              {invoices.map((inv, idx) => {
+                const customer = customers[inv.customer_id];
+                return (
+                  <tr
+                    key={inv.id}
+                    className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                  >
+                    <td className="px-5 py-3 text-left">{inv.id.split('-')[0]}</td>
+                    <td className="px-5 py-3 text-left">
+                      {customer ? (
+                        <div>
+                          <div className="font-medium">{customer.name}</div>
+                          <div className="text-xs text-gray-500">{customer.email}</div>
+                        </div>
+                      ) : (
+                        <span className="text-gray-500">Unknown Customer</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-3 text-center">
+                      {new Date(inv.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-5 py-3 text-center">{inv.due_date}</td>
+                    <td className="px-5 py-3 text-right">
+                      ${inv.line_items
+                        .filter(item => item.DetailType !== 'SubTotalLineDetail')
+                        .reduce((sum, item) => sum + (item.Amount || 0), 0)
+                        .toFixed(2)}
+                    </td>
+                    <td className="px-5 py-3 text-left">
+                      <ul className="space-y-1">
+                        {inv.line_items
+                          .filter(item => item.DetailType === 'SalesItemLineDetail')
+                          .map((li, i) => (
+                            <li key={i}>
+                              {li.Description ?? "Item"} × {li.SalesItemLineDetail?.Qty ?? 1} @ $
+                              {li.SalesItemLineDetail?.UnitPrice?.toFixed(2) ?? '0.00'}
+                            </li>
+                          ))}
+                      </ul>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+
       <CreateInvoiceModal
         open={showModal}
-        onClose={() => setShowModal(false)}
+        onClose={() => {
+          setShowModal(false);
+          fetchInvoices();
+        }}
       />
+
       <ToastContainer position="top-right" newestOnTop closeOnClick />
     </div>
   );
@@ -58,7 +222,7 @@ function CreateInvoiceModal({
 }) {
   const [search, setSearch] = useState("");
   const [customers, setCustomers] = useState<InvoiceableCustomer[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loadingCust, setLoadingCust] = useState(false);
   const [selected, setSelected] = useState<InvoiceableCustomer | null>(null);
   const [lineItems, setLineItems] = useState<LocalLineItem[]>([
     { description: "", quantity: 1, unitPrice: 0 },
@@ -66,17 +230,15 @@ function CreateInvoiceModal({
   const [dueDate, setDueDate] = useState("");
   const [memo, setMemo] = useState("");
 
-  // fetch as soon as modal opens
   useEffect(() => {
     if (!open) return;
-    setLoading(true);
+    setLoadingCust(true);
     getInvoiceableCustomers()
       .then(setCustomers)
       .catch((err) => toast.error(`Could not load customers: ${err.message}`))
-      .finally(() => setLoading(false));
+      .finally(() => setLoadingCust(false));
   }, [open]);
 
-  // filter by name/email
   const filtered = search
     ? customers.filter(
         (c) =>
@@ -94,7 +256,10 @@ function CreateInvoiceModal({
       cur.map((li, i) => (i === idx ? { ...li, [key]: value } : li))
     );
   const addLine = () =>
-    setLineItems((cur) => [...cur, { description: "", quantity: 1, unitPrice: 0 }]);
+    setLineItems((cur) => [
+      ...cur,
+      { description: "", quantity: 1, unitPrice: 0 },
+    ]);
   const removeLine = (idx: number) =>
     setLineItems((cur) => cur.filter((_, i) => i !== idx));
 
@@ -104,47 +269,40 @@ function CreateInvoiceModal({
   );
 
   const onSubmit = async () => {
-    if (!selected) {
-      toast.error("Please select a customer.");
-      return;
-    }
-    if (!dueDate) {
-      toast.error("Please pick a due date.");
-      return;
-    }
+    if (!selected) return toast.error("Please select a customer.");
+    if (!dueDate) return toast.error("Please pick a due date.");
     if (
       lineItems.some(
         (li) => !li.description || li.quantity < 1 || li.unitPrice < 0
       )
-    ) {
-      toast.error("Please complete all line items.");
-      return;
-    }
+    )
+      return toast.error("Please complete all line items.");
 
     const apiLines: InvoiceLineItem[] = lineItems.map((li) => ({
       DetailType: "SalesItemLineDetail",
       Amount: li.quantity * li.unitPrice,
       Description: li.description,
       SalesItemLineDetail: {
-        // QuickBooks customer ID for the invoice
-        ItemRef: { value:'19' },
+        // replace '19' with your real service/item Id or let user choose
+        ItemRef: { value: "19" },
         UnitPrice: li.unitPrice,
         Qty: li.quantity,
       },
     }));
 
     const params: CreateInvoiceParams = {
-      internalCustomerId: selected.id, // your internal ID
+      internalCustomerId: selected.id,
       lineItems: apiLines,
       dueDate,
       memo,
     };
 
     try {
-      const { invoiceId, status } = await createQuickBooksInvoice(params);
-      toast.success(`Invoice ${invoiceId} created (${status}).`);
+      const response = await createQuickBooksInvoice(params);
+      toast.success(`Invoice #${response.DocNumber} created for ${response.CustomerRef.name}`);
       onClose();
     } catch (err: any) {
+      console.error('Invoice creation error:', err);
       toast.error(err.message || "Failed to create invoice");
     }
   };
@@ -158,7 +316,7 @@ function CreateInvoiceModal({
         {/* Customer */}
         <div className="mb-4">
           <label className="block text-sm font-medium mb-1">Customer</label>
-          {loading ? (
+          {loadingCust ? (
             <div>Loading…</div>
           ) : selected ? (
             <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
@@ -166,10 +324,7 @@ function CreateInvoiceModal({
                 <div className="font-semibold">{selected.name}</div>
                 <div className="text-xs text-gray-500">{selected.email}</div>
               </div>
-              <button
-                className="text-red-500"
-                onClick={() => setSelected(null)}
-              >
+              <button className="text-red-500" onClick={() => setSelected(null)}>
                 ×
               </button>
             </div>
@@ -199,9 +354,7 @@ function CreateInvoiceModal({
                       </div>
                     ))
                   ) : (
-                    <div className="px-3 py-2 text-gray-500">
-                      No matches
-                    </div>
+                    <div className="px-3 py-2 text-gray-500">No matches</div>
                   )}
                 </div>
               )}
@@ -211,9 +364,7 @@ function CreateInvoiceModal({
 
         {/* Line Items */}
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">
-            Line Items
-          </label>
+          <label className="block text-sm font-medium mb-1">Line Items</label>
           <div className="space-y-2">
             {lineItems.map((li, idx) => (
               <div key={idx} className="flex gap-2 items-end">
@@ -221,36 +372,25 @@ function CreateInvoiceModal({
                   className="border rounded px-2 py-1 flex-1"
                   placeholder="Description"
                   value={li.description}
-                  onChange={(e) =>
-                    changeLine(idx, "description", e.target.value)
-                  }
+                  onChange={(e) => changeLine(idx, "description", e.target.value)}
                 />
                 <input
                   className="border rounded px-2 py-1 w-16"
                   type="number"
                   min={1}
                   value={li.quantity}
-                  onChange={(e) =>
-                    changeLine(idx, "quantity", Number(e.target.value))
-                  }
+                  onChange={(e) => changeLine(idx, "quantity", Number(e.target.value))}
                 />
                 <input
                   className="border rounded px-2 py-1 w-24"
                   type="number"
                   min={0}
                   value={li.unitPrice}
-                  onChange={(e) =>
-                    changeLine(idx, "unitPrice", Number(e.target.value))
-                  }
+                  onChange={(e) => changeLine(idx, "unitPrice", Number(e.target.value))}
                 />
-                <span className="w-20 text-right">
-                  ${(li.quantity * li.unitPrice).toFixed(2)}
-                </span>
+                <span className="w-20 text-right">${(li.quantity * li.unitPrice).toFixed(2)}</span>
                 {lineItems.length > 1 && (
-                  <button
-                    className="text-red-500 text-xs"
-                    onClick={() => removeLine(idx)}
-                  >
+                  <button className="text-red-500 text-xs" onClick={() => removeLine(idx)}>
                     Remove
                   </button>
                 )}
@@ -265,7 +405,7 @@ function CreateInvoiceModal({
           </div>
         </div>
 
-        {/* Due & Memo */}
+        {/* Due Date */}
         <div className="mb-4">
           <label className="block text-sm font-medium mb-1">Due Date</label>
           <input
@@ -275,10 +415,10 @@ function CreateInvoiceModal({
             onChange={(e) => setDueDate(e.target.value)}
           />
         </div>
+
+        {/* Memo */}
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">
-            Memo / Notes
-          </label>
+          <label className="block text-sm font-medium mb-1">Memo / Notes</label>
           <textarea
             className="border rounded px-3 py-2 w-full"
             rows={2}
@@ -294,16 +434,12 @@ function CreateInvoiceModal({
           <span>${total.toFixed(2)}</span>
         </div>
         <div className="flex justify-end gap-2">
-          <button
-            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-            onClick={onClose}
-          >
+          <button className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300" onClick={onClose}>
             Cancel
           </button>
           <SubmitButton onClick={onSubmit}>Create Invoice</SubmitButton>
         </div>
       </div>
-      <ToastContainer />
     </div>
   );
 }
