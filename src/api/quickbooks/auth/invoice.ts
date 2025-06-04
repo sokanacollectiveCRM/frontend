@@ -39,11 +39,14 @@ export interface InvoiceLineItem {
 }
 
 export interface CreateInvoiceParams {
-  internalCustomerId: string;        // ← required by your backend
+  userId?: string;                   // ← optional since handled internally
+  internalCustomerId: string;       // ← required by your backend
   lineItems: InvoiceLineItem[];
-  dueDate: string;                   // ISO date string
+  dueDate: string;                  // ISO date string
   memo?: string;
 }
+
+
 
 /**
  * Create & send a QuickBooks invoice.
@@ -55,6 +58,12 @@ export async function createQuickBooksInvoice(
   const token = localStorage.getItem('authToken');
   if (!token) throw new Error('Not authenticated — please log in first');
 
+  // Since we're using admin-only approach, set userId to 'admin'
+  const requestBody = {
+    ...params,
+    userId: 'admin'  // This matches the userId we use in tokenUtils.ts
+  };
+
   const res = await fetch(`${API_BASE}/quickbooks/invoice`, {
     method: 'POST',
     headers: {
@@ -62,7 +71,7 @@ export async function createQuickBooksInvoice(
       Authorization: `Bearer ${token}`,
     },
     credentials: 'include',
-    body: JSON.stringify(params),
+    body: JSON.stringify(requestBody),
   });
 
   if (!res.ok) {
@@ -71,6 +80,33 @@ export async function createQuickBooksInvoice(
   }
   return res.json();
 }
+
+/**
+ * Create & send a QuickBooks invoice.
+ * Automatically pulls the JWT from localStorage.
+ */
+// export async function createQuickBooksInvoice(
+//   params: CreateInvoiceParams
+// ): Promise<QuickBooksInvoiceResponse> {
+//   const token = localStorage.getItem('authToken');
+//   if (!token) throw new Error('Not authenticated — please log in first');
+
+//   const res = await fetch(`${API_BASE}/quickbooks/invoice`, {
+//     method: 'POST',
+//     headers: {
+//       'Content-Type': 'application/json',
+//       Authorization: `Bearer ${token}`,
+//     },
+//     credentials: 'include',
+//     body: JSON.stringify(params),
+//   });
+
+//   if (!res.ok) {
+//     const err = await res.text();
+//     throw new Error(`Failed to create invoice: ${err}`);
+//   }
+//   return res.json();
+// }
 /**
  * Fetch all stored invoices (from your Supabase-backed endpoint).
  * Automatically pulls the JWT from localStorage.
