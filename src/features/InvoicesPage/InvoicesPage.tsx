@@ -15,10 +15,11 @@ import {
 import SubmitButton from "../../common/components/form/SubmitButton";
 import { UserContext } from "../../common/contexts/UserContext";
 
-// shape for rows from your `quickbooks_invoices` table
+// Updated shape for rows from your `invoices` table
 type SavedInvoice = {
   id: string;
   customer_id: string;
+  doc_number?: string; // QuickBooks invoice number
   line_items: {
     Id?: string;
     Amount: number;
@@ -39,6 +40,8 @@ type SavedInvoice = {
   status: string;
   created_at: string;
   updated_at: string;
+  total_amount?: number; // Calculated or stored total
+  balance?: number; // Outstanding balance
 };
 
 // QuickBooks API response type
@@ -78,10 +81,17 @@ type LocalLineItem = {
 export default function InvoicesPage() {
   const { user, isLoading: authLoading } = useContext(UserContext);
   const [invoices, setInvoices] = useState<SavedInvoice[]>([]);
+  const [filteredInvoices, setFilteredInvoices] = useState<SavedInvoice[]>([]);
   const [customers, setCustomers] = useState<Record<string, InvoiceableCustomer>>({});
   const [loadingInv, setLoadingInv] = useState(false);
   const [loadingCust, setLoadingCust] = useState(false);
   const [showModal, setShowModal] = useState(false);
+
+  // Search and filter states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [dateFromFilter, setDateFromFilter] = useState("");
+  const [dateToFilter, setDateToFilter] = useState("");
 
   const fetchCustomers = useCallback(async () => {
     setLoadingCust(true);
@@ -111,6 +121,54 @@ export default function InvoicesPage() {
     }
   }, []);
 
+  // Filter and search logic
+  useEffect(() => {
+    let filtered = [...invoices];
+
+    // Search filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter((inv) => {
+        const customer = customers[inv.customer_id];
+        const invoiceNumber = inv.doc_number || inv.id.split('-')[0];
+        
+        return (
+          invoiceNumber.toLowerCase().includes(term) ||
+          customer?.name.toLowerCase().includes(term) ||
+          customer?.email.toLowerCase().includes(term) ||
+          inv.memo.toLowerCase().includes(term)
+        );
+      });
+    }
+
+    // Status filter
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((inv) => {
+        if (statusFilter === "pending") {
+          return inv.status === "pending" || inv.status === "open" || inv.status === "sent";
+        }
+        if (statusFilter === "paid") {
+          return inv.status === "paid" || inv.status === "closed";
+        }
+        return inv.status === statusFilter;
+      });
+    }
+
+    // Date range filter
+    if (dateFromFilter) {
+      filtered = filtered.filter((inv) => 
+        new Date(inv.created_at) >= new Date(dateFromFilter)
+      );
+    }
+    if (dateToFilter) {
+      filtered = filtered.filter((inv) => 
+        new Date(inv.created_at) <= new Date(dateToFilter)
+      );
+    }
+
+    setFilteredInvoices(filtered);
+  }, [invoices, customers, searchTerm, statusFilter, dateFromFilter, dateToFilter]);
+
   useEffect(() => {
     if (!authLoading && user?.role === "admin") {
       fetchInvoices();
@@ -123,21 +181,131 @@ export default function InvoicesPage() {
     return null;
   }
 
+  const getStatusBadge = (status: string) => {
+    const statusLower = status.toLowerCase();
+    if (statusLower === "paid" || statusLower === "closed") {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          Paid
+        </span>
+      );
+    }
+    if (statusLower === "pending" || statusLower === "open" || statusLower === "sent") {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+          Pending
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+        {status}
+      </span>
+    );
+  };
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setStatusFilter("all");
+    setDateFromFilter("");
+    setDateToFilter("");
+  };
+
   return (
     <div className="p-4">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Invoices</h1>
         <SubmitButton onClick={() => setShowModal(true)}>
           New Invoice
         </SubmitButton>
       </div>
 
+      {/* Search and Filter Section */}
+      <div className="bg-white rounded-lg shadow p-4 mb-4">
+        {/* Search - Full Width */}
+        <div className="mb-3">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Search
+          </label>
+          <input
+            type="text"
+            placeholder="Search by invoice #, customer name, email, or memo..."
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        {/* Filters - Horizontal Row */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {/* Status Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Status
+            </label>
+            <select
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="all">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="paid">Paid</option>
+            </select>
+          </div>
+
+          {/* From Date */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              From Date
+            </label>
+            <input
+              type="date"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={dateFromFilter}
+              onChange={(e) => setDateFromFilter(e.target.value)}
+            />
+          </div>
+
+          {/* To Date */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              To Date
+            </label>
+            <input
+              type="date"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={dateToFilter}
+              onChange={(e) => setDateToFilter(e.target.value)}
+            />
+          </div>
+
+          {/* Clear Filters */}
+          <div className="flex items-end">
+            <button
+              onClick={clearFilters}
+              className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+            >
+              Clear Filters
+            </button>
+          </div>
+
+          {/* Results Summary */}
+          <div className="flex items-end">
+            <div className="text-sm text-gray-600">
+              Showing {filteredInvoices.length} of {invoices.length}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Invoices Table */}
       <div className="rounded-xl shadow border bg-white overflow-x-auto mb-6">
         {loadingInv || loadingCust ? (
           <div className="p-8 text-center">Loading…</div>
-        ) : invoices.length === 0 ? (
+        ) : filteredInvoices.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
-            No invoices found.
+            {invoices.length === 0 ? "No invoices found." : "No invoices match your search criteria."}
           </div>
         ) : (
           <table className="min-w-full text-sm">
@@ -145,6 +313,7 @@ export default function InvoicesPage() {
               <tr>
                 <th className="px-5 py-3 bg-gray-50 font-semibold text-left">Invoice #</th>
                 <th className="px-5 py-3 bg-gray-50 font-semibold text-left">Customer</th>
+                <th className="px-5 py-3 bg-gray-50 font-semibold text-center">Status</th>
                 <th className="px-5 py-3 bg-gray-50 font-semibold text-center">Date</th>
                 <th className="px-5 py-3 bg-gray-50 font-semibold text-center">Due Date</th>
                 <th className="px-5 py-3 bg-gray-50 font-semibold text-right">Total</th>
@@ -152,14 +321,16 @@ export default function InvoicesPage() {
               </tr>
             </thead>
             <tbody>
-              {invoices.map((inv, idx) => {
+              {filteredInvoices.map((inv, idx) => {
                 const customer = customers[inv.customer_id];
+                const invoiceNumber = inv.doc_number || inv.id.split('-')[0];
+                
                 return (
                   <tr
                     key={inv.id}
                     className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
                   >
-                    <td className="px-5 py-3 text-left">{inv.id.split('-')[0]}</td>
+                    <td className="px-5 py-3 text-left font-medium">{invoiceNumber}</td>
                     <td className="px-5 py-3 text-left">
                       {customer ? (
                         <div>
@@ -171,14 +342,18 @@ export default function InvoicesPage() {
                       )}
                     </td>
                     <td className="px-5 py-3 text-center">
+                      {getStatusBadge(inv.status)}
+                    </td>
+                    <td className="px-5 py-3 text-center">
                       {new Date(inv.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-5 py-3 text-center">{inv.due_date}</td>
-                    <td className="px-5 py-3 text-right">
-                      ${inv.line_items
-                        .filter(item => item.DetailType !== 'SubTotalLineDetail')
-                        .reduce((sum, item) => sum + (item.Amount || 0), 0)
-                        .toFixed(2)}
+                    <td className="px-5 py-3 text-right font-medium">
+                      ${inv.total_amount?.toFixed(2) || 
+                        inv.line_items
+                          .filter(item => item.DetailType !== 'SubTotalLineDetail')
+                          .reduce((sum, item) => sum + (item.Amount || 0), 0)
+                          .toFixed(2)}
                     </td>
                     <td className="px-5 py-3 text-left">
                       <ul className="space-y-1">

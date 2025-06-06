@@ -15,17 +15,25 @@ import { UserContext } from '../../../contexts/UserContext'; // wherever you def
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { user, isLoading } = useContext(UserContext)
 
-  // while we’re still loading auth, render nothing or a spinner
+  // while we're still loading auth, render nothing or a spinner
   if (isLoading) {
     return null
   }
 
   const isAdmin = user?.role === 'admin'
 
-  // filter out “Integrations” unless admin
+  // filter out "Integrations" unless admin
   const visible = sidebarSections.filter(
     section => section.label !== 'Integrations' || isAdmin
-  )
+  ).map(section => ({
+    ...section,
+    items: section.items.filter(item => {
+      if (item.title === 'Invoices' || item.title === 'New Client' || item.title === 'Clients') {
+        return isAdmin;
+      }
+      return true;
+    })
+  }))
 
   return (
     <Sidebar collapsible='icon' variant='floating' {...props}>

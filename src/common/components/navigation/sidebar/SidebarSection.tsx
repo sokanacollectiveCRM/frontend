@@ -1,11 +1,12 @@
 import {
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
+    SidebarGroup,
+    SidebarGroupContent,
+    SidebarGroupLabel,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
 } from '@/common/components/ui/sidebar'
+import { Link, useLocation } from 'react-router-dom'
 
 interface SidebarSectionProps {
   label: string
@@ -17,6 +18,8 @@ interface SidebarSectionProps {
 }
 
 export function SidebarSection({ label, items }: SidebarSectionProps) {
+  const location = useLocation()
+  
   return (
     <SidebarGroup>
       <SidebarGroupLabel className="font-extrabold text-lg">{label}</SidebarGroupLabel>
@@ -24,11 +27,11 @@ export function SidebarSection({ label, items }: SidebarSectionProps) {
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild>
-                <a href={item.url}>
+              <SidebarMenuButton asChild isActive={location.pathname === item.url}>
+                <Link to={item.url}>
                   <item.icon />
                   <span>{item.title}</span>
-                </a>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
