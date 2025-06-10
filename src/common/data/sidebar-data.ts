@@ -1,16 +1,16 @@
 import {
-  Calendar,
-  FileText,
-  Home,
-  Inbox,
-  LucideChartColumnIncreasing,
-  LucideCircleDollarSign,
-  LucideClock5,
-  LucideCreditCard,
-  LucideLink,
-  LucideUsers,
-  Search,
-  UserPlus
+    Calendar,
+    FileText,
+    Home,
+    Inbox,
+    LucideChartColumnIncreasing,
+    LucideCircleDollarSign,
+    LucideClock5,
+    LucideCreditCard,
+    LucideLink,
+    LucideUsers,
+    Search,
+    UserPlus
 } from 'lucide-react'
 
 export interface SidebarItem {
@@ -42,6 +42,7 @@ export const sidebarSections = [
       { title: 'Contracts', url: '#', icon: FileText },
       { title: 'Hours', url: '/hours', icon: LucideClock5 },
       { title: 'Payments', url: '#', icon: LucideCreditCard },
+      { title: 'Billing', url: '/billing', icon: LucideCreditCard },
       { title: 'Invoices', url: '/invoices', icon: FileText }, // ← Add here!
     ],
   },

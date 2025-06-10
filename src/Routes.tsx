@@ -8,6 +8,7 @@ import RequestRoutes from "@/features/request/RequestRoutes";
 import { Route, Routes } from 'react-router-dom';
 import DashboardLayout from './common/layouts/DashboardLayout';
 import AdminPayRoute from './features/admin-payment/AdminPayRoute';
+import BillingRoute from './features/billing/BillingRoute';
 import CreateCustomerRoutes from './features/clients/create-customer/createCustomerRoute';
 import Hours from './features/hours/Hours';
 import HoursRoute from './features/hours/HoursRoute';
@@ -37,6 +38,7 @@ const AppRoutes = () => (
         {QuickBooksRoutes()}
         {CreateCustomerRoutes()}
         {InvoiceRoute()}
+        {BillingRoute()}
         <Route path='/my-account' element={<MyAccount />} />
         <Route path='/hours' element={<Hours />}/>
       </Route>
