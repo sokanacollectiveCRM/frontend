@@ -27,9 +27,9 @@ export function SidebarSection({ label, items }: SidebarSectionProps) {
         <SidebarMenu>
           {items.map((item) => {
             const isActive = location.pathname === item.url;
-            
+
             return (<SidebarMenuItem key={item.title}>
-              <SidebarMenuButton 
+              <SidebarMenuButton
                 asChild
                 className={isActive ? 'bg-gray-200/50' : ''}>
                 <Link to={item.url}>
@@ -38,7 +38,8 @@ export function SidebarSection({ label, items }: SidebarSectionProps) {
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            )})}
+            )
+          })}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>

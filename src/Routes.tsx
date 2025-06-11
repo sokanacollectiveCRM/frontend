@@ -9,12 +9,17 @@ import { Route, Routes } from 'react-router-dom';
 import { PrivateRoute, PublicOnlyRoute } from "./common/components/routes/ProtectedRoutes";
 import DashboardLayout from './common/layouts/DashboardLayout';
 import AdminPayRoute from './features/admin-payment/AdminPayRoute';
+import BillingRoute from './features/billing/BillingRoute';
+import CreateCustomerRoutes from './features/clients/create-customer/createCustomerRoute';
 import ContractRoutes from "./features/contracts/ContractRoutes";
-import { default as HoursRoute, default as HoursRoutes } from './features/hours/HoursRoute';
+import HoursRoutes from './features/hours/HoursRoute';
 import InboxRoutes from "./features/inbox/InboxRoutes";
+import QuickBooksRoutes from './features/integrations/QuickBooksRoutes';
+import InvoiceRoute from './features/InvoicesPage/InvoiceRoute';
 import MyAccountRoutes from "./features/my-account/MyAccountRoutes";
 import ProfileRoutes from './features/profiles/ProfileRoutes';
 import TeamRoutes from "./features/teams/teamRoutes";
+
 const AppRoutes = () => (
   <Routes>
 
@@ -23,7 +28,6 @@ const AppRoutes = () => (
         <Route element={<PublicOnlyRoute />} >
           {AuthRoutes()}
           {AuthPublicRoutes()}
-          {RequestRoutes()}
         </Route>
       </Route>
     </Route>
@@ -36,16 +40,19 @@ const AppRoutes = () => (
           {PipelineRoutes()}
           {ClientRoutes()}
           {AdminPayRoute()}
-          {HoursRoute()}
+          {HoursRoutes()}
           {ProfileRoutes()}
           {MyAccountRoutes()}
-          {HoursRoutes()}
           {TeamRoutes()}
           {InboxRoutes()}
+          {RequestRoutes()}
+          {QuickBooksRoutes()}
+          {CreateCustomerRoutes()}
+          {InvoiceRoute()}
+          {BillingRoute()}
         </Route>
       </Route>
     </Route>
-
 
     <Route path='*' element={<NotFound />} />
   </Routes>
