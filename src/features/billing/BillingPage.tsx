@@ -2,14 +2,14 @@ import { getQuickBooksInvoices } from "@/api/quickbooks/auth/invoice";
 import { UserContext } from "@/common/contexts/UserContext";
 import PaymentForm from "@/components/PaymentForm";
 import {
-    Button,
-    Modal,
-    ModalBody,
-    ModalContent,
-    ModalFooter,
-    ModalHeader,
-    useDisclosure,
-} from "@nextui-org/react";
+  Button,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  useDisclosure,
+} from "@heroui/react";
 import { useContext, useEffect, useState } from "react";
 
 // Define the types for the invoice and line items

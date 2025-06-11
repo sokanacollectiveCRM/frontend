@@ -1,24 +1,24 @@
+import { Badge } from '@/common/components/ui/badge'
 import LongText from '@/common/components/ui/long-text'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/common/components/ui/select'
 import updateClientStatus from '@/common/utils/updateClientStatus'
 import { cn } from '@/lib/utils'
 import { ColumnDef } from '@tanstack/react-table'
 import { toast } from 'sonner'
-import { Client, STATUS_LABELS, userStatusSchema } from '../data/schema'
+import { STATUS_LABELS, User, userStatusSchema } from '../data/schema'
 import { DataTableColumnHeader } from './data-table-column-header'
 import { DataTableRowActions } from './data-table-row-actions'
-import { Badge } from '@/common/components/ui/badge'
 
 const statusOptions = userStatusSchema.options;
 
-export const columns: ColumnDef<Client>[] = [
+export const columns: ColumnDef<User>[] = [
   {
     id: 'client',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Client' />
     ),
     cell: ({ row }) => {
-      const { user: { firstname, lastname } } = row.original
+      const { firstname, lastname } = row.original
       const fullName = `${firstname} ${lastname}`
       const initials = `${firstname[0] ?? ''}${lastname[0] ?? ''}`.toUpperCase();
 
@@ -32,7 +32,7 @@ export const columns: ColumnDef<Client>[] = [
       );
     },
     filterFn: (row, _columnId, filterValue) => {
-      const { user: { firstname, lastname } } = row.original
+      const { firstname, lastname } = row.original
       const fullName = `${firstname} ${lastname}`.toLowerCase()
       return fullName.includes((filterValue as string).toLowerCase())
     },
@@ -45,7 +45,7 @@ export const columns: ColumnDef<Client>[] = [
     ),
     cell: ({ row }) => {
       const { serviceNeeded } = row.original;
-     return  <Badge variant='outline' className='max-w-36'>{serviceNeeded}</Badge>
+      return <Badge variant='outline' className='max-w-36'>{serviceNeeded}</Badge>
     },
     meta: {
       className: cn(
