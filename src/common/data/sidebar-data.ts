@@ -1,22 +1,23 @@
 import {
-  Calendar,
-  FileText,
-  Home,
-  Inbox,
-  LucideChartColumnIncreasing,
-  LucideCircleDollarSign,
-  LucideClock5,
-  LucideCreditCard,
-  LucideLink,
-  LucideUsers,
-  Search,
-  UserPlus
+    Calendar,
+    FileText,
+    Home,
+    Inbox,
+    LucideChartColumnIncreasing,
+    LucideCircleDollarSign,
+    LucideClock5,
+    LucideCreditCard,
+    LucideLink,
+    LucideUsers,
+    Search,
+    UserPlus
 } from 'lucide-react'
 
 export interface SidebarItem {
   title: string
   url: string
   icon: React.ElementType
+  adminOnly?: boolean
 }
 
 export interface SidebarSection {
@@ -41,10 +42,9 @@ export const sidebarSections = [
       { title: 'Team', url: '/team', icon: LucideUsers },
       { title: 'Contracts', url: '/contracts', icon: FileText },
       { title: 'Hours', url: '/hours', icon: LucideClock5 },
-      { title: 'Payments', url: '/payments', icon: LucideCreditCard },
-      { title: 'Payments', url: '#', icon: LucideCreditCard },
-      { title: 'Billing', url: '/billing', icon: LucideCreditCard },
-      { title: 'Invoices', url: '/invoices', icon: FileText }, // ← Add here!
+      { title: 'Payments', url: '/payments', icon: LucideCreditCard, adminOnly: false },
+      { title: 'Billing', url: '/billing', icon: LucideCreditCard, adminOnly: true },
+      { title: 'Invoices', url: '/invoices', icon: FileText },
     ],
   },
   {

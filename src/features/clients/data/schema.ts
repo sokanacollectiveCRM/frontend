@@ -9,6 +9,7 @@ export const userStatusSchema = z.enum([
   'contract',
   'active',
   'complete',
+  'customer',
 ]);
 
 export type UserStatus = z.infer<typeof userStatusSchema>;
@@ -23,24 +24,44 @@ export const STATUS_LABELS: Record<UserStatus, string> = {
   contract: 'Contract',
   active: 'Active',
   complete: 'Complete',
+  customer: 'Customer',
 };
 
 const serviceSchema = z.union([
   z.literal('Postpartum'),
   z.literal('Labor Support'),
-  z.literal('Lactation Support')
+  z.literal('Lactation Support'),
+  z.literal('1st Night Care'),
+  z.literal('Consultation'),
+  z.literal('Postpartum Support'),
+  z.literal('Perinatal Support'),
+  z.literal('Abortion Support'),
+  z.literal('Other'),
 ])
 export type serviceNeeded = z.infer<typeof serviceSchema>
 
 const userSchema = z.object({
-  id: z.string(),
-  firstname: z.string(),
-  lastname: z.string(),
-  serviceNeeded: serviceSchema,
-  requestedAt: z.coerce.date(),
-  updatedAt: z.coerce.date(),
+  id: z.union([z.string(), z.number()]).transform(val => String(val)),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  firstname: z.string().optional(),
+  lastname: z.string().optional(),
+  email: z.string().optional(),
+  serviceNeeded: serviceSchema.optional(),
+  requestedAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
   status: userStatusSchema,
-})
+}).transform(data => ({
+  id: data.id,
+  firstname: data.firstname || data.firstName || '',
+  lastname: data.lastname || data.lastName || '',
+  email: data.email || '',
+  serviceNeeded: data.serviceNeeded,
+  requestedAt: data.requestedAt || new Date(),
+  updatedAt: data.updatedAt || new Date(),
+  status: data.status,
+}))
+
 export type User = z.infer<typeof userSchema>
 
 export type UserSummary = z.infer<typeof userSchema>;

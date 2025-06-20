@@ -1,6 +1,6 @@
 // src/common/hooks/clients/useClients.ts
 import { useCallback, useState } from 'react'
-import type { Client } from '../../types/client'
+import type { Client } from '../../../features/pipeline/data/schema'
 
 export function useClients() {
   const [clients, setClients] = useState<Client[]>([])

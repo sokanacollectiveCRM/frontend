@@ -8,14 +8,14 @@ import 'react-toastify/dist/ReactToastify.css'
 import SubmitButton from '../../../common/components/form/SubmitButton'
 import { UserContext } from '../../../common/contexts/UserContext'
 import { useClients } from '../../../common/hooks/clients/useClients'
-import type { Client } from '../../../common/types/client'
+import type { Client } from '../../pipeline/data/schema'
 
 export default function CreateCustomerPage() {
   const { user, isLoading: authLoading } = useContext(UserContext)
   const navigate = useNavigate()
 
   const { clients, isLoading, error, getClients } = useClients()
-  const [convertingIds, setConvertingIds] = useState<number[]>([])
+  const [convertingIds, setConvertingIds] = useState<string[]>([])
 
   // Admin guard
   useEffect(() => {
@@ -31,8 +31,8 @@ export default function CreateCustomerPage() {
   }, [getClients])
 
   if (isLoading) return <p className="p-8 text-center">Loading clients…</p>
-  if (error)     return <p className="p-8 text-center text-red-500">{error}</p>
-console.log(clients)
+  if (error) return <p className="p-8 text-center text-red-500">{error}</p>
+  console.log(clients)
   const convert = async (client: Client) => {
     setConvertingIds(ids => [...ids, client.id])
     try {
@@ -47,10 +47,10 @@ console.log(clients)
             ...(token && { Authorization: `Bearer ${token}` }),
           },
           body: JSON.stringify({
-            internalCustomerId: client.userId, // UUID
-            firstName: client.firstName,
-            lastName:  client.lastName,
-            email:     client.email,
+            internalCustomerId: client.user.id, // UUID
+            firstName: client.user.firstname,
+            lastName: client.user.lastname,
+            email: client.user.email,
           }),
         }
       )
@@ -63,8 +63,8 @@ console.log(clients)
       // await createQuickBooksCustomer({ ... });
 
       toast.success('Client converted and synced to QuickBooks!')
-     
-      
+
+
     } catch (err: any) {
       toast.error(err.message)
     } finally {
@@ -94,7 +94,7 @@ console.log(clients)
               {clients.map((client: Client) => (
                 <tr key={client.id} className="border-t">
                   <td className="px-4 py-3">
-                    {client.firstName} {client.lastName}
+                    {client.user.firstname} {client.user.lastname}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-700">
                     {client.serviceNeeded}
@@ -103,18 +103,18 @@ console.log(clients)
                     {client.status}
                   </td>
                   <td className="px-4 py-3 text-center">
-                  <SubmitButton
-  onClick={() => convert(client)}
-  // Disable if already a customer or converting
-  disabled={client.status === 'customer' || convertingIds.includes(client.id)}
-  className="px-4 py-1"
->
-  {client.status === 'customer'
-    ? 'Already Customer'
-    : convertingIds.includes(client.id)
-      ? 'Creating…'
-      : 'Create Customer'}
-</SubmitButton>
+                    <SubmitButton
+                      onClick={() => convert(client)}
+                      // Disable if already a customer or converting
+                      disabled={client.status === 'active' || convertingIds.includes(client.id)}
+                      className="px-4 py-1"
+                    >
+                      {client.status === 'active'
+                        ? 'Already Customer'
+                        : convertingIds.includes(client.id)
+                          ? 'Creating…'
+                          : 'Create Customer'}
+                    </SubmitButton>
 
                   </td>
                 </tr>

@@ -1,5 +1,5 @@
 import { Template } from '@/common/types/template'
-import type { Client } from '@/features/clients/data/schema'
+import type { User } from '@/features/clients/data/schema'
 import React, { useState } from 'react'
 
 type ClientsDialogType = 'new-contract' | 'archive' | 'delete'
@@ -7,8 +7,8 @@ type ClientsDialogType = 'new-contract' | 'archive' | 'delete'
 interface ClientsContextType {
   open: ClientsDialogType | '',
   setOpen: (str: ClientsDialogType | '') => void
-  currentRow: Client | null
-  setCurrentRow: React.Dispatch<React.SetStateAction<Client | null>>
+  currentRow: User | null
+  setCurrentRow: React.Dispatch<React.SetStateAction<User | null>>
   dialogTemplate: Template | null
   setDialogTemplate: React.Dispatch<React.SetStateAction<Template | null>>
 }
@@ -21,7 +21,7 @@ interface Props {
 
 export default function TableProvider({ children }: Props) {
   const [open, setOpen] = useState<ClientsDialogType | ''>('');
-  const [currentRow, setCurrentRow] = useState<Client | null>(null)
+  const [currentRow, setCurrentRow] = useState<User | null>(null)
   const [dialogTemplate, setDialogTemplate] = useState<Template | null>(null)
 
   return (
@@ -36,7 +36,7 @@ export const useTable = () => {
   const tableContext = React.useContext(TableContext)
 
   if (!tableContext) {
-    throw new Error('useUsers has to be used within <UsersContext>')
+    throw new Error('useTable has to be used within <TableProvider>')
   }
 
   return tableContext

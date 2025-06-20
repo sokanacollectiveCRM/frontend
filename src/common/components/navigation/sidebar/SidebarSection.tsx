@@ -14,6 +14,7 @@ interface SidebarSectionProps {
     title: string
     url: string
     icon: React.ElementType
+    adminOnly?: boolean
   }[]
 }
 
