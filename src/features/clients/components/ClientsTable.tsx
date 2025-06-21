@@ -6,6 +6,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/common/components/ui/table'
+import { Client } from '@/common/types/client'
 import { Template } from '@/common/types/template'
 import {
   ColumnDef,
@@ -23,7 +24,6 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 import { useState } from 'react'
-import { Client } from '../data/schema'
 import { DataTablePagination } from './data-table-pagination'
 import { DataTableToolbar } from './data-table-toolbar'
 import { DroppableTableRow } from './DroppableTableRow'

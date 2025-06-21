@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from '@/common/components/ui/select';
 import { Textarea } from '@/common/components/ui/textarea';
+import { clientSchema } from '@/common/types/client';
 import { createContract } from '@/common/utils/createContract';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
@@ -33,12 +34,11 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { useTable } from '../../contexts/TableContext';
 import { useTemplatesContext } from '../../contexts/TemplatesContext';
-import { clientSchema } from '../../data/schema';
 import { ClientDropdown } from '../ClientDropdown';
 
 const formSchema = z.object({
-  client: clientSchema,
-  template: z.string().min(1, { message: "Template is required" }),
+  client: clientSchema.nullable(),
+  template: z.string().min(1, { message: 'Template is required' }),
   note: z.string().optional(),
   fee: z.string().optional(),
   deposit: z.string().optional(),
@@ -59,7 +59,7 @@ export function ContractCreationDialog({ open, onOpenChange }: Props) {
   const form = useForm<ContractForm>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      client: currentRow!,
+      client: currentRow,
       template: '',
       note: '',
       fee: '',
@@ -81,11 +81,17 @@ export function ContractCreationDialog({ open, onOpenChange }: Props) {
 
   const onSubmit = async (values: ContractForm) => {
     setIsLoading(true);
-    form.reset();
+
+    if (!values.client) {
+      toast.error('Client not selected');
+      setIsLoading(false);
+      return;
+    }
 
     const fullTemplate = templates.find((t) => t.name === values.template);
     if (!fullTemplate) {
       toast.error('Selected template not found');
+      setIsLoading(false);
       return;
     }
 
@@ -93,17 +99,18 @@ export function ContractCreationDialog({ open, onOpenChange }: Props) {
       await createContract({
         templateId: fullTemplate.id,
         client: values.client,
-        note: values.note,
-        fee: values.fee,
-        deposit: values.deposit
+        note: values.note ?? '',
+        fee: values.fee ?? '',
+        deposit: values.deposit ?? '',
       });
       setIsLoading(false);
       onOpenChange('');
-      toast.success(`Created ${fullTemplate.name} agreement with ${values.client.user.firstname} ${values.client.user.lastname}.`);
-    }
-    catch (err) {
+      toast.success(
+        `Created ${fullTemplate.name} agreement with ${values.client.firstName} ${values.client.lastName}.`
+      );
+    } catch (err) {
       setIsLoading(false);
-      toast.error(`Something went wrong. ${err instanceof Error ? err.message : ''}`)
+      toast.error(`Something went wrong. ${err instanceof Error ? err.message : ''}`);
     }
   };
 
@@ -133,11 +140,11 @@ export function ContractCreationDialog({ open, onOpenChange }: Props) {
                 control={form.control}
                 name='client'
                 render={({ field }) => (
-                  <FormItem className="flex flex-col">
+                  <FormItem className='flex flex-col'>
                     <FormLabel>Client</FormLabel>
                     <FormControl>
                       <ClientDropdown
-                        value={field.value}
+                        value={field.value ?? undefined}
                         onChange={field.onChange}
                       />
                     </FormControl>
@@ -147,17 +154,14 @@ export function ContractCreationDialog({ open, onOpenChange }: Props) {
               />
               <FormField
                 control={form.control}
-                name="template"
+                name='template'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Template</FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    >
+                    <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select a template" />
+                        <SelectTrigger className='w-full'>
+                          <SelectValue placeholder='Select a template' />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className='z-[9999]'>
@@ -179,7 +183,10 @@ export function ContractCreationDialog({ open, onOpenChange }: Props) {
                   <FormItem>
                     <FormLabel>Note</FormLabel>
                     <FormControl>
-                      <Textarea placeholder='Any additional details...' {...field} />
+                      <Textarea
+                        placeholder='Any additional details...'
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -192,7 +199,10 @@ export function ContractCreationDialog({ open, onOpenChange }: Props) {
                   <FormItem>
                     <FormLabel>Fee</FormLabel>
                     <FormControl>
-                      <Input placeholder={`Default - $${dialogTemplate?.serviceFee}`} {...field} />
+                      <Input
+                        placeholder={`Default - $${dialogTemplate?.serviceFee}`}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -205,7 +215,10 @@ export function ContractCreationDialog({ open, onOpenChange }: Props) {
                   <FormItem>
                     <FormLabel>Deposit</FormLabel>
                     <FormControl>
-                      <Input placeholder={`Default - $${dialogTemplate?.depositFee}`} {...field} />
+                      <Input
+                        placeholder={`Default - $${dialogTemplate?.depositFee}`}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -215,9 +228,14 @@ export function ContractCreationDialog({ open, onOpenChange }: Props) {
           </Form>
         </div>
         <DialogFooter>
-          <Button type="submit" form='contract-form' className="w-full" disabled={isLoading}>
+          <Button
+            type='submit'
+            form='contract-form'
+            className='w-full'
+            disabled={isLoading}
+          >
             {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+              <Loader2 className='h-4 w-4 animate-spin mx-auto' />
             ) : (
               'Save Contract'
             )}

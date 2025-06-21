@@ -14,11 +14,17 @@ import { Template } from '@/common/types/template'
 import { CommandGroup } from 'cmdk'
 import { SquarePlus } from 'lucide-react'
 import { useState } from 'react'
+import { useClientsContext } from '../context/clients-context'
 import { useTemplatesContext } from '../contexts/TemplatesContext'
 import { DraggableTemplate } from './DraggableTemplate'
 
-export function UsersPrimaryButtons({ draggedTemplate }: { draggedTemplate: Template | null }) {
+interface Props {
+  draggedTemplate: Template | null;
+}
+
+export function ClientsPrimaryButtons({ draggedTemplate }: Props) {
   const { templates } = useTemplatesContext();
+  const { setOpen } = useClientsContext()
 
   const [search, setSearch] = useState<string>('');
 
@@ -52,13 +58,13 @@ export function UsersPrimaryButtons({ draggedTemplate }: { draggedTemplate: Temp
   }
   return (
     <div className="flex gap-2">
-      <Button variant = "outline" className='space-x-1' onClick={fetchCSV}>
-            <span>Export</span>
-            <SquarePlus size={18} />
+      <Button variant="outline" className='space-x-1' onClick={fetchCSV}>
+        <span>Export</span>
+        <SquarePlus size={18} />
       </Button>
       <Popover>
         <PopoverTrigger asChild>
-          
+
           <Button className="space-x-1">
             <span>Create Contract</span>
             <SquarePlus size={18} />

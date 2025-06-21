@@ -1,39 +1,45 @@
 import { Badge } from '@/common/components/ui/badge'
 import LongText from '@/common/components/ui/long-text'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/common/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/common/components/ui/select'
+import { Client, clientSchema } from '@/common/types/client'
 import updateClientStatus from '@/common/utils/updateClientStatus'
 import { cn } from '@/lib/utils'
 import { ColumnDef } from '@tanstack/react-table'
 import { toast } from 'sonner'
-import { STATUS_LABELS, User, userStatusSchema } from '../data/schema'
 import { DataTableColumnHeader } from './data-table-column-header'
 import { DataTableRowActions } from './data-table-row-actions'
 
-const statusOptions = userStatusSchema.options;
+const statusOptions = clientSchema.shape.status.options
 
-export const columns: ColumnDef<User>[] = [
+export const columns: ColumnDef<Client>[] = [
   {
     id: 'client',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Client' />
     ),
     cell: ({ row }) => {
-      const { firstname, lastname } = row.original
-      const fullName = `${firstname} ${lastname}`
-      const initials = `${firstname[0] ?? ''}${lastname[0] ?? ''}`.toUpperCase();
+      const { firstName, lastName } = row.original
+      const fullName = `${firstName} ${lastName}`
+      const initials = `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase()
 
       return (
-        <div className="flex items-center gap-2 max-w-36 h-10">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-sm font-medium text-gray-700">
+        <div className='flex items-center gap-2 max-w-36 h-10'>
+          <div className='flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-sm font-medium text-gray-700'>
             {initials}
           </div>
           <LongText className='max-w-36'>{fullName}</LongText>
         </div>
-      );
+      )
     },
     filterFn: (row, _columnId, filterValue) => {
-      const { firstname, lastname } = row.original
-      const fullName = `${firstname} ${lastname}`.toLowerCase()
+      const { firstName, lastName } = row.original
+      const fullName = `${firstName} ${lastName}`.toLowerCase()
       return fullName.includes((filterValue as string).toLowerCase())
     },
     meta: { className: 'pl-10 w-60' },
@@ -91,11 +97,11 @@ export const columns: ColumnDef<User>[] = [
 
       const handleStatusChange = async (newStatus: string) => {
         try {
-          await updateClientStatus(id, newStatus);
-          toast.success('Successfully updated client status');
+          await updateClientStatus(id, newStatus)
+          toast.success('Successfully updated client status')
         } catch (err) {
           console.error('Failed to update status:', err)
-          toast.error('Failed to update client status...');
+          toast.error('Failed to update client status...')
         }
       }
 
@@ -105,9 +111,9 @@ export const columns: ColumnDef<User>[] = [
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {statusOptions.map((option) => (
+            {statusOptions.map((option: string) => (
               <SelectItem key={option} value={option}>
-                {STATUS_LABELS[option]}
+                {option}
               </SelectItem>
             ))}
           </SelectContent>

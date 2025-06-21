@@ -1,16 +1,22 @@
-import { useUsers } from '../context/users-context'
-import { UsersActionDialog } from './users-action-dialog'
-import { UsersDeleteDialog } from './users-delete-dialog'
-import { UsersInviteDialog } from './users-invite-dialog'
+import { Template } from '@/common/types/template';
+import { useClientsContext } from '../context/clients-context';
+import { UsersActionDialog } from './users-action-dialog';
+import { UsersDeleteDialog } from './users-delete-dialog';
+import { UsersInviteDialog } from './users-invite-dialog';
 
-export function UsersDialogs() {
-  const { open, setOpen, currentRow, setCurrentRow } = useUsers()
+interface UsersDialogsProps {
+  draggedTemplate: Template | null;
+}
+
+export function ClientsDialogs({ draggedTemplate }: UsersDialogsProps) {
+  const { open, setOpen, currentRow, setCurrentRow } = useClientsContext()
   return (
     <>
       <UsersActionDialog
         key='user-add'
         open={open === 'add'}
         onOpenChange={() => setOpen('add')}
+        draggedTemplate={draggedTemplate}
       />
 
       <UsersInviteDialog
@@ -31,6 +37,7 @@ export function UsersDialogs() {
               }, 500)
             }}
             currentRow={currentRow}
+            draggedTemplate={draggedTemplate}
           />
 
           <UsersDeleteDialog

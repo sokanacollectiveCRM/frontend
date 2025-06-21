@@ -4,18 +4,23 @@ import { UserContext } from '@/common/contexts/UserContext'
 import { useClients } from '@/common/hooks/clients/useClients'
 import { Header } from '@/common/layouts/Header'
 import { Main } from '@/common/layouts/Main'
+import { Client, clientSchema } from '@/common/types/client'
+import { Template } from '@/common/types/template'
 import { useContext, useEffect, useState } from 'react'
+import { z } from 'zod'
+import { ClientsTable } from './components/ClientsTable'
 import { columns } from './components/users-columns'
-import { UsersDialogs } from './components/users-dialogs'
-import { UsersPrimaryButtons } from './components/users-primary-buttons'
-import { UsersTable } from './components/users-table'
-import UsersProvider from './context/users-context'
-import { userListSchema, UserSummary } from './data/schema'
+import { ClientsDialogs } from './components/users-dialogs'
+import { ClientsPrimaryButtons } from './components/users-primary-buttons'
+import ClientsProvider from './context/clients-context'
 
-export default function Users() {
+const clientListSchema = z.array(clientSchema)
+
+export default function Clients() {
   const { clients, isLoading, getClients } = useClients();
-  const [userList, setUserList] = useState<UserSummary[]>([]);
+  const [clientList, setClientList] = useState<Client[]>([]);
   const { user } = useContext(UserContext);
+  const [draggedTemplate, setDraggedTemplate] = useState<Template | null>(null);
 
   // fetch clients
   useEffect(() => {
@@ -27,11 +32,11 @@ export default function Users() {
     if (clients.length === 0) return;
 
     try {
-      const parsed = userListSchema.parse(clients);
-      setUserList(parsed);
+      const parsed = clientListSchema.parse(clients);
+      setClientList(parsed);
     } catch (err) {
       console.error('Failed to parse client list with Zod:', err);
-      setUserList([]);
+      setClientList([]);
     }
   }, [clients]);
 
@@ -40,7 +45,7 @@ export default function Users() {
   }
 
   return (
-    <UsersProvider>
+    <ClientsProvider>
       <Header fixed>
         <Search />
         <div className='ml-auto'>
@@ -50,15 +55,15 @@ export default function Users() {
       <Main>
         <div className='flex-1 space-y-4 p-8 pt-6'>
           <div className='flex items-center justify-between space-y-2'>
-            <h2 className='text-3xl font-bold tracking-tight'>Users</h2>
+            <h2 className='text-3xl font-bold tracking-tight'>Clients</h2>
             <div className='flex items-center space-x-2'>
-              <UsersPrimaryButtons />
+              <ClientsPrimaryButtons draggedTemplate={draggedTemplate} />
             </div>
           </div>
-          <UsersTable columns={columns} data={userList} loading={isLoading} />
+          <ClientsTable columns={columns} data={clientList} draggedTemplate={draggedTemplate} />
         </div>
       </Main>
-      <UsersDialogs />
-    </UsersProvider>
+      <ClientsDialogs draggedTemplate={draggedTemplate} />
+    </ClientsProvider>
   )
 }

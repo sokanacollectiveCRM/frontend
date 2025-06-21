@@ -4,11 +4,11 @@ import {
   TableCell,
   TableRow,
 } from '@/common/components/ui/table';
+import { Client } from '@/common/types/client';
 import { useDroppable } from '@dnd-kit/core';
 import { flexRender, Row } from '@tanstack/react-table';
 import { forwardRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Client } from '../data/schema';
 
 interface Props {
   row: Row<Client>;
@@ -19,11 +19,10 @@ export const DroppableTableRow = forwardRef<HTMLTableRowElement, Props>(
     let navigate = useNavigate();
 
     const { setNodeRef, isOver } = useDroppable({
-      id: `user-${row.original.user.id}`,
+      id: `user-${row.original.id}`,
       data: {
-        type: 'user',
-        user: row.original,
-      },
+        client: row.original
+      }
     });
 
     // Combine forwarded ref with setNodeRef

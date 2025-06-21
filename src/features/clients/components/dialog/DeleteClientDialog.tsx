@@ -1,36 +1,34 @@
 'use client'
 
+import { Alert, AlertDescription, AlertTitle } from '@/common/components/ui/alert'
 import { ConfirmDialog } from '@/common/components/ui/confirm-dialog'
 import { Input } from '@/common/components/ui/input'
 import { Label } from '@/common/components/ui/label'
-
+import { Client } from '@/common/types/client'
 import { TriangleAlert } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { Client } from '../../data/schema'
 
 interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
-  client: Client | null
+  client: Client
 }
 
 export function DeleteClientDialog({ open, onOpenChange, client }: Props) {
   const [value, setValue] = useState('')
 
   useEffect(() => {
-    if (!open) {
-      setValue('');
-    }
+    if (!open) setValue('')
   }, [open])
 
   if (!client) return null
 
-  const fullName = `${client.user.firstname} ${client.user.lastname}`
+  const fullName = `${client.firstName} ${client.lastName}`
 
   const handleDelete = () => {
-    if (value.trim() !== fullName) {
-      toast.error("Please enter full name to continue");
+    if (value !== fullName) {
+      toast.error('Please enter full name to continue')
       return
     }
 
@@ -38,7 +36,7 @@ export function DeleteClientDialog({ open, onOpenChange, client }: Props) {
 
     onOpenChange(false)
 
-    toast.success(`${client.user.firstname} was successfully deleted.`);
+    toast.success(`${client.firstName} was successfully deleted.`)
   }
 
   return (
@@ -47,8 +45,8 @@ export function DeleteClientDialog({ open, onOpenChange, client }: Props) {
       onOpenChange={onOpenChange}
       handleConfirm={handleDelete}
       confirmText='Delete'
-      destructive
       className='max-w-sm'
+      destructive
       title={
         <span>
           <TriangleAlert className='mr-1 inline-block' size={18} />
@@ -58,8 +56,9 @@ export function DeleteClientDialog({ open, onOpenChange, client }: Props) {
       desc={
         <div className='space-y-4'>
           <p>
-            Are you sure you want to delete <strong>{fullName}</strong>?<br />
-            This action cannot be undone.
+            Are you sure you want to permanently delete{' '}
+            <strong>{fullName}</strong>?<br />
+            This will delete their account and all associated data.
           </p>
 
           <Label>
@@ -71,6 +70,13 @@ export function DeleteClientDialog({ open, onOpenChange, client }: Props) {
               className='mt-1'
             />
           </Label>
+
+          <Alert variant='destructive'>
+            <AlertTitle>Warning</AlertTitle>
+            <AlertDescription>
+              This action is irreversible. Please be certain.
+            </AlertDescription>
+          </Alert>
         </div>
       }
     />

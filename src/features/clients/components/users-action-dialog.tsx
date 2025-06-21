@@ -21,11 +21,12 @@ import {
 } from '@/common/components/ui/form'
 import { Input } from '@/common/components/ui/input'
 import { toast } from '@/common/hooks/toast/use-toast'
+import { Client } from '@/common/types/client'
+import { Template } from '@/common/types/template'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { userTypes } from '../data/data'
-import { User } from '../data/schema'
 
 const formSchema = z
   .object({
@@ -88,12 +89,13 @@ const formSchema = z
 type UserForm = z.infer<typeof formSchema>
 
 interface Props {
-  currentRow?: User
+  currentRow?: Client
   open: boolean
   onOpenChange: (open: boolean) => void
+  draggedTemplate?: Template | null
 }
 
-export function UsersActionDialog({ currentRow, open, onOpenChange }: Props) {
+export function UsersActionDialog({ currentRow, open, onOpenChange, draggedTemplate }: Props) {
   const isEdit = !!currentRow
   const form = useForm<UserForm>({
     resolver: zodResolver(formSchema),
@@ -142,9 +144,9 @@ export function UsersActionDialog({ currentRow, open, onOpenChange }: Props) {
     >
       <DialogContent className='sm:max-w-lg'>
         <DialogHeader className='text-left'>
-          <DialogTitle>{isEdit ? 'Edit User' : 'Add New User'}</DialogTitle>
+          <DialogTitle>{isEdit ? 'Edit Client' : 'Add New Client'}</DialogTitle>
           <DialogDescription>
-            {isEdit ? 'Update the user here. ' : 'Create new user here. '}
+            {isEdit ? 'Update the client here. ' : 'Create new client here. '}
             Click save when you&apos;re done.
           </DialogDescription>
         </DialogHeader>

@@ -1,7 +1,7 @@
 "use client"
 
 import { Check, ChevronsUpDown } from "lucide-react"
-import * as React from "react"
+import { useState } from "react"
 
 import { Button } from "@/common/components/ui/button"
 import {
@@ -17,54 +17,60 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/common/components/ui/popover"
+import { useClients } from '@/common/hooks/clients/useClients'
+import { Client } from "@/common/types/client"
 import { cn } from "@/lib/utils"
-import { useClientsContext } from "../contexts/ClientsContext"
-import { Client } from "../data/schema"
 
-export const ClientDropdown = React.forwardRef<
-  HTMLButtonElement,
-  {
-    value: Client | null
-    onChange: (client: Client) => void
+interface Props {
+  value?: Client
+  onChange: (value: Client) => void
+}
+
+export function ClientDropdown({ value, onChange }: Props) {
+  const { clients, isLoading } = useClients()
+  const [open, setOpen] = useState(false)
+
+  const clientName = value
+    ? `${value.firstName} ${value.lastName}`
+    : 'Select a client'
+
+  const handleSelect = (client: Client) => {
+    onChange(client)
+    setOpen(false)
   }
->(({ value, onChange }, ref) => {
-  const [open, setOpen] = React.useState(false)
-  const { clients } = useClientsContext();
-
-  const selectedLabel = value
-    ? `${value.user.firstname} ${value.user.lastname}`
-    : "Select a client..."
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
-          ref={ref}
           variant="outline"
           role="combobox"
           aria-expanded={open}
           className="w-full justify-between font-normal"
         >
-          {selectedLabel || "Select a client..."}
+          {clientName}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-110 p-0 z-[9999]">
+      <PopoverContent className="w-full p-0">
         <Command>
           <CommandInput placeholder="Search client..." />
           <CommandList>
-            <CommandEmpty>No clients found.</CommandEmpty>
+            <CommandEmpty>No results found.</CommandEmpty>
             <CommandGroup>
               {clients.map((client) => (
                 <CommandItem
                   key={client.id}
-                  value={`${client.user.firstname} ${client.user.lastname}`}
-                  onSelect={() => {
-                    onChange(client)
-                    setOpen(false)
-                  }}
+                  value={`${client.firstName} ${client.lastName}`}
+                  onSelect={() => handleSelect(client)}
+                  className='flex flex-col items-start'
                 >
-                  {client.user.firstname} {client.user.lastname}
+                  <div>
+                    {client.firstName} {client.lastName}
+                  </div>
+                  <div className='text-xs text-muted-foreground'>
+                    {client.email}
+                  </div>
                   <Check
                     className={cn(
                       "ml-auto h-4 w-4",
@@ -79,6 +85,6 @@ export const ClientDropdown = React.forwardRef<
       </PopoverContent>
     </Popover>
   )
-})
+}
 
 ClientDropdown.displayName = "ClientDropdown"

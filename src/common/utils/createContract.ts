@@ -1,4 +1,4 @@
-import { Client } from "@/features/clients/data/schema"
+import { Client } from "@/common/types/client"
 
 export async function createContract({
   templateId,
@@ -20,13 +20,9 @@ export async function createContract({
       Authorization: `Bearer ${localStorage.getItem('authToken')}`,
     },
     body: JSON.stringify({
-      templateId: templateId,
-      clientId: client.id,
-      fields: {
-        clientname: `${client.user.firstname} ${client.user.lastname}`,
-        fee,
-        deposit,
-      },
+      template_id: templateId,
+      client_id: client.id,
+      client_name: `${client.firstName} ${client.lastName}`,
       note,
       fee,
       deposit,

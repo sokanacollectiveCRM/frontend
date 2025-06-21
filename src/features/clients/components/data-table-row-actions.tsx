@@ -1,70 +1,86 @@
 import { Button } from '@/common/components/ui/button'
 import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+} from '@/common/components/ui/dialog'
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/common/components/ui/dropdown-menu'
-import { DotsHorizontalIcon } from '@radix-ui/react-icons'
+import { Client } from '@/common/types/client'
 import { Row } from '@tanstack/react-table'
-import { Archive, Trash2 } from 'lucide-react'
-import { useTable } from '../contexts/TableContext'
-import { Client } from '../data/schema'
+import { Edit, MoreHorizontal, Trash, User } from 'lucide-react'
+import { useState } from 'react'
+import { ArchiveClientDialog } from './dialog/ArchiveClientDialog'
+import { DeleteClientDialog } from './dialog/DeleteClientDialog'
 
-interface DataTableRowActionsProps {
-  row: Row<Client>
+interface DataTableRowActionsProps<TData> {
+  row: Row<TData>
 }
 
-export function DataTableRowActions({ row }: DataTableRowActionsProps) {
-  const { setOpen, setCurrentRow } = useTable()
+export function DataTableRowActions<TData>({
+  row,
+}: DataTableRowActionsProps<TData>) {
+  const client = row.original as Client
+  const [isArchiveOpen, setIsArchiveOpen] = useState(false)
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+
   return (
     <>
-      <DropdownMenu modal={false}>
-        <DropdownMenuTrigger asChild>
-          <div
-            onClick={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
-          >
+      <Dialog>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
             <Button
               variant='ghost'
               className='flex h-8 w-8 p-0 data-[state=open]:bg-muted'
             >
-              <DotsHorizontalIcon className='h-4 w-4' />
+              <MoreHorizontal className='h-4 w-4' />
               <span className='sr-only'>Open menu</span>
             </Button>
-          </div>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align='end' className='w-[160px]'>
-          <DropdownMenuItem
-            onClick={(e) => {
-              e.stopPropagation();
-              setCurrentRow(row.original);
-              setOpen('archive');
-            }}
-          >
-            Archive
-            <DropdownMenuShortcut>
-              <Archive size={16} />
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={(e) => {
-              e.stopPropagation(); // ✅ prevent row click
-              setCurrentRow(row.original);
-              setOpen('delete');
-            }}
-            className='!text-red-500'
-          >
-            Delete
-            <DropdownMenuShortcut>
-              <Trash2 size={16} />
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align='end' className='w-[160px]'>
+            <DialogTrigger asChild>
+              <DropdownMenuItem>
+                <User className='mr-2 h-3.5 w-3.5 text-muted-foreground/70' />
+                View Profile
+              </DropdownMenuItem>
+            </DialogTrigger>
+            <DropdownMenuItem>
+              <Edit className='mr-2 h-3.5 w-3.5 text-muted-foreground/70' />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setIsArchiveOpen(true)}>
+              Archive
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => setIsDeleteOpen(true)}
+              className='text-red-500'
+            >
+              <Trash className='mr-2 h-3.5 w-3.5' />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <DialogContent>
+          <div>View Profile dialog content goes here</div>
+        </DialogContent>
+      </Dialog>
+
+      <ArchiveClientDialog
+        open={isArchiveOpen}
+        onOpenChange={setIsArchiveOpen}
+        client={client}
+      />
+      <DeleteClientDialog
+        open={isDeleteOpen}
+        onOpenChange={setIsDeleteOpen}
+        client={client}
+      />
     </>
   )
 }
