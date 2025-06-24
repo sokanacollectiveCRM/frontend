@@ -3,7 +3,9 @@
   "extends": "./tsconfig.json",
   "exclude": ["node_modules", "test", "dist", "**/*spec.ts", "**/*test.ts"],
   "compilerOptions": {
+    "outDir": "./dist/tsc-build",
     "sourceMap": false,
-    "declaration": false
+    "declaration": false,
+    "noEmit": false
   }
 }
