@@ -24,7 +24,7 @@ export function ArchiveClientDialog({ open, onOpenChange, client }: Props) {
 
   if (!client) return null
 
-  const fullName = `${client.user.firstname} ${client.user.lastname}`
+  const fullName = `${client.firstname} ${client.lastname}`
 
   const handleArchive = async () => {
     if (value.trim() !== fullName) {
@@ -36,7 +36,7 @@ export function ArchiveClientDialog({ open, onOpenChange, client }: Props) {
 
     onOpenChange(false)
 
-    toast.success(`Successfully archived ${client.user.firstname}`);
+    toast.success(`Successfully archived ${client.firstname}`);
 
   }
 

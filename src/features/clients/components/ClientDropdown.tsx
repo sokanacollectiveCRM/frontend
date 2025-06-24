@@ -32,7 +32,7 @@ export const ClientDropdown = React.forwardRef<
   const { clients } = useClientsContext();
 
   const selectedLabel = value
-    ? `${value.user.firstname} ${value.user.lastname}`
+    ? `${value.firstname} ${value.lastname}`
     : "Select a client..."
 
   return (
@@ -58,13 +58,13 @@ export const ClientDropdown = React.forwardRef<
               {clients.map((client) => (
                 <CommandItem
                   key={client.id}
-                  value={`${client.user.firstname} ${client.user.lastname}`}
+                  value={`${client.firstname} ${client.lastname}`}
                   onSelect={() => {
                     onChange(client)
                     setOpen(false)
                   }}
                 >
-                  {client.user.firstname} {client.user.lastname}
+                  {client.firstname} {client.lastname}
                   <Check
                     className={cn(
                       "ml-auto h-4 w-4",

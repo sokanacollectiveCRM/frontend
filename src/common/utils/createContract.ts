@@ -23,7 +23,7 @@ export async function createContract({
       templateId: templateId,
       clientId: client.id,
       fields: {
-        clientname: `${client.user.firstname} ${client.user.lastname}`,
+        clientname: `${client.firstname} ${client.lastname}`,
         fee,
         deposit,
       },

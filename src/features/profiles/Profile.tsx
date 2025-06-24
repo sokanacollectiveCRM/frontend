@@ -270,12 +270,11 @@ export default function Profile() {
       <Card className="w-[400px] p-6 rounded-2xl shadow-sm">
         <div className="flex flex-col gap-2 items-center">
           <UserAvatar
-            profile_picture={client.user.profile_picture}
-            fullName={`${client.user.firstname} ${client.user.lastname}`}
+            fullName={`${client.firstname} ${client.lastname}`}
             large={true}
             className="mb-2"
           />
-          <h2 className="text-4xl font-bold text-gray-800">{client.user.firstname} {client.user.lastname}</h2>
+          <h2 className="text-4xl font-bold text-gray-800">{client.firstname} {client.lastname}</h2>
           <p className="text-sm text-gray-500">Expecting mother • {pregnancyData[0].currentWeek} weeks</p>
 
           <div className="ml-5 mt-6 w-full">
@@ -283,7 +282,7 @@ export default function Profile() {
 
             <div className="grid grid-cols-[max-content_1fr] gap-y-5 gap-x-10 text-[15px] w-full">
               <p className="text-gray-500 text-left">Email</p>
-              <p className="text-left break-words text-gray-800">{client.user.email}</p>
+              <p className="text-left break-words text-gray-800">{client.email}</p>
 
               <p className="text-gray-500 text-left">Phone number</p>
               <p className="text-left text-gray-800">(630) 785-8457</p>

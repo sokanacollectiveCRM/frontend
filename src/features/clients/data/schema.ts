@@ -71,3 +71,7 @@ export type ContractTemplate = {
   id: string,
   title: string,
 }
+
+export type Client = User;
+export const clientListSchema = userListSchema;
+export const clientSchema = userSchema;
