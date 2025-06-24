@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -p tsconfig.build.json && vite build",
+    "build": "rm -rf node_modules/.vite && tsc -p tsconfig.build.json && vite build",
     "clean": "rm -rf dist",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -88,5 +88,9 @@
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.24.1",
     "vite": "^6.2.0"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "4.9.0",
+    "@rollup/rollup-linux-x64-musl": "4.9.0"
   }
 }
