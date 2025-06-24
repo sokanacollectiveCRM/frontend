@@ -25,6 +25,7 @@ const AppRoutes = () => (
 
     <Route>
       <Route element={<NavLayout />}>
+        {RequestRoutes()}
         <Route element={<PublicOnlyRoute />} >
           {AuthRoutes()}
           {AuthPublicRoutes()}
@@ -45,7 +46,6 @@ const AppRoutes = () => (
           {MyAccountRoutes()}
           {TeamRoutes()}
           {InboxRoutes()}
-          {RequestRoutes()}
           {QuickBooksRoutes()}
           {CreateCustomerRoutes()}
           {InvoiceRoute()}
