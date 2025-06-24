@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "rm -rf node_modules/.vite && tsc -p tsconfig.build.json && vite build",
+    "build": "npm install @esbuild/linux-x64 --no-save && rm -rf node_modules/.vite && tsc -p tsconfig.build.json && vite build",
     "clean": "rm -rf dist",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -91,6 +91,7 @@
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "4.9.0",
-    "@rollup/rollup-linux-x64-musl": "4.9.0"
+    "@rollup/rollup-linux-x64-musl": "4.9.0",
+    "@esbuild/linux-x64": "0.20.1"
   }
 }
