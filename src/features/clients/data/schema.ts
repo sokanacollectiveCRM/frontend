@@ -9,6 +9,7 @@ export const userStatusSchema = z.enum([
   'contract',
   'active',
   'complete',
+  'customer',
 ]);
 
 export type UserStatus = z.infer<typeof userStatusSchema>;
@@ -23,40 +24,54 @@ export const STATUS_LABELS: Record<UserStatus, string> = {
   contract: 'Contract',
   active: 'Active',
   complete: 'Complete',
+  customer: 'Customer',
 };
 
 const serviceSchema = z.union([
+  z.literal('Postpartum'),
   z.literal('Labor Support'),
-  z.literal('1st Night Care'),
-  z.literal('Postpartum Support'),
   z.literal('Lactation Support'),
+  z.literal('1st Night Care'),
+  z.literal('Consultation'),
+  z.literal('Postpartum Support'),
   z.literal('Perinatal Support'),
   z.literal('Abortion Support'),
   z.literal('Other'),
 ])
 export type serviceNeeded = z.infer<typeof serviceSchema>
 
-const userDetailsSchema = z.object({
-  id: z.string(),
-  email: z.string().optional(), 
-  firstname: z.string(),
-  lastname: z.string(),
-  profile_picture: z.string().nullable().optional(), 
-});
-
-export const clientSchema = z.object({
-  id: z.string(),
-  serviceNeeded: serviceSchema.nullable(), 
-  requestedAt: z.coerce.date(),
-  updatedAt: z.coerce.date(),
+const userSchema = z.object({
+  id: z.union([z.string(), z.number()]).transform(val => String(val)),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  firstname: z.string().optional(),
+  lastname: z.string().optional(),
+  email: z.string().optional(),
+  serviceNeeded: serviceSchema.optional(),
+  requestedAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
   status: userStatusSchema,
-  user: userDetailsSchema,
-});
+}).transform(data => ({
+  id: data.id,
+  firstname: data.firstname || data.firstName || '',
+  lastname: data.lastname || data.lastName || '',
+  email: data.email || '',
+  serviceNeeded: data.serviceNeeded,
+  requestedAt: data.requestedAt || new Date(),
+  updatedAt: data.updatedAt || new Date(),
+  status: data.status,
+}))
 
-export type Client = z.infer<typeof clientSchema>;
-export const clientListSchema = z.array(clientSchema);
+export type User = z.infer<typeof userSchema>
+
+export type UserSummary = z.infer<typeof userSchema>;
+export const userListSchema = z.array(userSchema);
 
 export type ContractTemplate = {
   id: string,
   title: string,
 }
+
+export type Client = User;
+export const clientListSchema = userListSchema;
+export const clientSchema = userSchema;

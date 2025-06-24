@@ -9,7 +9,7 @@ import { UsersPrimaryButtons } from './users-primary-buttons'
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>
-  draggedTemplate: Template | null,
+  draggedTemplate?: Template | null,
 }
 
 export function DataTableToolbar<TData>({
@@ -54,7 +54,7 @@ export function DataTableToolbar<TData>({
           </Button>
         )}
       </div>
-      <UsersPrimaryButtons draggedTemplate={draggedTemplate} />
+      <UsersPrimaryButtons draggedTemplate={draggedTemplate ?? null} />
     </div>
   )
 }

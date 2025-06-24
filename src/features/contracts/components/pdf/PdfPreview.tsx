@@ -1,6 +1,7 @@
-import workerSrc from 'pdfjs-dist/build/pdf.worker.mjs?url'
 import { useEffect, useState } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
+import { Button } from '@/common/components/ui/button'
+import { useTemplatesContext } from '../../contexts/TemplatesContext'
 
 import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay'
 import { Badge } from '@/common/components/ui/badge'
@@ -9,9 +10,8 @@ import { Separator } from '@/common/components/ui/separator'
 
 import 'react-pdf/dist/Page/AnnotationLayer.css'
 import 'react-pdf/dist/Page/TextLayer.css'
-import { useTemplatesContext } from '../../contexts/TemplatesContext'
 
-pdfjs.GlobalWorkerOptions.workerSrc = workerSrc
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 
 export function PdfPreview() {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)

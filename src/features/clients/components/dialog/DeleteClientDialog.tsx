@@ -26,7 +26,7 @@ export function DeleteClientDialog({ open, onOpenChange, client }: Props) {
 
   if (!client) return null
 
-  const fullName = `${client.user.firstname} ${client.user.lastname}`
+  const fullName = `${client.firstname} ${client.lastname}`
 
   const handleDelete = () => {
     if (value.trim() !== fullName) {
@@ -38,7 +38,7 @@ export function DeleteClientDialog({ open, onOpenChange, client }: Props) {
 
     onOpenChange(false)
 
-    toast.success(`${client.user.firstname} was successfully deleted.`);
+    toast.success(`${client.firstname} was successfully deleted.`);
   }
 
   return (

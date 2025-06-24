@@ -1,18 +1,23 @@
 import {
-  FileText,
-  Home,
-  Inbox,
-  LucideClock5,
-  LucideCreditCard,
-  LucideUsers,
-  RectangleVertical,
-  Search
+    Calendar,
+    FileText,
+    Home,
+    Inbox,
+    LucideChartColumnIncreasing,
+    LucideCircleDollarSign,
+    LucideClock5,
+    LucideCreditCard,
+    LucideLink,
+    LucideUsers,
+    Search,
+    UserPlus
 } from 'lucide-react'
 
 export interface SidebarItem {
   title: string
   url: string
   icon: React.ElementType
+  adminOnly?: boolean
 }
 
 export interface SidebarSection {
@@ -27,7 +32,8 @@ export const sidebarSections = [
       { title: 'Dashboard', url: '/', icon: Home },
       { title: 'Inbox', url: '/inbox', icon: Inbox },
       { title: 'Clients', url: '/clients', icon: Search },
-      { title: 'Pipeline', url:'/pipeline', icon: RectangleVertical }
+      { title: 'New Client',url: '/clients/new',icon: UserPlus },  // ← our new link
+      { title: 'Calendar', url: '#', icon: Calendar },
     ],
   },
   {
@@ -36,7 +42,26 @@ export const sidebarSections = [
       { title: 'Team', url: '/team', icon: LucideUsers },
       { title: 'Contracts', url: '/contracts', icon: FileText },
       { title: 'Hours', url: '/hours', icon: LucideClock5 },
-      { title: 'Payments', url: '/payments', icon: LucideCreditCard },
+      { title: 'Payments', url: '/payments', icon: LucideCreditCard, adminOnly: false },
+      { title: 'Billing', url: '/billing', icon: LucideCreditCard, adminOnly: true },
+      { title: 'Invoices', url: '/invoices', icon: FileText },
+    ],
+  },
+  {
+    label: 'Integrations',            // ⬅️  NEW SECTION
+    items: [
+      {
+        title: 'QuickBooks',
+        url:   '/integrations/quickbooks',
+        icon:  LucideLink,
+      },
+    ],
+  },
+  {
+    label: 'Analytics',
+    items: [
+      { title: 'Financial', url: '#', icon: LucideCircleDollarSign },
+      { title: 'Demographics', url: '#', icon: LucideChartColumnIncreasing },
     ],
   },
 ]

@@ -1,16 +1,24 @@
-import { Button } from '@/common/components/ui/button';
-import { ReactNode } from 'react';
+// src/common/components/form/SubmitButton.tsx
+import { Button } from '@/common/components/ui/button'
+import { ButtonHTMLAttributes, ReactNode } from 'react'
 
-type SubmitButtonProps = {
-  children: ReactNode,
-  onClick: () => void,
+export interface SubmitButtonProps
+  extends ButtonHTMLAttributes<HTMLButtonElement> {
+  children: ReactNode
+  loading?: boolean            // optional spinner flag
 }
 
-export default function SubmitButton({ children, onClick }: SubmitButtonProps) {
+export default function SubmitButton({
+  children,
+  loading,
+  ...rest                       // includes onClick, type, disabled, etc.
+}: SubmitButtonProps) {
   return (
-    <Button type='submit' onClick={onClick}>
-      {children}
+    <Button
+      {...rest}
+      disabled={rest.disabled || loading}   // auto-disable while loading
+    >
+      {loading ? 'Loading…' : children}
     </Button>
-  );
+  )
 }
-

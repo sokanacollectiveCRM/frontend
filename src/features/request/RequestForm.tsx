@@ -145,7 +145,7 @@ export default function RequestForm() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-w-lg w-full mx-auto px-2 sm:px-4 md:px-8">
       <div className="flex items-center justify-center">
         {Array.from({ length: totalSteps }).map((_, index) => (
           <div key={index} className="flex items-center">

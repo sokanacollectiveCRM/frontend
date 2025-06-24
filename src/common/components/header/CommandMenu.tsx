@@ -8,14 +8,16 @@ import {
 } from '@/common/components/ui/command'
 import { ScrollArea } from '@/common/components/ui/scroll-area'
 import { useSearch } from '@/common/contexts/SearchContext'
+import { UserContext } from '@/common/contexts/UserContext'
 import { SidebarItem, SidebarSection, sidebarSections } from '@/common/data/sidebar-data'
 import { ArrowRight } from 'lucide-react'
-import React from 'react'
+import React, { useContext } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 export function CommandMenu() {
   const navigate = useNavigate()
   const { open, setOpen } = useSearch()
+  const { user } = useContext(UserContext)
 
   const runCommand = React.useCallback(
     (command: () => unknown) => {
@@ -25,13 +27,38 @@ export function CommandMenu() {
     [setOpen]
   )
 
+  const isAdmin = user?.role === 'admin'
+
+  // Filter sidebar sections based on user role (same logic as AppSidebar)
+  const filteredSections = sidebarSections.filter(
+    section => section.label !== 'Integrations' || isAdmin
+  ).map(section => ({
+    ...section,
+    items: section.items.filter(item => {
+      // Admin-only items
+      if (item.adminOnly === true) {
+        return isAdmin;
+      }
+      // Non-admin items (like Payments)
+      if (item.adminOnly === false) {
+        return !isAdmin;
+      }
+      // Legacy admin filtering for specific items
+      if (item.title === 'Invoices' || item.title === 'New Client' || item.title === 'Clients') {
+        return isAdmin;
+      }
+      // Show all other items
+      return true;
+    })
+  })).filter(section => section.items.length > 0) // Remove empty sections
+
   return (
     <CommandDialog modal open={open} onOpenChange={setOpen}>
       <CommandInput placeholder="Type a command or search..." />
       <CommandList>
         <ScrollArea type="hover" className="h-72 pr-1">
           <CommandEmpty>No results found.</CommandEmpty>
-          {sidebarSections.map((section: SidebarSection, index) => (
+          {filteredSections.map((section: SidebarSection, index) => (
             <CommandGroup key={`${section.label}-${index}`} heading={section.label}>
               {section.items.map((item: SidebarItem) => (
                 <CommandItem

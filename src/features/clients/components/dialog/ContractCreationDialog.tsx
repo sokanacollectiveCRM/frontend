@@ -99,7 +99,7 @@ export function ContractCreationDialog({ open, onOpenChange }: Props) {
       });
       setIsLoading(false);
       onOpenChange('');
-      toast.success(`Created ${fullTemplate.name} agreement with ${values.client.user.firstname} ${values.client.user.lastname}.`);
+      toast.success(`Created ${fullTemplate.name} agreement with ${values.client.firstname} ${values.client.lastname}.`);
     }
     catch (err) {
       setIsLoading(false);

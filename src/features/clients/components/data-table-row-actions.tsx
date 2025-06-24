@@ -10,15 +10,15 @@ import {
 import { DotsHorizontalIcon } from '@radix-ui/react-icons'
 import { Row } from '@tanstack/react-table'
 import { Archive, Trash2 } from 'lucide-react'
-import { useTable } from '../contexts/TableContext'
-import { Client } from '../data/schema'
+import { useUsers } from '../context/users-context'
+import { User } from '../data/schema'
 
 interface DataTableRowActionsProps {
-  row: Row<Client>
+  row: Row<User>
 }
 
 export function DataTableRowActions({ row }: DataTableRowActionsProps) {
-  const { setOpen, setCurrentRow } = useTable()
+  const { setOpen, setCurrentRow } = useUsers()
   return (
     <>
       <DropdownMenu modal={false}>
@@ -41,10 +41,10 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
             onClick={(e) => {
               e.stopPropagation();
               setCurrentRow(row.original);
-              setOpen('archive');
+              setOpen('edit');
             }}
           >
-            Archive
+            Edit
             <DropdownMenuShortcut>
               <Archive size={16} />
             </DropdownMenuShortcut>

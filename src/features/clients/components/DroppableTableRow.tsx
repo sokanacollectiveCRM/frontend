@@ -19,7 +19,7 @@ export const DroppableTableRow = forwardRef<HTMLTableRowElement, Props>(
     let navigate = useNavigate();
 
     const { setNodeRef, isOver } = useDroppable({
-      id: `user-${row.original.user.id}`,
+      id: `user-${row.original.id}`,
       data: {
         type: 'user',
         user: row.original,
