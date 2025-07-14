@@ -76,7 +76,11 @@ export function Step1Personal({ form, control, handleBack, handleNextStep, step,
           >
             First Name
           </label>
-          {errors.firstname && <div className={styles['form-error']}>{errors.firstname.message as string}</div>}
+          {errors.firstname && (
+            <div className={styles['form-error']} style={{ marginBottom: 6 }}>
+              Please enter your first name.
+            </div>
+          )}
         </div>
         <div className={styles['form-field']}>
           <input
@@ -96,7 +100,11 @@ export function Step1Personal({ form, control, handleBack, handleNextStep, step,
           >
             Last Name
           </label>
-          {errors.lastname && <div className={styles['form-error']}>{errors.lastname.message as string}</div>}
+          {errors.lastname && (
+            <div className={styles['form-error']} style={{ marginBottom: 6 }}>
+              Please enter your last name.
+            </div>
+          )}
         </div>
         <div className={styles['form-field']}>
           <input
@@ -117,7 +125,11 @@ export function Step1Personal({ form, control, handleBack, handleNextStep, step,
           >
             Email
           </label>
-          {errors.email && <div className={styles['form-error']}>{errors.email.message as string}</div>}
+          {errors.email && (
+            <div className={styles['form-error']} style={{ marginBottom: 6 }}>
+              Please enter your email address.
+            </div>
+          )}
         </div>
         <div className={styles['form-field']}>
           <input
@@ -137,7 +149,11 @@ export function Step1Personal({ form, control, handleBack, handleNextStep, step,
           >
             Mobile phone
           </label>
-          {errors.phone_number && <div className={styles['form-error']}>{errors.phone_number.message as string}</div>}
+          {errors.phone_number && (
+            <div className={styles['form-error']} style={{ marginBottom: 6 }}>
+              Please enter your mobile phone number.
+            </div>
+          )}
         </div>
         {/* Second Row */}
         <div className={styles['form-field']} style={{ position: 'relative' }}>

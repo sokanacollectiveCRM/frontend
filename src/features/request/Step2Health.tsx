@@ -43,6 +43,11 @@ export function Step2Home({ form, control, handleBack, handleNextStep, step, tot
       <div className={styles['form-grid']}>
         {/* Address */}
         <div className={styles['form-field']} style={{ gridColumn: '1 / span 4' }}>
+          {errors.address && (
+            <div className={styles['form-error']} style={{ marginBottom: 6 }}>
+              Please add a complete address.
+            </div>
+          )}
           <input
             className={styles['form-input']}
             {...form.register('address')}
@@ -60,10 +65,14 @@ export function Step2Home({ form, control, handleBack, handleNextStep, step, tot
           >
             Address
           </label>
-          {errors.address && <div className={styles['form-error']}>{errors.address.message as string}</div>}
         </div>
         {/* City */}
         <div className={styles['form-field']}>
+          {errors.city && (
+            <div className={styles['form-error']} style={{ marginBottom: 6 }}>
+              Please enter a city.
+            </div>
+          )}
           <input
             className={styles['form-input']}
             {...form.register('city')}
@@ -81,10 +90,14 @@ export function Step2Home({ form, control, handleBack, handleNextStep, step, tot
           >
             City
           </label>
-          {errors.city && <div className={styles['form-error']}>{errors.city.message as string}</div>}
         </div>
         {/* State/Province */}
         <div className={styles['form-field']}>
+          {errors.state && (
+            <div className={styles['form-error']} style={{ marginBottom: 6 }}>
+              Please enter a state/province.
+            </div>
+          )}
           <input
             className={styles['form-input']}
             {...form.register('state')}
@@ -102,10 +115,14 @@ export function Step2Home({ form, control, handleBack, handleNextStep, step, tot
           >
             State/Province
           </label>
-          {errors.state && <div className={styles['form-error']}>{errors.state.message as string}</div>}
         </div>
         {/* Zip Code */}
         <div className={styles['form-field']}>
+          {errors.zip_code && (
+            <div className={styles['form-error']} style={{ marginBottom: 6 }}>
+              Please enter a zip code.
+            </div>
+          )}
           <input
             className={styles['form-input']}
             {...form.register('zip_code')}
@@ -123,10 +140,14 @@ export function Step2Home({ form, control, handleBack, handleNextStep, step, tot
           >
             Zip
           </label>
-          {errors.zip_code && <div className={styles['form-error']}>{errors.zip_code.message as string}</div>}
         </div>
         {/* Home Phone */}
         <div className={styles['form-field']} style={{ gridColumn: '1 / span 2' }}>
+          {errors.home_phone && (
+            <div className={styles['form-error']} style={{ marginBottom: 6 }}>
+              Please enter a home phone number.
+            </div>
+          )}
           <input
             className={styles['form-input']}
             {...form.register('home_phone')}
@@ -144,10 +165,14 @@ export function Step2Home({ form, control, handleBack, handleNextStep, step, tot
           >
             Home Phone
           </label>
-          {errors.home_phone && <div className={styles['form-error']}>{errors.home_phone.message as string}</div>}
         </div>
         {/* Home Type (select) */}
         <div className={styles['form-field']} style={{ gridColumn: '3 / span 2', position: 'relative' }}>
+          {errors.home_type && (
+            <div className={styles['form-error']} style={{ marginBottom: 6 }}>
+              Please select a home type.
+            </div>
+          )}
           <select
             className={styles['form-select']}
             {...form.register('home_type')}
@@ -177,10 +202,14 @@ export function Step2Home({ form, control, handleBack, handleNextStep, step, tot
           >
             ▼
           </span>
-          {errors.home_type && <div className={styles['form-error']}>{errors.home_type.message as string}</div>}
         </div>
         {/* Home Access */}
         <div className={styles['form-field']} style={{ gridColumn: '1 / span 4' }}>
+          {errors.home_access && (
+            <div className={styles['form-error']} style={{ marginBottom: 6 }}>
+              Please enter home access details.
+            </div>
+          )}
           <input
             className={styles['form-input']}
             {...form.register('home_access')}
@@ -198,10 +227,14 @@ export function Step2Home({ form, control, handleBack, handleNextStep, step, tot
           >
             Home Access
           </label>
-          {errors.home_access && <div className={styles['form-error']}>{errors.home_access.message as string}</div>}
         </div>
         {/* Pets */}
         <div className={styles['form-field']} style={{ gridColumn: '1 / span 4' }}>
+          {errors.pets && (
+            <div className={styles['form-error']} style={{ marginBottom: 6 }}>
+              Please enter pet details.
+            </div>
+          )}
           <input
             className={styles['form-input']}
             {...form.register('pets')}
@@ -219,7 +252,6 @@ export function Step2Home({ form, control, handleBack, handleNextStep, step, tot
           >
             Pets
           </label>
-          {errors.pets && <div className={styles['form-error']}>{errors.pets.message as string}</div>}
         </div>
       </div>
       <div className={styles['step-buttons-row']}>

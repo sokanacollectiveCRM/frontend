@@ -14,8 +14,15 @@ export default function RequestForm() {
   const { form, step, setStep, totalSteps, handleNextStep, handleBack } = useRequestForm(onSubmit);
   const { control } = form;
 
+  // Progress bar calculation
+  const progress = ((step + 1) / totalSteps) * 100;
+
   return (
     <div className={styles.requestForm}>
+      {/* Progress Bar */}
+      <div style={{ width: '100%', height: 8, background: '#e0e0e0', borderRadius: 4, margin: '24px 0 32px 0', overflow: 'hidden' }}>
+        <div style={{ width: `${progress}%`, height: '100%', background: '#00bcd4', transition: 'width 0.3s cubic-bezier(.4,0,.2,1)' }} />
+      </div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '2.5rem' }}>
         <img src="/public/logo.jpeg" alt="Sokana Collective Logo" style={{ width: 180, height: 'auto', margin: '0 auto 1.5rem auto', display: 'block' }} />
         <h1 style={{ fontWeight: 700, fontSize: '2.2rem', margin: 0, textAlign: 'center' }}>Request for Service Form</h1>
@@ -30,10 +37,10 @@ export default function RequestForm() {
         {step === 3 && <Step4Referral form={form} control={control} handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} />}
         {step === 4 && <Step5HealthHistory form={form} control={control} handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} />}
         {step === 5 && <Step6PregnancyBaby form={form} control={control} handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} />}
-        {step === 6 && <Step7PastPregnancies handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} />}
-        {step === 7 && <Step8ServicesInterested handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} />}
-        {step === 8 && <Step9Payment handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} />}
-        {step === 9 && <Step10ClientDemographics handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} />}
+        {step === 6 && <Step7PastPregnancies form={form} control={control} handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} />}
+        {step === 7 && <Step8ServicesInterested form={form} control={control} handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} />}
+        {step === 8 && <Step9Payment form={form} control={control} handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} />}
+        {step === 9 && <Step10ClientDemographics form={form} control={control} handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} />}
       </Form>
     </div>
   );
