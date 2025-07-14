@@ -10,7 +10,7 @@ import { useClientsContext } from '../contexts/ClientsContext'
 import { useTable } from '../contexts/TableContext'
 
 export default function ClientsBoard() {
-  const { clients, isLoading } = useClientsContext()
+  const { clients, isLoading, refreshClients } = useClientsContext()
   const [draggedTemplate, setDraggedTemplate] = useState<Template | null>(null)
   const { setOpen, setDialogTemplate, setCurrentRow } = useTable()
 
@@ -43,7 +43,7 @@ export default function ClientsBoard() {
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}>
           <Main>
-            <ClientsTable data={clients} columns={columns} draggedTemplate={draggedTemplate} />
+            <ClientsTable data={clients} columns={columns(refreshClients)} draggedTemplate={draggedTemplate} />
           </Main>
           <DragOverlay>
             {draggedTemplate ? (

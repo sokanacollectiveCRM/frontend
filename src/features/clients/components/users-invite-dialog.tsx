@@ -1,4 +1,3 @@
-import { SelectDropdown } from '@/common/components/form/SelectDropdown'
 import { Button } from '@/common/components/ui/button'
 import {
   Dialog,
@@ -19,19 +18,18 @@ import {
 } from '@/common/components/ui/form'
 import { Input } from '@/common/components/ui/input'
 import { Textarea } from '@/common/components/ui/textarea'
-import { toast } from '@/common/hooks/toast/use-toast'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { MailPlus, Send } from 'lucide-react'
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { userTypes } from '../data/data'
+import { useUsers } from '../context/users-context'
 
 const formSchema = z.object({
   email: z
     .string()
     .min(1, { message: 'Email is required.' })
     .email({ message: 'Email is invalid.' }),
-  role: z.string().min(1, { message: 'Role is required.' }),
   desc: z.string().optional(),
 })
 type UserInviteForm = z.infer<typeof formSchema>
@@ -42,30 +40,32 @@ interface Props {
 }
 
 export function UsersInviteDialog({ open, onOpenChange }: Props) {
+  const { currentRow } = useUsers();
   const form = useForm<UserInviteForm>({
     resolver: zodResolver(formSchema),
-    defaultValues: { email: '', role: '', desc: '' },
-  })
+    defaultValues: { email: currentRow?.email || '', desc: '' },
+  });
+
+  useEffect(() => {
+    if (open && currentRow) {
+      form.reset({ email: currentRow.email, desc: '' });
+    }
+  }, [open, currentRow]);
 
   const onSubmit = (values: UserInviteForm) => {
-    form.reset()
-    toast({
-      title: 'You submitted the following values:',
-      description: (
-        <pre className='mt-2 w-[340px] rounded-md bg-slate-950 p-4'>
-          <code className='text-white'>{JSON.stringify(values, null, 2)}</code>
-        </pre>
-      ),
-    })
-    onOpenChange(false)
-  }
+    // Instead of calling an endpoint, just log the values
+    console.log('Invite email:', values.email);
+    console.log('Invite description:', values.desc);
+    form.reset();
+    onOpenChange(false);
+  };
 
   return (
     <Dialog
       open={open}
       onOpenChange={(state) => {
-        form.reset()
-        onOpenChange(state)
+        form.reset();
+        onOpenChange(state);
       }}
     >
       <DialogContent className='sm:max-w-md'>
@@ -74,8 +74,7 @@ export function UsersInviteDialog({ open, onOpenChange }: Props) {
             <MailPlus /> Invite User
           </DialogTitle>
           <DialogDescription>
-            Invite new user to join your team by sending them an email
-            invitation. Assign a role to define their access level.
+            Invite this user to join your team by sending them an email invitation. You can add a personal note below.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -95,27 +94,9 @@ export function UsersInviteDialog({ open, onOpenChange }: Props) {
                       type='email'
                       placeholder='eg: john.doe@gmail.com'
                       {...field}
+                      disabled
                     />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name='role'
-              render={({ field }) => (
-                <FormItem className='space-y-1'>
-                  <FormLabel>Role</FormLabel>
-                  <SelectDropdown
-                    defaultValue={field.value}
-                    onValueChange={field.onChange}
-                    placeholder='Select a role'
-                    items={userTypes.map(({ label, value }: { label: string, value: string }) => ({
-                      label,
-                      value,
-                    }))}
-                  />
                   <FormMessage />
                 </FormItem>
               )}
@@ -149,5 +130,5 @@ export function UsersInviteDialog({ open, onOpenChange }: Props) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 } 

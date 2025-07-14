@@ -102,7 +102,6 @@ export function UsersTable({ columns, data }: DataTableProps) {
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
                   className='group/row cursor-pointer transition'
-                  onClick={() => setOpen('invite')}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell

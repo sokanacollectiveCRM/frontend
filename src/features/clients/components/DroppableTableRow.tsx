@@ -8,6 +8,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { flexRender, Row } from '@tanstack/react-table';
 import { forwardRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTable } from '../contexts/TableContext';
 import { Client } from '../data/schema';
 
 interface Props {
@@ -17,6 +18,7 @@ interface Props {
 export const DroppableTableRow = forwardRef<HTMLTableRowElement, Props>(
   ({ row }, ref) => {
     let navigate = useNavigate();
+    const { setCurrentRow, setOpen } = useTable();
 
     const { setNodeRef, isOver } = useDroppable({
       id: `user-${row.original.id}`,
@@ -39,8 +41,10 @@ export const DroppableTableRow = forwardRef<HTMLTableRowElement, Props>(
         data-state={row.getIsSelected() && 'selected'}
         className={`group/row cursor-pointer transition transition-transform duration-300 ease-in-out ${isOver ? 'bg-accent scale-[.97]' : ''
           }`}
-        onClick={() => navigate(`/specified/${row.original.id}`, {
-        })}
+        onClick={() => {
+          setCurrentRow(row.original);
+          setOpen('edit'); // or the appropriate dialog type for detail view
+        }}
       >
         {row.getVisibleCells().map((cell) => (
           <TableCell

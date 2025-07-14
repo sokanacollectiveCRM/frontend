@@ -27,9 +27,14 @@ export function useClients() {
       }
 
       // cast it to Client[] so setClients has the right shape
-      const data = (await res.json()) as Client[]
-      setClients(data)
-      return data
+      const apiData = (await res.json()) as any[];
+      // Flatten user object into top-level
+      const data = apiData.map(client => ({
+        ...client.user,
+        ...client,
+      }));
+      setClients(data);
+      return data;
     } catch (err: any) {
       setError(err.message)
       setClients([])

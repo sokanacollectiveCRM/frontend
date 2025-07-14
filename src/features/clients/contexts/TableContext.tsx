@@ -1,8 +1,8 @@
-import { Template } from '@/common/types/template'
-import type { User } from '@/features/clients/data/schema'
-import React, { useState } from 'react'
+import { Template } from '@/common/types/template';
+import type { User } from '@/features/clients/data/schema';
+import React, { useState } from 'react';
 
-type ClientsDialogType = 'new-contract' | 'archive' | 'delete'
+type ClientsDialogType = 'new-contract' | 'archive' | 'delete' | 'edit';
 
 interface ClientsContextType {
   open: ClientsDialogType | '',

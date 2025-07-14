@@ -50,6 +50,18 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
             </DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
+          {/* Invite user action only for status >= Matched */}
+          {['matching', 'contract', 'active'].includes((row.original.status || '').toLowerCase()) && (
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                setCurrentRow(row.original);
+                setOpen('invite');
+              }}
+            >
+              Invite User
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem
             onClick={(e) => {
               e.stopPropagation(); // ✅ prevent row click
