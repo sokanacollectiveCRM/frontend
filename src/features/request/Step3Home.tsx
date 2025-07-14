@@ -1405,8 +1405,8 @@ export function Step10ClientDemographics({ form, control, handleBack, handleNext
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                         }}>{opt}</span>
-                        <button
-                          type="button"
+                        <span
+                          role="button"
                           aria-label={`Remove ${opt}`}
                           onClick={e => { e.stopPropagation(); handleMultiSelect(opt); }}
                           style={{
@@ -1426,10 +1426,11 @@ export function Step10ClientDemographics({ form, control, handleBack, handleNext
                             fontSize: 14,
                             lineHeight: 1,
                             padding: 0,
+                            userSelect: 'none',
                           }}
                         >
                           ×
-                        </button>
+                        </span>
                       </span>
                     ))}
                   </div>

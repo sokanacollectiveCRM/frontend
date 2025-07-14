@@ -145,6 +145,15 @@ export function useRequestForm(onSubmit: (data: RequestFormValues) => Promise<vo
       }
       return false;
     }
+    
+    // If this is the final step, submit the form
+    if (step === totalSteps - 1) {
+      const formData = form.getValues();
+      await onSubmit(formData);
+      return true;
+    }
+    
+    // Otherwise, move to next step
     if (step < totalSteps - 1) setStep(step + 1);
     return true;
   };

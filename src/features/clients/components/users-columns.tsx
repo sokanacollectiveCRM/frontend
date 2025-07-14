@@ -11,30 +11,23 @@ import { DataTableRowActions } from './data-table-row-actions'
 
 const statusOptions = userStatusSchema.options;
 
-export const columns: ColumnDef<User>[] = [
+export const columns = (refreshClients: () => void): ColumnDef<User>[] => [
   {
     id: 'client',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Client' />
     ),
     cell: ({ row }) => {
-      const { firstname, lastname } = row.original
-      const fullName = `${firstname} ${lastname}`
-      const initials = `${firstname[0] ?? ''}${lastname[0] ?? ''}`.toUpperCase();
-
+      const { firstname, lastname } = row.original;
+      const displayName = (firstname && lastname) ? `${firstname} ${lastname}` : '—';
       return (
-        <div className="flex items-center gap-2 max-w-36 h-10">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-sm font-medium text-gray-700">
-            {initials}
-          </div>
-          <LongText className='max-w-36'>{fullName}</LongText>
-        </div>
+        <LongText className='max-w-36'>{displayName}</LongText>
       );
     },
     filterFn: (row, _columnId, filterValue) => {
-      const { firstname, lastname } = row.original
-      const fullName = `${firstname} ${lastname}`.toLowerCase()
-      return fullName.includes((filterValue as string).toLowerCase())
+      const { firstname, lastname } = row.original;
+      const displayName = (firstname && lastname) ? `${firstname} ${lastname}` : '';
+      return displayName.toLowerCase().includes((filterValue as string).toLowerCase());
     },
     meta: { className: 'pl-10 w-60' },
   },
@@ -87,18 +80,17 @@ export const columns: ColumnDef<User>[] = [
       <DataTableColumnHeader column={column} title='Status' />
     ),
     cell: ({ row }) => {
-      const { id, status } = row.original
-
+      const { id, status } = row.original;
       const handleStatusChange = async (newStatus: string) => {
         try {
           await updateClientStatus(id, newStatus);
           toast.success('Successfully updated client status');
+          refreshClients(); // Refresh the client list after status change
         } catch (err) {
           console.error('Failed to update status:', err)
           toast.error('Failed to update client status...');
         }
-      }
-
+      };
       return (
         <Select defaultValue={status} onValueChange={handleStatusChange}>
           <SelectTrigger className={cn('w-[120px]')}>
@@ -112,10 +104,10 @@ export const columns: ColumnDef<User>[] = [
             ))}
           </SelectContent>
         </Select>
-      )
+      );
     },
     filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id))
+      return value.includes(row.getValue(id));
     },
     enableHiding: false,
     enableSorting: true,
@@ -125,4 +117,4 @@ export const columns: ColumnDef<User>[] = [
     cell: DataTableRowActions,
     meta: { className: 'sticky right-0 z-10 w-16' }
   },
-]
+];
