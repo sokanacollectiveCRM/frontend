@@ -1,12 +1,11 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/common/components/ui/card";
-import { Input } from "@/common/components/ui/input";
-import { Heart, Award, AlertCircle, Baby, Book, PlusCircle, X, Check, Edit2, Trash2, Pencil } from "lucide-react";
-import { Button } from "@/common/components/ui/button";
 import { Badge } from "@/common/components/ui/badge";
-import { Textarea } from "@/common/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/common/components/ui/select";
+import { Button } from "@/common/components/ui/button";
 import { Label } from "@/common/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/common/components/ui/select";
+import { Textarea } from "@/common/components/ui/textarea";
+
+import { AlertCircle, Award, Baby, Book, Heart, Pencil, PlusCircle, Trash2 } from "lucide-react";
+import { useParams } from "react-router-dom";
 
 interface Note {
   id: number;
@@ -48,15 +47,20 @@ export default function Appointments({
   editCategory,
   setEditCategory
 }: AppointmentsProps) {
+  const { clientId } = useParams();
 
-  const addNote = (): void => {
+  const addNote = async (): Promise<void> => {
     if (newNote.trim()) {
       const now = new Date();
       const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-      setNotes([...notes, { id: Date.now(), text: newNote, date: dateStr, category: noteCategory }]);
+      const newNoteObj = { id: Date.now(), text: newNote, date: dateStr, category: noteCategory };
+
+      setNotes([...notes, newNoteObj]);
       setNewNote("");
       setNoteCategory("general");
       setShowAddNote(false);
+
+
     }
   };
 
@@ -72,7 +76,7 @@ export default function Appointments({
 
   const saveEdit = (): void => {
     if (editText.trim()) {
-      setNotes(notes.map(note => 
+      setNotes(notes.map(note =>
         note.id === editingNoteId ? { ...note, text: editText, category: editCategory } : note
       ));
     }
@@ -96,7 +100,7 @@ export default function Appointments({
   };
 
   const getCategoryIcon = (category: string) => {
-    switch(category) {
+    switch (category) {
       case "support": return <Heart size={12} className="mr-1" />;
       case "nutrition": return <Award size={12} className="mr-1" />;
       case "medical": return <AlertCircle size={12} className="mr-1" />;
@@ -111,7 +115,7 @@ export default function Appointments({
       <div className="bg-white p-6 rounded-xl border shadow-sm">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-semibold">Notes</h3>
-          <Button 
+          <Button
             onClick={() => setShowAddNote(!showAddNote)}
             variant="outline"
             className="text-primary border-primary/20 hover:bg-primary/10"

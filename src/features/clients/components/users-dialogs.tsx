@@ -4,7 +4,7 @@ import { UsersDeleteDialog } from './users-delete-dialog'
 import { UsersInviteDialog } from './users-invite-dialog'
 
 export function UsersDialogs() {
-  const { open, setOpen, currentRow, setCurrentRow } = useUsers()
+  const { open, setOpen, currentRow, setCurrentRow, refreshClients } = useUsers()
   return (
     <>
       <UsersActionDialog
@@ -31,6 +31,7 @@ export function UsersDialogs() {
               }, 500)
             }}
             currentRow={currentRow}
+            onUpdateSuccess={refreshClients}
           />
 
           <UsersDeleteDialog

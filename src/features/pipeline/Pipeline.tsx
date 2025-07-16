@@ -81,8 +81,15 @@ export default function Pipeline() {
               );
 
               try {
-                const client = await updateClientStatus(userId, newStatus);
-                toast.success(`Client status updated to ${newStatus}`);
+                const result = await updateClientStatus(userId, newStatus);
+                if (result.success) {
+                  toast.success(`Client status updated to ${newStatus}`);
+                } else {
+                  toast.error(result.error || 'Failed to update client status');
+                  setUserList((prev) =>
+                    prev.map((u) => (u.id === userId ? { ...u, status: u.status } : u))
+                  );
+                }
               } catch (error) {
                 console.error('Failed to update user status:', error);
                 toast.error(`Something went wrong. ${error instanceof Error ? error.message : error}`);

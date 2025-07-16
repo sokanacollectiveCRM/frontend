@@ -12,7 +12,7 @@ function ArrowSVG({ color = '#757575' }: { color?: string }) {
   );
 }
 
-type FocusField = 'firstname' | 'lastname' | 'email' | 'phone_number' | 'preferred_contact_method' | 'pronouns' | 'preferred_name' | 'insurance_coverage';
+type FocusField = 'firstname' | 'lastname' | 'email' | 'phone_number' | 'preferred_contact_method' | 'pronouns' | 'preferred_name';
 
 export function Step1Personal({ form, control, handleBack, handleNextStep, step, totalSteps }: any) {
   const pronouns = useWatch({ control, name: 'pronouns' });
@@ -27,7 +27,6 @@ export function Step1Personal({ form, control, handleBack, handleNextStep, step,
     preferred_contact_method: false,
     pronouns: false,
     preferred_name: false,
-    insurance_coverage: false,
   });
   // Select open state
   const [pronounsOpen, setPronounsOpen] = useState(false);
@@ -263,51 +262,6 @@ export function Step1Personal({ form, control, handleBack, handleNextStep, step,
           {errors.preferred_name && <div className={styles['form-error']}>{errors.preferred_name.message as string}</div>}
         </div>
         <div />
-      </div>
-      {/* Insurance Coverage Field */}
-      <div className={styles['form-field']} style={{ position: 'relative', marginTop: '1.5rem', gridColumn: '1 / span 2', maxWidth: 400 }}>
-        <select
-          className={styles['form-select']}
-          style={{ paddingRight: 36 }}
-          {...form.register('insurance_coverage')}
-          id="insurance_coverage"
-          defaultValue=""
-          onFocus={() => handleFocus('insurance_coverage' as FocusField)}
-          onBlur={() => handleBlur('insurance_coverage' as FocusField)}
-        >
-          <option value="" disabled hidden></option>
-          <option value="Medicaid: Blue Cross Blue Shield">Medicaid: Blue Cross Blue Shield</option>
-          <option value="Medicaid: Aetna">Medicaid: Aetna</option>
-          <option value="Medicaid: Other">Medicaid: Other</option>
-          <option value="Commercial/Private Insurance">Commercial/Private Insurance</option>
-          <option value="Currently Uninsured">Currently Uninsured</option>
-        </select>
-        <label
-          htmlFor="insurance_coverage"
-          className={
-            styles['form-floating-label'] +
-            ((focus['insurance_coverage' as FocusField] || values.insurance_coverage) ? ' ' + styles['form-label--active'] : '')
-          }
-          style={{ left: 0, color: errors.insurance_coverage ? '#d32f2f' : undefined, right: 0, maxWidth: 'calc(100% - 36px)' }}
-        >
-          Insurance Coverage*
-        </label>
-        <span
-          style={{
-            position: 'absolute',
-            right: 8,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            pointerEvents: 'none',
-            zIndex: 3,
-            display: 'flex',
-            alignItems: 'center',
-            height: 18,
-          }}
-        >
-          <ArrowSVG color={errors.insurance_coverage ? '#d32f2f' : (focus['insurance_coverage' as FocusField] ? '#00897b' : '#757575')} />
-        </span>
-        {errors.insurance_coverage && <div className={styles['form-error']}>{errors.insurance_coverage.message as string}</div>}
       </div>
       <div className={styles['step-buttons-row']}>
         <Button type="button" onClick={handleBack} disabled={step === 0}>Back</Button>

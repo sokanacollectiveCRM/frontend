@@ -40,6 +40,7 @@ export function UsersDeleteDialog({ open, onOpenChange, currentRow }: Props) {
       open={open}
       onOpenChange={onOpenChange}
       handleConfirm={handleDelete}
+      className='max-w-sm'
       title={
         <span className='text-destructive'>
           <TriangleAlert

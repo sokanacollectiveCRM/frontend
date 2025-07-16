@@ -65,7 +65,7 @@ export default function Users() {
 
   return (
     <TemplatesProvider>
-      <UsersProvider>
+      <UsersProvider refreshClients={getClients}>
         <Header fixed>
           <Search />
           <div className='ml-auto'>

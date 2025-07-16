@@ -82,10 +82,19 @@ export const columns = (refreshClients: () => void): ColumnDef<User>[] => [
     cell: ({ row }) => {
       const { id, status } = row.original;
       const handleStatusChange = async (newStatus: string) => {
+        console.log('🚨 STATUS CHANGE TRIGGERED!');
+        console.log('🚨 Client ID:', id);
+        console.log('🚨 New Status:', newStatus);
+
         try {
-          await updateClientStatus(id, newStatus);
-          toast.success('Successfully updated client status');
-          refreshClients(); // Refresh the client list after status change
+          const result = await updateClientStatus(id, newStatus);
+          if (result.success) {
+            toast.success('Successfully updated client status');
+            // Refresh the client list to show updated timestamp
+            refreshClients();
+          } else {
+            toast.error(result.error || 'Failed to update client status');
+          }
         } catch (err) {
           console.error('Failed to update status:', err)
           toast.error('Failed to update client status...');

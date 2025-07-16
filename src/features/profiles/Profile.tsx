@@ -2,12 +2,20 @@ import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
 import { Badge } from '@/common/components/ui/badge';
 import { Card } from '@/common/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/common/components/ui/select';
-import { Tabs, TabsList, TabsTrigger } from '@/common/components/ui/tabs';
 import UserAvatar from '@/common/components/user/UserAvatar';
 import updateClientStatus from '@/common/utils/updateClientStatus';
 import { useClientProfileData } from '@/features/profiles/hooks/useClientProfileData';
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
+import {
+  Activity,
+  Calendar,
+  Clock,
+  FileText,
+  FolderArchive,
+  LayoutDashboard,
+  UserCircle2
+} from "lucide-react";
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { toast } from 'sonner';
@@ -16,16 +24,6 @@ import ClientInfo from "./ClientInfo";
 import Documents from "./Documents";
 import Appointments from "./Notes";
 import OverviewLayout from "./OverviewLayout";
-import { 
-  LayoutDashboard, 
-  FileText, 
-  Clock, 
-  FolderArchive, 
-  Activity, 
-  UserCircle2,
-  Calendar
-} from "lucide-react";
-import { Button } from '@/common/components/ui/button';
 import TimeTab from './TimeTab';
 
 interface Note {
@@ -67,7 +65,7 @@ export default function Profile() {
   const [editText, setEditText] = useState("");
   const [editCategory, setEditCategory] = useState("");
 
-  const [birthPreferences,SetBirthPreference] = useState([
+  const [birthPreferences, SetBirthPreference] = useState([
     { preference: "Natural birth with minimal interventions", type: "primary" },
     { preference: "Dim lighting and calming music", type: "environment" },
     { preference: "Delayed cord clamping", type: "medical" },
@@ -107,8 +105,12 @@ export default function Profile() {
     if (!clientId) return;
 
     try {
-      await updateClientStatus(clientId, newStatus);
-      toast.success('Successfully updated client status');
+      const result = await updateClientStatus(clientId, newStatus);
+      if (result.success) {
+        toast.success('Successfully updated client status');
+      } else {
+        toast.error(result.error || 'Failed to update client status');
+      }
     } catch (err) {
       console.error('Failed to update status:', err)
       toast.error('Failed to update client status...');
@@ -147,9 +149,9 @@ export default function Profile() {
     switch (tab) {
       case 'Overview':
         return (
-          <OverviewLayout 
-            pregnancyData={pregnancyData} 
-            birthPreferences={birthPreferences} 
+          <OverviewLayout
+            pregnancyData={pregnancyData}
+            birthPreferences={birthPreferences}
             supportTeam={supportTeam}
             newPreference={newPreference}
             setNewPreference={setNewPreference}
@@ -322,14 +324,13 @@ export default function Profile() {
       <main className="flex-1 p-6 bg-white rounded-2xl shadow-sm flex flex-col max-h-[calc(100vh-3rem)] overflow-hidden">
         <div className="flex gap-6 mb-6 border-b border-gray-200 pb-2">
           {tabs.map(({ name, icon }) => (
-            <button 
-              key={name} 
+            <button
+              key={name}
               onClick={() => setTab(name)}
-              className={`flex items-center gap-2 w-1/6 text-sm font-semibold pb-2 transition-colors duration-200 ${
-                tab === name 
-                  ? 'text-indigo-600 border-b-2 border-indigo-600' 
+              className={`flex items-center gap-2 w-1/6 text-sm font-semibold pb-2 transition-colors duration-200 ${tab === name
+                  ? 'text-indigo-600 border-b-2 border-indigo-600'
                   : 'text-gray-500 hover:text-indigo-600'
-              }`}
+                }`}
             >
               {icon}
               {name}

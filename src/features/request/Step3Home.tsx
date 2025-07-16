@@ -1,6 +1,6 @@
 import { Button } from '@/common/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/common/components/ui/popover';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useWatch } from 'react-hook-form';
 import styles from './RequestForm.module.scss';
 
@@ -41,13 +41,13 @@ export function Step3FamilyMembers({ form, control, handleBack, handleNextStep, 
   const errors = form.formState.errors;
   const [focus, setFocus] = useState({
     relationship_status: false,
-    first_name: false,
-    last_name: false,
-    pronouns: false,
-    middle_name: false,
-    email: false,
-    mobile_phone: false,
-    work_phone: false,
+    family_first_name: false,
+    family_last_name: false,
+    family_pronouns: false,
+    family_middle_name: false,
+    family_email: false,
+    family_mobile_phone: false,
+    family_work_phone: false,
   });
   const [relationshipOpen, setRelationshipOpen] = useState(false);
   const [pronounsOpen, setPronounsOpen] = useState(false);
@@ -105,53 +105,53 @@ export function Step3FamilyMembers({ form, control, handleBack, handleNextStep, 
         <div className={styles['form-field']}>
           <input
             className={styles['form-input']}
-            {...form.register('first_name')}
-            id="first_name"
+            {...form.register('family_first_name')}
+            id="family_first_name"
             autoComplete="off"
-            onFocus={() => handleFocus('first_name')}
-            onBlur={() => handleBlur('first_name')}
+            onFocus={() => handleFocus('family_first_name')}
+            onBlur={() => handleBlur('family_first_name')}
           />
           <label
-            htmlFor="first_name"
+            htmlFor="family_first_name"
             className={
               styles['form-floating-label'] +
-              ((focus.first_name || values.first_name) ? ' ' + styles['form-label--active'] : '')
+              ((focus.family_first_name || values.family_first_name) ? ' ' + styles['form-label--active'] : '')
             }
           >
             First Name
           </label>
-          {errors.first_name && <div className={styles['form-error']}>{errors.first_name.message as string}</div>}
+          {errors.family_first_name && <div className={styles['form-error']}>{errors.family_first_name.message as string}</div>}
         </div>
         {/* Last Name */}
         <div className={styles['form-field']}>
           <input
             className={styles['form-input']}
-            {...form.register('last_name')}
-            id="last_name"
+            {...form.register('family_last_name')}
+            id="family_last_name"
             autoComplete="off"
-            onFocus={() => handleFocus('last_name')}
-            onBlur={() => handleBlur('last_name')}
+            onFocus={() => handleFocus('family_last_name')}
+            onBlur={() => handleBlur('family_last_name')}
           />
           <label
-            htmlFor="last_name"
+            htmlFor="family_last_name"
             className={
               styles['form-floating-label'] +
-              ((focus.last_name || values.last_name) ? ' ' + styles['form-label--active'] : '')
+              ((focus.family_last_name || values.family_last_name) ? ' ' + styles['form-label--active'] : '')
             }
           >
             Last Name
           </label>
-          {errors.last_name && <div className={styles['form-error']}>{errors.last_name.message as string}</div>}
+          {errors.family_last_name && <div className={styles['form-error']}>{errors.family_last_name.message as string}</div>}
         </div>
         {/* Pronouns */}
         <div className={styles['form-field']}>
           <select
             className={styles['form-select']}
-            {...form.register('pronouns')}
-            id="pronouns"
+            {...form.register('family_pronouns')}
+            id="family_pronouns"
             defaultValue=""
-            onFocus={() => { handleFocus('pronouns'); setPronounsOpen(true); }}
-            onBlur={() => { handleBlur('pronouns'); setPronounsOpen(false); }}
+            onFocus={() => { handleFocus('family_pronouns'); setPronounsOpen(true); }}
+            onBlur={() => { handleBlur('family_pronouns'); setPronounsOpen(false); }}
           >
             <option value="" disabled hidden></option>
             {pronounOptions.map(opt => (
@@ -159,10 +159,10 @@ export function Step3FamilyMembers({ form, control, handleBack, handleNextStep, 
             ))}
           </select>
           <label
-            htmlFor="pronouns"
+            htmlFor="family_pronouns"
             className={
               styles['form-floating-label'] +
-              ((focus.pronouns || values.pronouns) ? ' ' + styles['form-label--active'] : '')
+              ((focus.family_pronouns || values.family_pronouns) ? ' ' + styles['form-label--active'] : '')
             }
             style={{ left: 0, color: pronounsOpen ? '#00bcd4' : undefined, right: 0, maxWidth: 'calc(100% - 36px)' }}
           >
@@ -174,91 +174,91 @@ export function Step3FamilyMembers({ form, control, handleBack, handleNextStep, 
           >
             ▼
           </span>
-          {errors.pronouns && <div className={styles['form-error']}>{errors.pronouns.message as string}</div>}
+          {errors.family_pronouns && <div className={styles['form-error']}>{errors.family_pronouns.message as string}</div>}
         </div>
         {/* Middle Name */}
         <div className={styles['form-field']}>
           <input
             className={styles['form-input']}
-            {...form.register('middle_name')}
-            id="middle_name"
+            {...form.register('family_middle_name')}
+            id="family_middle_name"
             autoComplete="off"
-            onFocus={() => handleFocus('middle_name')}
-            onBlur={() => handleBlur('middle_name')}
+            onFocus={() => handleFocus('family_middle_name')}
+            onBlur={() => handleBlur('family_middle_name')}
           />
           <label
-            htmlFor="middle_name"
+            htmlFor="family_middle_name"
             className={
               styles['form-floating-label'] +
-              ((focus.middle_name || values.middle_name) ? ' ' + styles['form-label--active'] : '')
+              ((focus.family_middle_name || values.family_middle_name) ? ' ' + styles['form-label--active'] : '')
             }
           >
             Middle Name
           </label>
-          {errors.middle_name && <div className={styles['form-error']}>{errors.middle_name.message as string}</div>}
+          {errors.family_middle_name && <div className={styles['form-error']}>{errors.family_middle_name.message as string}</div>}
         </div>
         {/* Email */}
         <div className={styles['form-field']}>
           <input
             className={styles['form-input']}
-            {...form.register('email')}
-            id="email"
+            {...form.register('family_email')}
+            id="family_email"
             autoComplete="off"
-            onFocus={() => handleFocus('email')}
-            onBlur={() => handleBlur('email')}
+            onFocus={() => handleFocus('family_email')}
+            onBlur={() => handleBlur('family_email')}
           />
           <label
-            htmlFor="email"
+            htmlFor="family_email"
             className={
               styles['form-floating-label'] +
-              ((focus.email || values.email) ? ' ' + styles['form-label--active'] : '')
+              ((focus.family_email || values.family_email) ? ' ' + styles['form-label--active'] : '')
             }
           >
             Email
           </label>
-          {errors.email && <div className={styles['form-error']}>{errors.email.message as string}</div>}
+          {errors.family_email && <div className={styles['form-error']}>{errors.family_email.message as string}</div>}
         </div>
         {/* Mobile phone */}
         <div className={styles['form-field']}>
           <input
             className={styles['form-input']}
-            {...form.register('mobile_phone')}
-            id="mobile_phone"
+            {...form.register('family_mobile_phone')}
+            id="family_mobile_phone"
             autoComplete="off"
-            onFocus={() => handleFocus('mobile_phone')}
-            onBlur={() => handleBlur('mobile_phone')}
+            onFocus={() => handleFocus('family_mobile_phone')}
+            onBlur={() => handleBlur('family_mobile_phone')}
           />
           <label
-            htmlFor="mobile_phone"
+            htmlFor="family_mobile_phone"
             className={
               styles['form-floating-label'] +
-              ((focus.mobile_phone || values.mobile_phone) ? ' ' + styles['form-label--active'] : '')
+              ((focus.family_mobile_phone || values.family_mobile_phone) ? ' ' + styles['form-label--active'] : '')
             }
           >
             Mobile phone
           </label>
-          {errors.mobile_phone && <div className={styles['form-error']}>{errors.mobile_phone.message as string}</div>}
+          {errors.family_mobile_phone && <div className={styles['form-error']}>{errors.family_mobile_phone.message as string}</div>}
         </div>
         {/* Workphone */}
         <div className={styles['form-field']}>
           <input
             className={styles['form-input']}
-            {...form.register('work_phone')}
-            id="work_phone"
+            {...form.register('family_work_phone')}
+            id="family_work_phone"
             autoComplete="off"
-            onFocus={() => handleFocus('work_phone')}
-            onBlur={() => handleBlur('work_phone')}
+            onFocus={() => handleFocus('family_work_phone')}
+            onBlur={() => handleBlur('family_work_phone')}
           />
           <label
-            htmlFor="work_phone"
+            htmlFor="family_work_phone"
             className={
               styles['form-floating-label'] +
-              ((focus.work_phone || values.work_phone) ? ' ' + styles['form-label--active'] : '')
+              ((focus.family_work_phone || values.family_work_phone) ? ' ' + styles['form-label--active'] : '')
             }
           >
             Workphone
           </label>
-          {errors.work_phone && <div className={styles['form-error']}>{errors.work_phone.message as string}</div>}
+          {errors.family_work_phone && <div className={styles['form-error']}>{errors.family_work_phone.message as string}</div>}
         </div>
       </div>
       <div className={styles['step-buttons-row']}>
@@ -283,7 +283,7 @@ export function Step4Referral({ form, control, handleBack, handleNextStep, step,
   const handleBlur = (field: keyof typeof focus) => setFocus(f => ({ ...f, [field]: false }));
 
   const isStepValid = [
-    'referral_source', 'referral_name', 'referral_email'
+    'referral_source'
   ].every(field => !errors[field]);
 
   // Debug logs
@@ -353,9 +353,9 @@ export function Step4Referral({ form, control, handleBack, handleNextStep, step,
               (errors.referral_name ? ' ' + styles['form-label--error'] : '')
             }
           >
-            Full name/ agency*
+            Full name/ agency
           </label>
-          {errors.referral_name && <div className={styles['form-error']}>{errors.referral_name.message as string || 'Required.'}</div>}
+          {errors.referral_name && <div className={styles['form-error']}>{errors.referral_name.message as string}</div>}
         </div>
         {/* Referral Email (optional) */}
         <div className={styles['form-field']}>
@@ -404,7 +404,7 @@ export function Step5HealthHistory({ form, control, handleBack, handleNextStep, 
   const handleBlur = (field: keyof typeof focus) => setFocus(f => ({ ...f, [field]: false }));
 
   const isStepValid = [
-    'health_history', 'allergies', 'health_notes'
+    'allergies', 'health_notes'
   ].every(field => !errors[field]);
 
   // Debug logs
@@ -436,7 +436,7 @@ export function Step5HealthHistory({ form, control, handleBack, handleNextStep, 
           >
             Health History
           </label>
-          {errors.health_history && <div className={styles['form-error']}>{errors.health_history.message as string || 'Required.'}</div>}
+          {errors.health_history && <div className={styles['form-error']}>{errors.health_history.message as string}</div>}
         </div>
         {/* Allergies */}
         <div className={styles['form-field']} style={{ gridColumn: '1 / span 4' }}>
@@ -941,18 +941,18 @@ export function Step8ServicesInterested({ form, control, handleBack, handleNextS
 export function Step9Payment({ form, control, handleBack, handleNextStep, step, totalSteps }: any) {
   const values = form.getValues();
   const errors = form.formState.errors;
-  const [focus, setFocus] = useState({ annual_income: false });
-  const [open, setOpen] = useState({ annual_income: false });
+  const [focus, setFocus] = useState({ payment_method: false });
+  const [open, setOpen] = useState({ payment_method: false });
   const handleFocus = (field: keyof typeof focus) => setFocus(f => ({ ...f, [field]: true }));
   const handleBlur = (field: keyof typeof focus) => setFocus(f => ({ ...f, [field]: false }));
 
-  const incomeOptions = [
-    '$0-$24,999: Labor - $150 |Postpartum $150 for up to 30hrs of care',
-    '$25,000-$44,999: Labor - $300 |Postpartum $12/hr daytime and $15/hr for overnight',
-    '$45,000-$64,999: Labor - $700 |Postpartum $17/hr daytime and $20/hr for overnight',
-    '$65,000-$84,999: Labor - $1,000 |Postpartum $27/hr daytime and $30/hr for overnight',
-    '$85,000-$99,999: Labor - $1,350 |Postpartum $34/hr daytime and $37/hr for overnight',
-    '$100,000 and above: Labor - $1,500 |Postpartum $37/hr daytime and $40/hr for overnight',
+  const paymentMethodOptions = [
+    'Credit Card',
+    'Debit Card',
+    'Bank Transfer',
+    'Cash',
+    'Check',
+    'Other',
   ];
 
   return (
@@ -962,26 +962,26 @@ export function Step9Payment({ form, control, handleBack, handleNextStep, step, 
         At Sokana Collective we believe that price should not be a barrier for our services. We have our full fee prices listed under each service section on our website and we would like that to be paid by those who can afford it. For those who are unable to pay the full fee we have the following sliding scale: <a href="https://www.sokanacollective.com/services" target="_blank" rel="noopener noreferrer">https://www.sokanacollective.com/services</a> (copy and paste link in browser) Check all that apply based on the services you are interested in.
       </div>
       <div className={styles['form-grid']}>
-        {/* Annual Income Dropdown */}
+        {/* Payment Method Dropdown */}
         <div className={styles['form-field']} style={{ gridColumn: '1 / span 4', position: 'relative' }}>
           {/* Error message above input, centered */}
-          {errors.annual_income && (
+          {errors.payment_method && (
             <div style={{ color: '#d32f2f', textAlign: 'center', marginBottom: 8, fontWeight: 500, fontSize: 16 }}>
-              {errors.annual_income.message === 'Required.' || errors.annual_income.message === 'Required' ? 'Please select your annual income.' : errors.annual_income.message}
+              {errors.payment_method.message === 'Required.' || errors.payment_method.message === 'Required' ? 'Please select your payment method.' : errors.payment_method.message}
             </div>
           )}
           <label
-            htmlFor="annual_income"
+            htmlFor="payment_method"
             className={
               styles['form-floating-label'] +
-              ((focus.annual_income || values.annual_income) ? ' ' + styles['form-label--active'] : '') +
-              (errors.annual_income ? ' ' + styles['form-label--error'] : '')
+              ((focus.payment_method || values.payment_method) ? ' ' + styles['form-label--active'] : '') +
+              (errors.payment_method ? ' ' + styles['form-label--error'] : '')
             }
-            style={{ color: errors.annual_income ? '#d32f2f' : undefined }}
+            style={{ color: errors.payment_method ? '#d32f2f' : undefined }}
           >
-            Annual Income*
+            Payment Method*
           </label>
-          <Popover open={open.annual_income} onOpenChange={v => setOpen(o => ({ ...o, annual_income: v }))}>
+          <Popover open={open.payment_method} onOpenChange={v => setOpen(o => ({ ...o, payment_method: v }))}>
             <PopoverTrigger asChild>
               <button
                 type="button"
@@ -991,7 +991,7 @@ export function Step9Payment({ form, control, handleBack, handleNextStep, step, 
                   minHeight: 40,
                   cursor: 'pointer',
                   background: '#fff',
-                  borderBottom: `2px solid ${errors.annual_income ? '#d32f2f' : '#00bcd4'}`,
+                  borderBottom: `2px solid ${errors.payment_method ? '#d32f2f' : '#00bcd4'}`,
                   width: '100%',
                   fontSize: 18,
                   color: '#222',
@@ -1002,33 +1002,33 @@ export function Step9Payment({ form, control, handleBack, handleNextStep, step, 
                   padding: '12px 40px 12px 8px',
                   position: 'relative',
                 }}
-                onClick={() => setOpen(o => ({ ...o, annual_income: !o.annual_income }))}
-                onFocus={() => setFocus(f => ({ ...f, annual_income: true }))}
-                onBlur={() => setFocus(f => ({ ...f, annual_income: false }))}
-                aria-invalid={!!errors.annual_income}
-                id="annual_income"
+                onClick={() => setOpen(o => ({ ...o, payment_method: !o.payment_method }))}
+                onFocus={() => setFocus(f => ({ ...f, payment_method: true }))}
+                onBlur={() => setFocus(f => ({ ...f, payment_method: false }))}
+                aria-invalid={!!errors.payment_method}
+                id="payment_method"
               >
-                {values.annual_income || 'Annual Household Income'}
+                {values.payment_method || 'Select Payment Method'}
                 <span style={{ float: 'right', pointerEvents: 'none', position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)' }}>▼</span>
               </button>
             </PopoverTrigger>
-            <PopoverContent align="start" side="bottom" sideOffset={4} style={{ minWidth: 600, maxWidth: 900, background: '#fff', border: '1px solid #bdbdbd', borderRadius: 4, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', padding: 0, zIndex: 10 }}>
-              {incomeOptions.map(opt => (
+            <PopoverContent align="start" side="bottom" sideOffset={4} style={{ minWidth: 300, maxWidth: 400, background: '#fff', border: '1px solid #bdbdbd', borderRadius: 4, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', padding: 0, zIndex: 10 }}>
+              {paymentMethodOptions.map(opt => (
                 <div
                   key={opt}
                   style={{
                     padding: '14px 18px',
                     fontSize: 17,
                     cursor: 'pointer',
-                    background: values.annual_income === opt ? '#f5f5f5' : '#fff',
+                    background: values.payment_method === opt ? '#f5f5f5' : '#fff',
                     color: '#222',
                     whiteSpace: 'normal',
                     wordBreak: 'break-word',
                     lineHeight: 1.5,
                   }}
                   onClick={() => {
-                    form.setValue('annual_income', opt);
-                    setOpen(o => ({ ...o, annual_income: false }));
+                    form.setValue('payment_method', opt);
+                    setOpen(o => ({ ...o, payment_method: false }));
                   }}
                 >
                   {opt}
@@ -1055,16 +1055,11 @@ export function Step10ClientDemographics({ form, control, handleBack, handleNext
     client_age_range: false,
     insurance: false,
     demographics_multi: false,
-    annual_income: false,
+    demographics_annual_income: false,
   });
-  const [open, setOpen] = useState({
-    race_ethnicity: false,
-    primary_language: false,
-    client_age_range: false,
-    insurance: false,
-    demographics_multi: false,
-    annual_income: false,
-  });
+
+  const handleFocus = (field: keyof typeof focus) => setFocus(f => ({ ...f, [field]: true }));
+  const handleBlur = (field: keyof typeof focus) => setFocus(f => ({ ...f, [field]: false }));
 
   // Dropdown options
   const raceOptions = [
@@ -1127,10 +1122,35 @@ export function Step10ClientDemographics({ form, control, handleBack, handleNext
     return err.message;
   };
 
+  // Validation for required fields
+  const isStepValid = [
+    'race_ethnicity', 'primary_language', 'client_age_range'
+  ].every(field => !errors[field]);
+
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.demographics-multi-container')) {
+        setDropdownOpen(false);
+      }
+    };
+
+    if (dropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [dropdownOpen]);
+
   const handleMultiSelect = (opt: string) => {
     if (opt === 'None apply') {
       form.setValue('demographics_multi', ['None apply']);
-      setOpen(o => ({ ...o, demographics_multi: false }));
+      setDropdownOpen(false);
     } else {
       let updated = selectedMulti.filter((v: string) => v !== 'None apply');
       if (selectedMulti.includes(opt)) {
@@ -1139,7 +1159,7 @@ export function Step10ClientDemographics({ form, control, handleBack, handleNext
         updated = [...updated, opt];
       }
       form.setValue('demographics_multi', updated);
-      setOpen(o => ({ ...o, demographics_multi: false }));
+      setDropdownOpen(false); // Close dropdown after any selection
     }
   };
 
@@ -1152,380 +1172,334 @@ export function Step10ClientDemographics({ form, control, handleBack, handleNext
       <div className={styles['form-grid']} style={{ alignItems: 'flex-start' }}>
         {/* Race/Ethnicity/Nationality */}
         <div className={styles['form-field']} style={{ gridColumn: '1 / span 2', position: 'relative' }}>
-          {errors.race_ethnicity && (
-            <div style={{ color: '#d32f2f', textAlign: 'center', marginBottom: 8, fontWeight: 500, fontSize: 16 }}>
-              {getUserError(errors.race_ethnicity, 'Please select your race/ethnicity/nationality.')}
-            </div>
-          )}
-          <Popover open={open.race_ethnicity} onOpenChange={v => setOpen(o => ({ ...o, race_ethnicity: v }))}>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                className={styles['form-input']}
-                style={{ textAlign: 'left', minHeight: 40, cursor: 'pointer', background: '#fff', borderBottom: `2px solid ${errors.race_ethnicity ? '#d32f2f' : '#00bcd4'}` }}
-                onClick={() => setOpen(o => ({ ...o, race_ethnicity: !o.race_ethnicity }))}
-                onFocus={() => setFocus(f => ({ ...f, race_ethnicity: true }))}
-                onBlur={() => setFocus(f => ({ ...f, race_ethnicity: false }))}
-                aria-invalid={!!errors.race_ethnicity}
-              >
-                {values.race_ethnicity || 'Race/ethnicity/nationality?'}
-                <span style={{ float: 'right', pointerEvents: 'none' }}>▼</span>
-              </button>
-            </PopoverTrigger>
-            <PopoverContent align="start" side="bottom" sideOffset={4} style={{ minWidth: 600, maxWidth: 700, background: '#fff', border: '1px solid #bdbdbd', borderRadius: 4, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', padding: 0, zIndex: 10 }}>
-              {raceOptions.map(opt => (
-                <div
-                  key={opt}
-                  style={{ padding: '14px 18px', fontSize: 17, cursor: 'pointer', background: values.race_ethnicity === opt ? '#f5f5f5' : '#fff', color: '#222' }}
-                  onClick={() => {
-                    form.setValue('race_ethnicity', opt);
-                    setOpen(o => ({ ...o, race_ethnicity: false }));
-                  }}
-                >
-                  {opt}
-                </div>
-              ))}
-            </PopoverContent>
-          </Popover>
+          <select
+            className={styles['form-select']}
+            {...form.register('race_ethnicity')}
+            id="race_ethnicity"
+            defaultValue=""
+            onFocus={() => handleFocus('race_ethnicity')}
+            onBlur={() => handleBlur('race_ethnicity')}
+          >
+            <option value="" disabled hidden></option>
+            {raceOptions.map(opt => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+          <label
+            htmlFor="race_ethnicity"
+            className={
+              styles['form-floating-label'] +
+              ((focus.race_ethnicity || values.race_ethnicity) ? ' ' + styles['form-label--active'] : '')
+            }
+          >
+            Race/ethnicity/nationality?
+          </label>
+          <span className={styles['form-select-arrow']}>▼</span>
+          {errors.race_ethnicity && <div className={styles['form-error']}>{getUserError(errors.race_ethnicity, 'Please select your race/ethnicity/nationality.')}</div>}
         </div>
         {/* Primary Language */}
         <div className={styles['form-field']} style={{ gridColumn: '3 / span 2', position: 'relative' }}>
-          {errors.primary_language && (
-            <div style={{ color: '#d32f2f', textAlign: 'center', marginBottom: 8, fontWeight: 500, fontSize: 16 }}>
-              {getUserError(errors.primary_language, 'Please select your primary language.')}
-            </div>
-          )}
-          <Popover open={open.primary_language} onOpenChange={v => setOpen(o => ({ ...o, primary_language: v }))}>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                className={styles['form-input']}
-                style={{ textAlign: 'left', minHeight: 40, cursor: 'pointer', background: '#fff', borderBottom: `2px solid ${errors.primary_language ? '#d32f2f' : '#00bcd4'}` }}
-                onClick={() => setOpen(o => ({ ...o, primary_language: !o.primary_language }))}
-                onFocus={() => setFocus(f => ({ ...f, primary_language: true }))}
-                onBlur={() => setFocus(f => ({ ...f, primary_language: false }))}
-                aria-invalid={!!errors.primary_language}
-              >
-                {values.primary_language || 'Primary Language'}
-                <span style={{ float: 'right', pointerEvents: 'none' }}>▼</span>
-              </button>
-            </PopoverTrigger>
-            <PopoverContent align="start" side="bottom" sideOffset={4} style={{ minWidth: 600, maxWidth: 700, background: '#fff', border: '1px solid #bdbdbd', borderRadius: 4, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', padding: 0, zIndex: 10 }}>
-              {languageOptions.map(opt => (
-                <div
-                  key={opt}
-                  style={{ padding: '14px 18px', fontSize: 17, cursor: 'pointer', background: values.primary_language === opt ? '#f5f5f5' : '#fff', color: '#222' }}
-                  onClick={() => {
-                    form.setValue('primary_language', opt);
-                    setOpen(o => ({ ...o, primary_language: false }));
-                  }}
-                >
-                  {opt}
-                </div>
-              ))}
-            </PopoverContent>
-          </Popover>
+          <select
+            className={styles['form-select']}
+            {...form.register('primary_language')}
+            id="primary_language"
+            defaultValue=""
+            onFocus={() => handleFocus('primary_language')}
+            onBlur={() => handleBlur('primary_language')}
+          >
+            <option value="" disabled hidden></option>
+            {languageOptions.map(opt => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+          <label
+            htmlFor="primary_language"
+            className={
+              styles['form-floating-label'] +
+              ((focus.primary_language || values.primary_language) ? ' ' + styles['form-label--active'] : '')
+            }
+          >
+            Primary Language
+          </label>
+          <span className={styles['form-select-arrow']}>▼</span>
+          {errors.primary_language && <div className={styles['form-error']}>{getUserError(errors.primary_language, 'Please select your primary language.')}</div>}
         </div>
         {/* Client Age Range */}
         <div className={styles['form-field']} style={{ gridColumn: '1 / span 2', position: 'relative' }}>
-          {errors.client_age_range && (
-            <div style={{ color: '#d32f2f', textAlign: 'center', marginBottom: 8, fontWeight: 500, fontSize: 16 }}>
-              {getUserError(errors.client_age_range, 'Please select your age range.')}
-            </div>
-          )}
-          <Popover open={open.client_age_range} onOpenChange={v => setOpen(o => ({ ...o, client_age_range: v }))}>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                className={styles['form-input']}
-                style={{ textAlign: 'left', minHeight: 40, cursor: 'pointer', background: '#fff', borderBottom: `2px solid ${errors.client_age_range ? '#d32f2f' : '#00bcd4'}` }}
-                onClick={() => setOpen(o => ({ ...o, client_age_range: !o.client_age_range }))}
-                onFocus={() => setFocus(f => ({ ...f, client_age_range: true }))}
-                onBlur={() => setFocus(f => ({ ...f, client_age_range: false }))}
-                aria-invalid={!!errors.client_age_range}
-              >
-                {values.client_age_range || 'Client age range'}
-                <span style={{ float: 'right', pointerEvents: 'none' }}>▼</span>
-              </button>
-            </PopoverTrigger>
-            <PopoverContent align="start" side="bottom" sideOffset={4} style={{ minWidth: 600, maxWidth: 700, background: '#fff', border: '1px solid #bdbdbd', borderRadius: 4, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', padding: 0, zIndex: 10 }}>
-              {ageOptions.map(opt => (
-                <div
-                  key={opt}
-                  style={{ padding: '14px 18px', fontSize: 17, cursor: 'pointer', background: values.client_age_range === opt ? '#f5f5f5' : '#fff', color: '#222' }}
-                  onClick={() => {
-                    form.setValue('client_age_range', opt);
-                    setOpen(o => ({ ...o, client_age_range: false }));
-                  }}
-                >
-                  {opt}
-                </div>
-              ))}
-            </PopoverContent>
-          </Popover>
+          <select
+            className={styles['form-select']}
+            {...form.register('client_age_range')}
+            id="client_age_range"
+            defaultValue=""
+            onFocus={() => handleFocus('client_age_range')}
+            onBlur={() => handleBlur('client_age_range')}
+          >
+            <option value="" disabled hidden></option>
+            {ageOptions.map(opt => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+          <label
+            htmlFor="client_age_range"
+            className={
+              styles['form-floating-label'] +
+              ((focus.client_age_range || values.client_age_range) ? ' ' + styles['form-label--active'] : '')
+            }
+          >
+            Client age range
+          </label>
+          <span className={styles['form-select-arrow']}>▼</span>
+          {errors.client_age_range && <div className={styles['form-error']}>{getUserError(errors.client_age_range, 'Please select your age range.')}</div>}
         </div>
         {/* Medical Insurance Coverage */}
         <div className={styles['form-field']} style={{ gridColumn: '3 / span 2', position: 'relative' }}>
-          {errors.insurance && (
-            <div style={{ color: '#d32f2f', textAlign: 'center', marginBottom: 8, fontWeight: 500, fontSize: 16 }}>
-              {getUserError(errors.insurance, 'Please select your medical insurance coverage.')}
-            </div>
-          )}
-          <Popover open={open.insurance} onOpenChange={v => setOpen(o => ({ ...o, insurance: v }))}>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                className={styles['form-input']}
-                style={{ textAlign: 'left', minHeight: 40, cursor: 'pointer', background: '#fff', borderBottom: `2px solid ${errors.insurance ? '#d32f2f' : '#00bcd4'}` }}
-                onClick={() => setOpen(o => ({ ...o, insurance: !o.insurance }))}
-                onFocus={() => setFocus(f => ({ ...f, insurance: true }))}
-                onBlur={() => setFocus(f => ({ ...f, insurance: false }))}
-                aria-invalid={!!errors.insurance}
-              >
-                {values.insurance || 'Medical Insurance Coverage'}
-                <span style={{ float: 'right', pointerEvents: 'none' }}>▼</span>
-              </button>
-            </PopoverTrigger>
-            <PopoverContent align="start" side="bottom" sideOffset={4} style={{ minWidth: 600, maxWidth: 700, background: '#fff', border: '1px solid #bdbdbd', borderRadius: 4, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', padding: 0, zIndex: 10 }}>
-              {insuranceOptions.map(opt => (
-                <div
-                  key={opt}
-                  style={{ padding: '14px 18px', fontSize: 17, cursor: 'pointer', background: values.insurance === opt ? '#f5f5f5' : '#fff', color: '#222' }}
-                  onClick={() => {
-                    form.setValue('insurance', opt);
-                    setOpen(o => ({ ...o, insurance: false }));
-                  }}
-                >
-                  {opt}
-                </div>
-              ))}
-            </PopoverContent>
-          </Popover>
+          <select
+            className={styles['form-select']}
+            {...form.register('insurance')}
+            id="insurance"
+            defaultValue=""
+            onFocus={() => handleFocus('insurance')}
+            onBlur={() => handleBlur('insurance')}
+          >
+            <option value="" disabled hidden></option>
+            {insuranceOptions.map(opt => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+          <label
+            htmlFor="insurance"
+            className={
+              styles['form-floating-label'] +
+              ((focus.insurance || values.insurance) ? ' ' + styles['form-label--active'] : '')
+            }
+          >
+            Medical Insurance Coverage
+          </label>
+          <span className={styles['form-select-arrow']}>▼</span>
+          {errors.insurance && <div className={styles['form-error']}>{getUserError(errors.insurance, 'Please select your medical insurance coverage.')}</div>}
         </div>
         {/* Multi-select: Please select all that apply */}
-        <div
-          className={styles['form-field']}
-          style={{
-            gridColumn: '1 / span 2',
-            position: 'relative',
-            minHeight: selectedMulti.length === 0 ? 48 : 120,
-            marginBottom: selectedMulti.length === 0 ? 0 : 16,
-          }}
-        >
-          {errors.demographics_multi && (
-            <div style={{ color: '#d32f2f', textAlign: 'center', marginBottom: 8, fontWeight: 500, fontSize: 16 }}>
-              {getUserError(errors.demographics_multi, 'Please select all that apply.')}
-            </div>
-          )}
-          {/* Floating label + input container */}
-          <div style={{ position: 'relative', width: '100%' }}>
-            <div
-              style={{
-                position: 'absolute',
-                left: 12,
-                top: (focus.demographics_multi || selectedMulti.length > 0) ? 2 : '50%',
-                transform: (focus.demographics_multi || selectedMulti.length > 0) ? 'none' : 'translateY(-50%)',
-                color: focus.demographics_multi ? '#00bcd4' : '#757575',
-                fontSize: (focus.demographics_multi || selectedMulti.length > 0) ? 13 : 16,
-                background: '#fff',
-                padding: '0 4px',
-                zIndex: 2,
-                pointerEvents: 'none',
-                transition: 'all 0.18s cubic-bezier(.4,0,.2,1)',
-                fontWeight: 500,
-                lineHeight: 1.2,
-              }}
-            >
-              Please select all that apply
-            </div>
-            <Popover open={open.demographics_multi} onOpenChange={v => setOpen(o => ({ ...o, demographics_multi: v }))}>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  className={styles['form-input']}
-                  style={{
-                    display: 'flex',
-                    alignItems: (selectedMulti.length === 0 ? 'center' : 'flex-start'),
-                    flexWrap: 'wrap',
-                    width: '100%',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    background: '#fff',
-                    border: 'none',
-                    borderBottom: `2px solid ${errors.demographics_multi ? '#d32f2f' : '#bdbdbd'}`,
-                    borderRadius: 0,
-                    fontSize: 16,
-                    boxShadow: 'none',
-                    outline: 'none',
-                    padding: selectedMulti.length === 0 ? '16px 8px' : '22px 40px 6px 8px',
-                    color: '#222',
-                    minHeight: 48,
-                    lineHeight: 1.5,
-                    gap: 0,
-                    position: 'relative',
-                    height: 'auto',
-                    transition: 'border-color 0.18s cubic-bezier(.4,0,.2,1)',
-                  }}
-                  onClick={() => setOpen(o => ({ ...o, demographics_multi: !o.demographics_multi }))}
-                  onFocus={() => setFocus(f => ({ ...f, demographics_multi: true }))}
-                  onBlur={() => setFocus(f => ({ ...f, demographics_multi: false }))}
-                  aria-invalid={!!errors.demographics_multi}
-                >
-                  <div style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    alignItems: 'center',
-                    width: '100%',
-                    marginBottom: 6,
-                    minHeight: 48,
-                    maxHeight: 120,
-                    overflowY: selectedMulti.length > 2 ? 'auto' : 'visible',
-                    boxSizing: 'border-box',
-                  }}>
-                    {selectedMulti.map((opt: string) => (
-                      <span key={opt} style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        background: '#e0e0e0',
-                        borderRadius: 9999,
-                        padding: '4px 12px',
-                        marginRight: 8,
-                        marginBottom: 8,
-                        color: '#444',
-                        fontSize: 14,
-                        fontWeight: 500,
-                        maxWidth: '100%',
-                        minWidth: 0,
-                        boxSizing: 'border-box',
-                      }}>
-                        <span style={{
-                          display: 'block',
-                          maxWidth: 'calc(100% - 32px)',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}>{opt}</span>
-                        <span
-                          role="button"
-                          aria-label={`Remove ${opt}`}
-                          onClick={e => { e.stopPropagation(); handleMultiSelect(opt); }}
-                          style={{
-                            marginLeft: 8,
-                            width: 20,
-                            height: 20,
-                            minWidth: 20,
-                            minHeight: 20,
-                            background: '#888',
-                            color: '#fff',
-                            border: 'none',
-                            borderRadius: '50%',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: 14,
-                            lineHeight: 1,
-                            padding: 0,
-                            userSelect: 'none',
-                          }}
-                        >
-                          ×
-                        </span>
-                      </span>
-                    ))}
-                  </div>
+        <div className={`${styles['form-field']} demographics-multi-container`} style={{
+          gridColumn: '1 / span 2',
+          position: 'relative',
+          height: 'auto',
+          minHeight: 56,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-end'
+        }}>
+          <div
+            className={styles['form-input']}
+            style={{
+              display: 'flex',
+              alignItems: (selectedMulti.length === 0 ? 'center' : 'flex-start'),
+              flexWrap: 'wrap',
+              width: '100%',
+              textAlign: 'left',
+              background: '#fff',
+              border: 'none',
+              borderBottom: `2px solid ${errors.demographics_multi ? '#d32f2f' : '#bdbdbd'}`,
+              borderRadius: 0,
+              fontSize: 16,
+              boxShadow: 'none',
+              outline: 'none',
+              padding: selectedMulti.length === 0 ? '16px 8px' : '22px 40px 6px 8px',
+              color: '#222',
+              minHeight: 48,
+              lineHeight: 1.5,
+              gap: 0,
+              position: 'relative',
+              height: 'auto',
+              transition: 'border-color 0.18s cubic-bezier(.4,0,.2,1)',
+              cursor: 'pointer',
+            }}
+            onFocus={() => handleFocus('demographics_multi')}
+            onBlur={() => handleBlur('demographics_multi')}
+            onClick={() => {
+              setDropdownOpen(!dropdownOpen);
+            }}
+          >
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              width: '100%',
+              marginBottom: 6,
+              minHeight: 48,
+              maxHeight: 120,
+              overflowY: selectedMulti.length > 2 ? 'auto' : 'visible',
+              boxSizing: 'border-box',
+            }}>
+              {selectedMulti.map((opt: string) => (
+                <span key={opt} style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  background: '#e0e0e0',
+                  borderRadius: 9999,
+                  padding: '4px 12px',
+                  marginRight: 8,
+                  marginBottom: 8,
+                  color: '#444',
+                  fontSize: 14,
+                  fontWeight: 500,
+                  maxWidth: '100%',
+                  minWidth: 0,
+                  boxSizing: 'border-box',
+                }}>
+                  <span style={{
+                    display: 'block',
+                    maxWidth: 'calc(100% - 32px)',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}>{opt}</span>
                   <span
+                    role="button"
+                    aria-label={`Remove ${opt}`}
+                    onClick={e => { e.stopPropagation(); handleMultiSelect(opt); }}
                     style={{
-                      marginLeft: 'auto',
-                      marginRight: 0,
-                      pointerEvents: 'none',
-                      color: '#757575',
-                      position: 'absolute',
-                      right: 8,
-                      top: '50%',
-                      transform: 'translateY(-50%)',
+                      marginLeft: 8,
+                      width: 20,
+                      height: 20,
+                      minWidth: 20,
+                      minHeight: 20,
+                      background: '#888',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '50%',
+                      cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
-                      height: 24,
-                      width: 24,
+                      justifyContent: 'center',
+                      fontSize: 14,
+                      lineHeight: 1,
+                      padding: 0,
+                      userSelect: 'none',
                     }}
                   >
-                    <ArrowSVG color={focus.demographics_multi ? '#00bcd4' : (errors.demographics_multi ? '#d32f2f' : '#757575')} />
+                    ×
                   </span>
-                </button>
-              </PopoverTrigger>
-              <PopoverContent align="start" side="bottom" sideOffset={4} style={{ minWidth: 600, maxWidth: 700, background: '#fff', border: '1px solid #bdbdbd', borderRadius: 4, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', padding: 8, zIndex: 10 }}>
-                {demographicsMultiOptions.map(opt => (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => handleMultiSelect(opt)}
-                    style={{
-                      width: '100%',
-                      textAlign: 'left',
-                      padding: '12px 18px',
-                      margin: 0,
-                      border: 'none',
-                      borderRadius: 8,
-                      background: selectedMulti.includes(opt) ? '#f5f5f5' : '#fff',
-                      fontWeight: selectedMulti.includes(opt) ? 600 : 400,
-                      color: selectedMulti.includes(opt) ? '#222' : '#444',
-                      fontSize: 17,
-                      cursor: 'pointer',
-                      outline: 'none',
-                      marginBottom: 2,
-                      transition: 'background 0.15s, color 0.15s, font-weight 0.15s',
-                    }}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </PopoverContent>
-            </Popover>
-          </div>
-        </div>
-        {/* Annual Household Income */}
-        <div className={styles['form-field']} style={{ gridColumn: '3 / span 2', position: 'relative' }}>
-          {errors.annual_income && (
-            <div style={{ color: '#d32f2f', textAlign: 'center', marginBottom: 8, fontWeight: 500, fontSize: 16 }}>
-              {getUserError(errors.annual_income, 'Please select your annual household income.')}
+                </span>
+              ))}
             </div>
-          )}
-          <Popover open={open.annual_income} onOpenChange={v => setOpen(o => ({ ...o, annual_income: v }))}>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                className={styles['form-input']}
-                style={{ textAlign: 'left', minHeight: 40, cursor: 'pointer', background: '#fff', borderBottom: `2px solid ${errors.annual_income ? '#d32f2f' : '#00bcd4'}` }}
-                onClick={() => setOpen(o => ({ ...o, annual_income: !o.annual_income }))}
-                onFocus={() => setFocus(f => ({ ...f, annual_income: true }))}
-                onBlur={() => setFocus(f => ({ ...f, annual_income: false }))}
-                aria-invalid={!!errors.annual_income}
-              >
-                {values.annual_income || 'Annual Household Income'}
-                <span style={{ float: 'right', pointerEvents: 'none' }}>▼</span>
-              </button>
-            </PopoverTrigger>
-            <PopoverContent align="start" side="bottom" sideOffset={4} style={{ minWidth: 600, maxWidth: 900, background: '#fff', border: '1px solid #bdbdbd', borderRadius: 4, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', padding: 0, zIndex: 10 }}>
-              {incomeOptions.map(opt => (
-                <div
+            <span
+              style={{
+                marginLeft: 'auto',
+                marginRight: 0,
+                pointerEvents: 'none',
+                color: '#757575',
+                position: 'absolute',
+                right: 8,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                display: 'flex',
+                alignItems: 'center',
+                height: 24,
+                width: 24,
+              }}
+            >
+              <ArrowSVG color={focus.demographics_multi ? '#00bcd4' : (errors.demographics_multi ? '#d32f2f' : '#757575')} />
+            </span>
+          </div>
+          <label
+            className={
+              styles['form-floating-label'] +
+              ((focus.demographics_multi || selectedMulti.length > 0) ? ' ' + styles['form-label--active'] : '')
+            }
+          >
+            Please select all that apply
+          </label>
+          <div
+            id="demographics-dropdown"
+            style={{
+              position: 'absolute',
+              bottom: '100%',
+              left: 0,
+              right: 0,
+              background: '#fff',
+              border: '1px solid #bdbdbd',
+              borderRadius: 4,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+              zIndex: 10,
+              display: dropdownOpen ? 'block' : 'none',
+              maxHeight: 300,
+              overflowY: 'auto',
+              marginBottom: 4,
+            }}
+          >
+            {demographicsMultiOptions
+              .filter(opt => !selectedMulti.includes(opt) || opt === 'None apply')
+              .map(opt => (
+                <button
                   key={opt}
-                  style={{ padding: '14px 18px', fontSize: 17, cursor: 'pointer', background: values.annual_income === opt ? '#f5f5f5' : '#fff', color: '#222' }}
-                  onClick={() => {
-                    form.setValue('annual_income', opt);
-                    setOpen(o => ({ ...o, annual_income: false }));
+                  type="button"
+                  onClick={() => handleMultiSelect(opt)}
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '12px 16px',
+                    margin: 0,
+                    border: 'none',
+                    background: selectedMulti.includes(opt) ? '#f5f5f5' : '#fff',
+                    fontWeight: selectedMulti.includes(opt) ? 600 : 400,
+                    color: selectedMulti.includes(opt) ? '#222' : '#444',
+                    fontSize: 16,
+                    cursor: 'pointer',
+                    outline: 'none',
+                    transition: 'background 0.15s, color 0.15s, font-weight 0.15s',
                   }}
                 >
                   {opt}
-                </div>
+                </button>
               ))}
-            </PopoverContent>
-          </Popover>
+          </div>
+          {errors.demographics_multi && <div className={styles['form-error']}>{getUserError(errors.demographics_multi, 'Please select all that apply.')}</div>}
+        </div>
+        {/* Annual Household Income */}
+        <div className={styles['form-field']} style={{
+          gridColumn: '3 / span 2',
+          position: 'relative',
+          height: 'auto',
+          minHeight: 56,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-end',
+          marginTop: '2rem'
+        }}>
+          <select
+            className={styles['form-select']}
+            {...form.register('demographics_annual_income')}
+            id="demographics_annual_income"
+            defaultValue=""
+            onFocus={() => handleFocus('demographics_annual_income')}
+            onBlur={() => handleBlur('demographics_annual_income')}
+          >
+            <option value="" disabled hidden></option>
+            {incomeOptions.map(opt => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+          <label
+            htmlFor="demographics_annual_income"
+            className={
+              styles['form-floating-label'] +
+              ((focus.demographics_annual_income || values.demographics_annual_income) ? ' ' + styles['form-label--active'] : '')
+            }
+          >
+            Annual Household Income
+          </label>
+          <span
+            className={styles['form-select-arrow']}
+            style={{ color: focus.demographics_annual_income ? '#00bcd4' : '#757575' }}
+          >
+            ▼
+          </span>
+          {errors.demographics_annual_income && <div className={styles['form-error']}>{getUserError(errors.demographics_annual_income, 'Please select your annual household income.')}</div>}
         </div>
       </div>
       <div className={styles['step-buttons-row']}>
         <Button type="button" onClick={handleBack} disabled={step === 0}>Back</Button>
-        <Button type="submit" onClick={() => handleNextStep()} disabled={form.formState.isSubmitting}>{step === totalSteps - 1 ? 'Submit' : 'Next'}</Button>
+        <Button type="submit" onClick={() => handleNextStep()} disabled={!isStepValid || form.formState.isSubmitting}>{step === totalSteps - 1 ? 'Submit' : 'Next'}</Button>
       </div>
     </div>
   );

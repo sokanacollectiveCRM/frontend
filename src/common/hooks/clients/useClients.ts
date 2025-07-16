@@ -28,11 +28,22 @@ export function useClients() {
 
       // cast it to Client[] so setClients has the right shape
       const apiData = (await res.json()) as any[];
-      // Flatten user object into top-level
-      const data = apiData.map(client => ({
-        ...client.user,
-        ...client,
-      }));
+      console.log('🔍 DEBUG: Raw API data:', apiData);
+      
+      // Flatten user object into top-level and map database fields to frontend fields
+      const data = apiData.map(client => {
+        const mappedClient = {
+          ...client.user,
+          ...client,
+          // Map database field names to frontend field names
+          phoneNumber: client.phone_number || client.phoneNumber || '',
+        };
+        console.log('🔍 DEBUG: Client mapping:', {
+          original: { phone_number: client.phone_number, phoneNumber: client.phoneNumber },
+          mapped: { phoneNumber: mappedClient.phoneNumber }
+        });
+        return mappedClient;
+      });
       setClients(data);
       return data;
     } catch (err: any) {

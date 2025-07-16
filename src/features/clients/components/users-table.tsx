@@ -43,7 +43,12 @@ export function UsersTable({ columns, data }: DataTableProps) {
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-  const [sorting, setSorting] = useState<SortingState>([])
+  const [sorting, setSorting] = useState<SortingState>([
+    {
+      id: 'requestedAt',
+      desc: true
+    }
+  ])
   const { setOpen } = useUsers();
 
   const table = useReactTable({

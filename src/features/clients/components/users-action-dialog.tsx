@@ -20,9 +20,10 @@ import {
   FormMessage,
 } from '@/common/components/ui/form'
 import { Input } from '@/common/components/ui/input'
-import { toast } from '@/common/hooks/toast/use-toast'
+import updateClient from '@/common/utils/updateClient'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
+import { toast } from 'sonner'
 import { z } from 'zod'
 import { userTypes } from '../data/data'
 import { User } from '../data/schema'
@@ -31,52 +32,71 @@ const formSchema = z
   .object({
     firstName: z.string().min(1, { message: 'First Name is required.' }),
     lastName: z.string().min(1, { message: 'Last Name is required.' }),
-    username: z.string().min(1, { message: 'Username is required.' }),
     phoneNumber: z.string().min(1, { message: 'Phone number is required.' }),
     email: z
       .string()
       .min(1, { message: 'Email is required.' })
       .email({ message: 'Email is invalid.' }),
-    password: z.string().transform((pwd) => pwd.trim()),
     role: z.string().min(1, { message: 'Role is required.' }),
-    confirmPassword: z.string().transform((pwd) => pwd.trim()),
+    password: z.string().optional(),
+    confirmPassword: z.string().optional(),
     isEdit: z.boolean(),
   })
   .superRefine(({ isEdit, password, confirmPassword }, ctx) => {
-    if (!isEdit || (isEdit && password !== '')) {
-      if (password === '') {
+    // Only validate password for new users or when password is being changed
+    if (!isEdit) {
+      if (!password || password === '') {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'Password is required.',
           path: ['password'],
         })
+      } else if (password.length < 8) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Password must be at least 8 characters long.',
+          path: ['password'],
+        })
+      } else if (!password.match(/[a-z]/)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Password must contain at least one lowercase letter.',
+          path: ['password'],
+        })
+      } else if (!password.match(/\d/)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Password must contain at least one number.',
+          path: ['password'],
+        })
+      } else if (password !== confirmPassword) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Passwords don't match.",
+          path: ['confirmPassword'],
+        })
       }
-
+    } else if (password && password.trim() !== '') {
+      // For edit mode, only validate if password is being changed
       if (password.length < 8) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'Password must be at least 8 characters long.',
           path: ['password'],
         })
-      }
-
-      if (!password.match(/[a-z]/)) {
+      } else if (!password.match(/[a-z]/)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'Password must contain at least one lowercase letter.',
           path: ['password'],
         })
-      }
-
-      if (!password.match(/\d/)) {
+      } else if (!password.match(/\d/)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'Password must contain at least one number.',
           path: ['password'],
         })
-      }
-
-      if (password !== confirmPassword) {
+      } else if (password !== confirmPassword) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Passwords don't match.",
@@ -91,15 +111,20 @@ interface Props {
   currentRow?: User
   open: boolean
   onOpenChange: (open: boolean) => void
+  onUpdateSuccess?: () => void
 }
 
-export function UsersActionDialog({ currentRow, open, onOpenChange }: Props) {
+export function UsersActionDialog({ currentRow, open, onOpenChange, onUpdateSuccess }: Props) {
   const isEdit = !!currentRow
   const form = useForm<UserForm>({
     resolver: zodResolver(formSchema),
     defaultValues: isEdit
       ? {
-        ...currentRow,
+        firstName: currentRow?.firstname || '',
+        lastName: currentRow?.lastname || '',
+        email: currentRow?.email || '',
+        phoneNumber: currentRow?.phoneNumber || '',
+        role: currentRow?.role || '',
         password: '',
         confirmPassword: '',
         isEdit,
@@ -107,7 +132,6 @@ export function UsersActionDialog({ currentRow, open, onOpenChange }: Props) {
       : {
         firstName: '',
         lastName: '',
-        username: '',
         email: '',
         role: '',
         phoneNumber: '',
@@ -117,17 +141,75 @@ export function UsersActionDialog({ currentRow, open, onOpenChange }: Props) {
       },
   })
 
-  const onSubmit = (values: UserForm) => {
-    form.reset()
-    toast({
-      title: 'You submitted the following values:',
-      description: (
-        <pre className='mt-2 w-[340px] rounded-md bg-slate-950 p-4'>
-          <code className='text-white'>{JSON.stringify(values, null, 2)}</code>
-        </pre>
-      ),
-    })
-    onOpenChange(false)
+  const onSubmit = async (values: UserForm) => {
+    if (!currentRow?.id) {
+      toast.error('No client selected for update');
+      return;
+    }
+
+    try {
+      // Prepare update data, excluding unchanged fields
+      const updateData: any = {};
+      const changedFields: string[] = [];
+
+      // Check which fields have changed
+      if (values.firstName !== currentRow.firstname) {
+        updateData.firstname = values.firstName;
+        changedFields.push('firstname');
+      }
+      if (values.lastName !== currentRow.lastname) {
+        updateData.lastname = values.lastName;
+        changedFields.push('lastname');
+      }
+      if (values.email !== currentRow.email) {
+        updateData.email = values.email;
+        changedFields.push('email');
+      }
+      if (values.phoneNumber !== currentRow.phoneNumber) {
+        updateData.phone_number = values.phoneNumber; // Use database field name
+        changedFields.push('phone_number');
+      }
+      if (values.role !== currentRow.role) {
+        updateData.role = values.role;
+        changedFields.push('role');
+      }
+      if (values.password && values.password.trim()) {
+        updateData.password = values.password;
+        changedFields.push('password');
+      }
+
+      // Only update if there are changes
+      if (changedFields.length === 0) {
+        toast('No changes detected - No fields were modified');
+        return;
+      }
+
+      // Debug: Log the client data to see what ID we're using
+      console.log('🔍 DEBUG: Client data being updated:', currentRow);
+      console.log('🔍 DEBUG: Client ID being used:', currentRow.id);
+      console.log('🔍 DEBUG: Phone number field:', currentRow.phoneNumber);
+      console.log('🔍 DEBUG: All client fields:', Object.keys(currentRow));
+      console.log('🔍 DEBUG: Update data being sent:', updateData);
+
+      // Call the API to update the client
+      const result = await updateClient(currentRow.id, updateData);
+
+      if (result.success) {
+        toast.success(`Client Record Updated Successfully: The following updates have been made - ${changedFields.join(', ')}`);
+        form.reset();
+        onOpenChange(false);
+
+        // Refresh the client list to show updated data
+        if (onUpdateSuccess) {
+          onUpdateSuccess();
+        }
+      } else {
+        toast.error(result.error || 'Update failed - An unexpected error occurred');
+      }
+    } catch (error) {
+      console.error('Error updating client:', error);
+      toast.error('Update failed - An unexpected error occurred');
+    }
   }
 
   const isPasswordTouched = !!form.formState.dirtyFields.password
@@ -195,25 +277,49 @@ export function UsersActionDialog({ currentRow, open, onOpenChange }: Props) {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name='username'
-                render={({ field }) => (
-                  <FormItem className='grid grid-cols-6 items-center gap-x-4 gap-y-1 space-y-0'>
-                    <FormLabel className='col-span-2 text-right'>
-                      Username
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder='john_doe'
-                        className='col-span-4'
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage className='col-span-4 col-start-3' />
-                  </FormItem>
-                )}
-              />
+              {!isEdit && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name='password'
+                    render={({ field }) => (
+                      <FormItem className='grid grid-cols-6 items-center gap-x-4 gap-y-1 space-y-0'>
+                        <FormLabel className='col-span-2 text-right'>
+                          Password
+                        </FormLabel>
+                        <FormControl>
+                          <PasswordInput
+                            placeholder='e.g., S3cur3P@ssw0rd'
+                            className='col-span-4'
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage className='col-span-4 col-start-3' />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name='confirmPassword'
+                    render={({ field }) => (
+                      <FormItem className='grid grid-cols-6 items-center gap-x-4 gap-y-1 space-y-0'>
+                        <FormLabel className='col-span-2 text-right'>
+                          Confirm Password
+                        </FormLabel>
+                        <FormControl>
+                          <PasswordInput
+                            disabled={!isPasswordTouched}
+                            placeholder='e.g., S3cur3P@ssw0rd'
+                            className='col-span-4'
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage className='col-span-4 col-start-3' />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
               <FormField
                 control={form.control}
                 name='email'
@@ -270,45 +376,6 @@ export function UsersActionDialog({ currentRow, open, onOpenChange }: Props) {
                         value,
                       }))}
                     />
-                    <FormMessage className='col-span-4 col-start-3' />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name='password'
-                render={({ field }) => (
-                  <FormItem className='grid grid-cols-6 items-center gap-x-4 gap-y-1 space-y-0'>
-                    <FormLabel className='col-span-2 text-right'>
-                      Password
-                    </FormLabel>
-                    <FormControl>
-                      <PasswordInput
-                        placeholder='e.g., S3cur3P@ssw0rd'
-                        className='col-span-4'
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage className='col-span-4 col-start-3' />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name='confirmPassword'
-                render={({ field }) => (
-                  <FormItem className='grid grid-cols-6 items-center gap-x-4 gap-y-1 space-y-0'>
-                    <FormLabel className='col-span-2 text-right'>
-                      Confirm Password
-                    </FormLabel>
-                    <FormControl>
-                      <PasswordInput
-                        disabled={!isPasswordTouched}
-                        placeholder='e.g., S3cur3P@ssw0rd'
-                        className='col-span-4'
-                        {...field}
-                      />
-                    </FormControl>
                     <FormMessage className='col-span-4 col-start-3' />
                   </FormItem>
                 )}

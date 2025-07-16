@@ -141,11 +141,11 @@ export function Step2Home({ form, control, handleBack, handleNextStep, step, tot
             Zip
           </label>
         </div>
-        {/* Home Phone */}
+        {/* Phone */}
         <div className={styles['form-field']} style={{ gridColumn: '1 / span 2' }}>
           {errors.home_phone && (
             <div className={styles['form-error']} style={{ marginBottom: 6 }}>
-              Please enter a home phone number.
+              Please enter a phone number.
             </div>
           )}
           <input
@@ -163,7 +163,7 @@ export function Step2Home({ form, control, handleBack, handleNextStep, step, tot
               ((focus.home_phone || values.home_phone) ? ' ' + styles['form-label--active'] : '')
             }
           >
-            Home Phone
+            Phone
           </label>
         </div>
         {/* Home Type (select) */}
