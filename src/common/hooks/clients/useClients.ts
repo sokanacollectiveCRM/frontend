@@ -1,6 +1,7 @@
 // src/common/hooks/clients/useClients.ts
 import { useCallback, useState } from 'react'
 import type { Client } from '../../../features/pipeline/data/schema'
+import { getSessionExpirationMessage, isSessionExpiredError } from '../../utils/sessionUtils'
 
 export function useClients() {
   const [clients, setClients] = useState<Client[]>([])
@@ -23,6 +24,12 @@ export function useClients() {
 
       if (!res.ok) {
         const txt = await res.text()
+        
+        // Check for authentication/session expiration errors
+        if (isSessionExpiredError(res.status, txt)) {
+          throw new Error(getSessionExpirationMessage())
+        }
+        
         throw new Error(`Failed (${res.status}): ${txt || res.statusText}`)
       }
 

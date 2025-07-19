@@ -13,6 +13,7 @@ export const fullSchema = z.object({
   pronouns_other: z.string().optional(),
   preferred_contact_method: z.string().min(1),
   preferred_name: z.string().optional(),
+  children_expected: z.string().optional(),
   
   // 2. Home Details
   address: z.string().min(1),
@@ -26,12 +27,12 @@ export const fullSchema = z.object({
   
   // 3. Family Members (all optional)
   relationship_status: z.string().optional(),
-  family_first_name: z.string().optional(),
-  family_last_name: z.string().optional(),
-  family_middle_name: z.string().optional(),
+  first_name: z.string().optional(),
+  last_name: z.string().optional(),
+  middle_name: z.string().optional(),
   family_email: z.string().email().optional(),
-  family_mobile_phone: z.string().optional(),
-  family_work_phone: z.string().optional(),
+  mobile_phone: z.string().optional(),
+  work_phone: z.string().optional(),
   family_pronouns: z.string().optional(),
   
   // 4. Referral
@@ -48,15 +49,26 @@ export const fullSchema = z.object({
   due_date: z.string().min(1, 'Due date is required'),
   birth_location: z.string().min(1, 'Birth location is required'),
   birth_hospital: z.string().min(1, 'Hospital or birth center is required'),
-  number_of_babies: z.string().min(1, 'Number of babies is required'),
+  number_of_babies: z.string().min(1, 'Please select the number of babies you are expecting'),
   baby_name: z.string().optional(), // made optional
   provider_type: z.string().min(1, 'Provider type is required'),
-  pregnancy_number: z.string().min(1, 'Pregnancy number is required'),
+  pregnancy_number: z.number().min(1, 'Pregnancy number is required'),
+  hospital: z.string().optional(),
   
   // 7. Past Pregnancies (all optional)
   had_previous_pregnancies: z.boolean().optional(),
-  previous_pregnancies_count: z.string().optional(),
-  living_children_count: z.string().optional(),
+  previous_pregnancies_count: z.union([z.string(), z.number()]).optional().transform((val) => {
+    if (typeof val === 'string') return parseInt(val) || 0;
+    return val || 0;
+  }).refine((val) => val >= 0, {
+    message: 'Please enter a valid number of previous pregnancies'
+  }),
+  living_children_count: z.union([z.string(), z.number()]).optional().transform((val) => {
+    if (typeof val === 'string') return parseInt(val) || 0;
+    return val || 0;
+  }).refine((val) => val >= 0, {
+    message: 'Please enter a valid number of living children'
+  }),
   past_pregnancy_experience: z.string().optional(),
   
   // 8. Services Interested In
@@ -66,6 +78,8 @@ export const fullSchema = z.object({
   
   // 9. Payment
   payment_method: z.string().min(1, 'Payment method is required'),
+  annual_income: z.string().optional(),
+  service_specifics: z.string().optional(),
   
   // 10. Client Demographics
   race_ethnicity: z.string().min(1, 'Race/ethnicity is required'),
@@ -83,11 +97,11 @@ export type RequestFormValues = z.infer<typeof fullSchema>;
 
 export const stepFields: (keyof RequestFormValues)[][] = [
   // 1. Client Details
-  ['firstname', 'lastname', 'email', 'phone_number', 'pronouns', 'pronouns_other', 'preferred_contact_method', 'preferred_name'],
+  ['firstname', 'lastname', 'email', 'phone_number', 'pronouns', 'pronouns_other', 'preferred_contact_method', 'preferred_name', 'children_expected'],
   // 2. Home Details
   ['address', 'city', 'state', 'zip_code', 'home_phone', 'home_type', 'home_access', 'pets'],
   // 3. Family Members
-  ['relationship_status', 'family_first_name', 'family_last_name', 'family_pronouns', 'family_middle_name', 'family_email', 'family_mobile_phone', 'family_work_phone'],
+  ['relationship_status', 'first_name', 'last_name', 'family_pronouns', 'middle_name', 'family_email', 'mobile_phone', 'work_phone'],
   // 4. Referral
   ['referral_source', 'referral_name', 'referral_email'],
   // 5. Health History
@@ -99,7 +113,7 @@ export const stepFields: (keyof RequestFormValues)[][] = [
   // 8. Services Interested In
   ['services_interested', 'service_support_details', 'service_needed'],
   // 9. Payment
-  ['payment_method'],
+  ['payment_method', 'annual_income', 'service_specifics'],
   // 10. Client Demographics
   ['race_ethnicity', 'primary_language', 'client_age_range', 'insurance', 'demographics_multi', 'demographics_annual_income'],
 ];
@@ -118,7 +132,8 @@ export function useRequestForm(onSubmit: (data: RequestFormValues) => Promise<vo
       pronouns: 'She/Her',
       pronouns_other: '',
       preferred_contact_method: 'Phone',
-      preferred_name: '',
+      preferred_name: 'Jane',
+      children_expected: '1 child expected',
       address: '123 Main St',
       city: 'Springfield',
       state: 'IL',
@@ -128,41 +143,42 @@ export function useRequestForm(onSubmit: (data: RequestFormValues) => Promise<vo
       home_access: 'Front door, no stairs',
       pets: 'Dog',
       relationship_status: 'Partner',
-      family_first_name: 'Alex',
-      family_last_name: 'Doe',
-      family_middle_name: 'Marie',
-      family_mobile_phone: '555-222-3333',
-      family_work_phone: '555-444-5555',
+      first_name: 'Alex',
+      last_name: 'Doe',
+      middle_name: 'Marie',
+      mobile_phone: '555-222-3333',
+      work_phone: '555-444-5555',
       family_email: 'alex.doe@example.com',
       family_pronouns: 'They/Them',
       referral_source: 'Google',
       referral_name: 'Sokana',
       referral_email: 'referral@example.com',
-      health_history: 'No major health issues',
-      allergies: 'Peanuts',
-      health_notes: 'N/A',
-      due_date: '2025-06-15',
+      health_history: 'No significant health history',
+      allergies: 'None',
+      health_notes: 'Generally healthy',
+      due_date: '2024-06-15',
       birth_location: 'Hospital',
-      birth_hospital: 'Springfield General',
+      birth_hospital: 'Springfield Memorial Hospital',
       number_of_babies: 'Singleton',
       baby_name: 'Baby Doe',
-      provider_type: 'Midwife',
-      pregnancy_number: '2',
-      had_previous_pregnancies: true,
-      previous_pregnancies_count: '1',
-      living_children_count: '1',
-      past_pregnancy_experience: 'Healthy previous pregnancy, no complications',
-      // Services Interested In step defaults
+      provider_type: 'OB/GYN',
+      pregnancy_number: 1,
+      had_previous_pregnancies: false,
+      previous_pregnancies_count: 2,
+      living_children_count: 2,
+      past_pregnancy_experience: 'ok',
       services_interested: ['Labor Support', 'Postpartum Support'],
-      service_support_details: 'I am looking for both labor and postpartum support, including overnight care for 2 weeks.',
-      service_needed: 'Labor Support',
+      service_support_details: 'Looking for comprehensive labor and postpartum support. Need help with labor techniques and overnight postpartum care for 2 weeks.',
+      service_needed: 'Full doula support package including labor and postpartum services',
       payment_method: 'Credit Card',
+      annual_income: '$0 - $25,000',
+      service_specifics: 'Comprehensive doula support including labor and postpartum care',
       race_ethnicity: 'Caucasian/White',
       primary_language: 'English',
       client_age_range: '26-35',
       insurance: 'Private',
-      demographics_multi: [],
-      demographics_annual_income: '$45,000-$64,999',
+      demographics_multi: ['Annual income is less than $30,000'],
+      demographics_annual_income: '$0 - $25,000',
     },
   });
 

@@ -1,3 +1,6 @@
+
+import { getSessionExpirationMessage, isSessionExpiredError } from './sessionUtils';
+
 export default async function updateClientStatus(clientId: string, status: string): Promise<{ success: boolean; client?: any; error?: string }> {
   const token = localStorage.getItem('authToken');
 
@@ -35,6 +38,12 @@ export default async function updateClientStatus(clientId: string, status: strin
     if (!response.ok) {
       const errorText = await response.text();
       console.error('❌ Status update failed:', response.status, errorText);
+      
+      // Check for authentication/session expiration errors
+      if (isSessionExpiredError(response.status, errorText)) {
+        throw new Error(getSessionExpirationMessage());
+      }
+      
       throw new Error(`Failed to save status for client: ${response.status} - ${errorText}`);
     }
 

@@ -754,14 +754,14 @@ export function Step7PastPregnancies({ form, control, handleBack, handleNextStep
     <div>
       <div className={styles['form-section-title']}>Past Pregnancie(s)</div>
       <div className={styles['form-grid']} style={{ alignItems: 'center' }}>
-        <div className={styles['form-field']} style={{ gridColumn: '1 / span 4', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className={styles['form-field']} style={{ gridColumn: '1 / span 4', display: 'flex', alignItems: 'center', gap: 16, padding: '16px 0' }}>
           <input
             type="checkbox"
             id="had_previous_pregnancies"
             {...form.register('had_previous_pregnancies')}
-            style={{ width: 24, height: 24, accentColor: hadPrevious ? '#00bcd4' : undefined }}
+            style={{ width: 24, height: 24, accentColor: hadPrevious ? '#00bcd4' : undefined, margin: 0 }}
           />
-          <label htmlFor="had_previous_pregnancies" style={{ fontSize: 20, color: '#444', marginLeft: 8 }}>
+          <label htmlFor="had_previous_pregnancies" style={{ fontSize: 20, color: '#444', marginLeft: 12, cursor: 'pointer' }}>
             Had previous pregnancie(s)
           </label>
         </div>
@@ -772,7 +772,9 @@ export function Step7PastPregnancies({ form, control, handleBack, handleNextStep
                 className={styles['form-input']}
                 type="number"
                 min="0"
-                {...form.register('previous_pregnancies_count')}
+                {...form.register('previous_pregnancies_count', {
+                  setValueAs: (value: string) => value === '' ? undefined : parseInt(value) || 0
+                })}
                 id="previous_pregnancies_count"
                 onFocus={() => handleFocus('previous_pregnancies_count')}
                 onBlur={() => handleBlur('previous_pregnancies_count')}
@@ -781,7 +783,7 @@ export function Step7PastPregnancies({ form, control, handleBack, handleNextStep
                 htmlFor="previous_pregnancies_count"
                 className={
                   styles['form-floating-label'] +
-                  ((focus.previous_pregnancies_count || values.previous_pregnancies_count) ? ' ' + styles['form-label--active'] : '')
+                  ((focus.previous_pregnancies_count || values.previous_pregnancies_count || values.previous_pregnancies_count === 0) ? ' ' + styles['form-label--active'] : '')
                 }
               >
                 # of previous pregnancies
@@ -793,7 +795,9 @@ export function Step7PastPregnancies({ form, control, handleBack, handleNextStep
                 className={styles['form-input']}
                 type="number"
                 min="0"
-                {...form.register('living_children_count')}
+                {...form.register('living_children_count', {
+                  setValueAs: (value: string) => value === '' ? undefined : parseInt(value) || 0
+                })}
                 id="living_children_count"
                 onFocus={() => handleFocus('living_children_count')}
                 onBlur={() => handleBlur('living_children_count')}
@@ -802,7 +806,7 @@ export function Step7PastPregnancies({ form, control, handleBack, handleNextStep
                 htmlFor="living_children_count"
                 className={
                   styles['form-floating-label'] +
-                  ((focus.living_children_count || values.living_children_count) ? ' ' + styles['form-label--active'] : '')
+                  ((focus.living_children_count || values.living_children_count || values.living_children_count === 0) ? ' ' + styles['form-label--active'] : '')
                 }
               >
                 # of living children
@@ -846,6 +850,7 @@ export function Step8ServicesInterested({ form, control, handleBack, handleNextS
   const [focus, setFocus] = useState({
     services_interested: false,
     service_support_details: false,
+    service_needed: false,
   });
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const handleFocus = (field: keyof typeof focus) => setFocus(f => ({ ...f, [field]: true }));
@@ -892,14 +897,14 @@ export function Step8ServicesInterested({ form, control, handleBack, handleNextS
                 <span style={{ float: 'right', pointerEvents: 'none' }}>▼</span>
               </button>
             </PopoverTrigger>
-            <PopoverContent align="start" side="bottom" sideOffset={4} style={{ minWidth: 600, maxWidth: 700, background: '#fff', border: '1px solid #bdbdbd', borderRadius: 4, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', padding: 0, zIndex: 10 }}>
+            <PopoverContent align="start" side="bottom" sideOffset={4} style={{ minWidth: 600, maxWidth: 700, background: '#fff', border: '1px solid #bdbdbd', borderRadius: 4, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', padding: '12px 0', zIndex: 10 }}>
               {serviceOptions.map(opt => (
-                <label key={opt} style={{ display: 'flex', alignItems: 'center', fontSize: 17, cursor: 'pointer', gap: 8, padding: '4px 0' }}>
+                <label key={opt} style={{ display: 'flex', alignItems: 'center', fontSize: 17, cursor: 'pointer', gap: 12, padding: '12px 20px', margin: 0 }}>
                   <input
                     type="checkbox"
                     checked={selected.includes(opt)}
                     onChange={() => toggleService(opt)}
-                    style={{ width: 20, height: 20, accentColor: selected.includes(opt) ? '#d32f2f' : '#bdbdbd' }}
+                    style={{ width: 20, height: 20, accentColor: selected.includes(opt) ? '#d32f2f' : '#bdbdbd', margin: 0 }}
                   />
                   {opt}
                 </label>
@@ -928,6 +933,27 @@ export function Step8ServicesInterested({ form, control, handleBack, handleNextS
             What does doula support look like for you? Be specific. How can a labor doula help? For postpartum do you want daytime, overnights and for how many weeks*
           </label>
           {errors.service_support_details && <div className={styles['form-error']}>{errors.service_support_details.message as string}</div>}
+        </div>
+        {/* Service needed field */}
+        <div className={styles['form-field']} style={{ gridColumn: '1 / span 4' }}>
+          <textarea
+            className={styles['form-input']}
+            {...form.register('service_needed')}
+            id="service_needed"
+            onFocus={() => handleFocus('service_needed')}
+            onBlur={() => handleBlur('service_needed')}
+            style={{ minHeight: 48 }}
+          />
+          <label
+            htmlFor="service_needed"
+            className={
+              styles['form-floating-label'] +
+              ((focus.service_needed || values.service_needed) ? ' ' + styles['form-label--active'] : '')
+            }
+          >
+            What specific service do you need? Please describe your requirements*
+          </label>
+          {errors.service_needed && <div className={styles['form-error']}>{errors.service_needed.message as string}</div>}
         </div>
       </div>
       <div className={styles['step-buttons-row']}>
@@ -970,17 +996,6 @@ export function Step9Payment({ form, control, handleBack, handleNextStep, step, 
               {errors.payment_method.message === 'Required.' || errors.payment_method.message === 'Required' ? 'Please select your payment method.' : errors.payment_method.message}
             </div>
           )}
-          <label
-            htmlFor="payment_method"
-            className={
-              styles['form-floating-label'] +
-              ((focus.payment_method || values.payment_method) ? ' ' + styles['form-label--active'] : '') +
-              (errors.payment_method ? ' ' + styles['form-label--error'] : '')
-            }
-            style={{ color: errors.payment_method ? '#d32f2f' : undefined }}
-          >
-            Payment Method*
-          </label>
           <Popover open={open.payment_method} onOpenChange={v => setOpen(o => ({ ...o, payment_method: v }))}>
             <PopoverTrigger asChild>
               <button

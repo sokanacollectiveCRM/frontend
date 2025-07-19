@@ -1,3 +1,6 @@
+
+import { getSessionExpirationMessage, isSessionExpiredError } from './sessionUtils';
+
 export default async function updateClient(clientId: string, updateData: any): Promise<{ success: boolean; client?: any; error?: string }> {
   const token = localStorage.getItem('authToken');
 
@@ -31,6 +34,11 @@ export default async function updateClient(clientId: string, updateData: any): P
       if (errorText.includes('No data returned after update')) {
         console.log('⚠️ Backend update succeeded but no data returned - treating as success');
         return { success: true, client: { id: clientId, ...updateData } };
+      }
+      
+      // Check for authentication/session expiration errors
+      if (isSessionExpiredError(response.status, errorText)) {
+        throw new Error(getSessionExpirationMessage());
       }
       
       throw new Error(`Failed to update client: ${response.status} - ${errorText}`);

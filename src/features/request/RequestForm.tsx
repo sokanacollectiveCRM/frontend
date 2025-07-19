@@ -22,11 +22,13 @@ export default function RequestForm() {
     };
     const payload = {
       ...formData,
-      number_of_babies: babyCountMap[formData.number_of_babies as string] || 1,
+      number_of_babies: typeof formData.number_of_babies === 'string'
+        ? babyCountMap[formData.number_of_babies] || 1
+        : formData.number_of_babies,
     };
     setIsSubmitting(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL}/requestService/requestSubmission`, {
+      const response = await fetch(`${process.env.VITE_APP_BACKEND_URL}/requestService/requestSubmission`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -68,17 +70,10 @@ export default function RequestForm() {
     return (
       <div className={styles.requestForm} style={{ minHeight: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ background: '#f6fffa', border: '1px solid #b2dfdb', borderRadius: 8, padding: '32px 24px', maxWidth: 500, margin: '0 auto', textAlign: 'center' }}>
-          <h2 style={{ color: '#009688', fontWeight: 700, fontSize: '1.7rem', marginBottom: 16 }}>Thank you for submitting your Service Request!</h2>
+          <h2 style={{ color: '#009688', fontWeight: 700, fontSize: '1.7rem', marginBottom: 16 }}>Thank you for contacting Sokana Collective!</h2>
           <p style={{ color: '#333', fontSize: 17, marginBottom: 16 }}>
-            We’ve received your information and will review it within one business day.<br />
-            A confirmation email is on its way to you now.
+            We are excited to get to know you and find out how we can support you. We have received your request for service and have started working on your match. We will be in touch soon with a doula introduction. In the meantime if you have any questions please let us know.
           </p>
-          <h3 style={{ color: '#009688', fontWeight: 600, fontSize: '1.2rem', margin: '24px 0 8px 0' }}>What happens next?</h3>
-          <ul style={{ color: '#444', fontSize: 16, textAlign: 'left', margin: '0 auto', maxWidth: 400, paddingLeft: 0, listStyle: 'none' }}>
-            <li style={{ marginBottom: 8 }}>• You’ll hear from our team via email within 24 hours.</li>
-            <li style={{ marginBottom: 8 }}>• We’ll schedule a brief follow-up to confirm your needs.</li>
-            <li>• Once everything’s set, we’ll invite you to our portal to finalize details and payment.</li>
-          </ul>
         </div>
       </div>
     );
