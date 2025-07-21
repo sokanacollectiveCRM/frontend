@@ -25,7 +25,7 @@ export function PdfPreview() {
         console.log(selectedTemplateName);
         const token = localStorage.getItem('authToken');
         const res = await fetch(
-          `http://localhost:5050/contracts/templates/generate`,
+          `${import.meta.env.VITE_APP_BACKEND_URL}/contracts/templates/generate`,
           {
             method: 'POST',
             headers: {

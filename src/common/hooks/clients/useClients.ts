@@ -1,7 +1,7 @@
 // src/common/hooks/clients/useClients.ts
 import {
-  getSessionExpirationMessage,
-  isSessionExpiredError,
+    getSessionExpirationMessage,
+    isSessionExpiredError,
 } from '@/common/utils/sessionUtils';
 import type { Client } from '@/features/pipeline/data/schema';
 import { useCallback, useState } from 'react';
@@ -16,7 +16,7 @@ export function useClients() {
     setError(null);
 
     try {
-      const BASE = 'http://localhost:5050'; // Base URL for development
+      const BASE = import.meta.env.VITE_APP_BACKEND_URL;
       const token = localStorage.getItem('authToken');
 
       const res = await fetch(`${BASE}/clients`, {
@@ -93,7 +93,7 @@ export function useClients() {
     setError(null);
 
     try {
-      const BASE = 'http://localhost:5050'; // Base URL for development
+      const BASE = import.meta.env.VITE_APP_BACKEND_URL;
       const response = await fetch(
         `${BASE}/clients/${id}?detailed=${detailed}`,
         {
