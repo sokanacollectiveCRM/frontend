@@ -3,7 +3,7 @@
 import { ConfirmDialog } from '@/common/components/ui/confirm-dialog';
 import { Input } from '@/common/components/ui/input';
 import { Label } from '@/common/components/ui/label';
-
+import deleteClient from '@/common/utils/deleteClient';
 import { Client } from '@/features/clients/data/schema';
 import { TriangleAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -13,14 +13,19 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   client: Client | null;
+  onDeleteSuccess?: () => void;
 }
 
-export function DeleteClientDialog({ open, onOpenChange, client }: Props) {
-  const [value, setValue] = useState('');
+export function DeleteClientDialog({ open, onOpenChange, client, onDeleteSuccess }: Props) {
+  const [confirmValue, setConfirmValue] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     if (!open) {
-      setValue('');
+      setConfirmValue('');
+      setErrorMessage('');
+      setIsLoading(false);
     }
   }, [open]);
 
@@ -28,17 +33,46 @@ export function DeleteClientDialog({ open, onOpenChange, client }: Props) {
 
   const fullName = `${client.firstname} ${client.lastname}`;
 
-  const handleDelete = () => {
-    if (value.trim() !== fullName) {
-      toast.error('Please enter full name to continue');
+  // Check if confirm value matches (case-insensitive)
+  const isConfirmValid = confirmValue.trim().toLowerCase() === 'confirm';
+
+  const handleDelete = async () => {
+    if (!isConfirmValid) {
+      setErrorMessage('Please type \'confirm\' to proceed.');
       return;
     }
 
-    // TODO: ADD BACKEND LOGIC TO DELETE USER HERE
+    setIsLoading(true);
+    setErrorMessage('');
 
-    onOpenChange(false);
+    try {
+      const result = await deleteClient(client.id);
 
-    toast.success(`${client.firstname} was successfully deleted.`);
+      if (result.success) {
+        toast.success(`${client.firstname} was successfully deleted.`);
+        onOpenChange(false);
+
+        // Refresh the client list
+        if (onDeleteSuccess) {
+          onDeleteSuccess();
+        }
+      } else {
+        setErrorMessage(result.error || 'Failed to delete client. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error deleting client:', error);
+      setErrorMessage('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setConfirmValue(e.target.value);
+    // Clear error message when user starts typing
+    if (errorMessage) {
+      setErrorMessage('');
+    }
   };
 
   return (
@@ -46,6 +80,8 @@ export function DeleteClientDialog({ open, onOpenChange, client }: Props) {
       open={open}
       onOpenChange={onOpenChange}
       handleConfirm={handleDelete}
+      disabled={!isConfirmValid || isLoading}
+      isLoading={isLoading}
       confirmText='Delete'
       destructive
       className='max-w-sm'
@@ -62,15 +98,22 @@ export function DeleteClientDialog({ open, onOpenChange, client }: Props) {
             This action cannot be undone.
           </p>
 
-          <Label>
-            Confirm client name:
-            <Input
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              placeholder='Enter full name to confirm'
-              className='mt-1'
-            />
-          </Label>
+          <div className='space-y-2'>
+            <Label>
+              Type 'confirm' to proceed:
+              <Input
+                value={confirmValue}
+                onChange={handleInputChange}
+                placeholder="Type 'confirm' to proceed"
+                className='mt-1'
+                disabled={isLoading}
+              />
+            </Label>
+
+            {errorMessage && (
+              <p className='text-sm text-red-500'>{errorMessage}</p>
+            )}
+          </div>
         </div>
       }
     />
