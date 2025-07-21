@@ -1,3 +1,4 @@
+import { useClientsContext } from '@/features/clients/contexts/ClientsContext';
 import { useTable } from '@/features/clients/contexts/TableContext';
 import { ArchiveClientDialog } from './ArchiveClientDialog';
 import { ContractCreationDialog } from './ContractCreationDialog';
@@ -5,6 +6,8 @@ import { DeleteClientDialog } from './DeleteClientDialog';
 
 export function TableDialogs() {
   const { open, setOpen, currentRow, setCurrentRow } = useTable();
+  const { refreshClients } = useClientsContext();
+
   return (
     <>
       <ContractCreationDialog
@@ -18,6 +21,7 @@ export function TableDialogs() {
         open={open === 'delete'}
         onOpenChange={(state) => setOpen(state ? 'delete' : '')}
         client={currentRow}
+        onDeleteSuccess={refreshClients}
       />
 
       <ArchiveClientDialog

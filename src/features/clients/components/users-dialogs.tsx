@@ -45,6 +45,7 @@ export function UsersDialogs() {
               }, 500);
             }}
             currentRow={currentRow}
+            onDeleteSuccess={refreshClients}
           />
         </>
       )}
