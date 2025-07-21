@@ -1,7 +1,9 @@
 import { Form } from '@/common/components/ui/form';
+import { useIsMobile } from '@/common/hooks/ui/useMobile';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import styles from './RequestForm.module.scss';
+import RequestFormDesktop from './RequestFormDesktop';
 import { Step1Personal } from './Step1Personal';
 import { Step2Home } from './Step2Health';
 import {
@@ -17,6 +19,11 @@ import {
 import { RequestFormValues, useRequestForm } from './useRequestForm';
 
 export default function RequestForm() {
+  const isMobile = useIsMobile();
+  if (!isMobile) {
+    return <RequestFormDesktop />;
+  }
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 

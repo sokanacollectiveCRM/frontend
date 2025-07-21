@@ -75,14 +75,6 @@ export function Step1Personal({
       <div className={styles['form-grid']}>
         {/* First Row */}
         <div className={styles['form-field']}>
-          <input
-            className={styles['form-input']}
-            {...form.register('firstname')}
-            id='firstname'
-            autoComplete='off'
-            onFocus={() => handleFocus('firstname')}
-            onBlur={() => handleBlur('firstname')}
-          />
           <label
             htmlFor='firstname'
             className={
@@ -94,6 +86,14 @@ export function Step1Personal({
           >
             First Name
           </label>
+          <input
+            className={styles['form-input']}
+            {...form.register('firstname')}
+            id='firstname'
+            autoComplete='off'
+            onFocus={() => handleFocus('firstname')}
+            onBlur={() => handleBlur('firstname')}
+          />
           {errors.firstname && (
             <div className={styles['form-error']} style={{ marginBottom: 6 }}>
               Please enter your first name.
@@ -101,14 +101,6 @@ export function Step1Personal({
           )}
         </div>
         <div className={styles['form-field']}>
-          <input
-            className={styles['form-input']}
-            {...form.register('lastname')}
-            id='lastname'
-            autoComplete='off'
-            onFocus={() => handleFocus('lastname')}
-            onBlur={() => handleBlur('lastname')}
-          />
           <label
             htmlFor='lastname'
             className={
@@ -120,6 +112,14 @@ export function Step1Personal({
           >
             Last Name
           </label>
+          <input
+            className={styles['form-input']}
+            {...form.register('lastname')}
+            id='lastname'
+            autoComplete='off'
+            onFocus={() => handleFocus('lastname')}
+            onBlur={() => handleBlur('lastname')}
+          />
           {errors.lastname && (
             <div className={styles['form-error']} style={{ marginBottom: 6 }}>
               Please enter your last name.
@@ -127,15 +127,6 @@ export function Step1Personal({
           )}
         </div>
         <div className={styles['form-field']}>
-          <input
-            className={styles['form-input']}
-            {...form.register('email')}
-            id='email'
-            autoComplete='off'
-            type='email'
-            onFocus={() => handleFocus('email')}
-            onBlur={() => handleBlur('email')}
-          />
           <label
             htmlFor='email'
             className={
@@ -147,6 +138,15 @@ export function Step1Personal({
           >
             Email
           </label>
+          <input
+            className={styles['form-input']}
+            {...form.register('email')}
+            id='email'
+            autoComplete='off'
+            type='email'
+            onFocus={() => handleFocus('email')}
+            onBlur={() => handleBlur('email')}
+          />
           {errors.email && (
             <div className={styles['form-error']} style={{ marginBottom: 6 }}>
               Please enter your email address.
@@ -154,14 +154,6 @@ export function Step1Personal({
           )}
         </div>
         <div className={styles['form-field']}>
-          <input
-            className={styles['form-input']}
-            {...form.register('phone_number')}
-            id='phone_number'
-            autoComplete='off'
-            onFocus={() => handleFocus('phone_number')}
-            onBlur={() => handleBlur('phone_number')}
-          />
           <label
             htmlFor='phone_number'
             className={
@@ -173,6 +165,14 @@ export function Step1Personal({
           >
             Mobile phone
           </label>
+          <input
+            className={styles['form-input']}
+            {...form.register('phone_number')}
+            id='phone_number'
+            autoComplete='off'
+            onFocus={() => handleFocus('phone_number')}
+            onBlur={() => handleBlur('phone_number')}
+          />
           {errors.phone_number && (
             <div className={styles['form-error']} style={{ marginBottom: 6 }}>
               Please enter your mobile phone number.
@@ -181,6 +181,23 @@ export function Step1Personal({
         </div>
         {/* Second Row */}
         <div className={styles['form-field']} style={{ position: 'relative' }}>
+          <label
+            htmlFor='preferred_contact_method'
+            className={
+              styles['form-floating-label'] +
+              (focus.preferred_contact_method || values.preferred_contact_method
+                ? ' ' + styles['form-label--active']
+                : '')
+            }
+            style={{
+              left: 0,
+              color: pcmOpen ? '#00bcd4' : undefined,
+              right: 0,
+              maxWidth: 'calc(100% - 36px)',
+            }}
+          >
+            Preferred contact method
+          </label>
           <select
             className={styles['form-select']}
             style={{ paddingRight: 36 }}
@@ -200,23 +217,6 @@ export function Step1Personal({
             <option value='Phone'>Phone</option>
             <option value='Email'>Email</option>
           </select>
-          <label
-            htmlFor='preferred_contact_method'
-            className={
-              styles['form-floating-label'] +
-              (focus.preferred_contact_method || values.preferred_contact_method
-                ? ' ' + styles['form-label--active']
-                : '')
-            }
-            style={{
-              left: 0,
-              color: pcmOpen ? '#00bcd4' : undefined,
-              right: 0,
-              maxWidth: 'calc(100% - 36px)',
-            }}
-          >
-            Preferred contact method
-          </label>
           <span
             style={{
               position: 'absolute',
@@ -239,6 +239,23 @@ export function Step1Personal({
           )}
         </div>
         <div className={styles['form-field']} style={{ position: 'relative' }}>
+          <label
+            htmlFor='pronouns'
+            className={
+              styles['form-floating-label'] +
+              (focus.pronouns || values.pronouns
+                ? ' ' + styles['form-label--active']
+                : '')
+            }
+            style={{
+              left: 0,
+              color: pronounsOpen ? '#00bcd4' : undefined,
+              right: 0,
+              maxWidth: 'calc(100% - 36px)',
+            }}
+          >
+            Pronouns
+          </label>
           <select
             className={styles['form-select']}
             style={{ paddingRight: 36 }}
@@ -262,23 +279,6 @@ export function Step1Personal({
             <option value='None'>None</option>
             <option value='Other'>Other</option>
           </select>
-          <label
-            htmlFor='pronouns'
-            className={
-              styles['form-floating-label'] +
-              (focus.pronouns || values.pronouns
-                ? ' ' + styles['form-label--active']
-                : '')
-            }
-            style={{
-              left: 0,
-              color: pronounsOpen ? '#00bcd4' : undefined,
-              right: 0,
-              maxWidth: 'calc(100% - 36px)',
-            }}
-          >
-            Pronouns
-          </label>
           <span
             style={{
               position: 'absolute',
@@ -301,14 +301,6 @@ export function Step1Personal({
           )}
         </div>
         <div className={styles['form-field']}>
-          <input
-            className={styles['form-input']}
-            {...form.register('preferred_name')}
-            id='preferred_name'
-            autoComplete='off'
-            onFocus={() => handleFocus('preferred_name')}
-            onBlur={() => handleBlur('preferred_name')}
-          />
           <label
             htmlFor='preferred_name'
             className={
@@ -320,6 +312,14 @@ export function Step1Personal({
           >
             Preferred name
           </label>
+          <input
+            className={styles['form-input']}
+            {...form.register('preferred_name')}
+            id='preferred_name'
+            autoComplete='off'
+            onFocus={() => handleFocus('preferred_name')}
+            onBlur={() => handleBlur('preferred_name')}
+          />
           {errors.preferred_name && (
             <div className={styles['form-error']}>
               {errors.preferred_name.message as string}

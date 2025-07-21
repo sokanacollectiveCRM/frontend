@@ -17,8 +17,8 @@
 
   .form-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(220px, 1fr));
-    gap: 2rem 2rem;
+    grid-template-columns: 1fr;
+    gap: 1rem 0;
     margin-bottom: 2.5rem;
   }
 
@@ -28,7 +28,7 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
+    align-items: flex-start;
     height: auto;
   }
 
@@ -230,15 +230,6 @@
     margin-bottom: 0.5rem;
   }
 
-  @media (max-width: 900px) {
-    max-width: 98vw;
-    .form-grid {
-      grid-template-columns: repeat(2, minmax(180px, 1fr));
-      gap: 1.5rem 1.5rem;
-    }
-    padding: 0 2rem;
-  }
-
   @media (max-width: 600px) {
     max-width: 100vw;
     .form-grid {
@@ -299,6 +290,64 @@
     // Extra small mobile vertical stacking
     .form-field {
       margin-bottom: 1.2rem;
+    }
+  }
+
+  @media (min-width: 601px) and (max-width: 899px) {
+    .form-grid {
+      grid-template-columns: repeat(2, minmax(180px, 1fr));
+      gap: 1.5rem 1.5rem;
+    }
+  }
+
+  @media (min-width: 900px) {
+    .form-field {
+      flex-direction: column;
+      align-items: stretch;
+      position: relative;
+    }
+    .form-floating-label {
+      display: block;
+      position: absolute;
+      left: 0.1rem;
+      top: 2.1rem;
+      background: none;
+      font-size: 1.08rem;
+      color: #757575;
+      margin-bottom: 0;
+      padding: 0;
+      white-space: normal;
+      pointer-events: none;
+      z-index: 2;
+      transition: color 0.22s cubic-bezier(0.4,0,0.2,1), font-size 0.22s cubic-bezier(0.4,0,0.2,1), transform 0.22s cubic-bezier(0.4,0,0.2,1), top 0.22s cubic-bezier(0.4,0,0.2,1);
+      transform: translateY(0) scale(1);
+    }
+    .form-label--active {
+      color: #00897b;
+      font-size: 0.95rem;
+      background: none;
+      transform: translateY(-2.1rem) scale(0.85);
+      margin-bottom: 0;
+    }
+    .form-input, .form-select {
+      width: 100%;
+      margin-bottom: 0.1rem;
+      position: relative;
+      z-index: 1;
+    }
+  }
+
+  @media (min-width: 900px) and (max-width: 1199px) {
+    .form-grid {
+      grid-template-columns: repeat(3, minmax(200px, 1fr));
+      gap: 1.5rem 1.5rem;
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .form-grid {
+      grid-template-columns: repeat(4, minmax(220px, 1fr));
+      gap: 2rem 2rem;
     }
   }
 } 
