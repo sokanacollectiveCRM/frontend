@@ -71,10 +71,10 @@ export function UsersInviteDialog({ open, onOpenChange }: Props) {
       <DialogContent className='sm:max-w-md'>
         <DialogHeader className='text-left'>
           <DialogTitle className='flex items-center gap-2'>
-            <MailPlus /> Invite User
+            <MailPlus /> Invite Client
           </DialogTitle>
           <DialogDescription>
-            Invite this user to join your team by sending them an email
+            Invite this client to create an account by sending them an email
             invitation. You can add a personal note below.
           </DialogDescription>
         </DialogHeader>
