@@ -7,7 +7,7 @@ export default async function useSaveUser(userData: User) {
   );
   try {
     const token = localStorage.getItem('authToken');
-    const baseUrl = 'http://localhost:5050'; // Base URL for development
+    const baseUrl = import.meta.env.VITE_APP_BACKEND_URL;
     const response = await fetch(
       `${baseUrl}/users/update`,
       {
