@@ -8,10 +8,10 @@ import {
 import { ConfirmDialog } from '@/common/components/ui/confirm-dialog';
 import { Input } from '@/common/components/ui/input';
 import { Label } from '@/common/components/ui/label';
+import { Client } from '@/features/clients/data/schema';
 import { TriangleAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Client } from 'features/clients/data/schema';
 
 interface Props {
   open: boolean;

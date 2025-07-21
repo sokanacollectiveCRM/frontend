@@ -25,16 +25,16 @@ import {
 } from '@/common/components/ui/select';
 import { Textarea } from '@/common/components/ui/textarea';
 import { createContract } from '@/common/utils/createContract';
+import { ClientDropdown } from '@/features/clients/components/ClientDropdown';
+import { useTable } from '@/features/clients/contexts/TableContext';
+import { useTemplatesContext } from '@/features/clients/contexts/TemplatesContext';
+import { clientSchema } from '@/features/clients/data/schema';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { useTable } from 'features/clients/contexts/TableContext';
-import { useTemplatesContext } from 'features/clients/contexts/TemplatesContext';
-import { clientSchema } from 'features/clients/data/schema';
-import { ClientDropdown } from 'features/clients/components/ClientDropdown';
 
 const formSchema = z.object({
   client: clientSchema,

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 
+import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
 import { useUser } from '@/common/hooks/user/useUser';
 import { User } from '@/common/types/user';
 import styled from 'styled-components';
-import { LoadingOverlay } from 'common/components/loading/LoadingOverlay';
 
 const UsersContainer = styled.div`
   margin-top: 2rem;
@@ -45,10 +45,7 @@ const ErrorMessage = styled.div`
   text-align: center;
 `;
 
-const LoadingMessage = styled.div`
-  text-align: center;
-  padding: 1rem;
-`;
+
 
 export default function UsersList() {
   const { isLoading: userLoading } = useUser();
@@ -60,8 +57,9 @@ export default function UsersList() {
     const fetchUsers = async () => {
       try {
         const token = localStorage.getItem('authToken');
+        const baseUrl = 'http://localhost:5050'; // Base URL for development
         const response = await fetch(
-          `${import.meta.env.VITE_APP_BACKEND_URL}/auth/users`,
+          `${baseUrl}/auth/users`,
           {
             credentials: 'include',
             headers: {

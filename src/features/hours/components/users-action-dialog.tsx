@@ -21,11 +21,11 @@ import {
 } from '@/common/components/ui/form';
 import { Input } from '@/common/components/ui/input';
 import { toast } from '@/common/hooks/toast/use-toast';
+import { HoursRows } from '@/features/hours/context/clients-context';
+import { userTypes } from '@/features/hours/data/data';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { userTypes } from 'features/hours/data/data';
-import { HoursRows } from 'features/hours/context/clients-context';
 
 const formSchema = z
   .object({
@@ -99,22 +99,22 @@ export function UsersActionDialog({ currentRow, open, onOpenChange }: Props) {
     resolver: zodResolver(formSchema),
     defaultValues: isEdit
       ? {
-          ...currentRow,
-          password: '',
-          confirmPassword: '',
-          isEdit,
-        }
+        ...currentRow,
+        password: '',
+        confirmPassword: '',
+        isEdit,
+      }
       : {
-          firstName: '',
-          lastName: '',
-          username: '',
-          email: '',
-          role: '',
-          phoneNumber: '',
-          password: '',
-          confirmPassword: '',
-          isEdit,
-        },
+        firstName: '',
+        lastName: '',
+        username: '',
+        email: '',
+        role: '',
+        phoneNumber: '',
+        password: '',
+        confirmPassword: '',
+        isEdit,
+      },
   });
 
   const onSubmit = (values: UserForm) => {

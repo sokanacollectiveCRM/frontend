@@ -4,10 +4,10 @@ import { Template } from '@/common/types/template';
 import { ClientsTable } from '@/features/clients/components/ClientsTable';
 import { DraggableTemplate } from '@/features/clients/components/DraggableTemplate';
 import { columns } from '@/features/clients/components/users-columns';
+import { useClientsContext } from '@/features/clients/contexts/ClientsContext';
+import { useTable } from '@/features/clients/contexts/TableContext';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { useState } from 'react';
-import { useClientsContext } from 'features/clients/contexts/ClientsContext';
-import { useTable } from 'features/clients/contexts/TableContext';
 
 export default function ClientsBoard() {
   const { clients, isLoading, refreshClients } = useClientsContext();

@@ -25,7 +25,7 @@ import {
 } from '@/common/components/ui/sidebar';
 
 // import { UserCard } from "@/common/components/user/UserCard"
-import { NavUser } from 'common/components/navigation/sidebar/NavUser';
+import { NavUser } from '@/common/components/navigation/sidebar/NavUser';
 
 const GeneralItems = [
   {

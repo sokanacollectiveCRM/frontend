@@ -7,6 +7,7 @@ import {
   TableRow,
 } from '@/common/components/ui/table';
 import { useUsers } from '@/features/clients/context/users-context';
+import { User } from '@/features/clients/data/schema';
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -23,7 +24,6 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { useState } from 'react';
-import { User } from 'features/clients/data/schema';
 import { DataTablePagination } from './data-table-pagination';
 import { DataTableToolbar } from './data-table-toolbar';
 
@@ -91,9 +91,9 @@ export function UsersTable({ columns, data }: DataTableProps) {
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                     </TableHead>
                   );
                 })}

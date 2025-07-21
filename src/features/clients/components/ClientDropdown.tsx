@@ -17,9 +17,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/common/components/ui/popover';
+import { useClientsContext } from '@/features/clients/contexts/ClientsContext';
+import { Client } from '@/features/clients/data/schema';
 import { cn } from '@/lib/utils';
-import { useClientsContext } from 'features/clients/contexts/ClientsContext';
-import { Client } from 'features/clients/data/schema';
 
 export const ClientDropdown = React.forwardRef<
   HTMLButtonElement,

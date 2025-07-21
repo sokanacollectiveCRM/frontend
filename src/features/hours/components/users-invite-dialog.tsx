@@ -20,11 +20,11 @@ import {
 import { Input } from '@/common/components/ui/input';
 import { Textarea } from '@/common/components/ui/textarea';
 import { toast } from '@/common/hooks/toast/use-toast';
+import { userTypes } from '@/features/hours/data/data';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { MailPlus, Send } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { userTypes } from 'features/hours/data/data';
 
 const formSchema = z.object({
   email: z

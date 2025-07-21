@@ -6,6 +6,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/common/components/ui/table';
+import { HoursRows } from '@/features/hours/context/clients-context';
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -22,7 +23,6 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { useState } from 'react';
-import { HoursRows } from 'features/hours/context/clients-context';
 import { DataTablePagination } from './data-table-pagination';
 import { UsersPrimaryButtons } from './users-primary-buttons';
 
@@ -85,9 +85,9 @@ export function UsersTable({ columns, data }: DataTableProps) {
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                     </TableHead>
                   );
                 })}

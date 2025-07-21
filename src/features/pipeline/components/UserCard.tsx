@@ -1,9 +1,9 @@
 import LongText from '@/common/components/ui/long-text';
 import UserAvatar from '@/common/components/user/UserAvatar';
+import { Client } from '@/features/pipeline/data/schema';
 import { useDraggable } from '@dnd-kit/core';
 import clsx from 'clsx';
 import { useEffect, useState } from 'react';
-import { Client } from 'features/pipeline/data/schema';
 
 type Props = {
   client: Client;
@@ -31,7 +31,7 @@ export function UserCard({ client, isOverlay = false, className = '' }: Props) {
         className={clsx(
           'w-full rounded-md border bg-white p-3 transition-all duration-200 ease-[cubic-bezier(0.18,0.67,0.6,1.22)]',
           isOverlay &&
-            (mounted ? 'scale-110 shadow-xl opacity-90' : 'scale-100 shadow'),
+          (mounted ? 'scale-110 shadow-xl opacity-90' : 'scale-100 shadow'),
           !isOverlay && 'shadow',
           className
         )}

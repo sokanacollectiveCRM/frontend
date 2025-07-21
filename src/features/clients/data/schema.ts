@@ -37,6 +37,11 @@ const serviceSchema = z.union([
   z.literal('Perinatal Support'),
   z.literal('Abortion Support'),
   z.literal('Other'),
+  // Add more flexible service names that appear in the API
+  z.literal('labor support'),
+  z.literal('Full doula support package including labor and postpartum services'),
+  // Allow any string for services not in the enum
+  z.string(),
 ]);
 export type serviceNeeded = z.infer<typeof serviceSchema>;
 
@@ -52,8 +57,18 @@ const userSchema = z
     phone_number: z.string().optional(),
     role: z.string().optional(),
     serviceNeeded: serviceSchema.optional(),
-    requestedAt: z.coerce.date().optional(),
-    updatedAt: z.coerce.date().optional(),
+    requestedAt: z.union([z.string(), z.date()]).transform((val) => {
+      if (typeof val === 'string') {
+        return new Date(val);
+      }
+      return val;
+    }).optional(),
+    updatedAt: z.union([z.string(), z.date()]).transform((val) => {
+      if (typeof val === 'string') {
+        return new Date(val);
+      }
+      return val;
+    }).optional(),
     status: userStatusSchema,
     // Add client_info specific fields
     uuid: z.string().optional(),

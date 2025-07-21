@@ -1,7 +1,6 @@
 'use client';
 
 import { PasswordInput } from '@/common/components/form/PasswordInput';
-import { SelectDropdown } from '@/common/components/form/SelectDropdown';
 import { Button } from '@/common/components/ui/button';
 import {
   Dialog,
@@ -21,7 +20,6 @@ import {
 } from '@/common/components/ui/form';
 import { Input } from '@/common/components/ui/input';
 import updateClient from '@/common/utils/updateClient';
-import { userTypes } from '@/features/clients/data/data';
 import { User } from '@/features/clients/data/schema';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -37,7 +35,6 @@ const formSchema = z
       .string()
       .min(1, { message: 'Email is required.' })
       .email({ message: 'Email is invalid.' }),
-    role: z.string().min(1, { message: 'Role is required.' }),
     password: z.string().optional(),
     confirmPassword: z.string().optional(),
     isEdit: z.boolean(),
@@ -129,7 +126,6 @@ export function UsersActionDialog({
         lastName: currentRow?.lastname || '',
         email: currentRow?.email || '',
         phoneNumber: currentRow?.phoneNumber || '',
-        role: currentRow?.role || '',
         password: '',
         confirmPassword: '',
         isEdit,
@@ -138,7 +134,6 @@ export function UsersActionDialog({
         firstName: '',
         lastName: '',
         email: '',
-        role: '',
         phoneNumber: '',
         password: '',
         confirmPassword: '',
@@ -173,10 +168,6 @@ export function UsersActionDialog({
       if (values.phoneNumber !== currentRow.phoneNumber) {
         updateData.phone_number = values.phoneNumber; // Use database field name
         changedFields.push('phone_number');
-      }
-      if (values.role !== currentRow.role) {
-        updateData.role = values.role;
-        changedFields.push('role');
       }
       if (values.password && values.password.trim()) {
         updateData.password = values.password;
@@ -239,12 +230,12 @@ export function UsersActionDialog({
             Click save when you&apos;re done.
           </DialogDescription>
         </DialogHeader>
-        <div className='-mr-4 h-[26.25rem] w-full overflow-y-auto py-1 pr-4'>
+        <div className='-mr-4 h-auto w-full overflow-y-auto py-0 pr-4'>
           <Form {...form}>
             <form
               id='user-form'
               onSubmit={form.handleSubmit(onSubmit)}
-              className='space-y-4 p-0.5'
+              className='space-y-3 p-0'
             >
               <FormField
                 control={form.control}
@@ -367,40 +358,10 @@ export function UsersActionDialog({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name='role'
-                render={({ field }) => (
-                  <FormItem className='grid grid-cols-6 items-center gap-x-4 gap-y-1 space-y-0'>
-                    <FormLabel className='col-span-2 text-right'>
-                      Role
-                    </FormLabel>
-                    <SelectDropdown
-                      defaultValue={field.value}
-                      onValueChange={field.onChange}
-                      placeholder='Select a role'
-                      className='col-span-4'
-                      items={userTypes.map(
-                        ({
-                          label,
-                          value,
-                        }: {
-                          label: string;
-                          value: string;
-                        }) => ({
-                          label,
-                          value,
-                        })
-                      )}
-                    />
-                    <FormMessage className='col-span-4 col-start-3' />
-                  </FormItem>
-                )}
-              />
             </form>
           </Form>
         </div>
-        <DialogFooter>
+        <DialogFooter className='-mt-1 pt-0'>
           <Button type='submit' form='user-form'>
             Save changes
           </Button>

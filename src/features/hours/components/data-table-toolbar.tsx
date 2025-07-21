@@ -1,8 +1,8 @@
 import { Button } from '@/common/components/ui/button';
 import { Input } from '@/common/components/ui/input';
+import { userTypes } from '@/features/hours/data/data';
 import { Table } from '@tanstack/react-table';
 import { X } from 'lucide-react';
-import { userTypes } from 'features/hours/data/data';
 import { DataTableFacetedFilter } from './data-table-faceted-filter';
 import { DataTableViewOptions } from './data-table-view-options';
 

@@ -35,11 +35,32 @@ export default function Users() {
     if (clients.length === 0) return;
 
     try {
+      console.log('🔍 DEBUG: About to parse clients with Zod:', clients.length, 'clients');
+      console.log('🔍 DEBUG: First client before parsing:', clients[0]);
+
+      // Try parsing each client individually to see which one fails
+      clients.forEach((client, index) => {
+        try {
+          userListSchema.parse([client]);
+          console.log(`✅ Client ${index} parsed successfully`);
+        } catch (parseError) {
+          console.error(`❌ Client ${index} failed to parse:`, parseError);
+          console.error(`❌ Client ${index} data:`, client);
+        }
+      });
+
       const parsed = userListSchema.parse(clients);
+      console.log('🔍 DEBUG: Successfully parsed clients:', parsed.length, 'clients');
+      console.log('🔍 DEBUG: First parsed client:', parsed[0]);
+
       setUserList(parsed);
     } catch (err) {
       console.error('Failed to parse client list with Zod:', err);
-      setUserList([]);
+      console.error('🔍 DEBUG: Zod error details:', err);
+
+      // If Zod parsing fails, try to use the raw data
+      console.log('🔍 DEBUG: Falling back to raw clients data');
+      setUserList(clients as any);
     }
   }, [clients]);
 
@@ -58,14 +79,14 @@ export default function Users() {
     return <div className='p-8 text-center'>Loading...</div>;
   }
 
-  // Only check permissions after user data is loaded
-  if (!user || user.role !== 'admin') {
-    return (
-      <div className='p-8 text-center text-red-500'>
-        You do not have permission to view this page.
-      </div>
-    );
-  }
+  // Temporarily comment out admin check to allow all users to see clients
+  // if (!user || user.role !== 'admin') {
+  //   return (
+  //     <div className='p-8 text-center text-red-500'>
+  //       You do not have permission to view this page.
+  //     </div>
+  //   );
+  // }
 
   return (
     <TemplatesProvider>

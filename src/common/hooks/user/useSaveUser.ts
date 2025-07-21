@@ -1,4 +1,4 @@
-import { User } from 'common/utils/User';
+import { User } from '@/common/utils/User';
 
 export default async function useSaveUser(userData: User) {
   console.assert(
@@ -7,8 +7,9 @@ export default async function useSaveUser(userData: User) {
   );
   try {
     const token = localStorage.getItem('authToken');
+    const baseUrl = 'http://localhost:5050'; // Base URL for development
     const response = await fetch(
-      `${import.meta.env.VITE_APP_BACKEND_URL}/users/update`,
+      `${baseUrl}/users/update`,
       {
         method: 'PUT',
         credentials: 'include',

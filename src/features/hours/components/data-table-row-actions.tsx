@@ -7,10 +7,10 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/common/components/ui/dropdown-menu';
+import { HoursRows } from '@/features/hours/context/clients-context';
 import { DotsHorizontalIcon } from '@radix-ui/react-icons';
 import { Row } from '@tanstack/react-table';
 import { Settings2, Trash2 } from 'lucide-react';
-import { HoursRows } from 'features/hours/context/clients-context';
 
 interface DataTableRowActionsProps {
   row: Row<HoursRows>;

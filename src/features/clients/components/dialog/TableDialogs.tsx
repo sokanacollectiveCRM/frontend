@@ -1,4 +1,4 @@
-import { useTable } from 'features/clients/contexts/TableContext';
+import { useTable } from '@/features/clients/contexts/TableContext';
 import { ArchiveClientDialog } from './ArchiveClientDialog';
 import { ContractCreationDialog } from './ContractCreationDialog';
 import { DeleteClientDialog } from './DeleteClientDialog';

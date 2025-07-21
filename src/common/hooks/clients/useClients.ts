@@ -1,7 +1,7 @@
 // src/common/hooks/clients/useClients.ts
 import {
-    getSessionExpirationMessage,
-    isSessionExpiredError,
+  getSessionExpirationMessage,
+  isSessionExpiredError,
 } from '@/common/utils/sessionUtils';
 import type { Client } from '@/features/pipeline/data/schema';
 import { useCallback, useState } from 'react';
@@ -16,7 +16,7 @@ export function useClients() {
     setError(null);
 
     try {
-      const BASE = 'http://localhost:5050';
+      const BASE = 'http://localhost:5050'; // Base URL for development
       const token = localStorage.getItem('authToken');
 
       const res = await fetch(`${BASE}/clients`, {
@@ -45,14 +45,31 @@ export function useClients() {
           ...client.user,
           ...client,
           // Map database field names to frontend field names
-          phoneNumber: client.phone_number || client.phoneNumber || '',
+          phoneNumber: client.phone_number || client.phoneNumber || client.user?.phoneNumber || '',
+          // Ensure firstname and lastname are properly mapped from user object
+          firstname: client.user?.firstname || client.firstname || '',
+          lastname: client.user?.lastname || client.lastname || '',
+          // Map service needed from top level or user object
+          serviceNeeded: client.serviceNeeded || client.user?.service_needed || '',
+          // Map dates properly
+          requestedAt: client.requestedAt ? new Date(client.requestedAt) : new Date(),
+          updatedAt: client.updatedAt ? new Date(client.updatedAt) : new Date(),
+          // Map status from top level or user object
+          status: client.status || client.user?.status || 'lead',
         };
         console.log('🔍 DEBUG: Client mapping:', {
           original: {
             phone_number: client.phone_number,
             phoneNumber: client.phoneNumber,
+            user_phone: client.user?.phoneNumber,
           },
-          mapped: { phoneNumber: mappedClient.phoneNumber },
+          mapped: { 
+            phoneNumber: mappedClient.phoneNumber,
+            firstname: mappedClient.firstname,
+            lastname: mappedClient.lastname,
+            serviceNeeded: mappedClient.serviceNeeded,
+            status: mappedClient.status,
+          },
         });
         return mappedClient;
       });
@@ -76,7 +93,7 @@ export function useClients() {
     setError(null);
 
     try {
-      const BASE = 'http://localhost:5050';
+      const BASE = 'http://localhost:5050'; // Base URL for development
       const response = await fetch(
         `${BASE}/clients/${id}?detailed=${detailed}`,
         {

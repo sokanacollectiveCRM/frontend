@@ -1,7 +1,7 @@
 import LongText from '@/common/components/ui/long-text';
+import { HoursRows } from '@/features/hours/context/clients-context';
 import { cn } from '@/lib/utils';
 import { ColumnDef } from '@tanstack/react-table';
-import { HoursRows } from 'features/hours/context/clients-context';
 import { DataTableColumnHeader } from './data-table-column-header';
 
 export const columns: ColumnDef<HoursRows>[] = [

@@ -1,12 +1,12 @@
 'use client';
 
 import { TableCell, TableRow } from '@/common/components/ui/table';
+import { useTable } from '@/features/clients/contexts/TableContext';
+import { Client } from '@/features/clients/data/schema';
 import { useDroppable } from '@dnd-kit/core';
 import { flexRender, Row } from '@tanstack/react-table';
 import { forwardRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTable } from 'features/clients/contexts/TableContext';
-import { Client } from 'features/clients/data/schema';
 
 interface Props {
   row: Row<Client>;
@@ -36,9 +36,8 @@ export const DroppableTableRow = forwardRef<HTMLTableRowElement, Props>(
       <TableRow
         ref={combinedRef}
         data-state={row.getIsSelected() && 'selected'}
-        className={`group/row cursor-pointer transition transition-transform duration-300 ease-in-out ${
-          isOver ? 'bg-accent scale-[.97]' : ''
-        }`}
+        className={`group/row cursor-pointer transition transition-transform duration-300 ease-in-out ${isOver ? 'bg-accent scale-[.97]' : ''
+          }`}
         onClick={() => {
           setCurrentRow(row.original);
           setOpen('edit'); // or the appropriate dialog type for detail view
