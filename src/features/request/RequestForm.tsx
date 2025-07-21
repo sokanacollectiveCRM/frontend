@@ -1,7 +1,8 @@
 import { Form } from '@/common/components/ui/form';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import styles from './RequestForm.module.scss';
+import RequestFormDesktop from './RequestFormDesktop';
 import { Step1Personal } from './Step1Personal';
 import { Step2Home } from './Step2Health';
 import {
@@ -17,17 +18,16 @@ import {
 import { RequestFormValues, useRequestForm } from './useRequestForm';
 
 export default function RequestForm() {
+  const [isDesktop, setIsDesktop] = useState(() => window.matchMedia('(min-width: 600px)').matches);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const onSubmit = async (formData: RequestFormValues) => {
-    // Map number_of_babies string to integer
     const babyCountMap: Record<string, number> = {
       Singleton: 1,
       Twins: 2,
       Triplets: 3,
       Quadruplets: 4,
-      // Add more as needed
     };
     const payload = {
       ...formData,
@@ -61,10 +61,20 @@ export default function RequestForm() {
       setIsSubmitting(false);
     }
   };
-  const { form, step, totalSteps, handleNextStep, handleBack } =
-    useRequestForm(onSubmit);
+  const { form, step, totalSteps, handleNextStep, handleBack } = useRequestForm(onSubmit);
 
-  // Progress bar calculation
+  useEffect(() => {
+    const mql = window.matchMedia('(min-width: 600px)');
+    const onChange = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mql.addEventListener('change', onChange);
+    setIsDesktop(mql.matches);
+    return () => mql.removeEventListener('change', onChange);
+  }, []);
+
+  if (isDesktop) {
+    return <RequestFormDesktop />;
+  }
+
   const progress = ((step + 1) / totalSteps) * 100;
 
   if (isSubmitting) {

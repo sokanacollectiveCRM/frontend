@@ -6,22 +6,22 @@ import { z } from 'zod';
 export const fullSchema = z
   .object({
     // 1. Client Details
-    firstname: z.string().min(1),
-    lastname: z.string().min(1),
-    email: z.string().email(),
-    phone_number: z.string().min(1),
-    pronouns: z.string().min(1),
+    firstname: z.string().min(1, 'Please enter your first name.'),
+    lastname: z.string().min(1, 'Please enter your last name.'),
+    email: z.string().email('Please enter a valid email address.'),
+    phone_number: z.string().min(1, 'Please enter your mobile phone number.'),
+    pronouns: z.string().min(1, 'Please select your pronouns.'),
     pronouns_other: z.string().optional(),
-    preferred_contact_method: z.string().min(1),
+    preferred_contact_method: z.string().min(1, 'Please select your preferred contact method.'),
     preferred_name: z.string().optional(),
     children_expected: z.string().optional(),
 
     // 2. Home Details
-    address: z.string().min(1),
-    city: z.string().min(1),
-    state: z.string().min(1),
-    zip_code: z.string().min(1),
-    home_phone: z.string().min(1), // renamed from home_phone to just "Phone"
+    address: z.string().min(1, 'Please enter your address.'),
+    city: z.string().min(1, 'Please enter your city.'),
+    state: z.string().min(1, 'Please enter your state.'),
+    zip_code: z.string().min(1, 'Please enter your zip code.'),
+    home_phone: z.string().min(1, 'Please enter your home phone number.'), // renamed from home_phone to just "Phone"
     home_type: z.string().optional(), // made optional
     home_access: z.string().optional(), // made optional
     pets: z.string().optional(), // made optional
@@ -37,7 +37,7 @@ export const fullSchema = z
     family_pronouns: z.string().optional(),
 
     // 4. Referral
-    referral_source: z.string().min(1), // required
+    referral_source: z.string().min(1, 'Please tell us how you heard about us.'), // required
     referral_name: z.string().optional(), // made optional, allow "N/A"
     referral_email: z.string().email().optional(), // made optional
 
@@ -47,14 +47,14 @@ export const fullSchema = z
     health_notes: z.string().optional(),
 
     // 6. Pregnancy & Baby
-    due_date: z.string().min(1, 'Due date is required'),
-    birth_location: z.string().min(1, 'Birth location is required'),
-    birth_hospital: z.string().min(1, 'Hospital or birth center is required'),
+    due_date: z.string().min(1, 'Please enter your due date.'),
+    birth_location: z.string().min(1, 'Please enter your birth location.'),
+    birth_hospital: z.string().min(1, 'Please enter your hospital or birth center.'),
     number_of_babies: z
       .string()
       .min(1, 'Please select the number of babies you are expecting'),
     baby_name: z.string().optional(), // made optional
-    provider_type: z.string().min(1, 'Provider type is required'),
+    provider_type: z.string().min(1, 'Please select your provider type.'),
     pregnancy_number: z
       .union([z.string(), z.number()])
       .transform((val: string | number) => {
@@ -93,21 +93,21 @@ export const fullSchema = z
     // 8. Services Interested In
     services_interested: z
       .array(z.string())
-      .min(1, 'Select at least one service'),
+      .min(1, 'Please select at least one service.'),
     service_support_details: z
       .string()
-      .min(1, 'Please describe the support you are looking for'),
-    service_needed: z.string().min(1, 'Service needed is required'),
+      .min(1, 'Please describe the support you are looking for.'),
+    service_needed: z.string().min(1, 'Please tell us what service you need.'),
 
     // 9. Payment
-    payment_method: z.string().min(1, 'Payment method is required'),
+    payment_method: z.string().min(1, 'Please select a payment method.'),
     annual_income: z.string().optional(),
     service_specifics: z.string().optional(),
 
     // 10. Client Demographics
-    race_ethnicity: z.string().min(1, 'Race/ethnicity is required'),
-    primary_language: z.string().min(1, 'Primary language is required'),
-    client_age_range: z.string().min(1, 'Age range is required'),
+    race_ethnicity: z.string().min(1, 'Please select your race/ethnicity.'),
+    primary_language: z.string().min(1, 'Please select your primary language.'),
+    client_age_range: z.string().min(1, 'Please select your age range.'),
     insurance: z.string().optional(), // paused for later
     demographics_multi: z.array(z.string()).optional(), // experience categories
     demographics_annual_income: z.string().optional(), // for demographics step
