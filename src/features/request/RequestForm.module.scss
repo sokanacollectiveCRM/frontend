@@ -293,12 +293,69 @@
     }
   }
 
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .requestForm {
+      padding: 0;
+    }
+    .form-grid {
+      grid-template-columns: repeat(2, minmax(180px, 1fr));
+      gap: 2rem 2rem;
+    }
+    .progress-bar-container {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+    .form-floating-label {
+      position: absolute;
+      left: 0.1rem;
+      top: -0.6rem;
+      font-size: 1rem;
+      color: #757575;
+      pointer-events: none;
+      transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+      background: #fff;
+      padding: 0 0.2em;
+      z-index: 2;
+      font-family: "Roboto", Arial, sans-serif;
+      font-weight: 400;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+    .form-label--active {
+      top: -1.2rem;
+      font-size: 0.92rem;
+      color: #009688;
+      font-weight: 500;
+      transform: scale(0.98);
+    }
+  }
+  @media (min-width: 1024px) {
+    .form-grid {
+      grid-template-columns: repeat(4, minmax(180px, 1fr));
+      gap: 2rem 2rem;
+    }
+  }
+  // Remove or comment out the 2-column and 3-column grid breakpoints
+  /*
   @media (min-width: 601px) and (max-width: 899px) {
     .form-grid {
       grid-template-columns: repeat(2, minmax(180px, 1fr));
       gap: 1.5rem 1.5rem;
     }
   }
+  @media (min-width: 900px) and (max-width: 1199px) {
+    .form-grid {
+      grid-template-columns: repeat(3, minmax(200px, 1fr));
+      gap: 1.5rem 1.5rem;
+    }
+  }
+  @media (min-width: 1200px) {
+    .form-grid {
+      grid-template-columns: repeat(4, minmax(220px, 1fr));
+      gap: 2rem 2rem;
+    }
+  }
+  */
 
   @media (min-width: 900px) {
     .form-field {
@@ -310,23 +367,22 @@
       display: block;
       position: absolute;
       left: 0.1rem;
-      top: 2.1rem;
+      top: 0.4rem;
       background: none;
       font-size: 1.08rem;
       color: #757575;
       margin-bottom: 0;
       padding: 0;
       white-space: normal;
-      pointer-events: none;
+      pointer-events: auto;
       z-index: 2;
-      transition: color 0.22s cubic-bezier(0.4,0,0.2,1), font-size 0.22s cubic-bezier(0.4,0,0.2,1), transform 0.22s cubic-bezier(0.4,0,0.2,1), top 0.22s cubic-bezier(0.4,0,0.2,1);
-      transform: translateY(0) scale(1);
+      transition: color 0.22s cubic-bezier(0.4,0,0.2,1), font-size 0.22s cubic-bezier(0.4,0,0.2,1), top 0.22s cubic-bezier(0.4,0,0.2,1);
     }
     .form-label--active {
       color: #00897b;
       font-size: 0.95rem;
       background: none;
-      transform: translateY(-2.1rem) scale(0.85);
+      top: -1.1rem;
       margin-bottom: 0;
     }
     .form-input, .form-select {
@@ -337,17 +393,40 @@
     }
   }
 
-  @media (min-width: 900px) and (max-width: 1199px) {
-    .form-grid {
-      grid-template-columns: repeat(3, minmax(200px, 1fr));
-      gap: 1.5rem 1.5rem;
-    }
+  // Hospital/Birth Center and What # pregnancy/baby label tweaks for all breakpoints
+  .form-field.hospital-label .form-floating-label,
+  .form-field.pregnancy-number-label .form-floating-label {
+    top: -0.2rem;
+  }
+  .form-field.hospital-label .form-label--active,
+  .form-field.pregnancy-number-label .form-label--active {
+    top: -1.2rem;
   }
 
-  @media (min-width: 1200px) {
-    .form-grid {
-      grid-template-columns: repeat(4, minmax(220px, 1fr));
-      gap: 2rem 2rem;
-    }
+  // Hide default 0 for pregnancy number input until focus or value
+  .form-input.pregnancy-number-input:not(:focus):placeholder-shown {
+    color: transparent;
+  }
+
+  // Hide date input placeholder unless focused or has value
+  .form-input[type="date"]:not(:focus):placeholder-shown::-webkit-input-placeholder {
+    color: transparent;
+  }
+  .form-input[type="date"]:not(:focus):placeholder-shown::-moz-placeholder {
+    color: transparent;
+  }
+  .form-input[type="date"]:not(:focus):placeholder-shown:-ms-input-placeholder {
+    color: transparent;
+  }
+  .form-input[type="date"]:not(:focus):placeholder-shown::placeholder {
+    color: transparent;
+  }
+  .form-input[data-type="textarea"],
+  textarea.form-input {
+    min-height: 80px;
+    resize: vertical;
+    padding-top: 2.2rem;
+    padding-bottom: 0.5rem;
+    height: auto;
   }
 } 
