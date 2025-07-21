@@ -1,6 +1,7 @@
 import { withTokenRefresh } from './utils';
 
-const API_BASE = import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050';
+const API_BASE =
+  import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050';
 
 // QuickBooks API response type
 export interface QuickBooksInvoiceResponse {
@@ -41,10 +42,10 @@ export interface InvoiceLineItem {
 }
 
 export interface CreateInvoiceParams {
-  userId?: string;                   // ← optional since handled internally
-  internalCustomerId: string;       // ← required by your backend
+  userId?: string; // ← optional since handled internally
+  internalCustomerId: string; // ← required by your backend
   lineItems: InvoiceLineItem[];
-  dueDate: string;                  // ISO date string
+  dueDate: string; // ISO date string
   memo?: string;
 }
 
@@ -62,7 +63,7 @@ export async function createQuickBooksInvoice(
     // Since we're using admin-only approach, set userId to 'admin'
     const requestBody = {
       ...params,
-      userId: 'admin'  // This matches the userId we use in tokenUtils.ts
+      userId: 'admin', // This matches the userId we use in tokenUtils.ts
     };
 
     const res = await fetch(`${API_BASE}/quickbooks/invoice`, {
@@ -124,7 +125,7 @@ export async function getQuickBooksInvoices(): Promise<any[]> {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      credentials: 'include'
+      credentials: 'include',
     });
 
     if (!res.ok) {

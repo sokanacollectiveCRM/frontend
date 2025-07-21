@@ -1,8 +1,8 @@
-'use client'
+'use client';
 
-import { PasswordInput } from '@/common/components/form/PasswordInput'
-import { SelectDropdown } from '@/common/components/form/SelectDropdown'
-import { Button } from '@/common/components/ui/button'
+import { PasswordInput } from '@/common/components/form/PasswordInput';
+import { SelectDropdown } from '@/common/components/form/SelectDropdown';
+import { Button } from '@/common/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/common/components/ui/dialog'
+} from '@/common/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -18,14 +18,14 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/common/components/ui/form'
-import { Input } from '@/common/components/ui/input'
-import { toast } from '@/common/hooks/toast/use-toast'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
-import { userTypes } from '../data/data'
-import { HoursRows } from '../context/clients-context'
+} from '@/common/components/ui/form';
+import { Input } from '@/common/components/ui/input';
+import { toast } from '@/common/hooks/toast/use-toast';
+import { HoursRows } from '@/features/hours/context/clients-context';
+import { userTypes } from '@/features/hours/data/data';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 
 const formSchema = z
   .object({
@@ -49,7 +49,7 @@ const formSchema = z
           code: z.ZodIssueCode.custom,
           message: 'Password is required.',
           path: ['password'],
-        })
+        });
       }
 
       if (password.length < 8) {
@@ -57,7 +57,7 @@ const formSchema = z
           code: z.ZodIssueCode.custom,
           message: 'Password must be at least 8 characters long.',
           path: ['password'],
-        })
+        });
       }
 
       if (!password.match(/[a-z]/)) {
@@ -65,7 +65,7 @@ const formSchema = z
           code: z.ZodIssueCode.custom,
           message: 'Password must contain at least one lowercase letter.',
           path: ['password'],
-        })
+        });
       }
 
       if (!password.match(/\d/)) {
@@ -73,7 +73,7 @@ const formSchema = z
           code: z.ZodIssueCode.custom,
           message: 'Password must contain at least one number.',
           path: ['password'],
-        })
+        });
       }
 
       if (password !== confirmPassword) {
@@ -81,44 +81,44 @@ const formSchema = z
           code: z.ZodIssueCode.custom,
           message: "Passwords don't match.",
           path: ['confirmPassword'],
-        })
+        });
       }
     }
-  })
-type UserForm = z.infer<typeof formSchema>
+  });
+type UserForm = z.infer<typeof formSchema>;
 
 interface Props {
-  currentRow?: HoursRows
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  currentRow?: HoursRows;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 export function UsersActionDialog({ currentRow, open, onOpenChange }: Props) {
-  const isEdit = !!currentRow
+  const isEdit = !!currentRow;
   const form = useForm<UserForm>({
     resolver: zodResolver(formSchema),
     defaultValues: isEdit
       ? {
-          ...currentRow,
-          password: '',
-          confirmPassword: '',
-          isEdit,
-        }
+        ...currentRow,
+        password: '',
+        confirmPassword: '',
+        isEdit,
+      }
       : {
-          firstName: '',
-          lastName: '',
-          username: '',
-          email: '',
-          role: '',
-          phoneNumber: '',
-          password: '',
-          confirmPassword: '',
-          isEdit,
-        },
-  })
+        firstName: '',
+        lastName: '',
+        username: '',
+        email: '',
+        role: '',
+        phoneNumber: '',
+        password: '',
+        confirmPassword: '',
+        isEdit,
+      },
+  });
 
   const onSubmit = (values: UserForm) => {
-    form.reset()
+    form.reset();
     toast({
       title: 'You submitted the following values:',
       description: (
@@ -126,18 +126,18 @@ export function UsersActionDialog({ currentRow, open, onOpenChange }: Props) {
           <code className='text-white'>{JSON.stringify(values, null, 2)}</code>
         </pre>
       ),
-    })
-    onOpenChange(false)
-  }
+    });
+    onOpenChange(false);
+  };
 
-  const isPasswordTouched = !!form.formState.dirtyFields.password
+  const isPasswordTouched = !!form.formState.dirtyFields.password;
 
   return (
     <Dialog
       open={open}
       onOpenChange={(state) => {
-        form.reset()
-        onOpenChange(state)
+        form.reset();
+        onOpenChange(state);
       }}
     >
       <DialogContent className='sm:max-w-lg'>
@@ -323,5 +323,5 @@ export function UsersActionDialog({ currentRow, open, onOpenChange }: Props) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

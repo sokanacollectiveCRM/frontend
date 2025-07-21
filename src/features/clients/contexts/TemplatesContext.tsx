@@ -1,20 +1,29 @@
-import { useTemplates } from '@/common/hooks/contracts/useTemplates'
-import React, { createContext, useContext, useEffect } from 'react'
+import { useTemplates } from '@/common/hooks/contracts/useTemplates';
+import React, { createContext, useContext, useEffect } from 'react';
 
-const TemplatesContext = createContext<ReturnType<typeof useTemplates> | null>(null)
+const TemplatesContext = createContext<ReturnType<typeof useTemplates> | null>(
+  null
+);
 
-export const TemplatesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const value = useTemplates()
+export const TemplatesProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const value = useTemplates();
 
   useEffect(() => {
-    value.getTemplates()
+    value.getTemplates();
   }, []);
 
-  return <TemplatesContext.Provider value={value}>{children}</TemplatesContext.Provider>
-}
+  return (
+    <TemplatesContext.Provider value={value}>
+      {children}
+    </TemplatesContext.Provider>
+  );
+};
 
 export const useTemplatesContext = () => {
-  const context = useContext(TemplatesContext)
-  if (!context) throw new Error('useTemplates must be used within TemplatesProvider')
-  return context
-}
+  const context = useContext(TemplatesContext);
+  if (!context)
+    throw new Error('useTemplates must be used within TemplatesProvider');
+  return context;
+};

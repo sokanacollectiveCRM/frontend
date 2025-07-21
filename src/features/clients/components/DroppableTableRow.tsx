@@ -1,15 +1,12 @@
 'use client';
 
-import {
-  TableCell,
-  TableRow,
-} from '@/common/components/ui/table';
+import { TableCell, TableRow } from '@/common/components/ui/table';
+import { useTable } from '@/features/clients/contexts/TableContext';
+import { Client } from '@/features/clients/data/schema';
 import { useDroppable } from '@dnd-kit/core';
 import { flexRender, Row } from '@tanstack/react-table';
 import { forwardRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTable } from '../contexts/TableContext';
-import { Client } from '../data/schema';
 
 interface Props {
   row: Row<Client>;

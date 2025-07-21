@@ -1,17 +1,30 @@
-import { LoadingOverlay } from "@/common/components/loading/LoadingOverlay";
-import { Button } from "@/common/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/common/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/common/components/ui/form";
-import { Input } from "@/common/components/ui/input";
-import { Separator } from "@/common/components/ui/separator";
-import { Textarea } from "@/common/components/ui/textarea";
+import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
+import { Button } from '@/common/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/common/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/common/components/ui/form';
+import { Input } from '@/common/components/ui/input';
+import { Separator } from '@/common/components/ui/separator';
+import { Textarea } from '@/common/components/ui/textarea';
+import UserAvatar from '@/common/components/user/UserAvatar';
 import { useUser } from '@/common/hooks/user/useUser';
 import saveUser from '@/common/utils/saveUser';
-import { Loader2 } from "lucide-react";
-import { ChangeEvent } from "react";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import UserAvatar from "../../../common/components/user/UserAvatar";
+import { Loader2 } from 'lucide-react';
+import { ChangeEvent } from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 
 interface ProfileFormValues {
   bio?: string;
@@ -23,7 +36,7 @@ export const Profile = () => {
 
   const profileForm = useForm<ProfileFormValues>({
     defaultValues: {
-      bio: "",
+      bio: '',
     },
   });
 
@@ -42,20 +55,22 @@ export const Profile = () => {
       await checkAuth();
       profileForm.reset();
     } catch (err) {
-      console.error("User NOT saved successfully:", err);
-      toast.error(err instanceof Error ? err.message : 'Could not save changes.');
+      console.error('User NOT saved successfully:', err);
+      toast.error(
+        err instanceof Error ? err.message : 'Could not save changes.'
+      );
     }
   };
 
   return (
     <div>
       <LoadingOverlay isLoading={isLoading} />
-      <Card className="min-h-96 py-5">
+      <Card className='min-h-96 py-5'>
         <CardHeader>
           <CardTitle>Profile</CardTitle>
           <CardDescription>This is how others see you</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col flex-1">
+        <CardContent className='flex flex-col flex-1'>
           <Card>
             <CardContent>
               <UserAvatar
@@ -72,22 +87,25 @@ export const Profile = () => {
           <Separator />
 
           <Form {...profileForm}>
-            <form onSubmit={profileForm.handleSubmit(submitProfileForm)} className="flex flex-col flex-1 py-5 space-y-4">
+            <form
+              onSubmit={profileForm.handleSubmit(submitProfileForm)}
+              className='flex flex-col flex-1 py-5 space-y-4'
+            >
               <FormField
                 control={profileForm.control}
-                name="profile_picture"
+                name='profile_picture'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Profile Picture</FormLabel>
                     <FormControl>
                       <Input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
+                        type='file'
+                        accept='image/jpeg,image/png,image/webp'
                         onChange={(e: ChangeEvent<HTMLInputElement>) => {
                           const file = e.target.files?.[0];
                           field.onChange(file || undefined);
                         }}
-                        className="cursor-pointer"
+                        className='cursor-pointer'
                       />
                     </FormControl>
                     <FormMessage />
@@ -97,20 +115,27 @@ export const Profile = () => {
 
               <FormField
                 control={profileForm.control}
-                name="bio"
+                name='bio'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="pb-1">Bio</FormLabel>
+                    <FormLabel className='pb-1'>Bio</FormLabel>
                     <FormControl>
-                      <Textarea placeholder={`Current: ${user?.bio || ''}`} {...field} />
+                      <Textarea
+                        placeholder={`Current: ${user?.bio || ''}`}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <Button type="submit" className="cursor-pointer mt-10">
-                {isLoading ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'Save Changes'}
+              <Button type='submit' className='cursor-pointer mt-10'>
+                {isLoading ? (
+                  <Loader2 className='h-4 w-4 animate-spin mx-auto' />
+                ) : (
+                  'Save Changes'
+                )}
               </Button>
             </form>
           </Form>

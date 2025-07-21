@@ -5,7 +5,13 @@ import { useUser } from '@/common/hooks/user/useUser';
 import { toast } from 'sonner';
 
 import { Button } from '@/common/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/common/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/common/components/ui/card';
 import { Input } from '@/common/components/ui/input';
 import { Label } from '@/common/components/ui/label';
 
@@ -150,20 +156,22 @@ export default function ResetPassword() {
   };
 
   return (
-    <div className="flex flex-col gap-6 max-w-md mx-auto">
+    <div className='flex flex-col gap-6 max-w-md mx-auto'>
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Set New Password</CardTitle>
-          <CardDescription>Enter a new password below to complete your reset.</CardDescription>
+          <CardTitle className='text-2xl'>Set New Password</CardTitle>
+          <CardDescription>
+            Enter a new password below to complete your reset.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-            <div className="grid gap-2">
-              <Label htmlFor="password">New Password</Label>
+          <form onSubmit={handleSubmit} className='flex flex-col gap-6'>
+            <div className='grid gap-2'>
+              <Label htmlFor='password'>New Password</Label>
               <Input
-                id="password"
-                type="password"
-                placeholder="New Password"
+                id='password'
+                type='password'
+                placeholder='New Password'
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -178,19 +186,19 @@ export default function ResetPassword() {
               )}
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <div className='grid gap-2'>
+              <Label htmlFor='confirmPassword'>Confirm Password</Label>
               <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="Confirm New Password"
+                id='confirmPassword'
+                type='password'
+                placeholder='Confirm New Password'
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type='submit' className='w-full' disabled={isLoading}>
               {isLoading ? 'Updating...' : 'Update Password'}
             </Button>
           </form>

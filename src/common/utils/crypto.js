@@ -1,3 +1,4 @@
+/* eslint-env browser */
 export async function generateKeyPair() {
   const keyPair = await window.crypto.subtle.generateKey(
     {

@@ -7,7 +7,7 @@ import QuickBooksConnect from './QuickBooksConnect'; // same folder; adjust if y
  * Drop this into DashboardLayout alongside the other *Routes() factories.
  */
 const QuickBooksRoutes = () => (
-  <Route path="/integrations/quickbooks" element={<QuickBooksConnect />} />
+  <Route path='/integrations/quickbooks' element={<QuickBooksConnect />} />
 );
 
 export default QuickBooksRoutes;

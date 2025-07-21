@@ -1,5 +1,6 @@
 // src/api/payments/stripe.ts
-const API_BASE = import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050';
+const API_BASE =
+  import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050';
 
 export interface StoredCard {
   id: string;
@@ -58,18 +59,24 @@ export interface UpdateCardRequest {
 /**
  * Store a card on file for the authenticated user
  */
-export async function storeCard(customerId: string, cardToken: string): Promise<StoredCard> {
+export async function storeCard(
+  customerId: string,
+  cardToken: string
+): Promise<StoredCard> {
   const token = localStorage.getItem('authToken');
   if (!token) throw new Error('Not authenticated — please log in first');
 
-  const response = await fetch(`${API_BASE}/api/payments/customers/${customerId}/cards`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ cardToken })
-  });
+  const response = await fetch(
+    `${API_BASE}/api/payments/customers/${customerId}/cards`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ cardToken }),
+    }
+  );
 
   const result: StoreCardResponse = await response.json();
 
@@ -87,18 +94,25 @@ export async function storeCard(customerId: string, cardToken: string): Promise<
 /**
  * Update an existing card with a new card token
  */
-export async function updateCard(customerId: string, paymentMethodId: string, cardToken: string): Promise<StoredCard> {
+export async function updateCard(
+  customerId: string,
+  paymentMethodId: string,
+  cardToken: string
+): Promise<StoredCard> {
   const token = localStorage.getItem('authToken');
   if (!token) throw new Error('Not authenticated — please log in first');
 
-  const response = await fetch(`${API_BASE}/api/payments/customers/${customerId}/cards/${paymentMethodId}`, {
-    method: 'PUT',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ cardToken })
-  });
+  const response = await fetch(
+    `${API_BASE}/api/payments/customers/${customerId}/cards/${paymentMethodId}`,
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ cardToken }),
+    }
+  );
 
   const result: UpdateCardResponse = await response.json();
 
@@ -116,18 +130,25 @@ export async function updateCard(customerId: string, paymentMethodId: string, ca
 /**
  * Charge a customer's default payment method (Admin only)
  */
-export async function chargeCard(customerId: string, amount: number, description: string): Promise<any> {
+export async function chargeCard(
+  customerId: string,
+  amount: number,
+  description: string
+): Promise<any> {
   const token = localStorage.getItem('authToken');
   if (!token) throw new Error('Not authenticated — please log in first');
 
-  const response = await fetch(`${API_BASE}/api/payments/customers/${customerId}/charge`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ amount, description })
-  });
+  const response = await fetch(
+    `${API_BASE}/api/payments/customers/${customerId}/charge`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ amount, description }),
+    }
+  );
 
   const result: ChargeCardResponse = await response.json();
 
@@ -141,17 +162,22 @@ export async function chargeCard(customerId: string, amount: number, description
 /**
  * Get all stored cards for the authenticated user
  */
-export async function getStoredCards(customerId: string): Promise<StoredCard[]> {
+export async function getStoredCards(
+  customerId: string
+): Promise<StoredCard[]> {
   const token = localStorage.getItem('authToken');
   if (!token) throw new Error('Not authenticated — please log in first');
 
-  const response = await fetch(`${API_BASE}/api/payments/customers/${customerId}/cards`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
+  const response = await fetch(
+    `${API_BASE}/api/payments/customers/${customerId}/cards`,
+    {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
     }
-  });
+  );
 
   const result: GetCardsResponse = await response.json();
 
@@ -165,17 +191,23 @@ export async function getStoredCards(customerId: string): Promise<StoredCard[]> 
 /**
  * Delete a stored card
  */
-export async function deleteStoredCard(customerId: string, cardId: string): Promise<void> {
+export async function deleteStoredCard(
+  customerId: string,
+  cardId: string
+): Promise<void> {
   const token = localStorage.getItem('authToken');
   if (!token) throw new Error('Not authenticated — please log in first');
 
-  const response = await fetch(`${API_BASE}/api/payments/customers/${customerId}/cards/${cardId}`, {
-    method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
+  const response = await fetch(
+    `${API_BASE}/api/payments/customers/${customerId}/cards/${cardId}`,
+    {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
     }
-  });
+  );
 
   if (!response.ok) {
     const result = await response.json();
@@ -186,17 +218,23 @@ export async function deleteStoredCard(customerId: string, cardId: string): Prom
 /**
  * Set a card as the default payment method
  */
-export async function setDefaultCard(customerId: string, cardId: string): Promise<void> {
+export async function setDefaultCard(
+  customerId: string,
+  cardId: string
+): Promise<void> {
   const token = localStorage.getItem('authToken');
   if (!token) throw new Error('Not authenticated — please log in first');
 
-  const response = await fetch(`${API_BASE}/api/payments/customers/${customerId}/cards/${cardId}/default`, {
-    method: 'PUT',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
+  const response = await fetch(
+    `${API_BASE}/api/payments/customers/${customerId}/cards/${cardId}/default`,
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
     }
-  });
+  );
 
   if (!response.ok) {
     const result = await response.json();
@@ -214,9 +252,9 @@ export async function getCustomersWithStripeId(): Promise<any[]> {
   const response = await fetch(`${API_BASE}/api/payments/customers`, {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    }
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
   });
 
   if (!response.ok) {
@@ -224,4 +262,4 @@ export async function getCustomersWithStripeId(): Promise<any[]> {
   }
 
   return await response.json();
-} 
+}

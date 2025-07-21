@@ -1,20 +1,25 @@
-import { Client, STATUS_LABELS, UserStatus } from '@/features/pipeline/data/schema'
-import { useDroppable } from '@dnd-kit/core'
-import { clsx } from 'clsx'
-import { UserCard } from './UserCard'
+import {
+  Client,
+  STATUS_LABELS,
+  UserStatus,
+} from '@/features/pipeline/data/schema';
+import { useDroppable } from '@dnd-kit/core';
+import { clsx } from 'clsx';
+import { UserCard } from './UserCard';
 type Props = {
-  id: UserStatus
-  users: Client[]
-}
+  id: UserStatus;
+  users: Client[];
+};
 
 export function UserColumn({ id, users }: Props) {
-  const { setNodeRef, isOver } = useDroppable({ id })
+  const { setNodeRef, isOver } = useDroppable({ id });
 
   return (
     <div
       ref={setNodeRef}
       className={`min-w-[300px] h-full h-min-[200px] rounded-lg border-2 border-double p-2 transition-colors 
-        duration-300 ease-in-out ${isOver ? 'bg-muted bg-accent/10 ring-2 ring-accent/40' : ''
+        duration-300 ease-in-out ${
+          isOver ? 'bg-muted bg-accent/10 ring-2 ring-accent/40' : ''
         }`}
     >
       <div
@@ -30,7 +35,6 @@ export function UserColumn({ id, users }: Props) {
           ))}
         </div>
       </div>
-
     </div>
-  )
+  );
 }

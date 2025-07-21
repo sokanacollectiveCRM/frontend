@@ -1,4 +1,4 @@
-import { Button } from '@/common/components/ui/button'
+import { Button } from '@/common/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -6,19 +6,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
-} from '@/common/components/ui/dropdown-menu'
-import { DotsHorizontalIcon } from '@radix-ui/react-icons'
-import { Row } from '@tanstack/react-table'
-import { Archive, Trash2 } from 'lucide-react'
-import { useUsers } from '../context/users-context'
-import { User } from '../data/schema'
+} from '@/common/components/ui/dropdown-menu';
+import { useUsers } from '@/features/clients/context/users-context';
+import { User } from '@/features/clients/data/schema';
+import { DotsHorizontalIcon } from '@radix-ui/react-icons';
+import { Row } from '@tanstack/react-table';
+import { Archive, Trash2 } from 'lucide-react';
 
 interface DataTableRowActionsProps {
-  row: Row<User>
+  row: Row<User>;
 }
 
 export function DataTableRowActions({ row }: DataTableRowActionsProps) {
-  const { setOpen, setCurrentRow } = useUsers()
+  const { setOpen, setCurrentRow } = useUsers();
   return (
     <>
       <DropdownMenu modal={false}>
@@ -50,18 +50,15 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
             </DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          {/* Invite user action only for status >= Matched */}
-          {['matching', 'contract', 'active'].includes((row.original.status || '').toLowerCase()) && (
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                setCurrentRow(row.original);
-                setOpen('invite');
-              }}
-            >
-              Invite User
-            </DropdownMenuItem>
-          )}
+          <DropdownMenuItem
+            onClick={(e) => {
+              e.stopPropagation();
+              setCurrentRow(row.original);
+              setOpen('invite');
+            }}
+          >
+            Invite to CRM
+          </DropdownMenuItem>
           <DropdownMenuItem
             onClick={(e) => {
               e.stopPropagation(); // ✅ prevent row click
@@ -78,5 +75,5 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
         </DropdownMenuContent>
       </DropdownMenu>
     </>
-  )
+  );
 }

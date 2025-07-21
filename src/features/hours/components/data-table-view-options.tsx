@@ -1,17 +1,17 @@
-import { Button } from '@/common/components/ui/button'
+import { Button } from '@/common/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-} from '@/common/components/ui/dropdown-menu'
-import { DropdownMenuTrigger } from '@radix-ui/react-dropdown-menu'
-import { MixerHorizontalIcon } from '@radix-ui/react-icons'
-import { Table } from '@tanstack/react-table'
+} from '@/common/components/ui/dropdown-menu';
+import { DropdownMenuTrigger } from '@radix-ui/react-dropdown-menu';
+import { MixerHorizontalIcon } from '@radix-ui/react-icons';
+import { Table } from '@tanstack/react-table';
 
 interface DataTableViewOptionsProps<TData> {
-  table: Table<TData>
+  table: Table<TData>;
 }
 
 export function DataTableViewOptions<TData>({
@@ -48,9 +48,9 @@ export function DataTableViewOptions<TData>({
               >
                 {column.id}
               </DropdownMenuCheckboxItem>
-            )
+            );
           })}
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

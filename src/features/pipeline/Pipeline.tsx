@@ -1,17 +1,21 @@
-import { Search } from '@/common/components/header/Search'
-import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay'
-import { useClients } from '@/common/hooks/clients/useClients'
-import { useUser } from '@/common/hooks/user/useUser'
-import { Header } from '@/common/layouts/Header'
-import { Main } from '@/common/layouts/Main'
-import updateClientStatus from '@/common/utils/updateClientStatus'
-import { UsersBoard } from '@/features/pipeline/components/UsersBoard'
-import { useEffect, useMemo, useState } from 'react'
-import { toast } from 'sonner'
-import { Client, clientListSchema, USER_STATUSES, UserStatus } from './data/schema'
+import { Search } from '@/common/components/header/Search';
+import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
+import { useClients } from '@/common/hooks/clients/useClients';
+import { useUser } from '@/common/hooks/user/useUser';
+import { Header } from '@/common/layouts/Header';
+import { Main } from '@/common/layouts/Main';
+import updateClientStatus from '@/common/utils/updateClientStatus';
+import { UsersBoard } from '@/features/pipeline/components/UsersBoard';
+import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import {
+  Client,
+  clientListSchema,
+  USER_STATUSES,
+  UserStatus,
+} from './data/schema';
 
 export default function Pipeline() {
-
   const { isLoading: userLoading } = useUser();
   const { clients, isLoading, getClients } = useClients();
   const [userList, setUserList] = useState<Client[]>([]);
@@ -37,14 +41,14 @@ export default function Pipeline() {
 
   const groupedUsers: Record<UserStatus, Client[]> = useMemo(() => {
     const groups: Record<UserStatus, Client[]> = {
-      'lead': [],
-      'contacted': [],
-      'matching': [],
-      'interviewing': [],
+      lead: [],
+      contacted: [],
+      matching: [],
+      interviewing: [],
       'follow up': [],
-      'contract': [],
-      'active': [],
-      'complete': [],
+      contract: [],
+      active: [],
+      complete: [],
     };
     for (const user of userList) {
       if (USER_STATUSES.includes(user.status as UserStatus)) {
@@ -72,22 +76,36 @@ export default function Pipeline() {
           </div>
         </div>
         <div className='-mx-4 flex-1 overflow-auto px-4 py-1 lg:flex-row lg:space-x-12 lg:space-y-0'>
-
           <UsersBoard
             usersByStatus={groupedUsers}
             onStatusChange={async (userId: string, newStatus: UserStatus) => {
               setUserList((prev) =>
-                prev.map((u) => (u.id === userId ? { ...u, status: newStatus } : u))
+                prev.map((u) =>
+                  u.id === userId ? { ...u, status: newStatus } : u
+                )
               );
 
               try {
-                const client = await updateClientStatus(userId, newStatus);
-                toast.success(`Client status updated to ${newStatus}`);
+                const result = await updateClientStatus(userId, newStatus);
+                if (result.success) {
+                  toast.success(`Client status updated to ${newStatus}`);
+                } else {
+                  toast.error(result.error || 'Failed to update client status');
+                  setUserList((prev) =>
+                    prev.map((u) =>
+                      u.id === userId ? { ...u, status: u.status } : u
+                    )
+                  );
+                }
               } catch (error) {
                 console.error('Failed to update user status:', error);
-                toast.error(`Something went wrong. ${error instanceof Error ? error.message : error}`);
+                toast.error(
+                  `Something went wrong. ${error instanceof Error ? error.message : error}`
+                );
                 setUserList((prev) =>
-                  prev.map((u) => (u.id === userId ? { ...u, status: u.status } : u))
+                  prev.map((u) =>
+                    u.id === userId ? { ...u, status: u.status } : u
+                  )
                 );
               }
             }}
@@ -95,5 +113,5 @@ export default function Pipeline() {
         </div>
       </Main>
     </div>
-  )
+  );
 }

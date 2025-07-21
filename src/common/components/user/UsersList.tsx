@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 
+import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
 import { useUser } from '@/common/hooks/user/useUser';
 import { User } from '@/common/types/user';
 import styled from 'styled-components';
-import { LoadingOverlay } from '../loading/LoadingOverlay';
 
 const UsersContainer = styled.div`
   margin-top: 2rem;
@@ -45,13 +45,10 @@ const ErrorMessage = styled.div`
   text-align: center;
 `;
 
-const LoadingMessage = styled.div`
-  text-align: center;
-  padding: 1rem;
-`;
+
 
 export default function UsersList() {
-  const { isLoading: userLoading } = useUser(); 
+  const { isLoading: userLoading } = useUser();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,8 +57,9 @@ export default function UsersList() {
     const fetchUsers = async () => {
       try {
         const token = localStorage.getItem('authToken');
+        const baseUrl = 'http://localhost:5050'; // Base URL for development
         const response = await fetch(
-          `${import.meta.env.VITE_APP_BACKEND_URL}/auth/users`,
+          `${baseUrl}/auth/users`,
           {
             credentials: 'include',
             headers: {
@@ -97,11 +95,13 @@ export default function UsersList() {
 
       <UsersContainer>
         {users.map((user) => (
-          <UserCard key={user.email ? user.email : `${user.firstname}@gmail.com`}>
+          <UserCard
+            key={user.email ? user.email : `${user.firstname}@gmail.com`}
+          >
             <UserInfo>
               <div>
                 <UserName>
-                  {user.firstname} {user.lastname} 
+                  {user.firstname} {user.lastname}
                 </UserName>
                 <UserEmail>{user.email}</UserEmail>
               </div>

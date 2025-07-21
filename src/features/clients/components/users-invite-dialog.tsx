@@ -1,4 +1,4 @@
-import { Button } from '@/common/components/ui/button'
+import { Button } from '@/common/components/ui/button';
 import {
   Dialog,
   DialogClose,
@@ -7,7 +7,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/common/components/ui/dialog'
+} from '@/common/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -15,15 +15,15 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/common/components/ui/form'
-import { Input } from '@/common/components/ui/input'
-import { Textarea } from '@/common/components/ui/textarea'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { MailPlus, Send } from 'lucide-react'
-import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
-import { useUsers } from '../context/users-context'
+} from '@/common/components/ui/form';
+import { Input } from '@/common/components/ui/input';
+import { Textarea } from '@/common/components/ui/textarea';
+import { useUsers } from '@/features/clients/context/users-context';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { MailPlus, Send } from 'lucide-react';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 
 const formSchema = z.object({
   email: z
@@ -31,12 +31,12 @@ const formSchema = z.object({
     .min(1, { message: 'Email is required.' })
     .email({ message: 'Email is invalid.' }),
   desc: z.string().optional(),
-})
-type UserInviteForm = z.infer<typeof formSchema>
+});
+type UserInviteForm = z.infer<typeof formSchema>;
 
 interface Props {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 export function UsersInviteDialog({ open, onOpenChange }: Props) {
@@ -71,10 +71,11 @@ export function UsersInviteDialog({ open, onOpenChange }: Props) {
       <DialogContent className='sm:max-w-md'>
         <DialogHeader className='text-left'>
           <DialogTitle className='flex items-center gap-2'>
-            <MailPlus /> Invite User
+            <MailPlus /> Invite Client
           </DialogTitle>
           <DialogDescription>
-            Invite this user to join your team by sending them an email invitation. You can add a personal note below.
+            Invite this client to create an account by sending them an email
+            invitation. You can add a personal note below.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -131,4 +132,4 @@ export function UsersInviteDialog({ open, onOpenChange }: Props) {
       </DialogContent>
     </Dialog>
   );
-} 
+}

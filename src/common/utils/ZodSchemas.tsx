@@ -1,11 +1,14 @@
-import { z } from "zod";
-import { STATES } from "./50States";
+import { z } from 'zod';
+import { STATES } from './50States';
 
 export const imageSchema = z
   .instanceof(File)
-  .refine((file) => ["image/jpeg", "image/png", "image/webp"].includes(file.type), {
-    message: "Only JPEG, PNG, or WebP images are allowed.",
-});
+  .refine(
+    (file) => ['image/jpeg', 'image/png', 'image/webp'].includes(file.type),
+    {
+      message: 'Only JPEG, PNG, or WebP images are allowed.',
+    }
+  );
 
 export const profileFormSchema = z.object({
   profile_picture: imageSchema.optional(),
@@ -19,7 +22,7 @@ export const accountFormSchema = z.object({
   address: z.string().max(300).optional(),
   city: z.string().max(300).optional(),
   state: z.string().max(300).optional(),
-  dob: z.string().max(300).optional()
+  dob: z.string().max(300).optional(),
 });
 
 export const workLogSchema = z.object({
@@ -27,4 +30,4 @@ export const workLogSchema = z.object({
   start_time: z.string().time(),
   end_date: z.string().date(),
   end_time: z.string().time(),
-})
+});

@@ -1,9 +1,7 @@
 import { Route } from 'react-router-dom';
 
-import RequestForm from "./RequestForm";
+import RequestForm from './RequestForm';
 
-const RequestRoutes = () => (
-    <Route path='request' element = {<RequestForm />} />
-);
+const RequestRoutes = () => <Route path='request' element={<RequestForm />} />;
 
-export default RequestRoutes
+export default RequestRoutes;

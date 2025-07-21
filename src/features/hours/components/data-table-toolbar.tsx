@@ -1,26 +1,26 @@
-import { Button } from '@/common/components/ui/button'
-import { Input } from '@/common/components/ui/input'
-import { Table } from '@tanstack/react-table'
-import { X } from 'lucide-react'
-import { userTypes } from '../data/data'
-import { DataTableFacetedFilter } from './data-table-faceted-filter'
-import { DataTableViewOptions } from './data-table-view-options'
+import { Button } from '@/common/components/ui/button';
+import { Input } from '@/common/components/ui/input';
+import { userTypes } from '@/features/hours/data/data';
+import { Table } from '@tanstack/react-table';
+import { X } from 'lucide-react';
+import { DataTableFacetedFilter } from './data-table-faceted-filter';
+import { DataTableViewOptions } from './data-table-view-options';
 
 interface DataTableToolbarProps<TData> {
-  table: Table<TData>
+  table: Table<TData>;
 }
 
 export function DataTableToolbar<TData>({
   table,
 }: DataTableToolbarProps<TData>) {
-  const isFiltered = table.getState().columnFilters.length > 0
+  const isFiltered = table.getState().columnFilters.length > 0;
 
   return (
     <div className='flex items-center justify-between'>
       <div className='flex flex-1 flex-col-reverse items-start gap-y-2 sm:flex-row sm:items-center sm:space-x-2'>
         <Input
           placeholder='Filter users...'
-          value={ 
+          value={
             (table.getColumn('username')?.getFilterValue() as string) ?? ''
           }
           onChange={(event) =>
@@ -62,5 +62,5 @@ export function DataTableToolbar<TData>({
       </div>
       <DataTableViewOptions table={table} />
     </div>
-  )
+  );
 }

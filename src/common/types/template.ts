@@ -1,5 +1,5 @@
 export type Template = {
-  id: string,
+  id: string;
   name: string;
   depositFee: number;
   serviceFee: number;

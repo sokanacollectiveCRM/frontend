@@ -1,26 +1,30 @@
-'use client'
-import { Alert, AlertDescription, AlertTitle } from '@/common/components/ui/alert'
-import { ConfirmDialog } from '@/common/components/ui/confirm-dialog'
-import { Input } from '@/common/components/ui/input'
-import { Label } from '@/common/components/ui/label'
-import { toast } from '@/common/hooks/toast/use-toast'
-import { TriangleAlert } from 'lucide-react'
-import { useState } from 'react'
-import { HoursRows } from '../context/clients-context'
+'use client';
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from '@/common/components/ui/alert';
+import { ConfirmDialog } from '@/common/components/ui/confirm-dialog';
+import { Input } from '@/common/components/ui/input';
+import { Label } from '@/common/components/ui/label';
+import { toast } from '@/common/hooks/toast/use-toast';
+import { HoursRows } from '@/features/hours/context/clients-context';
+import { TriangleAlert } from 'lucide-react';
+import { useState } from 'react';
 
 interface Props {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  currentRow: HoursRows
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  currentRow: HoursRows;
 }
 
 export function UsersDeleteDialog({ open, onOpenChange, currentRow }: Props) {
-  const [value, setValue] = useState('')
+  const [value, setValue] = useState('');
 
   const handleDelete = () => {
-    if (value.trim() !== currentRow.client.firstName) return
+    if (value.trim() !== currentRow.client.firstName) return;
 
-    onOpenChange(false)
+    onOpenChange(false);
     toast({
       title: 'The following user has been deleted:',
       description: (
@@ -30,8 +34,8 @@ export function UsersDeleteDialog({ open, onOpenChange, currentRow }: Props) {
           </code>
         </pre>
       ),
-    })
-  }
+    });
+  };
 
   return (
     <ConfirmDialog
@@ -54,8 +58,8 @@ export function UsersDeleteDialog({ open, onOpenChange, currentRow }: Props) {
             Are you sure you want to delete{' '}
             <span className='font-bold'>{currentRow.client.firstName}</span>?
             <br />
-            This action will permanently remove the user with the role of{' '}
-            from the system. This cannot be undone.
+            This action will permanently remove the user with the role of from
+            the system. This cannot be undone.
           </p>
 
           <Label className='my-2'>
@@ -78,5 +82,5 @@ export function UsersDeleteDialog({ open, onOpenChange, currentRow }: Props) {
       confirmText='Delete'
       destructive
     />
-  )
+  );
 }

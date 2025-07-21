@@ -1,8 +1,8 @@
-import LongText from '@/common/components/ui/long-text'
-import { cn } from '@/lib/utils'
-import { ColumnDef } from '@tanstack/react-table'
-import { HoursRows } from '../context/clients-context'
-import { DataTableColumnHeader } from './data-table-column-header'
+import LongText from '@/common/components/ui/long-text';
+import { HoursRows } from '@/features/hours/context/clients-context';
+import { cn } from '@/lib/utils';
+import { ColumnDef } from '@tanstack/react-table';
+import { DataTableColumnHeader } from './data-table-column-header';
 
 export const columns: ColumnDef<HoursRows>[] = [
   {
@@ -11,9 +11,9 @@ export const columns: ColumnDef<HoursRows>[] = [
       <DataTableColumnHeader column={column} title='Client' />
     ),
     cell: ({ row }) => {
-      const { firstName, lastName } = row.original.client
-      const fullName = `${firstName} ${lastName}`
-      return <LongText className='max-w-36'>{fullName}</LongText>
+      const { firstName, lastName } = row.original.client;
+      const fullName = `${firstName} ${lastName}`;
+      return <LongText className='max-w-36'>{fullName}</LongText>;
     },
     meta: { className: 'w-36' },
   },
@@ -23,9 +23,9 @@ export const columns: ColumnDef<HoursRows>[] = [
       <DataTableColumnHeader column={column} title='Doula' />
     ),
     cell: ({ row }) => {
-      const { firstName, lastName } = row.original.doula
-      const fullName = `${firstName} ${lastName}`
-      return <LongText className='max-w-36'>{fullName}</LongText>
+      const { firstName, lastName } = row.original.doula;
+      const fullName = `${firstName} ${lastName}`;
+      return <LongText className='max-w-36'>{fullName}</LongText>;
     },
     meta: { className: 'w-36' },
   },
@@ -51,7 +51,9 @@ export const columns: ColumnDef<HoursRows>[] = [
       <DataTableColumnHeader column={column} title='End' />
     ),
     cell: ({ row }) => (
-      <div className='w-fit text-nowrap flex flex-row items-center h-8 w-8'>{row.getValue('end_time')}</div>
+      <div className='w-fit text-nowrap flex flex-row items-center h-8 w-8'>
+        {row.getValue('end_time')}
+      </div>
     ),
   },
   {
@@ -88,14 +90,13 @@ export const columns: ColumnDef<HoursRows>[] = [
       <DataTableColumnHeader column={column} title='Notes' />
     ),
     cell: ({ row }) => {
-      const noteContent = row.original.note?.content || "";
-      return <LongText className='max-w-36'>{noteContent}</LongText>
-    }
-    ,
+      const noteContent = row.original.note?.content || '';
+      return <LongText className='max-w-36'>{noteContent}</LongText>;
+    },
     meta: {
-      className: 'w-36'
+      className: 'w-36',
     },
     enableHiding: false,
     enableSorting: true,
   },
-]
+];

@@ -1,28 +1,32 @@
-'use client'
-import { Alert, AlertDescription, AlertTitle } from '@/common/components/ui/alert'
-import { ConfirmDialog } from '@/common/components/ui/confirm-dialog'
-import { Input } from '@/common/components/ui/input'
-import { Label } from '@/common/components/ui/label'
-import { toast } from '@/common/hooks/toast/use-toast'
-import { TriangleAlert } from 'lucide-react'
-import { useState } from 'react'
-import { User } from '../data/schema'
+'use client';
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from '@/common/components/ui/alert';
+import { ConfirmDialog } from '@/common/components/ui/confirm-dialog';
+import { Input } from '@/common/components/ui/input';
+import { Label } from '@/common/components/ui/label';
+import { toast } from '@/common/hooks/toast/use-toast';
+import { User } from '@/features/clients/data/schema';
+import { TriangleAlert } from 'lucide-react';
+import { useState } from 'react';
 
 interface Props {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  currentRow: User
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  currentRow: User;
 }
 
 export function UsersDeleteDialog({ open, onOpenChange, currentRow }: Props) {
-  const [value, setValue] = useState('')
+  const [value, setValue] = useState('');
 
   const handleDelete = () => {
     const { firstname, lastname } = currentRow;
-    const fullName = `${firstname} ${lastname}`
-    if (value.trim() !== fullName) return
+    const fullName = `${firstname} ${lastname}`;
+    if (value.trim() !== fullName) return;
 
-    onOpenChange(false)
+    onOpenChange(false);
     toast({
       title: 'The following user has been deleted:',
       description: (
@@ -32,14 +36,15 @@ export function UsersDeleteDialog({ open, onOpenChange, currentRow }: Props) {
           </code>
         </pre>
       ),
-    })
-  }
+    });
+  };
 
   return (
     <ConfirmDialog
       open={open}
       onOpenChange={onOpenChange}
       handleConfirm={handleDelete}
+      className='max-w-sm'
       title={
         <span className='text-destructive'>
           <TriangleAlert
@@ -52,10 +57,9 @@ export function UsersDeleteDialog({ open, onOpenChange, currentRow }: Props) {
       desc={
         <div className='space-y-4'>
           <p className='mb-2'>
-            Are you sure you want to delete{' '}
-            <br />
-            This action will permanently remove the user with the role of{' '}
-            from the system. This cannot be undone.
+            Are you sure you want to delete <br />
+            This action will permanently remove the user with the role of from
+            the system. This cannot be undone.
           </p>
 
           <Label className='my-2'>
@@ -78,5 +82,5 @@ export function UsersDeleteDialog({ open, onOpenChange, currentRow }: Props) {
       confirmText='Delete'
       destructive
     />
-  )
-} 
+  );
+}

@@ -5,7 +5,10 @@ type LoadingOverlayProps = {
   delay?: number; // optional fade-out delay in ms
 };
 
-export function LoadingOverlay({ isLoading, delay = 500 }: LoadingOverlayProps) {
+export function LoadingOverlay({
+  isLoading,
+  delay = 500,
+}: LoadingOverlayProps) {
   const [show, setShow] = useState(true);
 
   useEffect(() => {
@@ -25,7 +28,7 @@ export function LoadingOverlay({ isLoading, delay = 500 }: LoadingOverlayProps) 
         isLoading ? 'opacity-100' : 'opacity-0'
       }`}
     >
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary" />
+      <div className='animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary' />
     </div>
   );
 }

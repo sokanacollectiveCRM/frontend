@@ -18,14 +18,14 @@ const PaymentForm = ({ amount, docNumber }: PaymentFormProps) => {
     number: '',
     expMonth: '',
     expYear: '',
-    cvc: ''
+    cvc: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<PaymentResponse | null>(null);
 
   const handleCardChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setCard(prev => ({ ...prev, [name]: value }));
+    setCard((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,16 +37,17 @@ const PaymentForm = ({ amount, docNumber }: PaymentFormProps) => {
       const response = await fetch('/quickbooks/simulate-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount, card, doc_number: docNumber })
+        body: JSON.stringify({ amount, card, doc_number: docNumber }),
       });
 
       const data: PaymentResponse = await response.json();
 
       if (!response.ok) {
-        throw new Error(JSON.stringify(data.error || 'An unknown error occurred.'));
+        throw new Error(
+          JSON.stringify(data.error || 'An unknown error occurred.')
+        );
       }
       setResult(data);
-
     } catch (error: any) {
       setResult({ error: error.message });
     } finally {
@@ -55,17 +56,26 @@ const PaymentForm = ({ amount, docNumber }: PaymentFormProps) => {
   };
 
   return (
-    <div style={{ maxWidth: '400px', margin: '2rem auto', fontFamily: 'sans-serif' }}>
+    <div
+      style={{
+        maxWidth: '400px',
+        margin: '2rem auto',
+        fontFamily: 'sans-serif',
+      }}
+    >
       <h2>Simulate a Payment</h2>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <form
+        onSubmit={handleSubmit}
+        style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+      >
         <div style={{ marginBottom: '0.75rem', fontWeight: 600 }}>
           Amount: ${amount.toFixed(2)}
         </div>
         <input
-          name="number"
+          name='number'
           value={card.number}
           onChange={handleCardChange}
-          placeholder="Card Number (e.g., 4111...)"
+          placeholder='Card Number (e.g., 4111...)'
           required
           style={{
             marginBottom: '0.75rem',
@@ -76,10 +86,10 @@ const PaymentForm = ({ amount, docNumber }: PaymentFormProps) => {
           }}
         />
         <input
-          name="expMonth"
+          name='expMonth'
           value={card.expMonth}
           onChange={handleCardChange}
-          placeholder="Expiry Month (e.g., 12)"
+          placeholder='Expiry Month (e.g., 12)'
           required
           style={{
             marginBottom: '0.75rem',
@@ -90,10 +100,10 @@ const PaymentForm = ({ amount, docNumber }: PaymentFormProps) => {
           }}
         />
         <input
-          name="expYear"
+          name='expYear'
           value={card.expYear}
           onChange={handleCardChange}
-          placeholder="Expiry Year (e.g., 2025)"
+          placeholder='Expiry Year (e.g., 2025)'
           required
           style={{
             marginBottom: '0.75rem',
@@ -104,10 +114,10 @@ const PaymentForm = ({ amount, docNumber }: PaymentFormProps) => {
           }}
         />
         <input
-          name="cvc"
+          name='cvc'
           value={card.cvc}
           onChange={handleCardChange}
-          placeholder="CVC (e.g., 123)"
+          placeholder='CVC (e.g., 123)'
           required
           style={{
             marginBottom: '0.75rem',
@@ -118,7 +128,7 @@ const PaymentForm = ({ amount, docNumber }: PaymentFormProps) => {
           }}
         />
         <button
-          type="submit"
+          type='submit'
           disabled={isLoading}
           style={{
             padding: '0.75rem',
@@ -137,12 +147,29 @@ const PaymentForm = ({ amount, docNumber }: PaymentFormProps) => {
       </form>
 
       {result && (
-        <div style={{ marginTop: '1rem', padding: '1rem', border: '1px solid #ccc', borderRadius: '4px' }}>
+        <div
+          style={{
+            marginTop: '1rem',
+            padding: '1rem',
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+          }}
+        >
           <h4>API Response:</h4>
           {result.error ? (
-            <pre style={{ color: 'red', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{result.error}</pre>
+            <pre
+              style={{
+                color: 'red',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-all',
+              }}
+            >
+              {result.error}
+            </pre>
           ) : (
-            <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{JSON.stringify(result, null, 2)}</pre>
+            <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+              {JSON.stringify(result, null, 2)}
+            </pre>
           )}
         </div>
       )}
@@ -150,4 +177,4 @@ const PaymentForm = ({ amount, docNumber }: PaymentFormProps) => {
   );
 };
 
-export default PaymentForm; 
+export default PaymentForm;

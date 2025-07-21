@@ -33,20 +33,20 @@ const serviceSchema = z.union([
   z.literal('Perinatal Support'),
   z.literal('Abortion Support'),
   z.literal('Other'),
-])
-export type serviceNeeded = z.infer<typeof serviceSchema>
+]);
+export type serviceNeeded = z.infer<typeof serviceSchema>;
 
 const userDetailsSchema = z.object({
   id: z.string(),
-  email: z.string().optional(), 
+  email: z.string().optional(),
   firstname: z.string(),
   lastname: z.string(),
-  profile_picture: z.string().nullable().optional(), 
+  profile_picture: z.string().nullable().optional(),
 });
 
 export const clientSchema = z.object({
   id: z.string(),
-  serviceNeeded: serviceSchema.nullable(), 
+  serviceNeeded: serviceSchema.nullable(),
   requestedAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
   status: userStatusSchema,
@@ -57,6 +57,6 @@ export type Client = z.infer<typeof clientSchema>;
 export const clientListSchema = z.array(clientSchema);
 
 export type ContractTemplate = {
-  id: string,
-  title: string,
-}
+  id: string;
+  title: string;
+};

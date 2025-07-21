@@ -1,4 +1,3 @@
-
 import { Navigate, Outlet } from 'react-router-dom';
 
 import { useUser } from '@/common/hooks/user/useUser';

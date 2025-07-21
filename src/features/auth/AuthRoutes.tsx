@@ -1,10 +1,10 @@
 import { Route } from 'react-router-dom';
 
-import AuthCallback from "./AuthCallback";
-import Login from "./Login";
-import RequestPasswordReset from "./RequestPasswordReset";
-import ResetPassword from "./ResetPassword";
-import SignUp from "./SignUp";
+import AuthCallback from './AuthCallback';
+import Login from './Login';
+import RequestPasswordReset from './RequestPasswordReset';
+import ResetPassword from './ResetPassword';
+import SignUp from './SignUp';
 
 export const AuthPublicRoutes = () => (
   <Route>
@@ -19,4 +19,4 @@ export const AuthRoutes = () => (
     <Route path='auth/callback' element={<AuthCallback />} />
     <Route path='auth/reset-password' element={<ResetPassword />} />
   </Route>
-)
+);

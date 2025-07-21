@@ -37,12 +37,12 @@ export function EditTemplateDialog({
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-6 w-6 p-0">
-          <Pencil className="h-4 w-4" />
+        <Button variant='ghost' size='icon' className='h-6 w-6 p-0'>
+          <Pencil className='h-4 w-4' />
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-md">
+      <DialogContent className='max-w-md'>
         <DialogHeader>
           <DialogTitle>Edit Template</DialogTitle>
           <DialogDescription>
@@ -56,8 +56,12 @@ export function EditTemplateDialog({
             setIsLoading(true);
 
             const form = e.currentTarget;
-            const fileInput = form.elements.namedItem('file') as HTMLInputElement;
-            const depositInput = form.elements.namedItem('deposit') as HTMLInputElement;
+            const fileInput = form.elements.namedItem(
+              'file'
+            ) as HTMLInputElement;
+            const depositInput = form.elements.namedItem(
+              'deposit'
+            ) as HTMLInputElement;
             const feeInput = form.elements.namedItem('fee') as HTMLInputElement;
 
             const file = fileInput?.files?.[0];
@@ -69,13 +73,16 @@ export function EditTemplateDialog({
             const token = localStorage.getItem('authToken');
 
             try {
-              const res = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL}/contracts/templates/${templateName}`, {
-                method: 'PUT',
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-                body: formData,
-              });
+              const res = await fetch(
+                `${import.meta.env.VITE_APP_BACKEND_URL}/contracts/templates/${templateName}`,
+                {
+                  method: 'PUT',
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: formData,
+                }
+              );
 
               if (!res.ok) throw new Error('Failed to update template.');
 
@@ -84,42 +91,67 @@ export function EditTemplateDialog({
               closeRef.current?.click();
             } catch (err) {
               console.error(err);
-              toast({ title: 'Update failed', description: 'Please try again.', variant: 'destructive' });
+              toast({
+                title: 'Update failed',
+                description: 'Please try again.',
+                variant: 'destructive',
+              });
             } finally {
               setIsLoading(false);
             }
           }}
-          className="space-y-4"
+          className='space-y-4'
         >
-          <div className="space-y-2">
+          <div className='space-y-2'>
             <Label>Template Name</Label>
             <Input value={templateName} disabled />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="file">Upload New .docx File (optional)</Label>
-            <Input type="file" name="file" id="file" accept=".docx" />
+          <div className='space-y-2'>
+            <Label htmlFor='file'>Upload New .docx File (optional)</Label>
+            <Input type='file' name='file' id='file' accept='.docx' />
           </div>
 
-          <div className="flex gap-4">
-            <div className="flex-1 space-y-2">
-              <Label htmlFor="deposit">Deposit Fee</Label>
-              <Input name="deposit" id="deposit" type="number" defaultValue={currentDeposit} required />
+          <div className='flex gap-4'>
+            <div className='flex-1 space-y-2'>
+              <Label htmlFor='deposit'>Deposit Fee</Label>
+              <Input
+                name='deposit'
+                id='deposit'
+                type='number'
+                defaultValue={currentDeposit}
+                required
+              />
             </div>
-            <div className="flex-1 space-y-2">
-              <Label htmlFor="fee">Service Fee</Label>
-              <Input name="fee" id="fee" type="number" defaultValue={currentFee} required />
+            <div className='flex-1 space-y-2'>
+              <Label htmlFor='fee'>Service Fee</Label>
+              <Input
+                name='fee'
+                id='fee'
+                type='number'
+                defaultValue={currentFee}
+                required
+              />
             </div>
           </div>
 
-          <DialogFooter className="pt-2 flex gap-2">
+          <DialogFooter className='pt-2 flex gap-2'>
             <DialogClose asChild>
-              <Button type="button" variant="secondary" ref={closeRef} className="w-full">
+              <Button
+                type='button'
+                variant='secondary'
+                ref={closeRef}
+                className='w-full'
+              >
                 Cancel
               </Button>
             </DialogClose>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'Save Changes'}
+            <Button type='submit' className='w-full' disabled={isLoading}>
+              {isLoading ? (
+                <Loader2 className='h-4 w-4 animate-spin mx-auto' />
+              ) : (
+                'Save Changes'
+              )}
             </Button>
           </DialogFooter>
         </form>

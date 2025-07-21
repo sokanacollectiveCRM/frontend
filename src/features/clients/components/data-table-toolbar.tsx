@@ -1,30 +1,29 @@
-import { Button } from '@/common/components/ui/button'
-import { Input } from '@/common/components/ui/input'
-import { Template } from '@/common/types/template'
-import { Table } from '@tanstack/react-table'
-import { X } from 'lucide-react'
-import { STATUS_LABELS, USER_STATUSES } from '../data/schema'
-import { DataTableFacetedFilter } from './data-table-faceted-filter'
-import { UsersPrimaryButtons } from './users-primary-buttons'
+import { Button } from '@/common/components/ui/button';
+import { Input } from '@/common/components/ui/input';
+import { Template } from '@/common/types/template';
+import { STATUS_LABELS, USER_STATUSES } from '@/features/clients/data/schema';
+import { Table } from '@tanstack/react-table';
+import { X } from 'lucide-react';
+import { DataTableFacetedFilter } from './data-table-faceted-filter';
+import { UsersPrimaryButtons } from './users-primary-buttons';
 
 interface DataTableToolbarProps<TData> {
-  table: Table<TData>
-  draggedTemplate?: Template | null,
+  table: Table<TData>;
+  draggedTemplate?: Template | null;
 }
 
 export function DataTableToolbar<TData>({
-  table, draggedTemplate
+  table,
+  draggedTemplate,
 }: DataTableToolbarProps<TData>) {
-  const isFiltered = table.getState().columnFilters.length > 0
+  const isFiltered = table.getState().columnFilters.length > 0;
 
   return (
     <div className='flex items-center justify-between'>
       <div className='flex flex-1 flex-row items-center gap-x-2'>
         <Input
           placeholder='Filter clients...'
-          value={
-            (table.getColumn('client')?.getFilterValue() as string) ?? ''
-          }
+          value={(table.getColumn('client')?.getFilterValue() as string) ?? ''}
           onChange={(event) =>
             table.getColumn('client')?.setFilterValue(event.target.value)
           }
@@ -35,11 +34,10 @@ export function DataTableToolbar<TData>({
             <DataTableFacetedFilter
               column={table.getColumn('status')}
               title='Status'
-              options={USER_STATUSES.map(status => ({
+              options={USER_STATUSES.map((status) => ({
                 label: STATUS_LABELS[status],
                 value: status,
-              }))
-              }
+              }))}
             />
           )}
         </div>
@@ -56,5 +54,5 @@ export function DataTableToolbar<TData>({
       </div>
       <UsersPrimaryButtons draggedTemplate={draggedTemplate ?? null} />
     </div>
-  )
+  );
 }

@@ -12,21 +12,25 @@ export function useTemplates() {
     setError(null);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL}/contracts/templates`, {
-        credentials: 'include',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_APP_BACKEND_URL}/contracts/templates`,
+        {
+          credentials: 'include',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!response.ok) throw new Error('Could not fetch templates');
 
       const data = await response.json();
-      console.log("template",data);
+      console.log('template', data);
       setTemplates(data as Template[]);
       return data as Template[];
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error fetching templates';
+      const message =
+        err instanceof Error ? err.message : 'Error fetching templates';
       console.error(message);
       setError(message);
       setTemplates([]);

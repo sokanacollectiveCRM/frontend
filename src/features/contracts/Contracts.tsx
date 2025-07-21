@@ -1,11 +1,11 @@
-import { Search } from '@/common/components/header/Search'
-import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay'
-import { ProfileDropdown } from '@/common/components/user/ProfileDropdown'
-import { useUser } from '@/common/hooks/user/useUser'
-import { Header } from '@/common/layouts/Header'
-import { Main } from '@/common/layouts/Main'
-import { Viewport } from './components/common/Viewport'
-import { TemplatesProvider } from './contexts/TemplatesContext'
+import { Search } from '@/common/components/header/Search';
+import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
+import { ProfileDropdown } from '@/common/components/user/ProfileDropdown';
+import { useUser } from '@/common/hooks/user/useUser';
+import { Header } from '@/common/layouts/Header';
+import { Main } from '@/common/layouts/Main';
+import { Viewport } from './components/common/Viewport';
+import { TemplatesProvider } from './contexts/TemplatesContext';
 
 export default function EditTemplate() {
   const { isLoading: userLoading } = useUser();
@@ -22,7 +22,7 @@ export default function EditTemplate() {
       <LoadingOverlay isLoading={userLoading} />
 
       <Main>
-        <div className="flex-1 overflow-auto p-4">
+        <div className='flex-1 overflow-auto p-4'>
           <div className='mb-2 flex flex-wrap items-center justify-between space-y-2'>
             <div>
               <h2 className='text-2xl font-bold tracking-tight'>Contracts</h2>
@@ -35,9 +35,6 @@ export default function EditTemplate() {
           <Viewport />
         </div>
       </Main>
-
     </TemplatesProvider>
-  )
+  );
 }
-
-

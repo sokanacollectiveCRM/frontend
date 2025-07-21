@@ -5,8 +5,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/common/components/ui/table'
-import { useUsers } from '@/features/clients/context/users-context'
+} from '@/common/components/ui/table';
+import { useUsers } from '@/features/clients/context/users-context';
+import { User } from '@/features/clients/data/schema';
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -21,29 +22,33 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-} from '@tanstack/react-table'
-import { useState } from 'react'
-import { User } from '../data/schema'
-import { DataTablePagination } from './data-table-pagination'
-import { DataTableToolbar } from './data-table-toolbar'
+} from '@tanstack/react-table';
+import { useState } from 'react';
+import { DataTablePagination } from './data-table-pagination';
+import { DataTableToolbar } from './data-table-toolbar';
 
 declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData extends RowData, TValue> {
-    className: string
+    className: string;
   }
 }
 
 interface DataTableProps {
-  columns: ColumnDef<User>[]
-  data: User[]
+  columns: ColumnDef<User>[];
+  data: User[];
 }
 
 export function UsersTable({ columns, data }: DataTableProps) {
-  const [rowSelection, setRowSelection] = useState({})
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-  const [sorting, setSorting] = useState<SortingState>([])
+  const [rowSelection, setRowSelection] = useState({});
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [sorting, setSorting] = useState<SortingState>([
+    {
+      id: 'requestedAt',
+      desc: true,
+    },
+  ]);
   const { setOpen } = useUsers();
 
   const table = useReactTable({
@@ -66,7 +71,7 @@ export function UsersTable({ columns, data }: DataTableProps) {
     getSortedRowModel: getSortedRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
-  })
+  });
 
   return (
     <div className='space-y-4'>
@@ -90,7 +95,7 @@ export function UsersTable({ columns, data }: DataTableProps) {
                           header.getContext()
                         )}
                     </TableHead>
-                  )
+                  );
                 })}
               </TableRow>
             ))}
@@ -105,7 +110,7 @@ export function UsersTable({ columns, data }: DataTableProps) {
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
-                      key={cell.id}    //In the future, make sure to link cell id with users id in db to pull up accurate info
+                      key={cell.id} //In the future, make sure to link cell id with users id in db to pull up accurate info
                       className={cell.column.columnDef.meta?.className ?? ''}
                     >
                       {flexRender(
@@ -131,5 +136,5 @@ export function UsersTable({ columns, data }: DataTableProps) {
       </div>
       <DataTablePagination table={table} />
     </div>
-  )
-} 
+  );
+}

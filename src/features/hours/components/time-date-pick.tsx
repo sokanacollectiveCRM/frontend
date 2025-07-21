@@ -1,20 +1,26 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { CalendarIcon } from "@radix-ui/react-icons";
-import { format } from "date-fns";
+import * as React from 'react';
+import { CalendarIcon } from '@radix-ui/react-icons';
+import { format } from 'date-fns';
 
-import { cn } from "@/lib/utils";
-import { Button } from "@/common/components/ui/button";
-import { Calendar } from "@/common/components/ui/calendar";
+import { cn } from '@/lib/utils';
+import { Button } from '@/common/components/ui/button';
+import { Calendar } from '@/common/components/ui/calendar';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/common/components/ui/popover";
-import { ScrollArea, ScrollBar } from "@/common/components/ui/scroll-area";
+} from '@/common/components/ui/popover';
+import { ScrollArea, ScrollBar } from '@/common/components/ui/scroll-area';
 
-export function DateTimePicker({ date, setDate }: { date: Date | undefined; setDate: (date: Date) => void }) {
+export function DateTimePicker({
+  date,
+  setDate,
+}: {
+  date: Date | undefined;
+  setDate: (date: Date) => void;
+}) {
   // const [date, setDate] = React.useState<Date>();
   const [isOpen, setIsOpen] = React.useState(false);
 
@@ -26,21 +32,21 @@ export function DateTimePicker({ date, setDate }: { date: Date | undefined; setD
   };
 
   const handleTimeChange = (
-    type: "hour" | "minute" | "ampm",
+    type: 'hour' | 'minute' | 'ampm',
     value: string
   ) => {
     if (date) {
       const newDate = new Date(date);
-      if (type === "hour") {
+      if (type === 'hour') {
         newDate.setHours(
           (parseInt(value) % 12) + (newDate.getHours() >= 12 ? 12 : 0)
         );
-      } else if (type === "minute") {
+      } else if (type === 'minute') {
         newDate.setMinutes(parseInt(value));
-      } else if (type === "ampm") {
+      } else if (type === 'ampm') {
         const currentHours = newDate.getHours();
         newDate.setHours(
-          value === "PM" ? currentHours + 12 : currentHours - 12
+          value === 'PM' ? currentHours + 12 : currentHours - 12
         );
       }
       setDate(newDate);
@@ -51,92 +57,86 @@ export function DateTimePicker({ date, setDate }: { date: Date | undefined; setD
     <Popover open={isOpen} onOpenChange={setIsOpen} modal={true}>
       <PopoverTrigger asChild>
         <Button
-          variant="outline"
+          variant='outline'
           className={cn(
-            "w-full justify-start text-left font-normal",
-            !date && "text-muted-foreground"
+            'w-full justify-start text-left font-normal',
+            !date && 'text-muted-foreground'
           )}
         >
-          <CalendarIcon className="mr-2 h-4 w-4" />
+          <CalendarIcon className='mr-2 h-4 w-4' />
           {date ? (
-            format(date, "MM/dd/yyyy hh:mm aa")
+            format(date, 'MM/dd/yyyy hh:mm aa')
           ) : (
             <span>MM/DD/YYYY hh:mm aa</span>
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent 
-        className="w-auto p-0"
-        align="center"
-        sideOffset={4}
-      >
-        <div className="flex flex-row sm:flex">
+      <PopoverContent className='w-auto p-0' align='center' sideOffset={4}>
+        <div className='flex flex-row sm:flex'>
           <Calendar
-            mode="single"
+            mode='single'
             selected={date}
             onSelect={handleDateSelect}
             initialFocus
           />
-          <div className="flex flex-row sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
-            <ScrollArea type="always" className="w-64 h-[300px] sm:w-auto">
-              <div className="h-full overflow-auto">
-                <div className="flex sm:flex-col p-2">
+          <div className='flex flex-row sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x'>
+            <ScrollArea type='always' className='w-64 h-[300px] sm:w-auto'>
+              <div className='h-full overflow-auto'>
+                <div className='flex sm:flex-col p-2'>
                   {hours.reverse().map((hour) => (
                     <Button
-                    key={hour}
-                    size="icon"
-                    variant={
-                      date && date.getHours() % 12 === hour % 12
-                      ? "default"
-                      : "ghost"
-                    }
-                    className="sm:w-full shrink-0 aspect-square"
-                    onClick={() => handleTimeChange("hour", hour.toString())}
+                      key={hour}
+                      size='icon'
+                      variant={
+                        date && date.getHours() % 12 === hour % 12
+                          ? 'default'
+                          : 'ghost'
+                      }
+                      className='sm:w-full shrink-0 aspect-square'
+                      onClick={() => handleTimeChange('hour', hour.toString())}
                     >
                       {hour}
                     </Button>
                   ))}
                 </div>
               </div>
-              <ScrollBar orientation="vertical" className="sm:hidden" />
+              <ScrollBar orientation='vertical' className='sm:hidden' />
             </ScrollArea>
-            <ScrollArea className="w-64 sm:w-auto">
-              <div className="flex sm:flex-col p-2">
+            <ScrollArea className='w-64 sm:w-auto'>
+              <div className='flex sm:flex-col p-2'>
                 {Array.from({ length: 12 }, (_, i) => i * 5).map((minute) => (
                   <Button
                     key={minute}
-                    size="icon"
+                    size='icon'
                     variant={
-                      date && date.getMinutes() === minute
-                        ? "default"
-                        : "ghost"
+                      date && date.getMinutes() === minute ? 'default' : 'ghost'
                     }
-                    className="sm:w-full shrink-0 aspect-square"
+                    className='sm:w-full shrink-0 aspect-square'
                     onClick={() =>
-                      handleTimeChange("minute", minute.toString())
+                      handleTimeChange('minute', minute.toString())
                     }
                   >
                     {minute}
                   </Button>
                 ))}
               </div>
-              <ScrollBar orientation="horizontal" className="sm:hidden" />
+              <ScrollBar orientation='horizontal' className='sm:hidden' />
             </ScrollArea>
-            <ScrollArea className="">
-              <div className="flex sm:flex-col p-2">
-                {["AM", "PM"].map((ampm) => (
+            <ScrollArea className=''>
+              <div className='flex sm:flex-col p-2'>
+                {['AM', 'PM'].map((ampm) => (
                   <Button
                     key={ampm}
-                    size="icon"
+                    size='icon'
                     variant={
                       date &&
-                      ((ampm === "AM" && date.getHours() < 12) ||
-                        (ampm === "PM" && date.getHours() >= 12))
-                        ? "default"
-                        : "ghost"
+                      ((ampm === 'AM' && date.getHours() < 12) ||
+                        (ampm === 'PM' && date.getHours() >= 12))
+                        ? 'default'
+                        : 'ghost'
                     }
-                    className="sm:w-full shrink-0 aspect-square"
-                    onClick={() => handleTimeChange("ampm", ampm)}
+                    className='sm:w-full shrink-0 aspect-square'
+                    onClick={() => handleTimeChange('ampm', ampm)}
                   >
                     {ampm}
                   </Button>

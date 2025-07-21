@@ -5,8 +5,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/common/components/ui/table'
-import { Template } from '@/common/types/template'
+} from '@/common/components/ui/table';
+import { Template } from '@/common/types/template';
+import { Client } from '@/features/clients/data/schema';
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -21,33 +22,36 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-} from '@tanstack/react-table'
-import { useState } from 'react'
-import { Client } from '../data/schema'
-import { DataTablePagination } from './data-table-pagination'
-import { DataTableToolbar } from './data-table-toolbar'
-import { DroppableTableRow } from './DroppableTableRow'
+} from '@tanstack/react-table';
+import { useState } from 'react';
+import { DataTablePagination } from './data-table-pagination';
+import { DataTableToolbar } from './data-table-toolbar';
+import { DroppableTableRow } from './DroppableTableRow';
 
 declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData extends RowData, TValue> {
-    className: string
+    className: string;
   }
 }
 
 interface DataTableProps {
-  columns: ColumnDef<Client>[]
-  data: Client[]
-  draggedTemplate: Template | null
+  columns: ColumnDef<Client>[];
+  data: Client[];
+  draggedTemplate: Template | null;
 }
 
-export function ClientsTable({ columns, data, draggedTemplate }: DataTableProps) {
-  const [rowSelection, setRowSelection] = useState({})
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+export function ClientsTable({
+  columns,
+  data,
+  draggedTemplate,
+}: DataTableProps) {
+  const [rowSelection, setRowSelection] = useState({});
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = useState<SortingState>([
-    { id: 'requestedAt', desc: true }
-  ])
+    { id: 'requestedAt', desc: true },
+  ]);
 
   const table = useReactTable({
     data,
@@ -69,7 +73,7 @@ export function ClientsTable({ columns, data, draggedTemplate }: DataTableProps)
     getSortedRowModel: getSortedRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
-  })
+  });
 
   return (
     <div className='space-y-4'>
@@ -93,18 +97,16 @@ export function ClientsTable({ columns, data, draggedTemplate }: DataTableProps)
                           header.getContext()
                         )}
                     </TableHead>
-                  )
+                  );
                 })}
               </TableRow>
             ))}
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <DroppableTableRow
-                  key={row.id}
-                  row={row}
-                />))
+              table
+                .getRowModel()
+                .rows.map((row) => <DroppableTableRow key={row.id} row={row} />)
             ) : (
               <TableRow>
                 <TableCell
@@ -120,5 +122,5 @@ export function ClientsTable({ columns, data, draggedTemplate }: DataTableProps)
       </div>
       <DataTablePagination table={table} />
     </div>
-  )
+  );
 }

@@ -1,6 +1,16 @@
-import { Alert, AlertDescription, AlertTitle } from '@/common/components/ui/alert';
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from '@/common/components/ui/alert';
 import { Button } from '@/common/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/common/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/common/components/ui/card';
 import { Input } from '@/common/components/ui/input';
 import { Label } from '@/common/components/ui/label';
 import { useUser } from '@/common/hooks/user/useUser';
@@ -9,7 +19,6 @@ import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-
 
 export default function SignUp() {
   const [error, setError] = useState<string>('');
@@ -32,12 +41,13 @@ export default function SignUp() {
     try {
       await googleAuth();
     } catch (googleError) {
-      const message = googleError instanceof Error
-        ? googleError.message
-        : 'Failed to login. Please try again.'
+      const message =
+        googleError instanceof Error
+          ? googleError.message
+          : 'Failed to login. Please try again.';
 
-      setError(message)
-      toast.error(message)
+      setError(message);
+      toast.error(message);
     }
   };
 
@@ -68,26 +78,31 @@ export default function SignUp() {
       if (!response.ok) {
         throw new Error(data.error || 'Failed to create account');
       }
-      toast.success('Account created successfully! Please check your email to verify your account')
+      toast.success(
+        'Account created successfully! Please check your email to verify your account'
+      );
     } catch (submitError) {
-      const message = submitError instanceof Error
-        ? submitError.message
-        : 'Failed to sign up. Please try again.'
+      const message =
+        submitError instanceof Error
+          ? submitError.message
+          : 'Failed to sign up. Please try again.';
 
-      setError(message)
-      console.error('Signup error:', message)
-      toast.error(message)
+      setError(message);
+      console.error('Signup error:', message);
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col gap-6 max-w-md mx-auto">
+    <div className='flex flex-col gap-6 max-w-md mx-auto'>
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Sign Up</CardTitle>
-          <CardDescription>Enter your details below to create your account</CardDescription>
+          <CardTitle className='text-2xl'>Sign Up</CardTitle>
+          <CardDescription>
+            Enter your details below to create your account
+          </CardDescription>
           <Alert className='mt-5' variant={'destructive'}>
             <AlertTitle>Heads up!</AlertTitle>
             <AlertDescription>
@@ -96,57 +111,61 @@ export default function SignUp() {
           </Alert>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-            <div className="grid gap-2">
-              <Label htmlFor="firstname">First Name</Label>
+          <form onSubmit={handleSubmit} className='flex flex-col gap-6'>
+            <div className='grid gap-2'>
+              <Label htmlFor='firstname'>First Name</Label>
               <Input
-                id="firstname"
-                name="firstname"
-                placeholder="First Name"
+                id='firstname'
+                name='firstname'
+                placeholder='First Name'
                 value={formState.firstname}
                 onChange={handleChange}
               />
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="lastname">Last Name</Label>
+            <div className='grid gap-2'>
+              <Label htmlFor='lastname'>Last Name</Label>
               <Input
-                id="lastname"
-                name="lastname"
-                placeholder="Last Name"
+                id='lastname'
+                name='lastname'
+                placeholder='Last Name'
                 value={formState.lastname}
                 onChange={handleChange}
               />
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
+            <div className='grid gap-2'>
+              <Label htmlFor='email'>Email</Label>
               <Input
-                id="email"
-                type="email"
-                name="email"
-                placeholder="j@example.com"
+                id='email'
+                type='email'
+                name='email'
+                placeholder='j@example.com'
                 value={formState.email}
                 onChange={handleChange}
                 required
               />
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
+            <div className='grid gap-2'>
+              <Label htmlFor='password'>Password</Label>
               <Input
-                id="password"
-                type="password"
-                name="password"
-                placeholder="Password"
+                id='password'
+                type='password'
+                name='password'
+                placeholder='Password'
                 value={formState.password}
                 onChange={handleChange}
                 required
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'Sign Up'}
+            <Button type='submit' className='w-full' disabled={isLoading}>
+              {isLoading ? (
+                <Loader2 className='h-4 w-4 animate-spin mx-auto' />
+              ) : (
+                'Sign Up'
+              )}
             </Button>
             <GoogleButton
               onClick={handleGoogleSignup}
@@ -154,9 +173,9 @@ export default function SignUp() {
               text='Sign up with Google'
             />
           </form>
-          <div className="mt-4 text-center text-sm">
-            Already have an account?{" "}
-            <Link to="/login" className="underline underline-offset-4">
+          <div className='mt-4 text-center text-sm'>
+            Already have an account?{' '}
+            <Link to='/login' className='underline underline-offset-4'>
               Login
             </Link>
           </div>

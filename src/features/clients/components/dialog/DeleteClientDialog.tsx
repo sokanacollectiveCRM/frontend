@@ -1,45 +1,45 @@
-'use client'
+'use client';
 
-import { ConfirmDialog } from '@/common/components/ui/confirm-dialog'
-import { Input } from '@/common/components/ui/input'
-import { Label } from '@/common/components/ui/label'
+import { ConfirmDialog } from '@/common/components/ui/confirm-dialog';
+import { Input } from '@/common/components/ui/input';
+import { Label } from '@/common/components/ui/label';
 
-import { TriangleAlert } from 'lucide-react'
-import { useEffect, useState } from 'react'
-import { toast } from 'sonner'
-import { Client } from '../../data/schema'
+import { Client } from '@/features/clients/data/schema';
+import { TriangleAlert } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface Props {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  client: Client | null
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  client: Client | null;
 }
 
 export function DeleteClientDialog({ open, onOpenChange, client }: Props) {
-  const [value, setValue] = useState('')
+  const [value, setValue] = useState('');
 
   useEffect(() => {
     if (!open) {
       setValue('');
     }
-  }, [open])
+  }, [open]);
 
-  if (!client) return null
+  if (!client) return null;
 
-  const fullName = `${client.firstname} ${client.lastname}`
+  const fullName = `${client.firstname} ${client.lastname}`;
 
   const handleDelete = () => {
     if (value.trim() !== fullName) {
-      toast.error("Please enter full name to continue");
-      return
+      toast.error('Please enter full name to continue');
+      return;
     }
 
     // TODO: ADD BACKEND LOGIC TO DELETE USER HERE
 
-    onOpenChange(false)
+    onOpenChange(false);
 
     toast.success(`${client.firstname} was successfully deleted.`);
-  }
+  };
 
   return (
     <ConfirmDialog
@@ -74,5 +74,5 @@ export function DeleteClientDialog({ open, onOpenChange, client }: Props) {
         </div>
       }
     />
-  )
+  );
 }

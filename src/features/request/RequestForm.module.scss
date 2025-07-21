@@ -29,7 +29,7 @@
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    height: 56px;
+    height: auto;
   }
 
   .form-floating-label {
@@ -44,7 +44,7 @@
     padding: 0 0.2em;
     z-index: 2;
     font-family: 'Roboto', Arial, sans-serif;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 400;
     line-height: 1.2;
     white-space: nowrap;
@@ -79,6 +79,14 @@
     font-family: 'Roboto', Arial, sans-serif;
     font-weight: 400;
     line-height: 1.2;
+    
+    // Textarea specific styles - removed all padding
+    &[data-type="textarea"] {
+      min-height: 80px;
+      resize: vertical;
+      padding: 0;
+      height: auto;
+    }
   }
   .form-input:focus {
     border-bottom: 2px solid #00897b;
@@ -242,6 +250,34 @@
       font-size: 1.15rem;
       margin: 1.5rem 0 1rem 0;
     }
+    
+    // Mobile-specific improvements for Step8ServicesInterested
+    .form-floating-label {
+      font-size: 14px;
+      white-space: normal;
+      line-height: 1.3;
+      max-width: 100%;
+    }
+    
+    .form-label--active {
+      font-size: 12px;
+    }
+    
+    // Mobile-specific textarea height adjustments - removed all padding
+    .form-input[data-type="textarea"] {
+      min-height: 80px;
+      height: auto;
+      padding: 0;
+      line-height: 1.4;
+      margin-top: 50px;
+    }
+    
+    // Mobile vertical stacking for Client Demographics step
+    .form-field {
+      grid-column: 1 / -1 !important;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
   }
 
   @media (max-width: 400px) {
@@ -252,5 +288,17 @@
       gap: 0.7rem 0;
     }
     padding: 0 0.7rem;
+    
+    // Extra small mobile textarea adjustments - removed all padding
+    .form-input[data-type="textarea"] {
+      min-height: 80px;
+      padding: 0;
+      margin-top: 50px;
+    }
+    
+    // Extra small mobile vertical stacking
+    .form-field {
+      margin-bottom: 1.2rem;
+    }
   }
 } 
