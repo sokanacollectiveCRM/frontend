@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useUser } from '@/common/hooks/user/useUser';
 import { User } from '@/common/types/user';
 import styled from 'styled-components';
-import { LoadingOverlay } from '../loading/LoadingOverlay';
+import { LoadingOverlay } from 'common/components/loading/LoadingOverlay';
 
 const UsersContainer = styled.div`
   margin-top: 2rem;
@@ -51,7 +51,7 @@ const LoadingMessage = styled.div`
 `;
 
 export default function UsersList() {
-  const { isLoading: userLoading } = useUser(); 
+  const { isLoading: userLoading } = useUser();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -97,11 +97,13 @@ export default function UsersList() {
 
       <UsersContainer>
         {users.map((user) => (
-          <UserCard key={user.email ? user.email : `${user.firstname}@gmail.com`}>
+          <UserCard
+            key={user.email ? user.email : `${user.firstname}@gmail.com`}
+          >
             <UserInfo>
               <div>
                 <UserName>
-                  {user.firstname} {user.lastname} 
+                  {user.firstname} {user.lastname}
                 </UserName>
                 <UserEmail>{user.email}</UserEmail>
               </div>

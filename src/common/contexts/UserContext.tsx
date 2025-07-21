@@ -4,21 +4,23 @@ import React, { createContext, ReactNode, useEffect, useState } from 'react';
 
 export const UserContext = createContext<UserContextType>({
   user: null,
-  setUser: () => { },
+  setUser: () => {},
   isLoading: false,
   login: async () => false,
-  logout: async () => { },
+  logout: async () => {},
   checkAuth: async () => false,
-  googleAuth: async () => { },
+  googleAuth: async () => {},
   requestPasswordReset: async () => false,
   updatePassword: async () => false,
 });
 
 interface UserProviderProps {
   children: ReactNode;
-};
+}
 
-export function UserProvider({ children }: UserProviderProps): React.ReactElement {
+export function UserProvider({
+  children,
+}: UserProviderProps): React.ReactElement {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -145,7 +147,10 @@ export function UserProvider({ children }: UserProviderProps): React.ReactElemen
     }
   };
 
-  const updatePassword = async (password: string, accessToken: string): Promise<boolean> => {
+  const updatePassword = async (
+    password: string,
+    accessToken: string
+  ): Promise<boolean> => {
     try {
       const response = await fetch(buildUrl('/auth/reset-password'), {
         method: 'PUT',

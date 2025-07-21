@@ -1,9 +1,4 @@
-import {
-    Banknote,
-    Shield,
-    ShieldUser,
-    Users,
-} from 'lucide-react'
+import { Banknote, Shield, ShieldUser, Users } from 'lucide-react';
 
 export const userTypes = [
   {
@@ -26,4 +21,4 @@ export const userTypes = [
     value: 'cashier',
     icon: Banknote,
   },
-] as const 
+] as const;

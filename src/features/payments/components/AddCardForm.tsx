@@ -1,7 +1,13 @@
 import { storeCard, StoredCard, updateCard } from '@/api/payments/stripe';
 import { Alert, AlertDescription } from '@/common/components/ui/alert';
 import { Button } from '@/common/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/common/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/common/components/ui/card';
 import { UserContext } from '@/common/contexts/UserContext';
 import { Icons } from '@/features/admin-payment/icons';
 import { CardElement, useElements, useStripe } from '@stripe/react-stripe-js';
@@ -34,7 +40,11 @@ const cardElementOptions = {
   hidePostalCode: false,
 };
 
-export default function AddCardForm({ onCardAdded, hasExistingCards, currentCard }: AddCardFormProps) {
+export default function AddCardForm({
+  onCardAdded,
+  hasExistingCards,
+  currentCard,
+}: AddCardFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const { user } = useContext(UserContext);
@@ -62,7 +72,8 @@ export default function AddCardForm({ onCardAdded, hasExistingCards, currentCard
 
     try {
       // Create token from card element
-      const { token, error: stripeError } = await stripe.createToken(cardElement);
+      const { token, error: stripeError } =
+        await stripe.createToken(cardElement);
 
       if (stripeError) {
         throw new Error(stripeError.message);
@@ -86,7 +97,6 @@ export default function AddCardForm({ onCardAdded, hasExistingCards, currentCard
 
       // Clear the card element
       cardElement.clear();
-
     } catch (err: any) {
       console.error('Error saving card:', err);
       setError(err.message || 'Failed to save card');
@@ -99,15 +109,15 @@ export default function AddCardForm({ onCardAdded, hasExistingCards, currentCard
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className='flex items-center gap-2'>
           {isUpdateMode ? (
             <>
-              <RefreshCw className="w-5 h-5" />
+              <RefreshCw className='w-5 h-5' />
               Update Payment Method
             </>
           ) : (
             <>
-              <Plus className="w-5 h-5" />
+              <Plus className='w-5 h-5' />
               Add New Payment Method
             </>
           )}
@@ -115,42 +125,41 @@ export default function AddCardForm({ onCardAdded, hasExistingCards, currentCard
         <CardDescription>
           {isUpdateMode
             ? `Replace your current payment method (•••• •••• •••• ${currentCard?.last4}) with a new card`
-            : 'Securely store a new credit or debit card for future payments'
-          }
+            : 'Securely store a new credit or debit card for future payments'}
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+        <form onSubmit={handleSubmit} className='space-y-6'>
+          <div className='space-y-2'>
+            <label className='text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'>
               Card Information
             </label>
-            <div className="border rounded-md p-3 bg-white">
+            <div className='border rounded-md p-3 bg-white'>
               <CardElement options={cardElementOptions} />
             </div>
           </div>
 
           {error && (
-            <Alert variant="destructive">
+            <Alert variant='destructive'>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
           <Button
-            type="submit"
+            type='submit'
             disabled={!stripe || isLoading}
-            className="w-full"
+            className='w-full'
           >
             {isLoading ? (
               <>
-                <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                <Icons.spinner className='mr-2 h-4 w-4 animate-spin' />
                 {isUpdateMode ? 'Updating...' : 'Saving Card...'}
               </>
             ) : (
               <>
                 {isUpdateMode ? (
                   <>
-                    <RefreshCw className="mr-2 h-4 w-4" />
+                    <RefreshCw className='mr-2 h-4 w-4' />
                     Update Payment Method
                   </>
                 ) : (
@@ -163,4 +172,4 @@ export default function AddCardForm({ onCardAdded, hasExistingCards, currentCard
       </CardContent>
     </Card>
   );
-} 
+}

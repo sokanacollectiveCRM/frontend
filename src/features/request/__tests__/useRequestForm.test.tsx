@@ -120,14 +120,14 @@ describe('useRequestForm', () => {
       expect(result.current.handleBack).toBeDefined();
     });
 
-    it('returns form with dummy default values', () => {
+    it('returns form with empty default values', () => {
       const mockOnSubmit = vi.fn();
       const { result } = renderHook(() => useRequestForm(mockOnSubmit));
 
       const formValues = result.current.form.getValues();
-      expect(formValues.firstname).toBe('Jane');
-      expect(formValues.lastname).toBe('Doe');
-      expect(formValues.email).toBe('jane.doe@example.com');
+      expect(formValues.firstname).toBe('');
+      expect(formValues.lastname).toBe('');
+      expect(formValues.email).toBe('');
     });
   });
 
@@ -170,10 +170,23 @@ describe('useRequestForm', () => {
       const mockOnSubmit = vi.fn();
       const { result } = renderHook(() => useRequestForm(mockOnSubmit));
 
-      // Test validation with dummy data (should pass)
+      // Fill in required fields for step 1
+      await act(async () => {
+        result.current.form.setValue('firstname', 'John');
+        result.current.form.setValue('lastname', 'Doe');
+        result.current.form.setValue('email', 'john.doe@example.com');
+        result.current.form.setValue('phone_number', '555-123-4567');
+        result.current.form.setValue('pronouns', 'He/Him');
+        result.current.form.setValue('preferred_contact_method', 'Email');
+      });
+
       const isValid = await result.current.form.trigger([
-        'firstname', 'lastname', 'email', 'phone_number', 'pronouns',
-        'pronouns_other', 'preferred_contact_method', 'preferred_name'
+        'firstname',
+        'lastname',
+        'email',
+        'phone_number',
+        'pronouns',
+        'preferred_contact_method',
       ]);
 
       expect(isValid).toBe(true);

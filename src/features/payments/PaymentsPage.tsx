@@ -10,7 +10,9 @@ import CurrentPaymentMethod from './components/CurrentPaymentMethod';
 import SavedCards from './components/SavedCards';
 
 // Initialize Stripe with your publishable key
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_...');
+const stripePromise = loadStripe(
+  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_...'
+);
 
 export default function PaymentsPage() {
   const { user, isLoading: userLoading } = useContext(UserContext);
@@ -52,9 +54,9 @@ export default function PaymentsPage() {
 
   if (userLoading) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center py-8">
-          <div className="text-lg">Loading...</div>
+      <div className='container mx-auto p-6'>
+        <div className='flex items-center justify-center py-8'>
+          <div className='text-lg'>Loading...</div>
         </div>
       </div>
     );
@@ -62,9 +64,11 @@ export default function PaymentsPage() {
 
   if (!user) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center py-8">
-          <div className="text-lg text-red-600">Please log in to manage payment methods</div>
+      <div className='container mx-auto p-6'>
+        <div className='flex items-center justify-center py-8'>
+          <div className='text-lg text-red-600'>
+            Please log in to manage payment methods
+          </div>
         </div>
       </div>
     );
@@ -72,21 +76,25 @@ export default function PaymentsPage() {
 
   const hasCards = cards.length > 0;
   // Use the default card as current payment method, fallback to first card
-  const currentCard = hasCards ? (cards.find(card => card.isDefault) || cards[0]) : null;
+  const currentCard = hasCards
+    ? cards.find((card) => card.isDefault) || cards[0]
+    : null;
   // Get non-current cards for the additional saved cards section
-  const otherCards = currentCard ? cards.filter(card => card.id !== currentCard.id) : [];
+  const otherCards = currentCard
+    ? cards.filter((card) => card.id !== currentCard.id)
+    : [];
 
   return (
     <Elements stripe={stripePromise}>
-      <div className="container mx-auto p-6 max-w-4xl">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight">Payment Methods</h1>
-          <p className="text-muted-foreground mt-2">
+      <div className='container mx-auto p-6 max-w-4xl'>
+        <div className='mb-8'>
+          <h1 className='text-3xl font-bold tracking-tight'>Payment Methods</h1>
+          <p className='text-muted-foreground mt-2'>
             Manage your saved payment methods for quick and secure transactions
           </p>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-2">
+        <div className='grid gap-8 md:grid-cols-1 lg:grid-cols-2'>
           {/* Add/Update Card Form */}
           <div>
             <AddCardForm
@@ -114,7 +122,7 @@ export default function PaymentsPage() {
 
         {/* Show additional saved cards if there are more than one */}
         {otherCards.length > 0 && (
-          <div className="mt-8">
+          <div className='mt-8'>
             <SavedCards
               cards={otherCards}
               customerId={user.id}
@@ -126,7 +134,7 @@ export default function PaymentsPage() {
         )}
 
         <ToastContainer
-          position="top-right"
+          position='top-right'
           autoClose={5000}
           hideProgressBar={false}
           newestOnTop={false}
@@ -139,4 +147,4 @@ export default function PaymentsPage() {
       </div>
     </Elements>
   );
-} 
+}

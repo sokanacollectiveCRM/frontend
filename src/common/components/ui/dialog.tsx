@@ -1,17 +1,17 @@
-"use client"
+'use client';
 
-import { cn } from '@/lib/utils'
-import * as DialogPrimitive from '@radix-ui/react-dialog'
-import { X } from 'lucide-react'
-import * as React from 'react'
+import { cn } from '@/lib/utils';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { X } from 'lucide-react';
+import * as React from 'react';
 
-const Dialog = DialogPrimitive.Root
+const Dialog = DialogPrimitive.Root;
 
-const DialogTrigger = DialogPrimitive.Trigger
+const DialogTrigger = DialogPrimitive.Trigger;
 
-const DialogPortal = DialogPrimitive.Portal
+const DialogPortal = DialogPrimitive.Portal;
 
-const DialogClose = DialogPrimitive.Close
+const DialogClose = DialogPrimitive.Close;
 
 const DialogFooter = ({
   className,
@@ -24,8 +24,8 @@ const DialogFooter = ({
     )}
     {...props}
   />
-)
-DialogFooter.displayName = 'DialogFooter'
+);
+DialogFooter.displayName = 'DialogFooter';
 
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
@@ -39,8 +39,8 @@ const DialogOverlay = React.forwardRef<
     )}
     {...props}
   />
-))
-DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
+));
+DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
@@ -63,8 +63,8 @@ const DialogContent = React.forwardRef<
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>
   </DialogPortal>
-))
-DialogContent.displayName = DialogPrimitive.Content.displayName
+));
+DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 const DialogHeader = ({
   className,
@@ -77,8 +77,8 @@ const DialogHeader = ({
     )}
     {...props}
   />
-)
-DialogHeader.displayName = 'DialogHeader'
+);
+DialogHeader.displayName = 'DialogHeader';
 
 function DialogTitle({
   className,
@@ -86,11 +86,11 @@ function DialogTitle({
 }: React.ComponentProps<typeof DialogPrimitive.Title>) {
   return (
     <DialogPrimitive.Title
-      data-slot="dialog-title"
-      className={cn("text-lg leading-none font-semibold", className)}
+      data-slot='dialog-title'
+      className={cn('text-lg leading-none font-semibold', className)}
       {...props}
     />
-  )
+  );
 }
 
 function DialogDescription({
@@ -99,20 +99,22 @@ function DialogDescription({
 }: React.ComponentProps<typeof DialogPrimitive.Description>) {
   return (
     <DialogPrimitive.Description
-      data-slot="dialog-description"
-      className={cn("text-muted-foreground text-sm", className)}
+      data-slot='dialog-description'
+      className={cn('text-muted-foreground text-sm', className)}
       {...props}
     />
-  )
+  );
 }
 
 export {
   Dialog,
   DialogClose,
   DialogContent,
-  DialogDescription, DialogFooter, DialogHeader, DialogOverlay,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogOverlay,
   DialogPortal,
   DialogTitle,
-  DialogTrigger
-}
-
+  DialogTrigger,
+};

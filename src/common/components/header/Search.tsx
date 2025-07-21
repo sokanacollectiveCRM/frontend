@@ -1,17 +1,17 @@
-import { Button } from '@/common/components/ui/button'
-import { useSearch } from '@/common/contexts/SearchContext'
-import { cn } from '@/lib/utils'
-import { Search as SearchIcon } from 'lucide-react'
-import * as React from 'react'
+import { Button } from '@/common/components/ui/button';
+import { useSearch } from '@/common/contexts/SearchContext';
+import { cn } from '@/lib/utils';
+import { Search as SearchIcon } from 'lucide-react';
+import * as React from 'react';
 
 interface Props {
-  className?: string
-  type?: React.HTMLInputTypeAttribute
-  placeholder?: string
+  className?: string;
+  type?: React.HTMLInputTypeAttribute;
+  placeholder?: string;
 }
 
 export function Search({ className = '', placeholder = 'Search' }: Props) {
-  const { setOpen } = useSearch()
+  const { setOpen } = useSearch();
   return (
     <Button
       variant='outline'
@@ -30,5 +30,5 @@ export function Search({ className = '', placeholder = 'Search' }: Props) {
         <span className='text-xs'>⌘</span>K
       </kbd>
     </Button>
-  )
+  );
 }

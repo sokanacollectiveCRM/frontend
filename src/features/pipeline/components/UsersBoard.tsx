@@ -1,6 +1,11 @@
 import { UserCard } from '@/features/pipeline/components/UserCard';
 import { UserColumn } from '@/features/pipeline/components/UserColumn';
 import {
+  Client,
+  USER_STATUSES,
+  UserStatus,
+} from '@/features/pipeline/data/schema';
+import {
   closestCenter,
   DndContext,
   DragEndEvent,
@@ -8,11 +13,10 @@ import {
   DropAnimation,
   PointerSensor,
   useSensor,
-  useSensors
+  useSensors,
 } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { useMemo, useState } from 'react';
-import { Client, USER_STATUSES, UserStatus } from '../data/schema';
 
 type Props = {
   usersByStatus: Record<UserStatus, Client[]>;
@@ -36,7 +40,9 @@ const dropAnimationConfig: DropAnimation = {
   sideEffects({ active, dragOverlay }) {
     active.node.style.opacity = '0';
 
-    const shadowTarget = dragOverlay.node.querySelector('[data-shadow-target]') as HTMLElement;
+    const shadowTarget = dragOverlay.node.querySelector(
+      '[data-shadow-target]'
+    ) as HTMLElement;
     if (shadowTarget) {
       shadowTarget.animate(
         [
@@ -66,7 +72,11 @@ export function UsersBoard({ usersByStatus, onStatusChange }: Props) {
   const [showOverlay, setShowOverlay] = useState<boolean>(false);
 
   const activeUser = useMemo(() => {
-    return Object.values(usersByStatus).flat().find(u => u.id === activeId) ?? null;
+    return (
+      Object.values(usersByStatus)
+        .flat()
+        .find((u) => u.id === activeId) ?? null
+    );
   }, [activeId, usersByStatus]);
 
   const sensors = useSensors(
@@ -104,8 +114,7 @@ export function UsersBoard({ usersByStatus, onStatusChange }: Props) {
         setShowOverlay(false);
       }}
     >
-
-      <div className="flex gap-4 overflow-x-auto min-h-[800px]">
+      <div className='flex gap-4 overflow-x-auto min-h-[800px]'>
         {USER_STATUSES.map((status) => (
           <UserColumn key={status} id={status} users={usersByStatus[status]} />
         ))}
@@ -119,11 +128,10 @@ export function UsersBoard({ usersByStatus, onStatusChange }: Props) {
           <UserCard
             client={activeUser}
             isOverlay={true}
-            className="transition-transform duration-200 ease-out opacity-90"
+            className='transition-transform duration-200 ease-out opacity-90'
           />
         ) : null}
       </DragOverlay>
-
     </DndContext>
   );
 }

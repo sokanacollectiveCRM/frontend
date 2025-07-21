@@ -1,4 +1,4 @@
-import { Client } from "@/features/clients/data/schema"
+import { Client } from '@/features/clients/data/schema';
 
 export async function createContract({
   templateId,
@@ -7,11 +7,11 @@ export async function createContract({
   fee,
   deposit,
 }: {
-  templateId: string
-  client: Client
-  note?: string
-  fee?: string
-  deposit?: string
+  templateId: string;
+  client: Client;
+  note?: string;
+  fee?: string;
+  deposit?: string;
 }) {
   const res = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL}/contracts`, {
     method: 'POST',

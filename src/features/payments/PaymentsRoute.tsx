@@ -1,8 +1,8 @@
-import { Route } from "react-router-dom";
-import PaymentsPage from "./PaymentsPage";
+import { Route } from 'react-router-dom';
+import PaymentsPage from './PaymentsPage';
 
 const PaymentsRoute = () => (
-  <Route path="/payments" element={<PaymentsPage />} />
+  <Route path='/payments' element={<PaymentsPage />} />
 );
 
-export default PaymentsRoute; 
+export default PaymentsRoute;

@@ -1,10 +1,10 @@
-import { useTable } from "../../contexts/TableContext"
-import { ArchiveClientDialog } from "./ArchiveClientDialog"
-import { ContractCreationDialog } from "./ContractCreationDialog"
-import { DeleteClientDialog } from "./DeleteClientDialog"
+import { useTable } from 'features/clients/contexts/TableContext';
+import { ArchiveClientDialog } from './ArchiveClientDialog';
+import { ContractCreationDialog } from './ContractCreationDialog';
+import { DeleteClientDialog } from './DeleteClientDialog';
 
 export function TableDialogs() {
-  const { open, setOpen, currentRow, setCurrentRow } = useTable()
+  const { open, setOpen, currentRow, setCurrentRow } = useTable();
   return (
     <>
       <ContractCreationDialog
@@ -27,5 +27,5 @@ export function TableDialogs() {
         client={currentRow}
       />
     </>
-  )
+  );
 }

@@ -1,10 +1,11 @@
-import { useUsers } from '../context/users-context'
-import { UsersActionDialog } from './users-action-dialog'
-import { UsersDeleteDialog } from './users-delete-dialog'
-import { UsersInviteDialog } from './users-invite-dialog'
+import { useUsers } from '@/features/clients/context/users-context';
+import { UsersActionDialog } from './users-action-dialog';
+import { UsersDeleteDialog } from './users-delete-dialog';
+import { UsersInviteDialog } from './users-invite-dialog';
 
 export function UsersDialogs() {
-  const { open, setOpen, currentRow, setCurrentRow, refreshClients } = useUsers()
+  const { open, setOpen, currentRow, setCurrentRow, refreshClients } =
+    useUsers();
   return (
     <>
       <UsersActionDialog
@@ -25,10 +26,10 @@ export function UsersDialogs() {
             key={`user-edit-${currentRow.id}`}
             open={open === 'edit'}
             onOpenChange={() => {
-              setOpen('edit')
+              setOpen('edit');
               setTimeout(() => {
-                setCurrentRow(null)
-              }, 500)
+                setCurrentRow(null);
+              }, 500);
             }}
             currentRow={currentRow}
             onUpdateSuccess={refreshClients}
@@ -38,15 +39,15 @@ export function UsersDialogs() {
             key={`user-delete-${currentRow.id}`}
             open={open === 'delete'}
             onOpenChange={() => {
-              setOpen('delete')
+              setOpen('delete');
               setTimeout(() => {
-                setCurrentRow(null)
-              }, 500)
+                setCurrentRow(null);
+              }, 500);
             }}
             currentRow={currentRow}
           />
         </>
       )}
     </>
-  )
-} 
+  );
+}

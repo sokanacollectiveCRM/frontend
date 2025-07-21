@@ -1,5 +1,5 @@
-import { SelectDropdown } from '@/common/components/form/SelectDropdown'
-import { Button } from '@/common/components/ui/button'
+import { SelectDropdown } from '@/common/components/form/SelectDropdown';
+import { Button } from '@/common/components/ui/button';
 import {
   Dialog,
   DialogClose,
@@ -8,7 +8,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/common/components/ui/dialog'
+} from '@/common/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -16,15 +16,15 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/common/components/ui/form'
-import { Input } from '@/common/components/ui/input'
-import { Textarea } from '@/common/components/ui/textarea'
-import { toast } from '@/common/hooks/toast/use-toast'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { MailPlus, Send } from 'lucide-react'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
-import { userTypes } from '../data/data'
+} from '@/common/components/ui/form';
+import { Input } from '@/common/components/ui/input';
+import { Textarea } from '@/common/components/ui/textarea';
+import { toast } from '@/common/hooks/toast/use-toast';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { MailPlus, Send } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { userTypes } from 'features/hours/data/data';
 
 const formSchema = z.object({
   email: z
@@ -33,22 +33,22 @@ const formSchema = z.object({
     .email({ message: 'Email is invalid.' }),
   role: z.string().min(1, { message: 'Role is required.' }),
   desc: z.string().optional(),
-})
-type UserInviteForm = z.infer<typeof formSchema>
+});
+type UserInviteForm = z.infer<typeof formSchema>;
 
 interface Props {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 export function UsersInviteDialog({ open, onOpenChange }: Props) {
   const form = useForm<UserInviteForm>({
     resolver: zodResolver(formSchema),
     defaultValues: { email: '', role: '', desc: '' },
-  })
+  });
 
   const onSubmit = (values: UserInviteForm) => {
-    form.reset()
+    form.reset();
     toast({
       title: 'You submitted the following values:',
       description: (
@@ -56,16 +56,16 @@ export function UsersInviteDialog({ open, onOpenChange }: Props) {
           <code className='text-white'>{JSON.stringify(values, null, 2)}</code>
         </pre>
       ),
-    })
-    onOpenChange(false)
-  }
+    });
+    onOpenChange(false);
+  };
 
   return (
     <Dialog
       open={open}
       onOpenChange={(state) => {
-        form.reset()
-        onOpenChange(state)
+        form.reset();
+        onOpenChange(state);
       }}
     >
       <DialogContent className='sm:max-w-md'>
@@ -149,5 +149,5 @@ export function UsersInviteDialog({ open, onOpenChange }: Props) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

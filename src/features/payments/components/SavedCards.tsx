@@ -1,8 +1,18 @@
-import { StoredCard, deleteStoredCard, setDefaultCard } from '@/api/payments/stripe';
+import {
+  StoredCard,
+  deleteStoredCard,
+  setDefaultCard,
+} from '@/api/payments/stripe';
 import { Alert, AlertDescription } from '@/common/components/ui/alert';
 import { Badge } from '@/common/components/ui/badge';
 import { Button } from '@/common/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/common/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/common/components/ui/card';
 import { Icons } from '@/features/admin-payment/icons';
 import { CreditCard, Star, StarOff, Trash2 } from 'lucide-react';
 import React, { useState } from 'react';
@@ -17,10 +27,10 @@ interface SavedCardsProps {
 }
 
 const brandIcons: Record<string, React.ReactNode> = {
-  visa: <CreditCard className="w-8 h-8 text-blue-600" />,
-  mastercard: <CreditCard className="w-8 h-8 text-red-600" />,
-  amex: <CreditCard className="w-8 h-8 text-green-600" />,
-  discover: <CreditCard className="w-8 h-8 text-orange-600" />,
+  visa: <CreditCard className='w-8 h-8 text-blue-600' />,
+  mastercard: <CreditCard className='w-8 h-8 text-red-600' />,
+  amex: <CreditCard className='w-8 h-8 text-green-600' />,
+  discover: <CreditCard className='w-8 h-8 text-orange-600' />,
 };
 
 const getBrandColor = (brand: string): string => {
@@ -33,7 +43,13 @@ const getBrandColor = (brand: string): string => {
   return colors[brand] || 'bg-gray-50 text-gray-700 border-gray-200';
 };
 
-export default function SavedCards({ cards, customerId, onCardDeleted, onCardUpdated, isLoading }: SavedCardsProps) {
+export default function SavedCards({
+  cards,
+  customerId,
+  onCardDeleted,
+  onCardUpdated,
+  isLoading,
+}: SavedCardsProps) {
   const [deletingCardId, setDeletingCardId] = useState<string | null>(null);
   const [settingDefaultId, setSettingDefaultId] = useState<string | null>(null);
 
@@ -79,9 +95,9 @@ export default function SavedCards({ cards, customerId, onCardDeleted, onCardUpd
           <CardDescription>Your stored credit and debit cards</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <Icons.spinner className="w-6 h-6 animate-spin" />
-            <span className="ml-2">Loading payment methods...</span>
+          <div className='flex items-center justify-center py-8'>
+            <Icons.spinner className='w-6 h-6 animate-spin' />
+            <span className='ml-2'>Loading payment methods...</span>
           </div>
         </CardContent>
       </Card>
@@ -97,76 +113,88 @@ export default function SavedCards({ cards, customerId, onCardDeleted, onCardUpd
       <CardContent>
         {cards.length === 0 ? (
           <Alert>
-            <CreditCard className="h-4 w-4" />
+            <CreditCard className='h-4 w-4' />
             <AlertDescription>
               No saved payment methods. Add a card above to get started.
             </AlertDescription>
           </Alert>
         ) : (
-          <div className="space-y-4">
+          <div className='space-y-4'>
             {cards.map((card) => (
               <div
                 key={card.id}
-                className={`flex items-center justify-between p-4 border rounded-lg transition-colors ${card.isDefault
+                className={`flex items-center justify-between p-4 border rounded-lg transition-colors ${
+                  card.isDefault
                     ? 'bg-blue-50/30 border-blue-200 hover:bg-blue-50/50'
                     : 'hover:bg-gray-50'
-                  }`}
+                }`}
               >
-                <div className="flex items-center space-x-4">
-                  <div className="flex-shrink-0">
-                    {brandIcons[card.brand.toLowerCase()] || <CreditCard className="w-8 h-8 text-gray-600" />}
+                <div className='flex items-center space-x-4'>
+                  <div className='flex-shrink-0'>
+                    {brandIcons[card.brand.toLowerCase()] || (
+                      <CreditCard className='w-8 h-8 text-gray-600' />
+                    )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-2">
-                      <Badge variant="outline" className={getBrandColor(card.brand.toLowerCase())}>
+                  <div className='flex-1 min-w-0'>
+                    <div className='flex items-center space-x-2'>
+                      <Badge
+                        variant='outline'
+                        className={getBrandColor(card.brand.toLowerCase())}
+                      >
                         {card.brand.toUpperCase()}
                       </Badge>
-                      <span className="text-sm font-medium">•••• •••• •••• {card.last4}</span>
+                      <span className='text-sm font-medium'>
+                        •••• •••• •••• {card.last4}
+                      </span>
                       {card.isDefault && (
-                        <Badge variant="default" className="bg-blue-100 text-blue-800 border-blue-300">
-                          <Star className="w-3 h-3 mr-1 fill-current" />
+                        <Badge
+                          variant='default'
+                          className='bg-blue-100 text-blue-800 border-blue-300'
+                        >
+                          <Star className='w-3 h-3 mr-1 fill-current' />
                           Default
                         </Badge>
                       )}
                     </div>
-                    <p className="text-sm text-gray-500">
-                      Expires {card.expMonth.toString().padStart(2, '0')}/{card.expYear}
+                    <p className='text-sm text-gray-500'>
+                      Expires {card.expMonth.toString().padStart(2, '0')}/
+                      {card.expYear}
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className='text-xs text-gray-400'>
                       Added {new Date(card.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2">
+                <div className='flex items-center space-x-2'>
                   {!card.isDefault && (
                     <Button
-                      variant="ghost"
-                      size="sm"
+                      variant='ghost'
+                      size='sm'
                       onClick={() => handleSetDefault(card.id)}
                       disabled={settingDefaultId === card.id}
-                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                      title="Set as default"
+                      className='text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                      title='Set as default'
                     >
                       {settingDefaultId === card.id ? (
-                        <Icons.spinner className="w-4 h-4 animate-spin" />
+                        <Icons.spinner className='w-4 h-4 animate-spin' />
                       ) : (
-                        <StarOff className="w-4 h-4" />
+                        <StarOff className='w-4 h-4' />
                       )}
                     </Button>
                   )}
 
                   <Button
-                    variant="ghost"
-                    size="sm"
+                    variant='ghost'
+                    size='sm'
                     onClick={() => handleDeleteCard(card.id)}
                     disabled={deletingCardId === card.id}
-                    className="text-destructive hover:text-destructive/80 hover:bg-destructive/10"
+                    className='text-destructive hover:text-destructive/80 hover:bg-destructive/10'
                   >
                     {deletingCardId === card.id ? (
-                      <Icons.spinner className="w-4 h-4 animate-spin" />
+                      <Icons.spinner className='w-4 h-4 animate-spin' />
                     ) : (
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className='w-4 h-4' />
                     )}
                   </Button>
                 </div>
@@ -177,4 +205,4 @@ export default function SavedCards({ cards, customerId, onCardDeleted, onCardUpd
       </CardContent>
     </Card>
   );
-} 
+}

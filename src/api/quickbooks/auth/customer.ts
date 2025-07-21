@@ -1,7 +1,8 @@
 // src/api/quickbooks/auth/customer.ts
 import { withTokenRefresh } from './utils';
 
-const API_BASE = import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050';
+const API_BASE =
+  import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050';
 
 export interface CreateCustomerParams {
   internalCustomerId: string;
@@ -12,7 +13,7 @@ export interface CreateCustomerParams {
 
 export interface InvoiceableCustomer {
   id: string;
-  qboCustomerId: string;   // ← drop the `?`
+  qboCustomerId: string; // ← drop the `?`
   name: string;
   email: string;
 }
@@ -47,7 +48,9 @@ export async function createQuickBooksCustomer(
 /**
  * Fetch all invoiceable customers (status = 'customer').
  */
-export async function getInvoiceableCustomers(): Promise<InvoiceableCustomer[]> {
+export async function getInvoiceableCustomers(): Promise<
+  InvoiceableCustomer[]
+> {
   const token = localStorage.getItem('authToken');
   if (!token) throw new Error('Not authenticated — please log in first');
 

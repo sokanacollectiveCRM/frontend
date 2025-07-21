@@ -2,7 +2,9 @@ import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { createContext, ReactNode, useContext } from 'react';
 
 // Initialize Stripe with your publishable key
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_...');
+const stripePromise = loadStripe(
+  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_...'
+);
 
 interface StripeContextType {
   stripePromise: Promise<Stripe | null>;
@@ -28,4 +30,4 @@ export function useStripe() {
     throw new Error('useStripe must be used within a StripeProvider');
   }
   return context;
-} 
+}

@@ -1,4 +1,5 @@
 import { User } from '@/common/types/user';
+import React from 'react';
 
 export interface SignupRequest {
   email: string;

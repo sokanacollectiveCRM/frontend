@@ -9,7 +9,10 @@ interface DraggableTemplateProps {
   className?: string;
 }
 
-export function DraggableTemplate({ template, className }: DraggableTemplateProps) {
+export function DraggableTemplate({
+  template,
+  className,
+}: DraggableTemplateProps) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: `template-${template.id}`,
     data: { type: 'template', template },
@@ -38,9 +41,9 @@ export function DraggableTemplate({ template, className }: DraggableTemplateProp
         className
       )}
     >
-      <div className="flex items-center gap-2 overflow-hidden">
-        <File className="h-4 w-4 flex-shrink-0" />
-        <span className="truncate">{template.name}</span>
+      <div className='flex items-center gap-2 overflow-hidden'>
+        <File className='h-4 w-4 flex-shrink-0' />
+        <span className='truncate'>{template.name}</span>
       </div>
     </div>
   );

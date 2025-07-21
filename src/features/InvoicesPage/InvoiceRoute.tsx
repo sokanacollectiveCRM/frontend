@@ -5,7 +5,7 @@ import InvoicesPage from './InvoicesPage';
 
 const InvoicesRoutes = () => (
   <Route element={<PrivateRoute />}>
-    <Route path="/invoices" element={<InvoicesPage />} />
+    <Route path='/invoices' element={<InvoicesPage />} />
   </Route>
 );
 

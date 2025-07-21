@@ -1,13 +1,23 @@
-import { Badge } from '@/common/components/ui/badge'
-import LongText from '@/common/components/ui/long-text'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/common/components/ui/select'
-import updateClientStatus from '@/common/utils/updateClientStatus'
-import { cn } from '@/lib/utils'
-import { ColumnDef } from '@tanstack/react-table'
-import { toast } from 'sonner'
-import { STATUS_LABELS, User, userStatusSchema } from '../data/schema'
-import { DataTableColumnHeader } from './data-table-column-header'
-import { DataTableRowActions } from './data-table-row-actions'
+import { Badge } from '@/common/components/ui/badge';
+import LongText from '@/common/components/ui/long-text';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/common/components/ui/select';
+import updateClientStatus from '@/common/utils/updateClientStatus';
+import {
+  STATUS_LABELS,
+  User,
+  userStatusSchema,
+} from '@/features/clients/data/schema';
+import { cn } from '@/lib/utils';
+import { ColumnDef } from '@tanstack/react-table';
+import { toast } from 'sonner';
+import { DataTableColumnHeader } from './data-table-column-header';
+import { DataTableRowActions } from './data-table-row-actions';
 
 const statusOptions = userStatusSchema.options;
 
@@ -19,15 +29,17 @@ export const columns = (refreshClients: () => void): ColumnDef<User>[] => [
     ),
     cell: ({ row }) => {
       const { firstname, lastname } = row.original;
-      const displayName = (firstname && lastname) ? `${firstname} ${lastname}` : '—';
-      return (
-        <LongText className='max-w-36'>{displayName}</LongText>
-      );
+      const displayName =
+        firstname && lastname ? `${firstname} ${lastname}` : '—';
+      return <LongText className='max-w-36'>{displayName}</LongText>;
     },
     filterFn: (row, _columnId, filterValue) => {
       const { firstname, lastname } = row.original;
-      const displayName = (firstname && lastname) ? `${firstname} ${lastname}` : '';
-      return displayName.toLowerCase().includes((filterValue as string).toLowerCase());
+      const displayName =
+        firstname && lastname ? `${firstname} ${lastname}` : '';
+      return displayName
+        .toLowerCase()
+        .includes((filterValue as string).toLowerCase());
     },
     meta: { className: 'pl-10 w-60' },
   },
@@ -38,11 +50,15 @@ export const columns = (refreshClients: () => void): ColumnDef<User>[] => [
     ),
     cell: ({ row }) => {
       const { serviceNeeded } = row.original;
-      return <Badge variant='outline' className='max-w-36'>{serviceNeeded}</Badge>
+      return (
+        <Badge variant='outline' className='max-w-36'>
+          {serviceNeeded}
+        </Badge>
+      );
     },
     meta: {
       className: cn(
-        'drop-shadow-[0_1px_2px_rgb(0_0_0_/_0.1)] dark:drop-shadow-[0_1px_2px_rgb(255_255_255_/_0.1)] lg:drop-shadow-none',
+        'drop-shadow-[0_1px_2px_rgb(0_0_0_/_0.1)] dark:drop-shadow-[0_1px_2px_rgb(255_255_255_/_0.1)] lg:drop-shadow-none'
       ),
     },
     enableHiding: false,
@@ -55,13 +71,15 @@ export const columns = (refreshClients: () => void): ColumnDef<User>[] => [
     ),
     cell: ({ row }) => {
       const { requestedAt } = row.original;
-      return <div className='w-fit text-nowrap'>{requestedAt.toLocaleDateString() ?? '-'}</div>
+      return (
+        <div className='w-fit text-nowrap'>
+          {requestedAt.toLocaleDateString() ?? '-'}
+        </div>
+      );
     },
     meta: {
-      className: cn(
-        ''
-      ),
-    }
+      className: cn(''),
+    },
   },
   {
     accessorKey: 'updatedAt',
@@ -96,7 +114,7 @@ export const columns = (refreshClients: () => void): ColumnDef<User>[] => [
             toast.error(result.error || 'Failed to update client status');
           }
         } catch (err) {
-          console.error('Failed to update status:', err)
+          console.error('Failed to update status:', err);
           toast.error('Failed to update client status...');
         }
       };
@@ -124,6 +142,6 @@ export const columns = (refreshClients: () => void): ColumnDef<User>[] => [
   {
     id: 'actions',
     cell: DataTableRowActions,
-    meta: { className: 'sticky right-0 z-10 w-16' }
+    meta: { className: 'sticky right-0 z-10 w-16' },
   },
 ];

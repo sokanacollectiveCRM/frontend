@@ -2,21 +2,21 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/common/components/ui/popover'
+} from '@/common/components/ui/popover';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/common/components/ui/tooltip'
-import { cn } from '@/lib/utils'
-import * as React from 'react'
-import { useEffect, useRef, useState } from 'react'
+} from '@/common/components/ui/tooltip';
+import { cn } from '@/lib/utils';
+import * as React from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface Props {
-  children: React.ReactNode
-  className?: string
-  contentClassName?: string
+  children: React.ReactNode;
+  className?: string;
+  contentClassName?: string;
 }
 
 export default function LongText({
@@ -24,24 +24,24 @@ export default function LongText({
   className = '',
   contentClassName = '',
 }: Props) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [isOverflown, setIsOverflown] = useState(false)
+  const ref = useRef<HTMLDivElement>(null);
+  const [isOverflown, setIsOverflown] = useState(false);
 
   useEffect(() => {
     if (checkOverflow(ref.current)) {
-      setIsOverflown(true)
-      return
+      setIsOverflown(true);
+      return;
     }
 
-    setIsOverflown(false)
-  }, [])
+    setIsOverflown(false);
+  }, []);
 
   if (!isOverflown)
     return (
       <div ref={ref} className={cn('truncate', className)}>
         {children}
       </div>
-    )
+    );
 
   return (
     <>
@@ -72,7 +72,7 @@ export default function LongText({
         </Popover>
       </div>
     </>
-  )
+  );
 }
 
 const checkOverflow = (textContainer: HTMLDivElement | null) => {
@@ -80,7 +80,7 @@ const checkOverflow = (textContainer: HTMLDivElement | null) => {
     return (
       textContainer.offsetHeight < textContainer.scrollHeight ||
       textContainer.offsetWidth < textContainer.scrollWidth
-    )
+    );
   }
-  return false
-}
+  return false;
+};

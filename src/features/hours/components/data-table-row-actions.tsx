@@ -1,4 +1,4 @@
-import { Button } from '@/common/components/ui/button'
+import { Button } from '@/common/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -6,14 +6,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
-} from '@/common/components/ui/dropdown-menu'
-import { DotsHorizontalIcon } from '@radix-ui/react-icons'
-import { Row } from '@tanstack/react-table'
-import { Settings2, Trash2 } from 'lucide-react'
-import { HoursRows } from '../context/clients-context'
+} from '@/common/components/ui/dropdown-menu';
+import { DotsHorizontalIcon } from '@radix-ui/react-icons';
+import { Row } from '@tanstack/react-table';
+import { Settings2, Trash2 } from 'lucide-react';
+import { HoursRows } from 'features/hours/context/clients-context';
 
 interface DataTableRowActionsProps {
-  row: Row<HoursRows>
+  row: Row<HoursRows>;
 }
 
 export function DataTableRowActions({ row }: DataTableRowActionsProps) {
@@ -30,17 +30,14 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align='end' className='w-[160px]'>
-          <DropdownMenuItem
-          >
+          <DropdownMenuItem>
             Edit
             <DropdownMenuShortcut>
               <Settings2 size={16} />
             </DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem
-            className='!text-red-500'
-          >
+          <DropdownMenuItem className='!text-red-500'>
             Delete
             <DropdownMenuShortcut>
               <Trash2 size={16} />
@@ -49,5 +46,5 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
         </DropdownMenuContent>
       </DropdownMenu>
     </>
-  )
+  );
 }
