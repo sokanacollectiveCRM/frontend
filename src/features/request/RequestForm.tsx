@@ -366,9 +366,12 @@ export default function RequestForm() {
           ? babyCountMap[formData.number_of_babies] || 1
           : formData.number_of_babies,
     };
+    // Use the same pattern as login endpoint (no /api prefix)
+    const backendUrl = import.meta.env.VITE_APP_BACKEND_URL?.replace(/\/$/, '') || 'http://localhost:5050';
+
     try {
       const response = await fetch(
-        `/api/requestService/requestSubmission`,
+        `${backendUrl}/requestService/requestSubmission`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
