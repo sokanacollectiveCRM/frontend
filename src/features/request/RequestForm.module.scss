@@ -20,6 +20,7 @@
     grid-template-columns: 1fr;
     gap: 1rem 0;
     margin-bottom: 2.5rem;
+    width: 100%;
   }
 
   .form-field {
@@ -28,8 +29,10 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
     height: auto;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .form-floating-label {
@@ -64,6 +67,8 @@
 
   .form-input {
     width: 100%;
+    min-width: 0;
+    flex: 1;
     border: none;
     border-bottom: 2px solid #bdbdbd;
     border-radius: 0;
@@ -79,6 +84,7 @@
     font-family: 'Roboto', Arial, sans-serif;
     font-weight: 400;
     line-height: 1.2;
+    box-sizing: border-box;
     
     // Textarea specific styles - removed all padding
     &[data-type="textarea"] {
@@ -98,6 +104,8 @@
 
   .form-select {
     width: 100%;
+    min-width: 0;
+    flex: 1;
     border: none;
     border-bottom: 2px solid #bdbdbd;
     border-radius: 0;
@@ -117,7 +125,7 @@
     font-family: 'Roboto', Arial, sans-serif;
     font-weight: 400;
     line-height: 1.2;
-    min-width: 0;
+    box-sizing: border-box;
   }
   .form-select:focus {
     border-bottom: 2px solid #00897b;
@@ -298,7 +306,7 @@
       padding: 0;
     }
     .form-grid {
-      grid-template-columns: repeat(2, minmax(180px, 1fr));
+      grid-template-columns: repeat(2, 1fr);
       gap: 2rem 2rem;
     }
     .progress-bar-container {
@@ -331,7 +339,7 @@
   }
   @media (min-width: 1024px) {
     .form-grid {
-      grid-template-columns: repeat(4, minmax(180px, 1fr));
+      grid-template-columns: repeat(4, 1fr);
       gap: 2rem 2rem;
     }
   }
@@ -362,6 +370,7 @@
       flex-direction: column;
       align-items: stretch;
       position: relative;
+      width: 100%;
     }
     .form-floating-label {
       display: block;
@@ -390,6 +399,7 @@
       margin-bottom: 0.1rem;
       position: relative;
       z-index: 1;
+      box-sizing: border-box;
     }
   }
 

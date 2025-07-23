@@ -21,7 +21,7 @@ export const fullSchema = z
     city: z.string().min(1, 'Please enter your city.'),
     state: z.string().min(1, 'Please enter your state.'),
     zip_code: z.string().min(1, 'Please enter your zip code.'),
-    home_phone: z.string().min(1, 'Please enter your home phone number.'), // renamed from home_phone to just "Phone"
+    home_phone: z.string().optional(), // removed from form, made optional
     home_type: z.string().optional(), // made optional
     home_access: z.string().optional(), // made optional
     pets: z.string().optional(), // made optional
@@ -143,7 +143,6 @@ export const stepFields: (keyof RequestFormValues)[][] = [
     'city',
     'state',
     'zip_code',
-    'home_phone',
     'home_type',
     'home_access',
     'pets',
