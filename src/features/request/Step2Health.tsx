@@ -10,32 +10,33 @@ export function Step2Home({
   handleNextStep,
   step,
   totalSteps,
+  isDesktopOrTablet = false,
 }: any) {
   const values = form.getValues();
   const errors = form.formState.errors;
   const [focus, setFocus] = useState({
-    address: false,
-    city: false,
-    state: false,
-    zip_code: false,
-    home_phone: false,
-    home_type: false,
-    home_access: false,
-    pets: false,
+    address: !!values.address,
+    city: !!values.city,
+    state: !!values.state,
+    zip_code: !!values.zip_code,
+    home_type: !!values.home_type,
+    home_access: !!values.home_access,
+    pets: !!values.pets,
   });
   const [homeTypeOpen, setHomeTypeOpen] = useState(false);
 
   const handleFocus = (field: keyof typeof focus) =>
     setFocus((f) => ({ ...f, [field]: true }));
-  const handleBlur = (field: keyof typeof focus) =>
-    setFocus((f) => ({ ...f, [field]: false }));
+  const handleBlur = (field: keyof typeof focus) => {
+    const currentValue = values[field];
+    setFocus((f) => ({ ...f, [field]: !!currentValue }));
+  };
 
   const isStepValid = [
     'address',
     'city',
     'state',
     'zip_code',
-    'home_phone',
     'home_type',
     'home_access',
     'pets',
@@ -45,16 +46,14 @@ export function Step2Home({
   console.log('Step2Home values:', values);
   console.log('Step2Home errors:', errors);
   console.log('Step2Home isStepValid:', isStepValid);
+  console.log('Step2Home isDesktopOrTablet:', isDesktopOrTablet);
 
   return (
-    <div>
+    <div className={styles['step-2-home']}>
       <div className={styles['form-section-title']}>Home Details</div>
       <div className={styles['form-grid']}>
-        {/* Address */}
-        <div
-          className={styles['form-field']}
-          style={{ gridColumn: '1 / span 4' }}
-        >
+        {/* Address - Full Width */}
+        <div className={styles['form-field']}>
           {errors.address && (
             <div className={styles['form-error']} style={{ marginBottom: 6 }}>
               Please add a complete address.
@@ -80,180 +79,309 @@ export function Step2Home({
             Address
           </label>
         </div>
-        {/* City */}
+
+        {/* City and State Row - Desktop Only */}
+        {isDesktopOrTablet ? (
+          <div style={{ display: 'flex', gap: '1rem', width: '100%', marginBottom: '1rem' }}>
+            {/* City */}
+            <div className={styles['form-field']} style={{ flex: 1 }}>
+              {errors.city && (
+                <div className={styles['form-error']} style={{ marginBottom: 6 }}>
+                  Please enter a city.
+                </div>
+              )}
+              <input
+                className={styles['form-input']}
+                {...form.register('city')}
+                id='city'
+                autoComplete='off'
+                onFocus={() => handleFocus('city')}
+                onBlur={() => handleBlur('city')}
+              />
+              <label
+                htmlFor='city'
+                className={
+                  styles['form-floating-label'] +
+                  (focus.city || values.city
+                    ? ' ' + styles['form-label--active']
+                    : '')
+                }
+              >
+                City
+              </label>
+            </div>
+            {/* State/Province */}
+            <div className={styles['form-field']} style={{ flex: 1 }}>
+              {errors.state && (
+                <div className={styles['form-error']} style={{ marginBottom: 6 }}>
+                  Please enter a state/province.
+                </div>
+              )}
+              <input
+                className={styles['form-input']}
+                {...form.register('state')}
+                id='state'
+                autoComplete='off'
+                onFocus={() => handleFocus('state')}
+                onBlur={() => handleBlur('state')}
+              />
+              <label
+                htmlFor='state'
+                className={
+                  styles['form-floating-label'] +
+                  (focus.state || values.state
+                    ? ' ' + styles['form-label--active']
+                    : '')
+                }
+              >
+                State/Province
+              </label>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* City - Mobile */}
+            <div className={styles['form-field']}>
+              {errors.city && (
+                <div className={styles['form-error']} style={{ marginBottom: 6 }}>
+                  Please enter a city.
+                </div>
+              )}
+              <input
+                className={styles['form-input']}
+                {...form.register('city')}
+                id='city'
+                autoComplete='off'
+                onFocus={() => handleFocus('city')}
+                onBlur={() => handleBlur('city')}
+              />
+              <label
+                htmlFor='city'
+                className={
+                  styles['form-floating-label'] +
+                  (focus.city || values.city
+                    ? ' ' + styles['form-label--active']
+                    : '')
+                }
+              >
+                City
+              </label>
+            </div>
+
+            {/* State/Province - Mobile */}
+            <div className={styles['form-field']}>
+              {errors.state && (
+                <div className={styles['form-error']} style={{ marginBottom: 6 }}>
+                  Please enter a state/province.
+                </div>
+              )}
+              <input
+                className={styles['form-input']}
+                {...form.register('state')}
+                id='state'
+                autoComplete='off'
+                onFocus={() => handleFocus('state')}
+                onBlur={() => handleBlur('state')}
+              />
+              <label
+                htmlFor='state'
+                className={
+                  styles['form-floating-label'] +
+                  (focus.state || values.state
+                    ? ' ' + styles['form-label--active']
+                    : '')
+                }
+              >
+                State/Province
+              </label>
+            </div>
+          </>
+        )}
+
+        {/* Zip and Home Type Row - Desktop Only */}
+        {isDesktopOrTablet ? (
+          <div style={{ display: 'flex', gap: '1rem', width: '100%', marginBottom: '1rem' }}>
+            {/* Zip Code */}
+            <div className={styles['form-field']} style={{ flex: 1 }}>
+              {errors.zip_code && (
+                <div className={styles['form-error']} style={{ marginBottom: 6 }}>
+                  Please enter a zip code.
+                </div>
+              )}
+              <input
+                className={styles['form-input']}
+                {...form.register('zip_code')}
+                id='zip_code'
+                autoComplete='off'
+                onFocus={() => handleFocus('zip_code')}
+                onBlur={() => handleBlur('zip_code')}
+              />
+              <label
+                htmlFor='zip_code'
+                className={
+                  styles['form-floating-label'] +
+                  (focus.zip_code || values.zip_code
+                    ? ' ' + styles['form-label--active']
+                    : '')
+                }
+              >
+                Zip
+              </label>
+            </div>
+
+            {/* Home Type (select) */}
+            <div className={styles['form-field']} style={{ flex: 1 }}>
+              {errors.home_type && (
+                <div className={styles['form-error']} style={{ marginBottom: 6 }}>
+                  Please select a home type.
+                </div>
+              )}
+              <select
+                className={styles['form-select']}
+                {...form.register('home_type')}
+                id='home_type'
+                defaultValue=''
+                onFocus={() => {
+                  handleFocus('home_type');
+                  setHomeTypeOpen(true);
+                }}
+                onBlur={() => {
+                  handleBlur('home_type');
+                  setHomeTypeOpen(false);
+                }}
+              >
+                <option value='' disabled hidden></option>
+                {homeTypeOptions.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+              <label
+                htmlFor='home_type'
+                className={
+                  styles['form-floating-label'] +
+                  (focus.home_type || values.home_type
+                    ? ' ' + styles['form-label--active']
+                    : '')
+                }
+              >
+                Home Type
+              </label>
+              <div className={styles['form-select-arrow']}>
+                <svg
+                  width='18'
+                  height='18'
+                  viewBox='0 0 24 24'
+                  fill='none'
+                  xmlns='http://www.w3.org/2000/svg'
+                >
+                  <path
+                    d='M7 10l5 5 5-5'
+                    stroke='#757575'
+                    strokeWidth='2'
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Zip Code - Mobile */}
+            <div className={styles['form-field']}>
+              {errors.zip_code && (
+                <div className={styles['form-error']} style={{ marginBottom: 6 }}>
+                  Please enter a zip code.
+                </div>
+              )}
+              <input
+                className={styles['form-input']}
+                {...form.register('zip_code')}
+                id='zip_code'
+                autoComplete='off'
+                onFocus={() => handleFocus('zip_code')}
+                onBlur={() => handleBlur('zip_code')}
+              />
+              <label
+                htmlFor='zip_code'
+                className={
+                  styles['form-floating-label'] +
+                  (focus.zip_code || values.zip_code
+                    ? ' ' + styles['form-label--active']
+                    : '')
+                }
+              >
+                Zip
+              </label>
+            </div>
+
+            {/* Home Type (select) - Mobile */}
+            <div className={styles['form-field']}>
+              {errors.home_type && (
+                <div className={styles['form-error']} style={{ marginBottom: 6 }}>
+                  Please select a home type.
+                </div>
+              )}
+              <select
+                className={styles['form-select']}
+                {...form.register('home_type')}
+                id='home_type'
+                defaultValue=''
+                onFocus={() => {
+                  handleFocus('home_type');
+                  setHomeTypeOpen(true);
+                }}
+                onBlur={() => {
+                  handleBlur('home_type');
+                  setHomeTypeOpen(false);
+                }}
+              >
+                <option value='' disabled hidden></option>
+                {homeTypeOptions.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+              <label
+                htmlFor='home_type'
+                className={
+                  styles['form-floating-label'] +
+                  (focus.home_type || values.home_type
+                    ? ' ' + styles['form-label--active']
+                    : '')
+                }
+              >
+                Home Type
+              </label>
+              <div className={styles['form-select-arrow']}>
+                <svg
+                  width='18'
+                  height='18'
+                  viewBox='0 0 24 24'
+                  fill='none'
+                  xmlns='http://www.w3.org/2000/svg'
+                >
+                  <path
+                    d='M7 10l5 5 5-5'
+                    stroke='#757575'
+                    strokeWidth='2'
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                  />
+                </svg>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Home Access - Full Width */}
         <div className={styles['form-field']}>
-          {errors.city && (
-            <div className={styles['form-error']} style={{ marginBottom: 6 }}>
-              Please enter a city.
-            </div>
-          )}
-          <input
-            className={styles['form-input']}
-            {...form.register('city')}
-            id='city'
-            autoComplete='off'
-            onFocus={() => handleFocus('city')}
-            onBlur={() => handleBlur('city')}
-          />
-          <label
-            htmlFor='city'
-            className={
-              styles['form-floating-label'] +
-              (focus.city || values.city
-                ? ' ' + styles['form-label--active']
-                : '')
-            }
-          >
-            City
-          </label>
-        </div>
-        {/* State/Province */}
-        <div className={styles['form-field']}>
-          {errors.state && (
-            <div className={styles['form-error']} style={{ marginBottom: 6 }}>
-              Please enter a state/province.
-            </div>
-          )}
-          <input
-            className={styles['form-input']}
-            {...form.register('state')}
-            id='state'
-            autoComplete='off'
-            onFocus={() => handleFocus('state')}
-            onBlur={() => handleBlur('state')}
-          />
-          <label
-            htmlFor='state'
-            className={
-              styles['form-floating-label'] +
-              (focus.state || values.state
-                ? ' ' + styles['form-label--active']
-                : '')
-            }
-          >
-            State/Province
-          </label>
-        </div>
-        {/* Zip Code */}
-        <div className={styles['form-field']}>
-          {errors.zip_code && (
-            <div className={styles['form-error']} style={{ marginBottom: 6 }}>
-              Please enter a zip code.
-            </div>
-          )}
-          <input
-            className={styles['form-input']}
-            {...form.register('zip_code')}
-            id='zip_code'
-            autoComplete='off'
-            onFocus={() => handleFocus('zip_code')}
-            onBlur={() => handleBlur('zip_code')}
-          />
-          <label
-            htmlFor='zip_code'
-            className={
-              styles['form-floating-label'] +
-              (focus.zip_code || values.zip_code
-                ? ' ' + styles['form-label--active']
-                : '')
-            }
-          >
-            Zip
-          </label>
-        </div>
-        {/* Phone */}
-        <div
-          className={styles['form-field']}
-          style={{ gridColumn: '1 / span 2' }}
-        >
-          {errors.home_phone && (
-            <div className={styles['form-error']} style={{ marginBottom: 6 }}>
-              Please enter a phone number.
-            </div>
-          )}
-          <input
-            className={styles['form-input']}
-            {...form.register('home_phone')}
-            id='home_phone'
-            autoComplete='off'
-            onFocus={() => handleFocus('home_phone')}
-            onBlur={() => handleBlur('home_phone')}
-          />
-          <label
-            htmlFor='home_phone'
-            className={
-              styles['form-floating-label'] +
-              (focus.home_phone || values.home_phone
-                ? ' ' + styles['form-label--active']
-                : '')
-            }
-          >
-            Phone
-          </label>
-        </div>
-        {/* Home Type (select) */}
-        <div
-          className={styles['form-field']}
-          style={{ gridColumn: '3 / span 2', position: 'relative' }}
-        >
-          {errors.home_type && (
-            <div className={styles['form-error']} style={{ marginBottom: 6 }}>
-              Please select a home type.
-            </div>
-          )}
-          <select
-            className={styles['form-select']}
-            {...form.register('home_type')}
-            id='home_type'
-            defaultValue=''
-            onFocus={() => {
-              handleFocus('home_type');
-              setHomeTypeOpen(true);
-            }}
-            onBlur={() => {
-              handleBlur('home_type');
-              setHomeTypeOpen(false);
-            }}
-          >
-            <option value='' disabled hidden></option>
-            {homeTypeOptions.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
-          <label
-            htmlFor='home_type'
-            className={
-              styles['form-floating-label'] +
-              (focus.home_type || values.home_type
-                ? ' ' + styles['form-label--active']
-                : '')
-            }
-            style={{
-              left: 0,
-              color: homeTypeOpen ? '#00bcd4' : undefined,
-              right: 0,
-              maxWidth: 'calc(100% - 36px)',
-            }}
-          >
-            Home Type
-          </label>
-          <span
-            className={styles['form-select-arrow']}
-            style={{ color: homeTypeOpen ? '#00bcd4' : '#757575' }}
-          >
-            ▼
-          </span>
-        </div>
-        {/* Home Access */}
-        <div
-          className={styles['form-field']}
-          style={{ gridColumn: '1 / span 4' }}
-        >
           {errors.home_access && (
             <div className={styles['form-error']} style={{ marginBottom: 6 }}>
-              Please enter home access details.
+              Please describe home access.
             </div>
           )}
           <input
@@ -276,14 +404,12 @@ export function Step2Home({
             Home Access
           </label>
         </div>
-        {/* Pets */}
-        <div
-          className={styles['form-field']}
-          style={{ gridColumn: '1 / span 4' }}
-        >
+
+        {/* Pets - Full Width */}
+        <div className={styles['form-field']}>
           {errors.pets && (
             <div className={styles['form-error']} style={{ marginBottom: 6 }}>
-              Please enter pet details.
+              Please describe pets.
             </div>
           )}
           <input
@@ -307,16 +433,24 @@ export function Step2Home({
           </label>
         </div>
       </div>
+
       <div className={styles['step-buttons-row']}>
-        <Button type='button' onClick={handleBack} disabled={step === 0}>
+        <Button
+          type='button'
+          onClick={handleBack}
+          className={styles['step-button']}
+          style={{ marginRight: 'auto' }}
+        >
           Back
         </Button>
         <Button
-          type='submit'
-          onClick={() => handleNextStep()}
-          disabled={!isStepValid || form.formState.isSubmitting}
+          type='button'
+          onClick={handleNextStep}
+          className={styles['step-button']}
+          disabled={!isStepValid}
+          style={{ marginLeft: 'auto' }}
         >
-          {step === totalSteps - 1 ? 'Submit' : 'Next'}
+          Next
         </Button>
       </div>
     </div>

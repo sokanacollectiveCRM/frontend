@@ -20,6 +20,7 @@
     grid-template-columns: 1fr;
     gap: 1rem 0;
     margin-bottom: 2.5rem;
+    width: 100%;
   }
 
   .form-field {
@@ -28,8 +29,10 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
     height: auto;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .form-floating-label {
@@ -64,6 +67,8 @@
 
   .form-input {
     width: 100%;
+    min-width: 0;
+    flex: 1;
     border: none;
     border-bottom: 2px solid #bdbdbd;
     border-radius: 0;
@@ -79,6 +84,7 @@
     font-family: 'Roboto', Arial, sans-serif;
     font-weight: 400;
     line-height: 1.2;
+    box-sizing: border-box;
     
     // Textarea specific styles - removed all padding
     &[data-type="textarea"] {
@@ -98,6 +104,8 @@
 
   .form-select {
     width: 100%;
+    min-width: 0;
+    flex: 1;
     border: none;
     border-bottom: 2px solid #bdbdbd;
     border-radius: 0;
@@ -117,7 +125,7 @@
     font-family: 'Roboto', Arial, sans-serif;
     font-weight: 400;
     line-height: 1.2;
-    min-width: 0;
+    box-sizing: border-box;
   }
   .form-select:focus {
     border-bottom: 2px solid #00897b;
@@ -298,7 +306,7 @@
       padding: 0;
     }
     .form-grid {
-      grid-template-columns: repeat(2, minmax(180px, 1fr));
+      grid-template-columns: repeat(2, 1fr);
       gap: 2rem 2rem;
     }
     .progress-bar-container {
@@ -331,7 +339,7 @@
   }
   @media (min-width: 1024px) {
     .form-grid {
-      grid-template-columns: repeat(4, minmax(180px, 1fr));
+      grid-template-columns: repeat(4, 1fr);
       gap: 2rem 2rem;
     }
   }
@@ -357,11 +365,45 @@
   }
   */
 
+  // Mobile-specific label positioning (non-floating)
+  @media (max-width: 899px) {
+    .form-floating-label {
+      position: absolute;
+      display: block;
+      left: 0.1rem;
+      top: -0.5rem;
+      font-size: 1rem;
+      color: #333;
+      background: #fff;
+      padding: 0 0.2em;
+      white-space: normal;
+      pointer-events: none;
+      z-index: 2;
+      transition: all 0.22s cubic-bezier(0.4,0,0.2,1);
+    }
+    .form-label--active {
+      top: -1.1rem;
+      left: 0.05rem;
+      font-size: 0.89rem;
+      color: #00897b;
+      background: #fff;
+      z-index: 2;
+      letter-spacing: 0.01em;
+    }
+  }
+
+  // Override grid layout for Step 2 (Home Details) only
+  .step-2-home .form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  // Desktop-specific label positioning (floating with different starting position)
   @media (min-width: 900px) {
     .form-field {
       flex-direction: column;
       align-items: stretch;
       position: relative;
+      width: 100%;
     }
     .form-floating-label {
       display: block;
@@ -390,6 +432,7 @@
       margin-bottom: 0.1rem;
       position: relative;
       z-index: 1;
+      box-sizing: border-box;
     }
   }
 
@@ -403,24 +446,250 @@
     top: -1.2rem;
   }
 
-  // Hide default 0 for pregnancy number input until focus or value
-  .form-input.pregnancy-number-input:not(:focus):placeholder-shown {
-    color: transparent;
+  // Comprehensive date input text hiding for pregnancy step
+  .pregnancy-date-input:not(:focus):not(:valid)::-webkit-datetime-edit {
+    color: transparent !important;
+  }
+  .pregnancy-date-input:not(:focus):not(:valid)::-webkit-datetime-edit-fields-wrapper {
+    color: transparent !important;
+  }
+  .pregnancy-date-input:not(:focus):not(:valid)::-webkit-datetime-edit-text {
+    color: transparent !important;
+  }
+  .pregnancy-date-input:not(:focus):not(:valid)::-webkit-datetime-edit-month-field {
+    color: transparent !important;
+  }
+  .pregnancy-date-input:not(:focus):not(:valid)::-webkit-datetime-edit-day-field {
+    color: transparent !important;
+  }
+  .pregnancy-date-input:not(:focus):not(:valid)::-webkit-datetime-edit-year-field {
+    color: transparent !important;
+  }
+  .pregnancy-date-input:not(:focus):not(:valid)::-webkit-calendar-picker-indicator {
+    color: transparent !important;
+  }
+  .pregnancy-date-input:not(:focus):not(:valid)::-webkit-inner-spin-button {
+    display: none !important;
+  }
+  .pregnancy-date-input:not(:focus):not(:valid)::-webkit-clear-button {
+    display: none !important;
+  }
+  .pregnancy-date-input:not(:focus):not(:valid)::-webkit-outer-spin-button {
+    display: none !important;
+  }
+  .pregnancy-date-input:not(:focus):not(:valid)::-webkit-input-placeholder {
+    color: transparent !important;
+  }
+  .pregnancy-date-input:not(:focus):not(:valid)::-moz-placeholder {
+    color: transparent !important;
+  }
+  .pregnancy-date-input:not(:focus):not(:valid):-ms-input-placeholder {
+    color: transparent !important;
+  }
+  .pregnancy-date-input:not(:focus):not(:valid)::placeholder {
+    color: transparent !important;
   }
 
-  // Hide date input placeholder unless focused or has value
-  .form-input[type="date"]:not(:focus):placeholder-shown::-webkit-input-placeholder {
-    color: transparent;
+  // Additional comprehensive date input hiding for all date inputs
+  input[type="date"]:not(:focus):not(:valid)::-webkit-datetime-edit {
+    color: transparent !important;
   }
-  .form-input[type="date"]:not(:focus):placeholder-shown::-moz-placeholder {
-    color: transparent;
+  input[type="date"]:not(:focus):not(:valid)::-webkit-datetime-edit-fields-wrapper {
+    color: transparent !important;
   }
-  .form-input[type="date"]:not(:focus):placeholder-shown:-ms-input-placeholder {
-    color: transparent;
+  input[type="date"]:not(:focus):not(:valid)::-webkit-datetime-edit-text {
+    color: transparent !important;
   }
-  .form-input[type="date"]:not(:focus):placeholder-shown::placeholder {
-    color: transparent;
+  input[type="date"]:not(:focus):not(:valid)::-webkit-datetime-edit-month-field {
+    color: transparent !important;
   }
+  input[type="date"]:not(:focus):not(:valid)::-webkit-datetime-edit-day-field {
+    color: transparent !important;
+  }
+  input[type="date"]:not(:focus):not(:valid)::-webkit-datetime-edit-year-field {
+    color: transparent !important;
+  }
+  input[type="date"]:not(:focus):not(:valid)::-webkit-calendar-picker-indicator {
+    color: transparent !important;
+  }
+  input[type="date"]:not(:focus):not(:valid)::-webkit-inner-spin-button {
+    display: none !important;
+  }
+  input[type="date"]:not(:focus):not(:valid)::-webkit-clear-button {
+    display: none !important;
+  }
+  input[type="date"]:not(:focus):not(:valid)::-webkit-outer-spin-button {
+    display: none !important;
+  }
+  input[type="date"]:not(:focus):not(:valid)::-webkit-input-placeholder {
+    color: transparent !important;
+  }
+  input[type="date"]:not(:focus):not(:valid)::-moz-placeholder {
+    color: transparent !important;
+  }
+  input[type="date"]:not(:focus):not(:valid):-ms-input-placeholder {
+    color: transparent !important;
+  }
+  input[type="date"]:not(:focus):not(:valid)::placeholder {
+    color: transparent !important;
+  }
+
+  // Firefox specific date input hiding
+  input[type="date"]:not(:focus):not(:valid)::-moz-datetime-edit {
+    color: transparent !important;
+  }
+  input[type="date"]:not(:focus):not(:valid)::-moz-datetime-edit-fields-wrapper {
+    color: transparent !important;
+  }
+  input[type="date"]:not(:focus):not(:valid)::-moz-datetime-edit-text {
+    color: transparent !important;
+  }
+  input[type="date"]:not(:focus):not(:valid)::-moz-datetime-edit-month-field {
+    color: transparent !important;
+  }
+  input[type="date"]:not(:focus):not(:valid)::-moz-datetime-edit-day-field {
+    color: transparent !important;
+  }
+  input[type="date"]:not(:focus):not(:valid)::-moz-datetime-edit-year-field {
+    color: transparent !important;
+  }
+
+  // Edge/IE specific date input hiding
+  input[type="date"]:not(:focus):not(:valid)::-ms-datetime-edit {
+    color: transparent !important;
+  }
+  input[type="date"]:not(:focus):not(:valid)::-ms-datetime-edit-fields-wrapper {
+    color: transparent !important;
+  }
+  input[type="date"]:not(:focus):not(:valid)::-ms-datetime-edit-text {
+    color: transparent !important;
+  }
+  input[type="date"]:not(:focus):not(:valid)::-ms-datetime-edit-month-field {
+    color: transparent !important;
+  }
+  input[type="date"]:not(:focus):not(:valid)::-ms-datetime-edit-day-field {
+    color: transparent !important;
+  }
+  input[type="date"]:not(:focus):not(:valid)::-ms-datetime-edit-year-field {
+    color: transparent !important;
+  }
+
+  // Nuclear option - completely hide date input content when empty
+  input[type="date"]:not(:focus):not(:valid) {
+    color: transparent !important;
+  }
+  input[type="date"]:not(:focus):not(:valid) * {
+    color: transparent !important;
+  }
+  input[type="date"]:not(:focus):not(:valid)::before {
+    content: none !important;
+  }
+  input[type="date"]:not(:focus):not(:valid)::after {
+    content: none !important;
+  }
+
+  // Comprehensive number input text hiding for pregnancy step
+  .pregnancy-number-input:not(:focus):not(:valid) {
+    color: transparent !important;
+  }
+  .pregnancy-number-input:not(:focus):placeholder-shown {
+    color: transparent !important;
+  }
+  .pregnancy-number-input:not(:focus):not(:valid)::-webkit-inner-spin-button {
+    display: none !important;
+  }
+  .pregnancy-number-input:not(:focus):not(:valid)::-webkit-outer-spin-button {
+    display: none !important;
+  }
+  .pregnancy-number-input:not(:focus):not(:valid)::-moz-inner-spin-button {
+    display: none !important;
+  }
+  .pregnancy-number-input:not(:focus):not(:valid)::-moz-outer-spin-button {
+    display: none !important;
+  }
+
+  // React DatePicker integration styles
+  .react-datepicker-wrapper {
+    width: 100%;
+  }
+  
+  .react-datepicker__input-container {
+    width: 100%;
+  }
+  
+  .react-datepicker__input-container input {
+    width: 100%;
+    min-width: 0;
+    flex: 1;
+    border: none;
+    border-bottom: 2px solid #bdbdbd;
+    border-radius: 0;
+    background: transparent;
+    font-size: 16px;
+    color: rgba(0,0,0,0.87);
+    padding: 0 0 0.4rem 0;
+    margin-bottom: 0.1rem;
+    transition: border-color 0.2s;
+    box-shadow: none;
+    outline: none;
+    height: 40px;
+    font-family: 'Roboto', Arial, sans-serif;
+    font-weight: 400;
+    line-height: 1.2;
+    box-sizing: border-box;
+  }
+  
+  .react-datepicker__input-container input:focus {
+    border-bottom: 2px solid #00897b;
+  }
+  
+  .react-datepicker__input-container input::placeholder {
+    color: transparent !important;
+  }
+  
+  .react-datepicker__input-container input:focus::placeholder {
+    color: transparent !important;
+  }
+
+  // DatePicker calendar popup styling
+  .datepicker-popper {
+    z-index: 1000 !important;
+  }
+  
+  .datepicker-popper .react-datepicker {
+    background-color: white !important;
+    border: 1px solid #ccc !important;
+    border-radius: 4px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  }
+  
+  .datepicker-popper .react-datepicker__header {
+    background-color: #f8f9fa !important;
+    border-bottom: 1px solid #dee2e6 !important;
+  }
+  
+  .datepicker-popper .react-datepicker__month-container {
+    background-color: white !important;
+  }
+  
+  .datepicker-popper .react-datepicker__day {
+    background-color: white !important;
+  }
+  
+  .datepicker-popper .react-datepicker__day:hover {
+    background-color: #e9ecef !important;
+  }
+  
+  .datepicker-popper .react-datepicker__day--selected {
+    background-color: #00897b !important;
+    color: white !important;
+  }
+  
+  .datepicker-popper .react-datepicker__day--keyboard-selected {
+    background-color: #00897b !important;
+    color: white !important;
+  }
+
   .form-input[data-type="textarea"],
   textarea.form-input {
     min-height: 80px;

@@ -21,7 +21,7 @@ export const fullSchema = z
     city: z.string().min(1, 'Please enter your city.'),
     state: z.string().min(1, 'Please enter your state.'),
     zip_code: z.string().min(1, 'Please enter your zip code.'),
-    home_phone: z.string().min(1, 'Please enter your home phone number.'), // renamed from home_phone to just "Phone"
+    home_phone: z.string().optional(), // removed from form, made optional
     home_type: z.string().optional(), // made optional
     home_access: z.string().optional(), // made optional
     pets: z.string().optional(), // made optional
@@ -31,7 +31,10 @@ export const fullSchema = z
     first_name: z.string().optional(),
     last_name: z.string().optional(),
     middle_name: z.string().optional(),
-    family_email: z.string().email().optional(),
+    family_email: z.string().optional().refine((val) => {
+      if (!val || val.trim() === '') return true; // Allow empty
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val); // Validate email if provided
+    }, 'Please enter a valid email address.'),
     mobile_phone: z.string().optional(),
     work_phone: z.string().optional(),
     family_pronouns: z.string().optional(),
@@ -39,7 +42,10 @@ export const fullSchema = z
     // 4. Referral
     referral_source: z.string().min(1, 'Please tell us how you heard about us.'), // required
     referral_name: z.string().optional(), // made optional, allow "N/A"
-    referral_email: z.string().email().optional(), // made optional
+    referral_email: z.string().optional().refine((val) => {
+      if (!val || val.trim() === '') return true; // Allow empty
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val); // Validate email if provided
+    }, 'Please enter a valid email address.'),
 
     // 5. Health History
     health_history: z.string().optional(), // made optional
@@ -143,7 +149,6 @@ export const stepFields: (keyof RequestFormValues)[][] = [
     'city',
     'state',
     'zip_code',
-    'home_phone',
     'home_type',
     'home_access',
     'pets',
