@@ -1,7 +1,7 @@
 import { Button } from '@/common/components/ui/button';
 import { useState } from 'react';
+import { useRequestFormContext } from './contexts/RequestFormContext';
 import styles from './RequestForm.module.scss';
-import { stepFields } from './useRequestForm';
 
 function ArrowSVG({ color = '#757575' }: { color?: string }) {
   return (
@@ -38,17 +38,19 @@ export function Step1Personal({
 }: any) {
   const values = form.getValues();
   const errors = form.formState.errors;
-  // Floating label focus state
+  const { isStepValid } = useRequestFormContext();
+
+  // Floating label focus state - initialize based on current values
   const [focus, setFocus] = useState<Record<FocusField, boolean>>({
-    firstname: false,
-    lastname: false,
-    email: false,
-    phone_number: false,
-    preferred_contact_method: false,
-    pronouns: false,
-    preferred_name: false,
-    pregnancy_number: false,
-    birth_hospital: false,
+    firstname: !!values.firstname,
+    lastname: !!values.lastname,
+    email: !!values.email,
+    phone_number: !!values.phone_number,
+    preferred_contact_method: !!values.preferred_contact_method,
+    pronouns: !!values.pronouns,
+    preferred_name: !!values.preferred_name,
+    pregnancy_number: !!values.pregnancy_number,
+    birth_hospital: !!values.birth_hospital,
   });
   // Select open state
   const [pronounsOpen, setPronounsOpen] = useState(false);
@@ -56,8 +58,10 @@ export function Step1Personal({
 
   const handleFocus = (field: FocusField) =>
     setFocus((f) => ({ ...f, [field]: true }));
-  const handleBlur = (field: FocusField) =>
-    setFocus((f) => ({ ...f, [field]: false }));
+  const handleBlur = (field: FocusField) => {
+    const currentValue = values[field];
+    setFocus((f) => ({ ...f, [field]: !!currentValue }));
+  };
 
   // Arrow color logic
   const getArrowColor = (field: FocusField) => {
@@ -71,8 +75,10 @@ export function Step1Personal({
   console.log('Step1Personal errors:', errors);
   console.log('Step1Personal isValid:', form.formState.isValid);
 
-  // Only disable Next if any field in the current step has an error
-  const isStepValid = stepFields[step].every((field) => !errors[field]);
+  // Use the context's validation utility
+  const stepValid = isStepValid(step);
+
+  console.log('Step1Personal isStepValid:', stepValid);
 
   return (
     <div>
@@ -80,7 +86,6 @@ export function Step1Personal({
       <div className={styles['form-grid']}>
         {/* First Row */}
         <div className={styles['form-field']}>
-          {isDesktopOrTablet && <label htmlFor='firstname' className={styles['form-floating-label']}>First Name</label>}
           <input
             className={styles['form-input']}
             {...form.register('firstname')}
@@ -89,19 +94,17 @@ export function Step1Personal({
             onFocus={() => handleFocus('firstname')}
             onBlur={() => handleBlur('firstname')}
           />
-          {!isDesktopOrTablet && (
-            <label
-              htmlFor='firstname'
-              className={
-                styles['form-floating-label'] +
-                (focus.firstname || values.firstname
-                  ? ' ' + styles['form-label--active']
-                  : '')
-              }
-            >
-              First Name
-            </label>
-          )}
+          <label
+            htmlFor='firstname'
+            className={
+              styles['form-floating-label'] +
+              (focus.firstname || values.firstname
+                ? ' ' + styles['form-label--active']
+                : '')
+            }
+          >
+            First Name
+          </label>
           {errors.firstname && (
             <div className={styles['form-error']} style={{ marginBottom: 6 }}>
               Please enter your first name.
@@ -109,7 +112,6 @@ export function Step1Personal({
           )}
         </div>
         <div className={styles['form-field']}>
-          {isDesktopOrTablet && <label htmlFor='lastname' className={styles['form-floating-label']}>Last Name</label>}
           <input
             className={styles['form-input']}
             {...form.register('lastname')}
@@ -118,19 +120,17 @@ export function Step1Personal({
             onFocus={() => handleFocus('lastname')}
             onBlur={() => handleBlur('lastname')}
           />
-          {!isDesktopOrTablet && (
-            <label
-              htmlFor='lastname'
-              className={
-                styles['form-floating-label'] +
-                (focus.lastname || values.lastname
-                  ? ' ' + styles['form-label--active']
-                  : '')
-              }
-            >
-              Last Name
-            </label>
-          )}
+          <label
+            htmlFor='lastname'
+            className={
+              styles['form-floating-label'] +
+              (focus.lastname || values.lastname
+                ? ' ' + styles['form-label--active']
+                : '')
+            }
+          >
+            Last Name
+          </label>
           {errors.lastname && (
             <div className={styles['form-error']} style={{ marginBottom: 6 }}>
               Please enter your last name.
@@ -138,7 +138,6 @@ export function Step1Personal({
           )}
         </div>
         <div className={styles['form-field']}>
-          {isDesktopOrTablet && <label htmlFor='email' className={styles['form-floating-label']}>Email</label>}
           <input
             className={styles['form-input']}
             {...form.register('email')}
@@ -148,19 +147,17 @@ export function Step1Personal({
             onFocus={() => handleFocus('email')}
             onBlur={() => handleBlur('email')}
           />
-          {!isDesktopOrTablet && (
-            <label
-              htmlFor='email'
-              className={
-                styles['form-floating-label'] +
-                (focus.email || values.email
-                  ? ' ' + styles['form-label--active']
-                  : '')
-              }
-            >
-              Email
-            </label>
-          )}
+          <label
+            htmlFor='email'
+            className={
+              styles['form-floating-label'] +
+              (focus.email || values.email
+                ? ' ' + styles['form-label--active']
+                : '')
+            }
+          >
+            Email
+          </label>
           {errors.email && (
             <div className={styles['form-error']} style={{ marginBottom: 6 }}>
               Please enter your email address.
@@ -168,7 +165,6 @@ export function Step1Personal({
           )}
         </div>
         <div className={styles['form-field']}>
-          {isDesktopOrTablet && <label htmlFor='phone_number' className={styles['form-floating-label']}>Mobile phone</label>}
           <input
             className={styles['form-input']}
             {...form.register('phone_number')}
@@ -177,19 +173,17 @@ export function Step1Personal({
             onFocus={() => handleFocus('phone_number')}
             onBlur={() => handleBlur('phone_number')}
           />
-          {!isDesktopOrTablet && (
-            <label
-              htmlFor='phone_number'
-              className={
-                styles['form-floating-label'] +
-                (focus.phone_number || values.phone_number
-                  ? ' ' + styles['form-label--active']
-                  : '')
-              }
-            >
-              Mobile phone
-            </label>
-          )}
+          <label
+            htmlFor='phone_number'
+            className={
+              styles['form-floating-label'] +
+              (focus.phone_number || values.phone_number
+                ? ' ' + styles['form-label--active']
+                : '')
+            }
+          >
+            Mobile phone
+          </label>
           {errors.phone_number && (
             <div className={styles['form-error']} style={{ marginBottom: 6 }}>
               Please enter your mobile phone number.
@@ -198,7 +192,6 @@ export function Step1Personal({
         </div>
         {/* Second Row */}
         <div className={styles['form-field']} style={{ position: 'relative' }}>
-          {isDesktopOrTablet && <label htmlFor='preferred_contact_method' className={styles['form-floating-label']}>Preferred contact method</label>}
           <select
             className={styles['form-select']}
             style={{ paddingRight: 36 }}
@@ -218,25 +211,23 @@ export function Step1Personal({
             <option value='Phone'>Phone</option>
             <option value='Email'>Email</option>
           </select>
-          {!isDesktopOrTablet && (
-            <label
-              htmlFor='preferred_contact_method'
-              className={
-                styles['form-floating-label'] +
-                (focus.preferred_contact_method || values.preferred_contact_method
-                  ? ' ' + styles['form-label--active']
-                  : '')
-              }
-              style={{
-                left: 0,
-                color: pcmOpen ? '#00bcd4' : undefined,
-                right: 0,
-                maxWidth: 'calc(100% - 36px)',
-              }}
-            >
-              Preferred contact method
-            </label>
-          )}
+          <label
+            htmlFor='preferred_contact_method'
+            className={
+              styles['form-floating-label'] +
+              (focus.preferred_contact_method || values.preferred_contact_method
+                ? ' ' + styles['form-label--active']
+                : '')
+            }
+            style={{
+              left: 0,
+              color: pcmOpen ? '#00bcd4' : undefined,
+              right: 0,
+              maxWidth: 'calc(100% - 36px)',
+            }}
+          >
+            Preferred contact method
+          </label>
           <span
             style={{
               position: 'absolute',
@@ -259,7 +250,6 @@ export function Step1Personal({
           )}
         </div>
         <div className={styles['form-field']} style={{ position: 'relative' }}>
-          {isDesktopOrTablet && <label htmlFor='pronouns' className={styles['form-floating-label']}>Pronouns</label>}
           <select
             className={styles['form-select']}
             style={{ paddingRight: 36 }}
@@ -283,25 +273,23 @@ export function Step1Personal({
             <option value='None'>None</option>
             <option value='Other'>Other</option>
           </select>
-          {!isDesktopOrTablet && (
-            <label
-              htmlFor='pronouns'
-              className={
-                styles['form-floating-label'] +
-                (focus.pronouns || values.pronouns
-                  ? ' ' + styles['form-label--active']
-                  : '')
-              }
-              style={{
-                left: 0,
-                color: pronounsOpen ? '#00bcd4' : undefined,
-                right: 0,
-                maxWidth: 'calc(100% - 36px)',
-              }}
-            >
-              Pronouns
-            </label>
-          )}
+          <label
+            htmlFor='pronouns'
+            className={
+              styles['form-floating-label'] +
+              (focus.pronouns || values.pronouns
+                ? ' ' + styles['form-label--active']
+                : '')
+            }
+            style={{
+              left: 0,
+              color: pronounsOpen ? '#00bcd4' : undefined,
+              right: 0,
+              maxWidth: 'calc(100% - 36px)',
+            }}
+          >
+            Pronouns
+          </label>
           <span
             style={{
               position: 'absolute',
@@ -324,7 +312,6 @@ export function Step1Personal({
           )}
         </div>
         <div className={styles['form-field']}>
-          {isDesktopOrTablet && <label htmlFor='preferred_name' className={styles['form-floating-label']}>Preferred name</label>}
           <input
             className={styles['form-input']}
             {...form.register('preferred_name')}
@@ -333,19 +320,17 @@ export function Step1Personal({
             onFocus={() => handleFocus('preferred_name')}
             onBlur={() => handleBlur('preferred_name')}
           />
-          {!isDesktopOrTablet && (
-            <label
-              htmlFor='preferred_name'
-              className={
-                styles['form-floating-label'] +
-                (focus.preferred_name || values.preferred_name
-                  ? ' ' + styles['form-label--active']
-                  : '')
-              }
-            >
-              Preferred name
-            </label>
-          )}
+          <label
+            htmlFor='preferred_name'
+            className={
+              styles['form-floating-label'] +
+              (focus.preferred_name || values.preferred_name
+                ? ' ' + styles['form-label--active']
+                : '')
+            }
+          >
+            Preferred name
+          </label>
           {errors.preferred_name && (
             <div className={styles['form-error']}>
               {errors.preferred_name.message as string}
@@ -366,7 +351,7 @@ export function Step1Personal({
             console.log('handleNextStep called');
             handleNextStep();
           }}
-          disabled={!isStepValid || form.formState.isSubmitting}
+          disabled={!stepValid || form.formState.isSubmitting}
         >
           {step === totalSteps - 1 ? 'Submit' : 'Next'}
         </Button>

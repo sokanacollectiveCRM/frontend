@@ -1,6 +1,7 @@
 import { Form } from '@/common/components/ui/form';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { RequestFormProvider, useRequestFormContext } from './contexts/RequestFormContext';
 import styles from './RequestForm.module.scss';
 import RequestFormDesktop from './RequestFormDesktop';
 import { Step1Personal } from './Step1Personal';
@@ -15,53 +16,81 @@ import {
   Step8ServicesInterested,
   Step9Payment,
 } from './Step3Home';
-import { RequestFormValues, useRequestForm } from './useRequestForm';
+import { RequestFormValues } from './useRequestForm';
 
-export default function RequestForm() {
+function RefreshWarningModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  if (!isOpen) return null;
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000,
+      }}
+    >
+      <div
+        style={{
+          background: 'white',
+          borderRadius: 8,
+          padding: '24px',
+          maxWidth: 400,
+          margin: '0 16px',
+          textAlign: 'center',
+        }}
+      >
+        <h3 style={{ marginBottom: 16, color: '#d32f2f', fontWeight: 600 }}>
+          Unsaved Changes
+        </h3>
+        <p style={{ marginBottom: 24, color: '#666', lineHeight: 1.5 }}>
+          You have unsaved changes in your form. If you refresh or leave this page,
+          all your progress will be lost.
+        </p>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: '8px 16px',
+              border: '1px solid #ccc',
+              borderRadius: 4,
+              background: 'white',
+              cursor: 'pointer',
+            }}
+          >
+            Stay on Page
+          </button>
+          <button
+            onClick={() => {
+              onClose();
+              window.location.reload();
+            }}
+            style={{
+              padding: '8px 16px',
+              border: 'none',
+              borderRadius: 4,
+              background: '#d32f2f',
+              color: 'white',
+              cursor: 'pointer',
+            }}
+          >
+            Refresh Anyway
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RequestFormContent() {
   const [isDesktop, setIsDesktop] = useState(() => window.matchMedia('(min-width: 600px)').matches);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-
-  const onSubmit = async (formData: RequestFormValues) => {
-    const babyCountMap: Record<string, number> = {
-      Singleton: 1,
-      Twins: 2,
-      Triplets: 3,
-      Quadruplets: 4,
-    };
-    const payload = {
-      ...formData,
-      number_of_babies:
-        typeof formData.number_of_babies === 'string'
-          ? babyCountMap[formData.number_of_babies] || 1
-          : formData.number_of_babies,
-    };
-    setIsSubmitting(true);
-    try {
-      const response = await fetch(
-        `/api/requestService/requestSubmission`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        }
-      );
-
-      const responseData = await response.json();
-
-      if (!response.ok || responseData.error) {
-        throw new Error(responseData.error || 'Server returned an error.');
-      }
-      toast.success('Request Form Submitted Successfully!');
-      setSubmitted(true);
-    } catch (error) {
-      console.error('Request submission error:', error);
-      toast.error(error instanceof Error ? error.message : 'Submission failed');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-  const { form, step, totalSteps, handleNextStep, handleBack } = useRequestForm(onSubmit);
+  const { form, step, totalSteps, handleNextStep, handleBack, isSubmitting, submitted, showRefreshWarning, setShowRefreshWarning } = useRequestFormContext();
 
   useEffect(() => {
     const mql = window.matchMedia('(min-width: 600px)');
@@ -72,7 +101,12 @@ export default function RequestForm() {
   }, []);
 
   if (isDesktop) {
-    return <RequestFormDesktop />;
+    return (
+      <>
+        <RequestFormDesktop />
+        <RefreshWarningModal isOpen={showRefreshWarning} onClose={() => setShowRefreshWarning(false)} />
+      </>
+    );
   }
 
   const progress = ((step + 1) / totalSteps) * 100;
@@ -155,160 +189,209 @@ export default function RequestForm() {
   }
 
   return (
-    <div className={styles.requestForm}>
-      {/* Progress Bar */}
-      <div
-        style={{
-          width: '100%',
-          height: 8,
-          background: '#e0e0e0',
-          borderRadius: 4,
-          margin: '24px 0 32px 0',
-          overflow: 'hidden',
-        }}
-      >
+    <>
+      <div className={styles.requestForm}>
+        {/* Progress Bar */}
         <div
           style={{
-            width: `${progress}%`,
-            height: '100%',
-            background: '#00bcd4',
-            transition: 'width 0.3s cubic-bezier(.4,0,.2,1)',
-          }}
-        />
-      </div>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          marginBottom: '2.5rem',
-        }}
-      >
-        <img
-          src='/logo.jpeg'
-          alt='Sokana Collective Logo'
-          style={{
-            width: 180,
-            height: 'auto',
-            margin: '0 auto 1.5rem auto',
-            display: 'block',
-          }}
-        />
-        <h1
-          style={{
-            fontWeight: 700,
-            fontSize: '2.2rem',
-            margin: 0,
-            textAlign: 'center',
+            width: '100%',
+            height: 8,
+            background: '#e0e0e0',
+            borderRadius: 4,
+            margin: '24px 0 32px 0',
+            overflow: 'hidden',
           }}
         >
-          Request for Service Form
-        </h1>
-        <div
-          style={{
-            color: '#666',
-            fontSize: '1.15rem',
-            margin: '1.2rem 0 0 0',
-            textAlign: 'center',
-            maxWidth: 700,
-          }}
-        >
-          Please complete this form as thoroughly as possible so we can match
-          you with a doula according to your needs.
+          <div
+            style={{
+              width: `${progress}%`,
+              height: '100%',
+              background: '#00bcd4',
+              transition: 'width 0.3s cubic-bezier(.4,0,.2,1)',
+            }}
+          />
         </div>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            marginBottom: '2.5rem',
+          }}
+        >
+          <img
+            src='/logo.jpeg'
+            alt='Sokana Collective Logo'
+            style={{
+              width: 180,
+              height: 'auto',
+              margin: '0 auto 1.5rem auto',
+              display: 'block',
+            }}
+          />
+          <h1
+            style={{
+              fontWeight: 700,
+              fontSize: '2.2rem',
+              margin: 0,
+              textAlign: 'center',
+            }}
+          >
+            Request for Service Form
+          </h1>
+          <div
+            style={{
+              color: '#666',
+              fontSize: '1.15rem',
+              margin: '1.2rem 0 0 0',
+              textAlign: 'center',
+              maxWidth: 700,
+            }}
+          >
+            Please complete this form as thoroughly as possible so we can match
+            you with a doula according to your needs.
+          </div>
+        </div>
+        <Form {...form}>
+          {step === 0 && (
+            <Step1Personal
+              form={form}
+              handleBack={handleBack}
+              handleNextStep={handleNextStep}
+              step={step}
+              totalSteps={totalSteps}
+            />
+          )}
+          {step === 1 && (
+            <Step2Home
+              form={form}
+              handleBack={handleBack}
+              handleNextStep={handleNextStep}
+              step={step}
+              totalSteps={totalSteps}
+              isDesktopOrTablet={false}
+            />
+          )}
+          {step === 2 && (
+            <Step3FamilyMembers
+              form={form}
+              handleBack={handleBack}
+              handleNextStep={handleNextStep}
+              step={step}
+              totalSteps={totalSteps}
+            />
+          )}
+          {step === 3 && (
+            <Step4Referral
+              form={form}
+              handleBack={handleBack}
+              handleNextStep={handleNextStep}
+              step={step}
+              totalSteps={totalSteps}
+            />
+          )}
+          {step === 4 && (
+            <Step5HealthHistory
+              form={form}
+              handleBack={handleBack}
+              handleNextStep={handleNextStep}
+              step={step}
+              totalSteps={totalSteps}
+            />
+          )}
+          {step === 5 && (
+            <Step6PregnancyBaby
+              form={form}
+              handleBack={handleBack}
+              handleNextStep={handleNextStep}
+              step={step}
+              totalSteps={totalSteps}
+            />
+          )}
+          {step === 6 && (
+            <Step7PastPregnancies
+              form={form}
+              handleBack={handleBack}
+              handleNextStep={handleNextStep}
+              step={step}
+              totalSteps={totalSteps}
+            />
+          )}
+          {step === 7 && (
+            <Step8ServicesInterested
+              form={form}
+              handleBack={handleBack}
+              handleNextStep={handleNextStep}
+              step={step}
+              totalSteps={totalSteps}
+            />
+          )}
+          {step === 8 && (
+            <Step9Payment
+              form={form}
+              handleBack={handleBack}
+              handleNextStep={handleNextStep}
+              step={step}
+              totalSteps={totalSteps}
+            />
+          )}
+          {step === 9 && (
+            <Step10ClientDemographics
+              form={form}
+              handleBack={handleBack}
+              handleNextStep={handleNextStep}
+              step={step}
+              totalSteps={totalSteps}
+            />
+          )}
+        </Form>
       </div>
-      <Form {...form}>
-        {step === 0 && (
-          <Step1Personal
-            form={form}
-            handleBack={handleBack}
-            handleNextStep={handleNextStep}
-            step={step}
-            totalSteps={totalSteps}
-          />
-        )}
-        {step === 1 && (
-          <Step2Home
-            form={form}
-            handleBack={handleBack}
-            handleNextStep={handleNextStep}
-            step={step}
-            totalSteps={totalSteps}
-          />
-        )}
-        {step === 2 && (
-          <Step3FamilyMembers
-            form={form}
-            handleBack={handleBack}
-            handleNextStep={handleNextStep}
-            step={step}
-            totalSteps={totalSteps}
-          />
-        )}
-        {step === 3 && (
-          <Step4Referral
-            form={form}
-            handleBack={handleBack}
-            handleNextStep={handleNextStep}
-            step={step}
-            totalSteps={totalSteps}
-          />
-        )}
-        {step === 4 && (
-          <Step5HealthHistory
-            form={form}
-            handleBack={handleBack}
-            handleNextStep={handleNextStep}
-            step={step}
-            totalSteps={totalSteps}
-          />
-        )}
-        {step === 5 && (
-          <Step6PregnancyBaby
-            form={form}
-            handleBack={handleBack}
-            handleNextStep={handleNextStep}
-            step={step}
-            totalSteps={totalSteps}
-          />
-        )}
-        {step === 6 && (
-          <Step7PastPregnancies
-            form={form}
-            handleBack={handleBack}
-            handleNextStep={handleNextStep}
-            step={step}
-            totalSteps={totalSteps}
-          />
-        )}
-        {step === 7 && (
-          <Step8ServicesInterested
-            form={form}
-            handleBack={handleBack}
-            handleNextStep={handleNextStep}
-            step={step}
-            totalSteps={totalSteps}
-          />
-        )}
-        {step === 8 && (
-          <Step9Payment
-            form={form}
-            handleBack={handleBack}
-            handleNextStep={handleNextStep}
-            step={step}
-            totalSteps={totalSteps}
-          />
-        )}
-        {step === 9 && (
-          <Step10ClientDemographics
-            form={form}
-            handleBack={handleBack}
-            handleNextStep={handleNextStep}
-            step={step}
-            totalSteps={totalSteps}
-          />
-        )}
-      </Form>
-    </div>
+      <RefreshWarningModal isOpen={showRefreshWarning} onClose={() => setShowRefreshWarning(false)} />
+    </>
+  );
+}
+
+export default function RequestForm() {
+  const onSubmit = async (formData: RequestFormValues) => {
+    const babyCountMap: Record<string, number> = {
+      Singleton: 1,
+      Twins: 2,
+      Triplets: 3,
+      Quadruplets: 4,
+    };
+    const payload = {
+      ...formData,
+      number_of_babies:
+        typeof formData.number_of_babies === 'string'
+          ? babyCountMap[formData.number_of_babies] || 1
+          : formData.number_of_babies,
+    };
+    try {
+      const response = await fetch(
+        `/api/requestService/requestSubmission`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const responseData = await response.json();
+
+      if (!response.ok || responseData.error) {
+        throw new Error(responseData.error || 'Server returned an error.');
+      }
+      toast.success('Request Form Submitted Successfully!');
+    } catch (error) {
+      console.error('Request submission error:', error);
+      toast.error(error instanceof Error ? error.message : 'Submission failed');
+      throw error; // Re-throw to let the context handle the state
+    }
+  };
+
+  return (
+    <RequestFormProvider onSubmit={onSubmit}>
+      <RequestFormContent />
+    </RequestFormProvider>
   );
 }

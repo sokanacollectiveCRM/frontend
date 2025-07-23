@@ -7,6 +7,7 @@ import {
 import { useEffect, useState } from 'react';
 import { useWatch } from 'react-hook-form';
 import styles from './RequestForm.module.scss';
+import FloatingLabelDatePicker from './components/FloatingLabelDatePicker';
 
 function ArrowSVG({ color = '#757575' }: { color?: string }) {
   return (
@@ -70,9 +71,9 @@ export function Step3FamilyMembers({
     'relationship_status',
     'first_name',
     'last_name',
-    'pronouns',
+    'family_pronouns',
     'middle_name',
-    'email',
+    'family_email',
     'mobile_phone',
     'work_phone',
   ].every((field) => !errors[field]);
@@ -734,9 +735,14 @@ export function Step6PregnancyBaby({
     'birth_location',
     'birth_hospital',
     'number_of_babies',
-    'provider_type',
     'pregnancy_number',
-  ].every((field) => !errors[field]);
+  ].every((field) => {
+    // Check if there's no error AND the field has a value
+    const hasValue = values[field];
+    const hasError = errors[field];
+    console.log(`Field ${field}: hasValue=${hasValue}, hasError=${hasError}, value=${values[field]}`);
+    return !hasError && hasValue;
+  });
 
   // Debug logs
   console.log('Step6PregnancyBaby values:', values);
@@ -748,32 +754,13 @@ export function Step6PregnancyBaby({
       <div className={styles['form-section-title']}>Pregnancy/Baby</div>
       <div className={styles['form-grid']}>
         {/* Due Date */}
-        <div className={styles['form-field']}>
-          <input
-            className={styles['form-input']}
-            type='date'
-            {...form.register('due_date')}
-            id='due_date'
-            onFocus={() => handleFocus('due_date')}
-            onBlur={() => handleBlur('due_date')}
-          />
-          <label
-            htmlFor='due_date'
-            className={
-              styles['form-floating-label'] +
-              (focus.due_date || values.due_date
-                ? ' ' + styles['form-label--active']
-                : '')
-            }
-          >
-            Due Date or Date of Birth*
-          </label>
-          {errors.due_date && (
-            <div className={styles['form-error']}>
-              {errors.due_date.message as string}
-            </div>
-          )}
-        </div>
+        <FloatingLabelDatePicker
+          label="Due Date or Date of Birth*"
+          register={form.register('due_date')}
+          error={errors.due_date?.message as string}
+          onFocus={() => handleFocus('due_date')}
+          onBlur={() => handleBlur('due_date')}
+        />
         {/* Birth Location */}
         <div className={styles['form-field']}>
           <select
@@ -987,12 +974,15 @@ export function Step6PregnancyBaby({
         {/* Pregnancy Number */}
         <div className={styles['form-field']}>
           <input
-            className={styles['form-input']}
+            className={`${styles['form-input']} ${styles['pregnancy-number-input']}`}
             {...form.register('pregnancy_number')}
             id='pregnancy_number'
+            type="number"
+            min="1"
             autoComplete='off'
             onFocus={() => handleFocus('pregnancy_number')}
             onBlur={() => handleBlur('pregnancy_number')}
+            placeholder=""
           />
           <label
             htmlFor='pregnancy_number'

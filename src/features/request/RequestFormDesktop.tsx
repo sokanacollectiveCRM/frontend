@@ -1,50 +1,12 @@
 import { Form } from '@/common/components/ui/form';
-import { useState } from 'react';
-import { toast } from 'sonner';
 import styles from './RequestForm.module.scss';
 import { Step1Personal } from './Step1Personal';
 import { Step2Home } from './Step2Health';
 import { Step10ClientDemographics, Step3FamilyMembers, Step4Referral, Step5HealthHistory, Step6PregnancyBaby, Step7PastPregnancies, Step8ServicesInterested, Step9Payment } from './Step3Home';
-import { RequestFormValues, useRequestForm } from './useRequestForm';
+import { useRequestFormContext } from './contexts/RequestFormContext';
 
 export default function RequestFormDesktop() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-
-  const onSubmit = async (formData: RequestFormValues) => {
-    const babyCountMap: Record<string, number> = {
-      'Singleton': 1,
-      'Twins': 2,
-      'Triplets': 3,
-      'Quadruplets': 4,
-    };
-    const payload = {
-      ...formData,
-      number_of_babies: babyCountMap[formData.number_of_babies as string] || 1,
-    };
-    setIsSubmitting(true);
-    try {
-      const response = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL}/requestService/requestSubmission`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const responseData = await response.json();
-
-      if (!response.ok || responseData.error) {
-        throw new Error(responseData.error || "Server returned an error.");
-      }
-      toast.success('Request Form Submitted Successfully!');
-      setSubmitted(true);
-    } catch (error) {
-      console.error('Request submission error:', error);
-      toast.error(error instanceof Error ? error.message : "Submission failed");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-  const { form, step, setStep, totalSteps, handleNextStep, handleBack } = useRequestForm(onSubmit);
+  const { form, step, totalSteps, handleNextStep, handleBack, isSubmitting, submitted, setIsSubmitting, setSubmitted } = useRequestFormContext();
   const { control } = form;
 
   const progress = ((step + 1) / totalSteps) * 100;
@@ -69,14 +31,14 @@ export default function RequestFormDesktop() {
             Thank you for submitting your Service Request!
           </h2>
           <p style={{ color: '#333', fontSize: 17, marginBottom: 16 }}>
-            We’ve received your information and are working on your match.<br />
+            We've received your information and are working on your match.<br />
             A confirmation email has been sent to you.
           </p>
           <h3 style={{ color: '#009688', fontWeight: 600, fontSize: '1.2rem', margin: '24px 0 8px 0' }}>What happens next?</h3>
           <ul style={{ color: '#444', fontSize: 16, textAlign: 'left', margin: '0 auto', maxWidth: 400, paddingLeft: 0, listStyle: 'none' }}>
-            <li style={{ marginBottom: 8 }}>• You’ll hear from our team via email within 24 hours.</li>
-            <li style={{ marginBottom: 8 }}>• We’ll schedule a brief follow-up to confirm your needs.</li>
-            <li>• Once everything’s set, we’ll invite you to our portal to finalize details and payment.</li>
+            <li style={{ marginBottom: 8 }}>• You'll hear from our team via email within 24 hours.</li>
+            <li style={{ marginBottom: 8 }}>• We'll schedule a brief follow-up to confirm your needs.</li>
+            <li>• Once everything's set, we'll invite you to our portal to finalize details and payment.</li>
           </ul>
         </div>
       </div>
@@ -97,16 +59,16 @@ export default function RequestFormDesktop() {
         </div>
       </div>
       <Form {...form}>
-        {step === 0 && <Step1Personal form={form} control={control} handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} />}
-        {step === 1 && <Step2Home form={form} control={control} handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} />}
-        {step === 2 && <Step3FamilyMembers form={form} control={control} handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} />}
-        {step === 3 && <Step4Referral form={form} control={control} handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} />}
-        {step === 4 && <Step5HealthHistory form={form} control={control} handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} />}
-        {step === 5 && <Step6PregnancyBaby form={form} control={control} handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} />}
-        {step === 6 && <Step7PastPregnancies form={form} control={control} handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} />}
-        {step === 7 && <Step8ServicesInterested form={form} control={control} handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} />}
-        {step === 8 && <Step9Payment form={form} control={control} handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} />}
-        {step === 9 && <Step10ClientDemographics form={form} control={control} handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} />}
+        {step === 0 && <Step1Personal form={form} control={control} handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} isDesktopOrTablet={true} />}
+        {step === 1 && <Step2Home form={form} control={control} handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} isDesktopOrTablet={true} />}
+        {step === 2 && <Step3FamilyMembers form={form} control={control} handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} isDesktopOrTablet={true} />}
+        {step === 3 && <Step4Referral form={form} control={control} handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} isDesktopOrTablet={true} />}
+        {step === 4 && <Step5HealthHistory form={form} control={control} handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} isDesktopOrTablet={true} />}
+        {step === 5 && <Step6PregnancyBaby form={form} control={control} handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} isDesktopOrTablet={true} />}
+        {step === 6 && <Step7PastPregnancies form={form} control={control} handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} isDesktopOrTablet={true} />}
+        {step === 7 && <Step8ServicesInterested form={form} control={control} handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} isDesktopOrTablet={true} />}
+        {step === 8 && <Step9Payment form={form} control={control} handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} isDesktopOrTablet={true} />}
+        {step === 9 && <Step10ClientDemographics form={form} control={control} handleBack={handleBack} handleNextStep={handleNextStep} step={step} totalSteps={totalSteps} isDesktopOrTablet={true} />}
       </Form>
     </div>
   );
