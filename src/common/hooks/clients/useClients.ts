@@ -38,6 +38,8 @@ export function useClients() {
       // cast it to Client[] so setClients has the right shape
       const apiData = (await res.json()) as any[];
       console.log('🔍 DEBUG: Raw API data:', apiData);
+      console.log('🔍 DEBUG: First API client structure:', apiData[0]);
+      console.log('🔍 DEBUG: First API client user object:', apiData[0]?.user);
 
       // Flatten user object into top-level and map database fields to frontend fields
       const data = apiData.map((client) => {
@@ -47,8 +49,8 @@ export function useClients() {
           // Map database field names to frontend field names
           phoneNumber: client.phone_number || client.phoneNumber || client.user?.phoneNumber || '',
           // Ensure firstname and lastname are properly mapped from user object
-          firstname: client.user?.firstname || client.firstname || '',
-          lastname: client.user?.lastname || client.lastname || '',
+          firstname: client.user?.firstname || client.user?.firstName || client.firstname || client.firstName || '',
+          lastname: client.user?.lastname || client.user?.lastName || client.lastname || client.lastName || '',
           // Map service needed from top level or user object
           serviceNeeded: client.serviceNeeded || client.user?.service_needed || '',
           // Map dates properly

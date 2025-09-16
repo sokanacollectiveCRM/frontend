@@ -28,15 +28,47 @@ export const columns = (refreshClients: () => void): ColumnDef<User>[] => [
       <DataTableColumnHeader column={column} title='Client' />
     ),
     cell: ({ row }) => {
-      const { firstname, lastname } = row.original;
-      const displayName =
-        firstname && lastname ? `${firstname} ${lastname}` : '—';
+      const { firstname, lastname, email, id } = row.original;
+      let displayName = '—';
+
+      // Check if names are not empty strings and have content
+      const hasValidFirstname = firstname && firstname.trim();
+      const hasValidLastname = lastname && lastname.trim();
+
+      if (hasValidFirstname && hasValidLastname) {
+        displayName = `${firstname.trim()} ${lastname.trim()}`;
+      } else if (hasValidFirstname) {
+        displayName = firstname.trim();
+      } else if (hasValidLastname) {
+        displayName = lastname.trim();
+      } else if (email) {
+        displayName = email;
+      } else {
+        displayName = `Client ${id}`;
+      }
+
       return <LongText className='max-w-36'>{displayName}</LongText>;
     },
     filterFn: (row, _columnId, filterValue) => {
-      const { firstname, lastname } = row.original;
-      const displayName =
-        firstname && lastname ? `${firstname} ${lastname}` : '';
+      const { firstname, lastname, email, id } = row.original;
+
+      // Use the same logic as the display cell
+      const hasValidFirstname = firstname && firstname.trim();
+      const hasValidLastname = lastname && lastname.trim();
+
+      let displayName = '';
+      if (hasValidFirstname && hasValidLastname) {
+        displayName = `${firstname.trim()} ${lastname.trim()}`;
+      } else if (hasValidFirstname) {
+        displayName = firstname.trim();
+      } else if (hasValidLastname) {
+        displayName = lastname.trim();
+      } else if (email) {
+        displayName = email;
+      } else {
+        displayName = `Client ${id}`;
+      }
+
       return displayName
         .toLowerCase()
         .includes((filterValue as string).toLowerCase());

@@ -1,7 +1,7 @@
 'use client';
 
 import { TableCell, TableRow } from '@/common/components/ui/table';
-import { useTable } from '@/features/clients/contexts/TableContext';
+import { useClientsContext } from '@/features/clients/contexts/ClientsContext';
 import { Client } from '@/features/clients/data/schema';
 import { useDroppable } from '@dnd-kit/core';
 import { flexRender, Row } from '@tanstack/react-table';
@@ -15,7 +15,7 @@ interface Props {
 export const DroppableTableRow = forwardRef<HTMLTableRowElement, Props>(
   ({ row }, ref) => {
     let navigate = useNavigate();
-    const { setCurrentRow, setOpen } = useTable();
+    const { setCurrentRow, setOpen } = useClientsContext();
 
     const { setNodeRef, isOver } = useDroppable({
       id: `user-${row.original.id}`,

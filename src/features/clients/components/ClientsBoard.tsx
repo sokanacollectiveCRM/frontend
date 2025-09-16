@@ -5,14 +5,13 @@ import { ClientsTable } from '@/features/clients/components/ClientsTable';
 import { DraggableTemplate } from '@/features/clients/components/DraggableTemplate';
 import { columns } from '@/features/clients/components/users-columns';
 import { useClientsContext } from '@/features/clients/contexts/ClientsContext';
-import { useTable } from '@/features/clients/contexts/TableContext';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { useState } from 'react';
 
 export default function ClientsBoard() {
   const { clients, isLoading, refreshClients } = useClientsContext();
   const [draggedTemplate, setDraggedTemplate] = useState<Template | null>(null);
-  const { setOpen, setDialogTemplate, setCurrentRow } = useTable();
+  const { setOpen, setDialogTemplate, setCurrentRow } = useClientsContext();
 
   const handleDragStart = (event: any) => {
     if (event.active.data.current?.type === 'template') {

@@ -1,179 +1,201 @@
-// src/components/PaymentForm.tsx
-import React, { useState } from 'react';
+import { Button } from '@/common/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/common/components/ui/card';
+import { Input } from '@/common/components/ui/input';
+import { Label } from '@/common/components/ui/label';
+import { CardElement, Elements, useElements, useStripe } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
+import { CreditCard, Loader2, Lock } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { PaymentFormData } from '../types/payment';
+import { createPaymentIntent } from '../utils/paymentApi';
 
-interface PaymentResponse {
-  id?: string;
-  status?: string;
-  amount?: string;
-  error?: any;
-}
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 interface PaymentFormProps {
+  contractId: string;
   amount: number;
-  docNumber?: string;
+  onSuccess: (paymentIntentId: string) => void;
 }
 
-const PaymentForm = ({ amount, docNumber }: PaymentFormProps) => {
-  const [card, setCard] = useState({
-    number: '',
-    expMonth: '',
-    expYear: '',
-    cvc: '',
+const PaymentFormInner = ({ contractId, amount, onSuccess }: PaymentFormProps) => {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState<PaymentFormData>({
+    cardholderName: '',
+    email: '',
   });
-  const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<PaymentResponse | null>(null);
 
-  const handleCardChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setCard((prev) => ({ ...prev, [name]: value }));
-  };
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setResult(null);
+    if (!stripe || !elements) {
+      toast.error('Stripe is not loaded yet. Please try again.');
+      return;
+    }
+
+    if (!formData.cardholderName.trim() || !formData.email.trim()) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    setLoading(true);
 
     try {
-      const response = await fetch('/quickbooks/simulate-payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount, card, doc_number: docNumber }),
-      });
+      // Create payment intent
+      const paymentIntent = await createPaymentIntent(contractId);
 
-      const data: PaymentResponse = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          JSON.stringify(data.error || 'An unknown error occurred.')
-        );
+      // Confirm payment with Stripe
+      const cardElement = elements.getElement(CardElement);
+      if (!cardElement) {
+        throw new Error('Card element not found');
       }
-      setResult(data);
-    } catch (error: any) {
-      setResult({ error: error.message });
+
+      const { error, paymentIntent: confirmedPaymentIntent } = await stripe.confirmCardPayment(
+        paymentIntent.client_secret,
+        {
+          payment_method: {
+            card: cardElement,
+            billing_details: {
+              name: formData.cardholderName,
+              email: formData.email,
+            },
+          },
+        }
+      );
+
+      if (error) {
+        toast.error(error.message || 'Payment failed');
+        console.error('Payment error:', error);
+      } else if (confirmedPaymentIntent?.status === 'succeeded') {
+        toast.success('Payment successful!');
+        onSuccess(confirmedPaymentIntent.id);
+      } else {
+        toast.error('Payment was not completed');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Payment failed';
+      toast.error(errorMessage);
+      console.error('Payment error:', error);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  return (
-    <div
-      style={{
-        maxWidth: '400px',
-        margin: '2rem auto',
-        fontFamily: 'sans-serif',
-      }}
-    >
-      <h2>Simulate a Payment</h2>
-      <form
-        onSubmit={handleSubmit}
-        style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
-      >
-        <div style={{ marginBottom: '0.75rem', fontWeight: 600 }}>
-          Amount: ${amount.toFixed(2)}
-        </div>
-        <input
-          name='number'
-          value={card.number}
-          onChange={handleCardChange}
-          placeholder='Card Number (e.g., 4111...)'
-          required
-          style={{
-            marginBottom: '0.75rem',
-            border: '1px solid #ccc',
-            borderRadius: '6px',
-            padding: '0.5rem',
-            fontSize: '1rem',
-          }}
-        />
-        <input
-          name='expMonth'
-          value={card.expMonth}
-          onChange={handleCardChange}
-          placeholder='Expiry Month (e.g., 12)'
-          required
-          style={{
-            marginBottom: '0.75rem',
-            border: '1px solid #ccc',
-            borderRadius: '6px',
-            padding: '0.5rem',
-            fontSize: '1rem',
-          }}
-        />
-        <input
-          name='expYear'
-          value={card.expYear}
-          onChange={handleCardChange}
-          placeholder='Expiry Year (e.g., 2025)'
-          required
-          style={{
-            marginBottom: '0.75rem',
-            border: '1px solid #ccc',
-            borderRadius: '6px',
-            padding: '0.5rem',
-            fontSize: '1rem',
-          }}
-        />
-        <input
-          name='cvc'
-          value={card.cvc}
-          onChange={handleCardChange}
-          placeholder='CVC (e.g., 123)'
-          required
-          style={{
-            marginBottom: '0.75rem',
-            border: '1px solid #ccc',
-            borderRadius: '6px',
-            padding: '0.5rem',
-            fontSize: '1rem',
-          }}
-        />
-        <button
-          type='submit'
-          disabled={isLoading}
-          style={{
-            padding: '0.75rem',
-            borderRadius: '6px',
-            border: 'none',
-            background: '#065f46',
-            color: 'white',
-            fontWeight: 600,
-            fontSize: '1rem',
-            cursor: isLoading ? 'not-allowed' : 'pointer',
-            marginTop: '0.5rem',
-          }}
-        >
-          {isLoading ? 'Processing...' : 'Pay Now'}
-        </button>
-      </form>
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
+  };
 
-      {result && (
-        <div
-          style={{
-            marginTop: '1rem',
-            padding: '1rem',
-            border: '1px solid #ccc',
-            borderRadius: '4px',
-          }}
-        >
-          <h4>API Response:</h4>
-          {result.error ? (
-            <pre
-              style={{
-                color: 'red',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-all',
-              }}
-            >
-              {result.error}
-            </pre>
-          ) : (
-            <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
-              {JSON.stringify(result, null, 2)}
-            </pre>
-          )}
-        </div>
-      )}
-    </div>
+  const cardElementOptions = {
+    style: {
+      base: {
+        fontSize: '16px',
+        color: '#424770',
+        '::placeholder': {
+          color: '#aab7c4',
+        },
+      },
+      invalid: {
+        color: '#9e2146',
+      },
+    },
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <CreditCard className="h-5 w-5" />
+          Payment Information
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Payment Amount */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-lg font-semibold text-blue-800">Payment Amount</span>
+              <span className="text-2xl font-bold text-blue-600">
+                {formatCurrency(amount)}
+              </span>
+            </div>
+          </div>
+
+          {/* Cardholder Information */}
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="cardholderName">Cardholder Name *</Label>
+              <Input
+                id="cardholderName"
+                type="text"
+                placeholder="John Doe"
+                value={formData.cardholderName}
+                onChange={(e) => setFormData({ ...formData, cardholderName: e.target.value })}
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="email">Email Address *</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="john@example.com"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+
+          {/* Card Element */}
+          <div>
+            <Label>Card Information *</Label>
+            <div className="mt-2 p-4 border border-gray-300 rounded-lg">
+              <CardElement options={cardElementOptions} />
+            </div>
+          </div>
+
+          {/* Security Notice */}
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <Lock className="h-4 w-4" />
+            <span>Your payment information is secure and encrypted</span>
+          </div>
+
+          {/* Submit Button */}
+          <Button
+            type="submit"
+            disabled={!stripe || loading}
+            className="w-full"
+            size="lg"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing Payment...
+              </>
+            ) : (
+              <>
+                <CreditCard className="mr-2 h-4 w-4" />
+                Pay {formatCurrency(amount)}
+              </>
+            )}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+};
+
+export const PaymentForm = (props: PaymentFormProps) => {
+  return (
+    <Elements stripe={stripePromise}>
+      <PaymentFormInner {...props} />
+    </Elements>
   );
 };
 

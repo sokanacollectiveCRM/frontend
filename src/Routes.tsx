@@ -20,8 +20,10 @@ import QuickBooksRoutes from './features/integrations/QuickBooksRoutes';
 import InvoiceRoute from './features/InvoicesPage/InvoiceRoute';
 import MyAccountRoutes from './features/my-account/MyAccountRoutes';
 import PaymentsRoute from './features/payments/PaymentsRoute';
+import StandalonePaymentDemoRoute from './features/payments/StandalonePaymentDemoRoute';
 import ProfileRoutes from './features/profiles/ProfileRoutes';
 import TeamRoutes from './features/teams/teamRoutes';
+import StandalonePaymentPage from './pages/StandalonePaymentPage';
 
 const AppRoutes = () => (
   <Routes>
@@ -35,6 +37,12 @@ const AppRoutes = () => (
       </Route>
     </Route>
 
+    {/* Standalone Payment Routes - No Sidebar */}
+    {StandalonePaymentDemoRoute()}
+
+    {/* Contract Payment Page - No Sidebar, No Auth */}
+    <Route path="/payment" element={<StandalonePaymentPage />} />
+
     <Route>
       <Route element={<DashboardLayout />}>
         <Route element={<PrivateRoute />}>
@@ -43,6 +51,7 @@ const AppRoutes = () => (
           {PipelineRoutes()}
           {ClientRoutes()}
           {PaymentsRoute()}
+
           {HoursRoutes()}
           {ProfileRoutes()}
           {MyAccountRoutes()}

@@ -37,9 +37,10 @@ declare module '@tanstack/react-table' {
 interface DataTableProps {
   columns: ColumnDef<User>[];
   data: User[];
+  clients?: any[];
 }
 
-export function UsersTable({ columns, data }: DataTableProps) {
+export function UsersTable({ columns, data, clients }: DataTableProps) {
   const [rowSelection, setRowSelection] = useState({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -75,7 +76,7 @@ export function UsersTable({ columns, data }: DataTableProps) {
 
   return (
     <div className='space-y-4'>
-      <DataTableToolbar table={table} />
+      <DataTableToolbar table={table} clients={clients} />
       <div className='rounded-md border'>
         <Table className='table-fixed w-full'>
           <TableHeader>

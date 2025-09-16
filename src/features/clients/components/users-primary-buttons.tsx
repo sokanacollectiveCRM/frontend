@@ -1,47 +1,29 @@
 import { Button } from '@/common/components/ui/button';
-import {
-  Command,
-  CommandEmpty,
-  CommandInput,
-  CommandList,
-} from '@/common/components/ui/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/common/components/ui/popover';
 import { Template } from '@/common/types/template';
-import { useTemplatesContext } from '@/features/clients/contexts/TemplatesContext';
-import { CommandGroup } from 'cmdk';
-import { SquarePlus } from 'lucide-react';
+import { Send, SquarePlus } from 'lucide-react';
 import { useState } from 'react';
-import { DraggableTemplate } from './DraggableTemplate';
+import { EnhancedContractDialog } from './dialog/EnhancedContractDialog';
+
+interface Props {
+  draggedTemplate: Template | null;
+  clients?: any[]; // Simple clients prop
+}
 
 export function UsersPrimaryButtons({
   draggedTemplate,
-}: {
-  draggedTemplate: Template | null;
-}) {
-  const { templates } = useTemplatesContext();
-
-  const [search, setSearch] = useState<string>('');
-
-  const filteredTemplates = templates.filter((template) =>
-    template.name.toLowerCase().includes(search.toLowerCase())
-  );
+  clients = [],
+}: Props) {
+  const [isEnhancedContractDialogOpen, setIsEnhancedContractDialogOpen] = useState(false);
 
   const fetchCSV = async () => {
     const token = localStorage.getItem('authToken');
     try {
-      const data = await fetch(
-        `http://localhost:5050/clients/fetchCSV`,
-        {
-          credentials: 'include',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const data = await fetch(`http://localhost:5050/clients/fetchCSV`, {
+        credentials: 'include',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       const csvData = await data.text();
       const blob = new Blob([csvData], { type: 'text/csv' });
@@ -62,42 +44,18 @@ export function UsersPrimaryButtons({
         <span>Export</span>
         <SquarePlus size={18} />
       </Button>
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button className='space-x-1'>
-            <span>Create Contract</span>
-            <SquarePlus size={18} />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className='w-64 p-0' align='start'>
-          {draggedTemplate ? (
-            <div className='p-4 text-sm text-muted-foreground'>
-              Drag a template onto a user to initiate a contract.
-            </div>
-          ) : (
-            <Command shouldFilter={false}>
-              <CommandInput
-                placeholder='Search templates...'
-                onValueChange={setSearch}
-              />
-              <CommandList>
-                {filteredTemplates.length === 0 ? (
-                  <CommandEmpty>No templates found.</CommandEmpty>
-                ) : (
-                  <CommandGroup>
-                    {filteredTemplates.map((template) => (
-                      <DraggableTemplate
-                        key={template.id}
-                        template={template}
-                      />
-                    ))}
-                  </CommandGroup>
-                )}
-              </CommandList>
-            </Command>
-          )}
-        </PopoverContent>
-      </Popover>
+      <Button
+        className='space-x-1'
+        onClick={() => setIsEnhancedContractDialogOpen(true)}
+      >
+        <span>Send Contract</span>
+        <Send size={18} />
+      </Button>
+
+      <EnhancedContractDialog
+        open={isEnhancedContractDialogOpen}
+        onOpenChange={setIsEnhancedContractDialogOpen}
+      />
     </div>
   );
 }
