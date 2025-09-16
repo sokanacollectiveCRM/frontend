@@ -184,7 +184,7 @@ const PaymentPage = () => {
           <div>
             <PaymentForm
               contractId={contractId}
-              amount={paymentDetails.deposit_amount}
+              amount={paymentDetails.total_due}
               onSuccess={handlePaymentSuccess}
             />
           </div>

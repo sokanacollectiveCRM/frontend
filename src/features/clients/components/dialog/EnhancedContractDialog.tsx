@@ -530,8 +530,8 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                   ) : clients
                     .filter(client =>
                       !searchTerm ||
-                      `${client.firstname} ${client.lastname}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      client.email?.toLowerCase().includes(searchTerm.toLowerCase())
+                      `${client.user.firstname} ${client.user.lastname}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      client.user.email?.toLowerCase().includes(searchTerm.toLowerCase())
                     )
                     .map((client) => (
                       <div
@@ -540,16 +540,16 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                           }`}
                         onClick={() => {
                           setSelectedClient(client);
-                          clientForm.setValue('email', client.email || '');
-                          clientForm.setValue('name', `${client.firstname} ${client.lastname}`);
+                          clientForm.setValue('email', client.user.email || '');
+                          clientForm.setValue('name', `${client.user.firstname} ${client.user.lastname}`);
                         }}
                       >
                         <div className="flex justify-between items-center">
                           <div>
                             <p className="font-medium text-gray-900">
-                              {client.firstname} {client.lastname}
+                              {client.user.firstname} {client.user.lastname}
                             </p>
-                            <p className="text-sm text-gray-500">{client.email}</p>
+                            <p className="text-sm text-gray-500">{client.user.email}</p>
                           </div>
                           {selectedClient?.id === client.id && (
                             <CheckCircle className="h-5 w-5 text-blue-600" />
@@ -566,8 +566,8 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
 
                   {!clientsLoading && clients.length > 0 && clients.filter(client =>
                     !searchTerm ||
-                    `${client.firstname} ${client.lastname}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    client.email?.toLowerCase().includes(searchTerm.toLowerCase())
+                    `${client.user.firstname} ${client.user.lastname}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    client.user.email?.toLowerCase().includes(searchTerm.toLowerCase())
                   ).length === 0 && (
                       <div className="p-4 text-center text-gray-500">
                         No clients found matching your search.

@@ -6,7 +6,6 @@ import {
   TabsTrigger,
 } from '@/common/components/ui/tabs';
 import { UserContext } from '@/common/contexts/UserContext';
-import PaymentForm from '@/components/PaymentForm';
 import {
   Button,
   Modal,
@@ -184,10 +183,12 @@ export default function BillingPage() {
                   <strong>Amount:</strong> $
                   {selectedInvoice.total_amount?.toFixed(2)}
                 </p>
-                <PaymentForm
-                  amount={selectedInvoice.total_amount || 0}
-                  docNumber={selectedInvoice.doc_number}
-                />
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    Invoice payment functionality is not yet implemented.
+                    Please contact support for payment processing.
+                  </p>
+                </div>
               </div>
             )}
           </ModalBody>
