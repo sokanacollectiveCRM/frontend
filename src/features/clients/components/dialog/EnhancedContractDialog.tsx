@@ -870,7 +870,7 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                           </div>
                           <Badge variant="secondary">
                             {index === 0
-                              ? `$${calculatedAmounts?.deposit?.toFixed(2) || '0.00'}`
+                              ? `$${calculatedAmounts?.deposit_amount?.toFixed(2) || '0.00'}`
                               : `$${calculatedAmounts?.installments_amounts?.[index - 1]?.toFixed(2) || '0.00'}`
                             }
                           </Badge>
