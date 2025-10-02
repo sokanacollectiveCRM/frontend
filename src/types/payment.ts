@@ -15,6 +15,7 @@ export interface Installment {
   amount: number;
   due_date: string;
   status: 'pending' | 'paid' | 'overdue';
+  payment_type?: 'deposit' | 'installment';
 }
 
 export interface PaymentIntent {

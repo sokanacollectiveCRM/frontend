@@ -16,7 +16,9 @@ export const PaymentSummary = ({ paymentDetails }: PaymentSummaryProps) => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    // Handle ISO date strings properly to avoid timezone issues
+    const date = new Date(dateString + 'T00:00:00');
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -33,6 +35,27 @@ export const PaymentSummary = ({ paymentDetails }: PaymentSummaryProps) => {
         return 'bg-yellow-100 text-yellow-800';
     }
   };
+
+  // Find the deposit payment in payment_installments
+  const depositPayment = paymentDetails.installments?.find(p => p.payment_type === 'deposit');
+
+  // For deposit payments, always use today's date if no payment has been made yet
+  // This fixes the issue where backend returns past dates for deposits
+  const today = new Date().toISOString().split('T')[0];
+  const isFirstPayment = paymentDetails.total_paid === 0;
+
+  let depositDueDate = paymentDetails.next_payment_due;
+  let depositAmount = paymentDetails.next_payment_amount;
+
+  if (depositPayment) {
+    // Use the deposit payment record if available
+    depositDueDate = depositPayment.due_date;
+    depositAmount = depositPayment.amount;
+  } else if (isFirstPayment) {
+    // If this is the first payment (deposit) and no payment has been made, use today's date
+    depositDueDate = today;
+    depositAmount = paymentDetails.next_payment_amount;
+  }
 
   return (
     <div className="space-y-6">
@@ -78,10 +101,10 @@ export const PaymentSummary = ({ paymentDetails }: PaymentSummaryProps) => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-2xl font-bold text-blue-600">
-                {formatCurrency(paymentDetails.next_payment_amount)}
+                {formatCurrency(depositAmount)}
               </p>
               <p className="text-sm text-gray-600">
-                Due: {formatDate(paymentDetails.next_payment_due)}
+                Due: {formatDate(depositDueDate)}
               </p>
             </div>
             <Badge variant="outline" className="text-blue-600 border-blue-600">
@@ -113,6 +136,11 @@ export const PaymentSummary = ({ paymentDetails }: PaymentSummaryProps) => {
                       <p className="text-sm text-gray-600">
                         Due: {formatDate(installment.due_date)}
                       </p>
+                      {installment.payment_type && (
+                        <p className="text-xs text-blue-600 font-medium">
+                          {installment.payment_type === 'deposit' ? 'Deposit Payment' : 'Installment Payment'}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <Badge className={getStatusColor(installment.status)}>

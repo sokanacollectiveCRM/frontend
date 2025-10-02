@@ -23,6 +23,7 @@ import PaymentsRoute from './features/payments/PaymentsRoute';
 import StandalonePaymentDemoRoute from './features/payments/StandalonePaymentDemoRoute';
 import ProfileRoutes from './features/profiles/ProfileRoutes';
 import TeamRoutes from './features/teams/teamRoutes';
+import ContractSignedPage from './pages/ContractSignedPage';
 import StandalonePaymentPage from './pages/StandalonePaymentPage';
 
 const AppRoutes = () => (
@@ -42,6 +43,9 @@ const AppRoutes = () => (
 
     {/* Contract Payment Page - No Sidebar, No Auth */}
     <Route path="/payment" element={<StandalonePaymentPage />} />
+
+    {/* Contract Signed Success Page - No Sidebar, No Auth */}
+    <Route path="/contract-signed" element={<ContractSignedPage />} />
 
     <Route>
       <Route element={<DashboardLayout />}>

@@ -163,6 +163,12 @@ export default function ContractPayment({
   const dueDate = new Date(Date.now() + (90 * 24 * 60 * 60 * 1000)); // 90 days from now
   const balanceDueDate = new Date(dueDate.getTime() - (14 * 24 * 60 * 60 * 1000)); // 2 weeks before
 
+  // For deposit payments, use today's date instead of calculated future date
+  const today = new Date();
+  const isDepositPayment = paymentType === 'deposit';
+  const displayDueDate = isDepositPayment ? today : dueDate;
+
+
   const [paymentData, setPaymentData] = useState<PaymentFormData>({
     amount: paymentType === 'deposit' ? depositAmount.toString() : balanceAmount.toString(),
     description: `${finalServiceType} - ${paymentType === 'deposit' ? 'Deposit' : 'Balance'} Payment - ${finalClientName || 'Contract Payment'}`,
@@ -350,7 +356,7 @@ export default function ContractPayment({
                 </div>
                 <div>
                   <span className="text-gray-600">Due Date:</span>
-                  <p className="font-medium">{formatDate(dueDate)}</p>
+                  <p className="font-medium">{formatDate(displayDueDate)}</p>
                 </div>
                 {finalContractId && (
                   <div className="col-span-2">
