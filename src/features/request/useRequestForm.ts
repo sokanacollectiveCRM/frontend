@@ -106,17 +106,17 @@ export const fullSchema = z
     service_needed: z.string().min(1, 'Please tell us what service you need.'),
 
     // 9. Payment
-    payment_method: z.string().min(1, 'Please select a payment method.'),
+    payment_method: z.string().min(1, 'Please select how you plan to pay for services.'),
     annual_income: z.string().optional(),
     service_specifics: z.string().optional(),
 
-    // 10. Client Demographics
-    race_ethnicity: z.string().min(1, 'Please select your race/ethnicity.'),
-    primary_language: z.string().min(1, 'Please select your primary language.'),
-    client_age_range: z.string().min(1, 'Please select your age range.'),
-    insurance: z.string().optional(), // paused for later
-    demographics_multi: z.array(z.string()).optional(), // experience categories
-    demographics_annual_income: z.string().optional(), // for demographics step
+    // 10. Client Demographics (ALL OPTIONAL)
+    race_ethnicity: z.string().optional(),
+    primary_language: z.string().optional(),
+    client_age_range: z.string().optional(),
+    insurance: z.string().optional(),
+    demographics_multi: z.array(z.string()).optional(),
+    demographics_annual_income: z.string().optional(),
   })
   .refine(
     (data) =>
@@ -131,7 +131,9 @@ export const fullSchema = z
 export type RequestFormValues = z.infer<typeof fullSchema>;
 
 export const stepFields: (keyof RequestFormValues)[][] = [
-  // 1. Client Details
+  // 1. Services Interested In (MOVED TO FIRST)
+  ['services_interested', 'service_support_details', 'service_needed'],
+  // 2. Client Details
   [
     'firstname',
     'lastname',
@@ -143,7 +145,7 @@ export const stepFields: (keyof RequestFormValues)[][] = [
     'preferred_name',
     'children_expected',
   ],
-  // 2. Home Details
+  // 3. Home Details
   [
     'address',
     'city',
@@ -153,7 +155,7 @@ export const stepFields: (keyof RequestFormValues)[][] = [
     'home_access',
     'pets',
   ],
-  // 3. Family Members
+  // 4. Family Members
   [
     'relationship_status',
     'first_name',
@@ -164,11 +166,11 @@ export const stepFields: (keyof RequestFormValues)[][] = [
     'mobile_phone',
     'work_phone',
   ],
-  // 4. Referral
+  // 5. Referral
   ['referral_source', 'referral_name', 'referral_email'],
-  // 5. Health History
+  // 6. Health History
   ['health_history', 'allergies', 'health_notes'],
-  // 6. Pregnancy/Baby
+  // 7. Pregnancy/Baby
   [
     'due_date',
     'birth_location',
@@ -178,16 +180,14 @@ export const stepFields: (keyof RequestFormValues)[][] = [
     'provider_type',
     'pregnancy_number',
   ],
-  // 7. Past Pregnancies
+  // 8. Past Pregnancies
   [
     'had_previous_pregnancies',
     'previous_pregnancies_count',
     'living_children_count',
     'past_pregnancy_experience',
   ],
-  // 8. Services Interested In
-  ['services_interested', 'service_support_details', 'service_needed'],
-  // 9. Payment
+  // 9. Payment (stays near the end)
   ['payment_method', 'annual_income', 'service_specifics'],
   // 10. Client Demographics
   [

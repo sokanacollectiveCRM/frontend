@@ -158,7 +158,9 @@ export function RequestFormProvider({ children, onSubmit }: RequestFormProviderP
   };
 
   const stepFields: (keyof RequestFormValues)[][] = [
-    // 1. Client Details
+    // 1. Services Interested In (MOVED TO FIRST)
+    ['services_interested', 'service_support_details', 'service_needed'],
+    // 2. Client Details
     [
       'firstname',
       'lastname',
@@ -170,7 +172,7 @@ export function RequestFormProvider({ children, onSubmit }: RequestFormProviderP
       'preferred_name',
       'children_expected',
     ],
-    // 2. Home Details
+    // 3. Home Details
     [
       'address',
       'city',
@@ -180,7 +182,7 @@ export function RequestFormProvider({ children, onSubmit }: RequestFormProviderP
       'home_access',
       'pets',
     ],
-    // 3. Family Members
+    // 4. Family Members
     [
       'relationship_status',
       'first_name',
@@ -191,11 +193,11 @@ export function RequestFormProvider({ children, onSubmit }: RequestFormProviderP
       'mobile_phone',
       'work_phone',
     ],
-    // 4. Referral
+    // 5. Referral
     ['referral_source', 'referral_name', 'referral_email'],
-    // 5. Health History
+    // 6. Health History
     ['health_history', 'allergies', 'health_notes'],
-    // 6. Pregnancy/Baby
+    // 7. Pregnancy/Baby
     [
       'due_date',
       'birth_location',
@@ -205,16 +207,14 @@ export function RequestFormProvider({ children, onSubmit }: RequestFormProviderP
       'provider_type',
       'pregnancy_number',
     ],
-    // 7. Past Pregnancies
+    // 8. Past Pregnancies
     [
       'had_previous_pregnancies',
       'previous_pregnancies_count',
       'living_children_count',
       'past_pregnancy_experience',
     ],
-    // 8. Services Interested In
-    ['services_interested', 'service_support_details', 'service_needed'],
-    // 9. Payment
+    // 9. Payment (stays near the end)
     ['payment_method', 'annual_income', 'service_specifics'],
     // 10. Client Demographics
     [
@@ -255,8 +255,8 @@ export function RequestFormProvider({ children, onSubmit }: RequestFormProviderP
         const formData = form.getValues();
         await onSubmit(formData);
         setSubmitted(true);
-        // Clear form data immediately after successful submission
-        clearFormData();
+        // Don't clear form data - let user see the thank you message
+        // Form will reset when they navigate away or refresh
       } catch (error) {
         // Error is handled by the onSubmit function
         console.error('Submission failed:', error);

@@ -1428,11 +1428,9 @@ export function Step9Payment({
     setFocus((f) => ({ ...f, [field]: false }));
 
   const paymentMethodOptions = [
-    'Credit Card',
-    'Debit Card',
-    'Bank Transfer',
-    'Cash',
-    'Check',
+    'Self-Pay',
+    'Private Insurance',
+    'Medicaid',
     'Other',
   ];
 
@@ -1481,7 +1479,7 @@ export function Step9Payment({
             >
               {errors.payment_method.message === 'Required.' ||
                 errors.payment_method.message === 'Required'
-                ? 'Please select your payment method.'
+                ? 'Please select how you plan to pay for services.'
                 : errors.payment_method.message}
             </div>
           )}
@@ -1521,7 +1519,7 @@ export function Step9Payment({
                 aria-invalid={!!errors.payment_method}
                 id='payment_method'
               >
-                {values.payment_method || 'Select Payment Method'}
+                {values.payment_method || 'How do you plan to pay for services?'}
                 <span
                   style={{
                     float: 'right',
@@ -1673,12 +1671,8 @@ export function Step10ClientDemographics({
     return err.message;
   };
 
-  // Validation for required fields
-  const isStepValid = [
-    'race_ethnicity',
-    'primary_language',
-    'client_age_range',
-  ].every((field) => !errors[field]);
+  // All demographic fields are optional, so step is always valid (no required fields)
+  const isStepValid = true;
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -1764,7 +1758,7 @@ export function Step10ClientDemographics({
                 : '')
             }
           >
-            Race/ethnicity/nationality?
+            Race/ethnicity/nationality (optional)
           </label>
           <span className={styles['form-select-arrow']}>▼</span>
           {errors.race_ethnicity && (
@@ -1805,7 +1799,7 @@ export function Step10ClientDemographics({
                 : '')
             }
           >
-            Primary Language
+            Primary Language (optional)
           </label>
           <span className={styles['form-select-arrow']}>▼</span>
           {errors.primary_language && (
@@ -1846,7 +1840,7 @@ export function Step10ClientDemographics({
                 : '')
             }
           >
-            Client age range
+            Client age range (optional)
           </label>
           <span className={styles['form-select-arrow']}>▼</span>
           {errors.client_age_range && (
@@ -1887,7 +1881,7 @@ export function Step10ClientDemographics({
                 : '')
             }
           >
-            Medical Insurance Coverage
+            Medical Insurance Coverage (optional)
           </label>
           <span className={styles['form-select-arrow']}>▼</span>
           {errors.insurance && (
@@ -2054,7 +2048,7 @@ export function Step10ClientDemographics({
                 : '')
             }
           >
-            Please select all that apply
+            Please select all that apply (optional)
           </label>
           <div
             id='demographics-dropdown'
@@ -2153,7 +2147,7 @@ export function Step10ClientDemographics({
                 : '')
             }
           >
-            Annual Household Income
+            Annual Household Income (optional)
           </label>
           <span
             className={styles['form-select-arrow']}

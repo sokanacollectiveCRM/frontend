@@ -254,7 +254,7 @@ function RequestFormContent() {
         </div>
         <Form {...form}>
           {step === 0 && (
-            <Step1Personal
+            <Step8ServicesInterested
               form={form}
               handleBack={handleBack}
               handleNextStep={handleNextStep}
@@ -263,6 +263,15 @@ function RequestFormContent() {
             />
           )}
           {step === 1 && (
+            <Step1Personal
+              form={form}
+              handleBack={handleBack}
+              handleNextStep={handleNextStep}
+              step={step}
+              totalSteps={totalSteps}
+            />
+          )}
+          {step === 2 && (
             <Step2Home
               form={form}
               handleBack={handleBack}
@@ -272,7 +281,7 @@ function RequestFormContent() {
               isDesktopOrTablet={false}
             />
           )}
-          {step === 2 && (
+          {step === 3 && (
             <Step3FamilyMembers
               form={form}
               handleBack={handleBack}
@@ -281,7 +290,7 @@ function RequestFormContent() {
               totalSteps={totalSteps}
             />
           )}
-          {step === 3 && (
+          {step === 4 && (
             <Step4Referral
               form={form}
               handleBack={handleBack}
@@ -290,7 +299,7 @@ function RequestFormContent() {
               totalSteps={totalSteps}
             />
           )}
-          {step === 4 && (
+          {step === 5 && (
             <Step5HealthHistory
               form={form}
               handleBack={handleBack}
@@ -299,7 +308,7 @@ function RequestFormContent() {
               totalSteps={totalSteps}
             />
           )}
-          {step === 5 && (
+          {step === 6 && (
             <Step6PregnancyBaby
               form={form}
               handleBack={handleBack}
@@ -308,17 +317,8 @@ function RequestFormContent() {
               totalSteps={totalSteps}
             />
           )}
-          {step === 6 && (
-            <Step7PastPregnancies
-              form={form}
-              handleBack={handleBack}
-              handleNextStep={handleNextStep}
-              step={step}
-              totalSteps={totalSteps}
-            />
-          )}
           {step === 7 && (
-            <Step8ServicesInterested
+            <Step7PastPregnancies
               form={form}
               handleBack={handleBack}
               handleNextStep={handleNextStep}
@@ -367,6 +367,7 @@ export default function RequestForm() {
           : formData.number_of_babies,
     };
     // Use the same pattern as login endpoint (no /api prefix)
+    // @ts-ignore - Vite environment variable
     const backendUrl = import.meta.env.VITE_APP_BACKEND_URL?.replace(/\/$/, '') || 'http://localhost:5050';
 
     try {
