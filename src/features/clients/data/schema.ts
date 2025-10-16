@@ -108,6 +108,74 @@ export type ContractTemplate = {
   title: string;
 };
 
-export type Client = User;
+// Extended Client type with all form fields
+export type Client = User & {
+  // Contact & Basic Info
+  preferred_name?: string;
+  pronouns?: string;
+  preferred_contact_method?: string;
+  children_expected?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  home_type?: string;
+  home_access?: string;
+  pets?: string;
+  
+  // Services
+  services_interested?: string[];
+  service_support_details?: string;
+  service_needed?: string;
+  service_specifics?: string;
+  annual_income?: string;
+  payment_method?: string;
+  
+  // Family
+  relationship_status?: string;
+  first_name?: string;
+  last_name?: string;
+  middle_name?: string;
+  family_pronouns?: string;
+  family_email?: string;
+  mobile_phone?: string;
+  work_phone?: string;
+  
+  // Referral
+  referral_source?: string;
+  referral_name?: string;
+  referral_email?: string;
+  
+  // Health & Pregnancy
+  due_date?: string | Date;
+  birth_location?: string;
+  birth_hospital?: string;
+  number_of_babies?: string;
+  baby_name?: string;
+  provider_type?: string;
+  pregnancy_number?: number;
+  health_notes?: string;
+  
+  // Past Pregnancies
+  had_previous_pregnancies?: boolean;
+  previous_pregnancies_count?: number;
+  living_children_count?: number;
+  past_pregnancy_experience?: string;
+  
+  // Demographics
+  race_ethnicity?: string;
+  primary_language?: string;
+  client_age_range?: string;
+  insurance?: string;
+  demographics_multi?: string[];
+  demographics_annual_income?: string;
+  
+  // Account
+  account_status?: string;
+  created_at?: string | Date;
+  
+  // Allow any additional properties from the API
+  [key: string]: any;
+};
+
 export const clientListSchema = userListSchema;
 export const clientSchema = userSchema;
