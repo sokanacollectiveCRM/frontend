@@ -44,7 +44,9 @@ export function useClients() {
       // Flatten user object into top-level and map database fields to frontend fields
       const data = apiData.map((client) => {
         const mappedClient = {
+          // Start with user object (contains most fields)
           ...client.user,
+          // Override with top-level client properties (contains relationships and computed fields)
           ...client,
           // Map database field names to frontend field names
           phoneNumber: client.phone_number || client.phoneNumber || client.user?.phoneNumber || '',
@@ -58,20 +60,22 @@ export function useClients() {
           updatedAt: client.updatedAt ? new Date(client.updatedAt) : new Date(),
           // Map status from top level or user object
           status: client.status || client.user?.status || 'lead',
+          // Ensure all form fields are preserved (if they exist in user object)
+          preferred_contact_method: client.user?.preferred_contact_method || client.preferred_contact_method || undefined,
+          preferred_name: client.user?.preferred_name || client.preferred_name || undefined,
+          pronouns: client.user?.pronouns || client.pronouns || undefined,
+          home_type: client.user?.home_type || client.home_type || undefined,
+          services_interested: client.user?.services_interested || client.services_interested || undefined,
+          // Add other request form fields as needed
         };
         console.log('🔍 DEBUG: Client mapping:', {
-          original: {
-            phone_number: client.phone_number,
-            phoneNumber: client.phoneNumber,
-            user_phone: client.user?.phoneNumber,
-          },
-          mapped: { 
-            phoneNumber: mappedClient.phoneNumber,
-            firstname: mappedClient.firstname,
-            lastname: mappedClient.lastname,
-            serviceNeeded: mappedClient.serviceNeeded,
-            status: mappedClient.status,
-          },
+          clientId: client.id,
+          userObjectKeys: client.user ? Object.keys(client.user) : [],
+          topLevelKeys: Object.keys(client),
+          hasPreferredContactInUser: !!client.user?.preferred_contact_method,
+          hasPreferredContactTopLevel: !!client.preferred_contact_method,
+          preferredContactValue: client.user?.preferred_contact_method || client.preferred_contact_method,
+          mappedPreferredContact: mappedClient.preferred_contact_method,
         });
         return mappedClient;
       });

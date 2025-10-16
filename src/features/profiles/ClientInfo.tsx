@@ -1,15 +1,25 @@
+import { Button } from '@/common/components/ui/button';
+import { Card } from '@/common/components/ui/card';
+import { Input } from '@/common/components/ui/input';
+import { Label } from '@/common/components/ui/label';
 import {
   Tabs,
-  TabsList,
   TabsContent,
+  TabsList,
   TabsTrigger,
 } from '@/common/components/ui/tabs';
 import { Textarea } from '@/common/components/ui/textarea';
-import { Label } from '@/common/components/ui/label';
-import { Input } from '@/common/components/ui/input';
-import { Card } from '@/common/components/ui/card';
-import { Button } from '@/common/components/ui/button';
 import { useState } from 'react';
+
+// Annual income options
+const incomeOptions = [
+  '$0-$24,999',
+  '$25,000-$44,999',
+  '$45,000-$64,999',
+  '$65,000-$84,999',
+  '$85,000-$99,999',
+  '$100,000 and above'
+];
 
 export default function ClientInfo({ client }: any) {
   const [birthDate, setBirthDate] = useState('');

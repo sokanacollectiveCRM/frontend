@@ -1,4 +1,5 @@
 import { useUsers } from '@/features/clients/context/users-context';
+import { LeadProfileModal } from './dialog/LeadProfileModal';
 import { UsersActionDialog } from './users-action-dialog';
 import { UsersDeleteDialog } from './users-delete-dialog';
 import { UsersInviteDialog } from './users-invite-dialog';
@@ -48,6 +49,24 @@ export function UsersDialogs() {
             onDeleteSuccess={refreshClients}
           />
         </>
+      )}
+
+      {/* Lead Profile Modal - opens when clicking on a row */}
+      {currentRow && (
+        <LeadProfileModal
+          key={`lead-profile-${currentRow.id}`}
+          open={open === 'lead-profile'}
+          onOpenChange={(isOpen) => {
+            setOpen(isOpen ? 'lead-profile' : null);
+            if (!isOpen) {
+              setTimeout(() => {
+                setCurrentRow(null);
+              }, 500);
+            }
+          }}
+          client={currentRow}
+          refreshClients={refreshClients}
+        />
       )}
     </>
   );

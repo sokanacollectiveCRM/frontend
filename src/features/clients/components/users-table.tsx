@@ -41,6 +41,7 @@ interface DataTableProps {
 }
 
 export function UsersTable({ columns, data, clients }: DataTableProps) {
+  const { setCurrentRow, setOpen } = useUsers();
   const [rowSelection, setRowSelection] = useState({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -50,7 +51,6 @@ export function UsersTable({ columns, data, clients }: DataTableProps) {
       desc: true,
     },
   ]);
-  const { setOpen } = useUsers();
 
   const table = useReactTable({
     data,
@@ -107,7 +107,11 @@ export function UsersTable({ columns, data, clients }: DataTableProps) {
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
-                  className='group/row cursor-pointer transition'
+                  className='group/row cursor-pointer transition hover:bg-muted/50'
+                  onClick={() => {
+                    setCurrentRow(row.original);
+                    setOpen('lead-profile');
+                  }}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
