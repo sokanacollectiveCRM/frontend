@@ -22,6 +22,7 @@ import { Input } from '@/common/components/ui/input';
 import { Label } from '@/common/components/ui/label';
 import { useClients } from '@/common/hooks/clients/useClients';
 import {
+  applyMultiServiceDiscount,
   CalculatedAmounts,
   ContractData,
   ContractInput,
@@ -34,52 +35,36 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-// Available contract types - Updated to match backend service type detection
-const CONTRACT_TYPES = [
-  {
-    id: 'Labor Support Services',
-    name: 'Labor Support Services',
-    description: 'Full labor and birth support services with fixed pricing',
-    pricingType: 'fixed'
-  },
-  {
-    id: 'Postpartum Doula Services',
-    name: 'Postpartum Doula Services',
-    description: 'Hourly-based postpartum care services',
-    pricingType: 'hourly'
-  },
+// Multi-service selection types
+interface ServiceSelection {
+  id: string;
+  name: string;
+  type: 'flat' | 'hourly';
+  amount?: number;
+  hourlyRate?: number;
+  totalHours?: number;
+}
+
+const availableServices: ServiceSelection[] = [
+  { id: 'labor', name: 'Labor Support', type: 'flat' },
+  { id: 'postpartum', name: 'Postpartum Support', type: 'hourly' },
+  { id: 'firstNight', name: '1st Night Care', type: 'flat' },
+  { id: 'lactation', name: 'Lactation Support', type: 'flat' },
+  { id: 'perinatalEd', name: 'Perinatal Education', type: 'flat' },
+  { id: 'abortion', name: 'Abortion Support', type: 'flat' },
+  { id: 'other', name: 'Other', type: 'flat' },
 ];
 
-
-// Enhanced form schemas - Updated for new backend integration
+// Form schema (relaxed for multi-service flow; UI enforces correctness)
 const contractInputSchema = z.object({
-  serviceType: z.enum(['Labor Support Services', 'Postpartum Doula Services']),
-  // Labor Support fields
-  labor_support_amount: z.number().min(1, 'Labor support amount must be at least $1').optional(),
-  // Postpartum fields
-  total_hours: z.number().min(1, 'Total hours must be at least 1').optional(),
-  hourly_rate: z.number().min(1, 'Hourly rate must be at least $1').optional(),
-  // Payment plan fields (only required for Labor Support Services)
+  serviceType: z.string().optional(),
+  labor_support_amount: z.number().optional(),
+  total_hours: z.number().optional(),
+  hourly_rate: z.number().optional(),
   deposit_type: z.enum(['percent', 'flat']).optional(),
-  deposit_value: z.number().min(1, 'Deposit value must be at least 1').optional(),
-  installments_count: z.number().min(2, 'Minimum 2 installments').max(5, 'Maximum 5 installments').optional(),
+  deposit_value: z.number().optional(),
+  installments_count: z.number().optional(),
   cadence: z.enum(['monthly', 'biweekly']).optional(),
-}).refine((data) => {
-  // Validate based on service type
-  if (data.serviceType === 'Labor Support Services' && !data.labor_support_amount) {
-    return false;
-  }
-  if (data.serviceType === 'Postpartum Doula Services' && (!data.total_hours || !data.hourly_rate)) {
-    return false;
-  }
-  // For Labor Support Services, require payment plan fields
-  if (data.serviceType === 'Labor Support Services' && (!data.deposit_type || !data.deposit_value || !data.installments_count || !data.cadence)) {
-    return false;
-  }
-  return true;
-}, {
-  message: "Please fill in all required fields for the selected service type",
-  path: ["serviceType"]
 });
 
 const clientInfoSchema = z.object({
@@ -107,9 +92,17 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
   const [contractId, setContractId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState<any>(null);
-  const [selectedContractType, setSelectedContractType] = useState<string>('');
   const [calculatedTotal, setCalculatedTotal] = useState<number>(0);
-  const [laborSupportAmount, setLaborSupportAmount] = useState<number>(0);
+  const [selectedServices, setSelectedServices] = useState<ServiceSelection[]>([]);
+  const [applyAdminFee, setApplyAdminFee] = useState(false);
+  const [adminFeeInstallments] = useState(2); // installments are configured in step 2
+  const [discountState, setDiscountState] = useState({
+    totalBeforeDiscount: 0,
+    discount: 0,
+    discountRate: 0,
+    totalAfterDiscount: 0,
+    discountApplied: false,
+  });
 
   // Load clients when dialog opens
   useEffect(() => {
@@ -158,58 +151,68 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
   });
 
 
-  // Calculate total contract amount based on service type
+  // Helpers for multi-service selection and totals
+  const computeServiceAmount = (svc: ServiceSelection) => {
+    if (svc.type === 'flat') return Number(svc.amount || 0);
+    const rate = Number(svc.hourlyRate || 0);
+    const hours = Number(svc.totalHours || 0);
+    return rate * hours;
+  };
+
+  const computeTotalAmount = (services: ServiceSelection[]) =>
+    services.reduce((sum, s) => sum + computeServiceAmount(s), 0);
+
+  const hasFlatServices = selectedServices.some((s) => s.type === 'flat');
+  const hasHourlyOnly = selectedServices.length > 0 && selectedServices.every((s) => s.type === 'hourly');
+  const shouldUseDepositPlan = hasFlatServices || applyAdminFee; // treat admin fee like a flat charge for deposit/installments
+
+  const isServicesValid = () => {
+    if (selectedServices.length === 0) return false;
+    return selectedServices.every((s) => {
+      if (s.type === 'flat') return !!s.amount && s.amount > 0;
+      return !!s.hourlyRate && s.hourlyRate > 0 && !!s.totalHours && s.totalHours > 0;
+    });
+  };
+
+  const toggleService = (svc: ServiceSelection) => {
+    setSelectedServices((prev) => {
+      const exists = prev.find((p) => p.id === svc.id);
+      if (exists) return prev.filter((p) => p.id !== svc.id);
+      if (svc.type === 'flat') return [...prev, { ...svc, amount: 0 }];
+      return [...prev, { ...svc, hourlyRate: 0, totalHours: 0 }];
+    });
+  };
+
+  const updateServiceField = (id: string, field: keyof ServiceSelection, value: number) => {
+    setSelectedServices((prev) => prev.map((s) => (s.id === id ? { ...s, [field]: value } : s)));
+  };
+
+  // Calculate total contract amount based on selected services (with multi-service discount)
   useEffect(() => {
-    const serviceType = contractForm.watch('serviceType');
-
-    if (serviceType === 'Labor Support Services') {
-      // For labor support, use the fixed amount
-      const amount = laborSupportAmount || 0;
-      setCalculatedTotal(amount);
-
-      // Update form values for labor support
-      contractForm.setValue('total_hours', 0); // No hours for labor support
-      contractForm.setValue('hourly_rate', 0); // No hourly rate for labor support
-      contractForm.setValue('labor_support_amount', amount);
-    } else if (serviceType === 'Postpartum Doula Services') {
-      // For postpartum, use hourly calculation
-      const hourlyRate = contractForm.watch('hourly_rate') || 0;
-      const totalHours = contractForm.watch('total_hours') || 0;
-      const amount = hourlyRate * totalHours;
-      setCalculatedTotal(amount);
-    }
-  }, [selectedContractType, laborSupportAmount, contractForm]);
+    const info = applyMultiServiceDiscount(selectedServices);
+    setDiscountState(info);
+    const hasAnyService = selectedServices.length > 0;
+    const totalWithAdmin = (hasAnyService ? info.totalAfterDiscount : 0) + (applyAdminFee ? 150 : 0);
+    setCalculatedTotal(totalWithAdmin);
+  }, [selectedServices, applyAdminFee]);
 
   const calculateAmounts = async (data: ContractFormData) => {
     setLoading(true);
     try {
-      console.log('Calculating contract amounts with data:', data);
+      console.log('Calculating contract amounts with services:', selectedServices, 'form:', data);
 
-      // Create the contract input with the calculated total
-      const contractInput = {
-        serviceType: data.serviceType,
-        labor_support_amount: data.labor_support_amount,
-        total_hours: data.total_hours,
-        hourly_rate: data.hourly_rate,
-        deposit_type: data.deposit_type,
-        deposit_value: data.deposit_value,
-        installments_count: data.installments_count,
-        cadence: data.cadence,
-        total_amount: calculatedTotal,
-      };
+      // Recompute totals to ensure discount and admin fee are reflected
+      const discountInfo = applyMultiServiceDiscount(selectedServices);
+      const totalAmount = discountInfo.totalAfterDiscount + (applyAdminFee ? 150 : 0);
 
-      console.log('Contract input:', contractInput);
-
-      // For Labor Support Services contracts, calculate locally without backend call
-      if (data.serviceType === 'Labor Support Services') {
-        const totalAmount = data.labor_support_amount || 0;
+      if (shouldUseDepositPlan) {
         const depositValue = data.deposit_value || 0;
         const installmentsCount = data.installments_count || 3;
-        const depositAmount = data.deposit_type === 'percent'
+        const depositAmount = (data.deposit_type || 'percent') === 'percent'
           ? (totalAmount * depositValue) / 100
           : depositValue;
-        const balanceAmount = totalAmount - depositAmount;
-        const installmentAmount = balanceAmount / installmentsCount;
+        const balanceAmount = Math.max(totalAmount - depositAmount, 0);
+        const installmentAmount = installmentsCount > 0 ? balanceAmount / installmentsCount : 0;
 
         const localAmounts: CalculatedAmounts = {
           total_amount: totalAmount,
@@ -218,45 +221,60 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
           installments_amounts: Array(installmentsCount).fill(installmentAmount),
         };
 
+        const totalHoursSum = selectedServices
+          .filter((s) => s.type === 'hourly')
+          .reduce((sum, s) => sum + Number(s.totalHours || 0), 0);
+
         const localSignNowFields = {
-          total_hours: '0', // Labor support doesn't use hours
-          hourly_rate_fee: '0.00', // Labor support doesn't use hourly rate
+          total_hours: totalHoursSum.toString(),
+          hourly_rate_fee: '0.00',
           deposit: depositAmount.toFixed(2),
-          overnight_fee_amount: '0.00', // Not applicable for labor support
-          total_amount: totalAmount.toFixed(2),
-        };
-
-        setCalculatedAmounts(localAmounts);
-        setSignNowFields(localSignNowFields);
-        setContractData(contractInput);
-        setStep('calculation');
-        toast.success('Labor Support Services contract calculated successfully!');
-      } else if (data.serviceType === 'Postpartum Doula Services') {
-        // For postpartum contracts, calculate locally without deposits
-        const hourlyRate = data.hourly_rate || 0;
-        const totalHours = data.total_hours || 0;
-        const totalAmount = hourlyRate * totalHours;
-
-        const localAmounts: CalculatedAmounts = {
-          total_amount: totalAmount,
-          deposit_amount: 0, // No deposit for postpartum
-          balance_amount: totalAmount, // Full amount due after work
-          installments_amounts: [totalAmount], // Single payment
-        };
-
-        const localSignNowFields = {
-          total_hours: totalHours.toString(),
-          hourly_rate_fee: hourlyRate.toFixed(2),
-          deposit: '0.00', // No deposit
           overnight_fee_amount: '0.00',
           total_amount: totalAmount.toFixed(2),
         };
 
         setCalculatedAmounts(localAmounts);
         setSignNowFields(localSignNowFields);
-        setContractData(contractInput);
+        setContractData({
+          total_hours: data.total_hours,
+          hourly_rate: data.hourly_rate,
+          deposit_type: data.deposit_type,
+          deposit_value: data.deposit_value,
+          installments_count: data.installments_count,
+          cadence: data.cadence,
+          total_amount: totalAmount,
+        });
         setStep('calculation');
-        toast.success('Postpartum Doula Services contract calculated successfully!');
+        toast.success('Contract calculated successfully!');
+      } else {
+        const localAmounts: CalculatedAmounts = {
+          total_amount: totalAmount,
+          deposit_amount: 0,
+          balance_amount: totalAmount,
+          installments_amounts: [totalAmount],
+        };
+
+        const totalHoursSum = selectedServices
+          .filter((s) => s.type === 'hourly')
+          .reduce((sum, s) => sum + Number(s.totalHours || 0), 0);
+
+        const localSignNowFields = {
+          total_hours: totalHoursSum.toString(),
+          hourly_rate_fee: '0.00',
+          deposit: '0.00',
+          overnight_fee_amount: '0.00',
+          total_amount: totalAmount.toFixed(2),
+        };
+
+        setCalculatedAmounts(localAmounts);
+        setSignNowFields(localSignNowFields);
+        setContractData({
+          total_hours: data.total_hours,
+          hourly_rate: data.hourly_rate,
+          total_amount: totalAmount,
+        });
+        setStep('calculation');
+        toast.success('Contract calculated successfully!');
       }
     } catch (error) {
       console.error('Calculation failed:', error);
@@ -290,7 +308,19 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
         clientEmail: clientData.email,
         totalInvestment: `$${calculatedAmounts?.total_amount?.toFixed(2) || '0.00'}`,
         depositAmount: `$${calculatedAmounts?.deposit_amount?.toFixed(2) || '0.00'}`,
-        serviceType: selectedContractType as 'Labor Support Services' | 'Postpartum Doula Services',
+        serviceType: 'Labor Support Services',
+        // Multi-service payload
+        selectedServices: selectedServices.map(s => ({
+          id: s.id,
+          name: s.name,
+          type: s.type,
+          amount: s.amount,
+          hourlyRate: s.hourlyRate,
+          totalHours: s.totalHours,
+        })),
+        totalAmount: calculatedTotal,
+        adminFee: applyAdminFee ? 150 : 0,
+        adminFeeInstallments: applyAdminFee ? adminFeeInstallments : undefined,
         remainingBalance: calculatedAmounts?.balance_amount ? `$${calculatedAmounts.balance_amount.toFixed(2)}` : undefined,
         contractDate: new Date().toISOString().split('T')[0],
         dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
@@ -300,10 +330,10 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
 
       // Add Postpartum-specific fields only for Postpartum contracts
       console.log('🔍 Conditional Logic Debug:');
-      console.log('- selectedContractType:', selectedContractType);
-      console.log('- selectedContractType === "Postpartum Doula Services":', selectedContractType === 'Postpartum Doula Services');
+      console.log('- selectedServices:', selectedServices);
 
-      if (selectedContractType === 'Postpartum Doula Services') {
+      const anyHourly = selectedServices.some(s => s.type === 'hourly');
+      if (anyHourly) {
         console.log('✅ Adding Postpartum fields to API data');
         contractDataForAPI.totalHours = contractForm.watch('total_hours')?.toString() || '0';
         contractDataForAPI.hourlyRate = contractForm.watch('hourly_rate')?.toString() || '0';
@@ -312,19 +342,19 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
         console.log('- Added hourlyRate:', contractDataForAPI.hourlyRate);
         console.log('- Added overnightFee:', contractDataForAPI.overnightFee);
       } else {
-        console.log('❌ Not adding Postpartum fields - service type is:', selectedContractType);
+        console.log('❌ Not adding hourly fields - no hourly services selected');
       }
 
       console.log('🔍 Frontend Contract Fields Debug:');
-      console.log('- serviceType:', selectedContractType);
+      console.log('- totalAmount:', calculatedTotal);
       console.log('- total_hours from form:', contractForm.watch('total_hours'));
       console.log('- hourly_rate from form:', contractForm.watch('hourly_rate'));
       console.log('- Form values:', contractForm.getValues());
-      console.log('- selectedContractType === "Postpartum Doula Services":', selectedContractType === 'Postpartum Doula Services');
-      console.log('- Will add Postpartum fields:', selectedContractType === 'Postpartum Doula Services');
+      console.log('- anyHourly (has hourly services):', anyHourly);
+      console.log('- Will add hourly fields:', anyHourly);
       console.log('- Sending contract data to new API:', contractDataForAPI);
       console.log('- API data keys:', Object.keys(contractDataForAPI));
-      console.log('- Postpartum fields included:', selectedContractType === 'Postpartum Doula Services');
+      console.log('- Hourly fields included:', anyHourly);
 
       // Verify Postpartum fields are actually in the data
       console.log('🔍 Postpartum Fields Verification:');
@@ -373,11 +403,10 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
 
   const resetForm = () => {
     setStep('services');
-    setSelectedContractType('');
     setCalculatedTotal(0);
-    setLaborSupportAmount(0);
     setSearchTerm('');
     setSelectedClient(null);
+    setSelectedServices([]);
     setCalculatedAmounts(null);
     setContractData(null);
     setContractId(null);
@@ -469,7 +498,7 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
             Create Contract
           </DialogTitle>
           <DialogDescription>
-            {step === 'services' && 'Select contract type and configure details'}
+            {step === 'services' && 'Select services and configure details'}
             {step === 'input' && 'Enter contract details to calculate amounts'}
             {step === 'calculation' && 'Review calculated amounts and payment schedule'}
             {step === 'client' && 'Enter client information to send the contract'}
@@ -487,158 +516,110 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Step 1: Contract Type Selection */}
+          {/* Step 1: Services Selection (Multi-select) */}
           {step === 'services' && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-semibold mb-4">Select Contract Type</h3>
-                <div className="grid grid-cols-1 gap-4">
-                  {CONTRACT_TYPES.map((contractType) => (
-                    <Card
-                      key={contractType.id}
-                      className={`cursor-pointer transition-all ${selectedContractType === contractType.id
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'hover:border-gray-300'
-                        }`}
-                      onClick={() => {
-                        setSelectedContractType(contractType.id);
-                        contractForm.setValue('serviceType', contractType.id as 'Labor Support Services' | 'Postpartum Doula Services');
-                      }}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-center space-x-3">
-                          <Checkbox
-                            checked={selectedContractType === contractType.id}
-                            onChange={() => { }} // Handled by card click
-                          />
-                          <div className="flex-1">
-                            <h4 className="font-medium">{contractType.name}</h4>
-                            <p className="text-sm text-gray-600">{contractType.description}</p>
+                <h3 className="text-lg font-semibold mb-4">Select Services</h3>
+                <div className="grid grid-cols-1 gap-3">
+                  {availableServices.map((svc) => {
+                    const checked = !!selectedServices.find((s) => s.id === svc.id);
+                    const current = selectedServices.find((s) => s.id === svc.id);
+                    return (
+                      <Card key={svc.id} className={`transition-all ${checked ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-300'}`}>
+                        <CardContent className="p-4 space-y-3">
+                          <div className="flex items-center space-x-3">
+                            <Checkbox checked={checked} onCheckedChange={() => toggleService(svc)} />
+                            <div className="flex-1">
+                              <h4 className="font-medium">{svc.name}</h4>
+                              <p className="text-sm text-gray-600">{svc.type === 'flat' ? 'Flat amount service' : 'Hourly-based service'}</p>
+                            </div>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                          {checked && (
+                            <div className="pl-8">
+                              {svc.type === 'flat' ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-gray-500">$</span>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="0.00"
+                                    value={current?.amount === 0 || current?.amount === undefined ? '' : current?.amount}
+                                    onChange={(e) => updateServiceField(svc.id, 'amount', e.target.value === '' ? 0 : Number(e.target.value))}
+                                    className="w-32 h-8 text-sm"
+                                  />
+                                  <span className="text-sm text-gray-500">amount</span>
+                                </div>
+                              ) : (
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm text-gray-500">$</span>
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      placeholder="0.00"
+                                      value={current?.hourlyRate === 0 || current?.hourlyRate === undefined ? '' : current?.hourlyRate}
+                                      onChange={(e) => updateServiceField(svc.id, 'hourlyRate', e.target.value === '' ? 0 : Number(e.target.value))}
+                                      className="w-24 h-8 text-sm"
+                                    />
+                                    <span className="text-sm text-gray-500">/hour</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      type="number"
+                                      placeholder="0"
+                                      value={current?.totalHours === 0 || current?.totalHours === undefined ? '' : current?.totalHours}
+                                      onChange={(e) => updateServiceField(svc.id, 'totalHours', e.target.value === '' ? 0 : Number(e.target.value))}
+                                      className="w-20 h-8 text-sm"
+                                    />
+                                    <span className="text-sm text-gray-500">hours</span>
+                                  </div>
+                                </div>
+                              )}
+                              <div className="mt-2 text-xs text-gray-600">
+                                Service total: ${computeServiceAmount((current || svc) as ServiceSelection).toFixed(2)}
+                              </div>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
 
-                {selectedContractType && (
-                  <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                    <div className="space-y-4">
-                      <h4 className="text-sm font-medium text-gray-700">Contract Configuration:</h4>
+                {/* Administrative Fee (moved into Services step) */}
+                <div className="mt-4 p-4 bg-blue-50/40 border border-blue-200 rounded-lg space-y-3">
+                  <label className="flex items-center gap-2 text-sm font-medium text-blue-900">
+                    <input
+                      type="checkbox"
+                      checked={applyAdminFee}
+                      onChange={(e) => setApplyAdminFee(e.target.checked)}
+                    />
+                    Apply $150 Administrative Fee
+                  </label>
 
-                      {selectedContractType === 'Labor Support Services' && (
-                        <div className="space-y-3">
-                          <div className="p-3 bg-white border rounded-lg">
-                            <label className="text-sm font-medium text-gray-700 mb-2 block">
-                              Labor Support Amount
-                            </label>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm text-gray-500">$</span>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                placeholder="0.00"
-                                value={laborSupportAmount === 0 ? '' : laborSupportAmount}
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  const amount = value === '' ? 0 : Number(value);
-                                  setLaborSupportAmount(amount);
-                                  contractForm.setValue('labor_support_amount', amount);
-                                }}
-                                className="w-32 h-8 text-sm"
-                              />
-                              <span className="text-sm text-gray-500">total</span>
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1">
-                              Fixed amount for full labor and birth support services
-                            </p>
-                          </div>
-                        </div>
-                      )}
+                  {/* Installment details handled in the next step */}
+                </div>
 
-                      {selectedContractType === 'Postpartum Doula Services' && (
-                        <div className="space-y-3">
-                          <div className="p-3 bg-white border rounded-lg">
-                            <label className="text-sm font-medium text-gray-700 mb-2 block">
-                              Postpartum Support Rate
-                            </label>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm text-gray-500">$</span>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                placeholder="0.00"
-                                value={contractForm.watch('hourly_rate') === 0 ? '' : contractForm.watch('hourly_rate') || ''}
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  contractForm.setValue('hourly_rate', value === '' ? 0 : Number(value));
-                                }}
-                                className="w-24 h-8 text-sm"
-                              />
-                              <span className="text-sm text-gray-500">/hour</span>
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1">
-                              Hourly rate for postpartum care services (billed based on actual hours worked)
-                            </p>
-                          </div>
-
-                          <div className="p-3 bg-white border rounded-lg">
-                            <label className="text-sm font-medium text-gray-700 mb-2 block">
-                              Estimated Hours
-                            </label>
-                            <div className="flex items-center gap-2">
-                              <Input
-                                type="number"
-                                placeholder="0"
-                                value={contractForm.watch('total_hours') === 0 ? '' : contractForm.watch('total_hours') || ''}
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  contractForm.setValue('total_hours', value === '' ? 0 : Number(value));
-                                }}
-                                className="w-20 h-8 text-sm"
-                              />
-                              <span className="text-sm text-gray-500">hours</span>
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1">
-                              Estimated hours for contract display (actual billing based on logged hours)
-                            </p>
-                          </div>
-                        </div>
-                      )}
-
-
-                      {/* Total Calculation Display */}
-                      {calculatedTotal > 0 && (
-                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm font-medium text-blue-800">Total Contract Amount:</span>
-                            <span className="text-lg font-bold text-blue-900">${calculatedTotal.toFixed(2)}</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                {/* Total Calculation Display */}
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-blue-800">Total Contract Amount:</span>
+                    <span className="text-lg font-bold text-blue-900">${calculatedTotal.toFixed(2)}</span>
                   </div>
-                )}
+                  {discountState.discountApplied && (
+                    <div className="mt-2 text-sm text-blue-700">
+                      Multi-Service Discount (10%): -${discountState.discount.toFixed(2)}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex gap-3 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleClose}
-                  className="flex-1 h-11"
-                >
+                <Button type="button" variant="outline" onClick={handleClose} className="flex-1 h-11">
                   Cancel
                 </Button>
-                <Button
-                  onClick={() => setStep('input')}
-                  disabled={
-                    !selectedContractType ||
-                    (selectedContractType === 'Labor Support Services' && laborSupportAmount <= 0) ||
-                    (selectedContractType === 'Postpartum Doula Services' && ((!contractForm.watch('hourly_rate') || (contractForm.watch('hourly_rate') ?? 0) <= 0) || (!contractForm.watch('total_hours') || (contractForm.watch('total_hours') ?? 0) <= 0)))
-                  }
-                  className="flex-1 h-11"
-                >
+                <Button onClick={() => setStep('input')} disabled={!(isServicesValid() || applyAdminFee)} className="flex-1 h-11">
                   Continue to Contract Details
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -653,127 +634,86 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                 {/* Contract Summary */}
                 <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
                   <h4 className="text-sm font-medium text-gray-700 mb-3">Contract Summary</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {selectedContractType === 'Labor Support Services' && (
-                      <>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Service Type:</span>
-                          <span className="text-sm font-medium">Labor Support Services</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Labor Support Amount:</span>
-                          <span className="text-sm font-medium">${laborSupportAmount.toFixed(2)}</span>
-                        </div>
-                      </>
+                  <div className="space-y-2">
+                    {selectedServices.map((svc) => (
+                      <div key={svc.id} className="flex justify-between text-sm">
+                        <span className="text-gray-600">
+                          {svc.name}
+                          {svc.type === 'hourly' && ` (${svc.hourlyRate || 0}/hr x ${svc.totalHours || 0}h)`}
+                        </span>
+                        <span className="font-medium">${computeServiceAmount(svc).toFixed(2)}</span>
+                      </div>
+                    ))}
+                    {applyAdminFee && (
+                      <div className="flex justify-between text-sm text-blue-800">
+                        <span>Administrative Fee</span>
+                        <span className="font-medium">$150.00</span>
+                      </div>
                     )}
-
-                    {selectedContractType === 'Postpartum Doula Services' && (
-                      <>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Service Type:</span>
-                          <span className="text-sm font-medium">Postpartum Doula Services</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Hourly Rate:</span>
-                          <span className="text-sm font-medium">${(contractForm.watch('hourly_rate') || 0).toFixed(2)}/hour</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Estimated Hours:</span>
-                          <span className="text-sm font-medium">{contractForm.watch('total_hours') || 0} hours</span>
-                        </div>
-                      </>
+                    {discountState.discountApplied && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Multi-Service Discount (10%):</span>
+                        <span className="text-sm font-medium text-red-600">-{`$${discountState.discount.toFixed(2)}`}</span>
+                      </div>
                     )}
-
-                    <div className="flex justify-between md:col-span-2">
+                    <div className="flex justify-between border-t pt-2">
                       <span className="text-sm font-medium text-gray-700">Total Contract Amount:</span>
                       <span className="text-lg font-bold text-gray-900">${calculatedTotal.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Payment Plan Fields - Only show for Labor Support Services */}
-                {selectedContractType === 'Labor Support Services' && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={contractForm.control}
-                      name="deposit_type"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Deposit Type</FormLabel>
-                          <FormControl>
-                            <select
-                              {...field}
-                              onChange={(e) => {
-                                const value = e.target.value as 'percent' | 'flat';
-                                console.log('Deposit type changed to:', value);
-                                field.onChange(value);
-                                // Reset deposit value when type changes
-                                contractForm.setValue('deposit_value', 0);
-                              }}
-                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              <option value="percent">Percentage</option>
-                              <option value="flat">Flat Amount</option>
-                            </select>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                {/* Payment Plan Fields */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={contractForm.control}
+                    name="deposit_type"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Deposit Type</FormLabel>
+                        <FormControl>
+                          <select
+                            {...field}
+                            onChange={(e) => {
+                              const value = e.target.value as 'percent' | 'flat';
+                              console.log('Deposit type changed to:', value);
+                              field.onChange(value);
+                              // Reset deposit value when type changes
+                              contractForm.setValue('deposit_value', 0);
+                            }}
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <option value="percent">Percentage</option>
+                            <option value="flat">Flat Amount</option>
+                          </select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                    <FormField
-                      control={contractForm.control}
-                      name="deposit_value"
-                      render={({ field }) => {
-                        const depositType = contractForm.watch('deposit_type');
-                        console.log('Current deposit type:', depositType);
-                        return (
-                          <FormItem>
-                            <FormLabel>
-                              Deposit Value ({depositType === 'percent' ? '%' : '$'})
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                step={depositType === 'percent' ? '1' : '0.01'}
-                                placeholder={depositType === 'percent' ? 'Enter percentage value' : 'Enter deposit amount'}
-                                value={field.value === 0 ? '' : field.value}
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  // Allow empty field and remove leading zeros
-                                  if (value === '') {
-                                    field.onChange(0); // Set to 0 instead of empty string
-                                  } else {
-                                    const cleanValue = value.replace(/^0+/, '');
-                                    field.onChange(cleanValue === '' ? 0 : Number(cleanValue));
-                                  }
-                                }}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        );
-                      }}
-                    />
-
-                    <FormField
-                      control={contractForm.control}
-                      name="installments_count"
-                      render={({ field }) => (
+                  <FormField
+                    control={contractForm.control}
+                    name="deposit_value"
+                    render={({ field }) => {
+                      const depositType = contractForm.watch('deposit_type');
+                      console.log('Current deposit type:', depositType);
+                      return (
                         <FormItem>
-                          <FormLabel>Number of Installments (2-5)</FormLabel>
+                          <FormLabel>
+                            Deposit Value ({depositType === 'percent' ? '%' : '$'})
+                          </FormLabel>
                           <FormControl>
                             <Input
                               type="number"
-                              min="2"
-                              max="5"
-                              placeholder="3"
-                              {...field}
+                              step={depositType === 'percent' ? '1' : '0.01'}
+                              placeholder={depositType === 'percent' ? 'Enter percentage value' : 'Enter deposit amount'}
+                              value={field.value === 0 ? '' : field.value}
                               onChange={(e) => {
                                 const value = e.target.value;
                                 // Allow empty field and remove leading zeros
                                 if (value === '') {
-                                  field.onChange('');
+                                  field.onChange(0); // Set to 0 instead of empty string
                                 } else {
                                   const cleanValue = value.replace(/^0+/, '');
                                   field.onChange(cleanValue === '' ? 0 : Number(cleanValue));
@@ -783,37 +723,69 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                           </FormControl>
                           <FormMessage />
                         </FormItem>
-                      )}
-                    />
+                      );
+                    }}
+                  />
 
-                    <FormField
-                      control={contractForm.control}
-                      name="cadence"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Payment Cadence</FormLabel>
-                          <FormControl>
-                            <select
-                              value={field.value || 'monthly'}
-                              onChange={(e) => {
-                                console.log('Cadence changed to:', e.target.value);
-                                field.onChange(e.target.value);
-                              }}
-                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              <option value="monthly">Monthly</option>
-                              <option value="biweekly">Bi-weekly</option>
-                            </select>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                )}
+                  <FormField
+                    control={contractForm.control}
+                    name="installments_count"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Number of Installments (2-5)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="2"
+                            max="5"
+                            placeholder="3"
+                            {...field}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              // Allow empty field and remove leading zeros
+                              if (value === '') {
+                                field.onChange('');
+                              } else {
+                                const cleanValue = value.replace(/^0+/, '');
+                                field.onChange(cleanValue === '' ? 0 : Number(cleanValue));
+                              }
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                {/* For Postpartum Doula Services contracts, show simplified billing info */}
-                {selectedContractType === 'Postpartum Doula Services' && (
+                  <FormField
+                    control={contractForm.control}
+                    name="cadence"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Payment Cadence</FormLabel>
+                        <FormControl>
+                          <select
+                            value={field.value || 'monthly'}
+                            onChange={(e) => {
+                              console.log('Cadence changed to:', e.target.value);
+                              field.onChange(e.target.value);
+                            }}
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <option value="monthly">Monthly</option>
+                            <option value="biweekly">Bi-weekly</option>
+                          </select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Administrative Fee - moved to services step */}
+
+                {/* For hourly-only selections, show simplified billing info */}
+                {hasHourlyOnly && (
                   <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                     <div className="flex items-start gap-2">
                       <Info className="h-4 w-4 text-green-600 mt-0.5" />
@@ -830,24 +802,24 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                   </div>
                 )}
 
-                {/* Payment Information - Only show for Labor Support Services */}
-                {selectedContractType === 'Labor Support Services' && (
+                {/* Payment Information */}
+                {
                   <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                     <div className="flex items-start gap-2">
                       <Info className="h-4 w-4 text-blue-600 mt-0.5" />
                       <div className="space-y-2">
                         <h4 className="text-sm font-medium text-blue-800">Payment Information</h4>
                         <div className="text-sm text-blue-700 space-y-1">
-                          <p>• {getDepositInfo(contractForm.watch('deposit_type') || 'percent', contractForm.watch('deposit_value') || 0, calculatedTotal)}</p>
+                          <p>• {getDepositInfo(contractForm.watch('deposit_type') || 'percent', contractForm.watch('deposit_value') || 0, calculatedTotal + (applyAdminFee ? 150 : 0))}</p>
                           <p>• First payment (deposit) will be charged immediately upon contract signing</p>
                           <p>• {getPaymentTiming(contractForm.watch('cadence') || 'monthly')}</p>
-                          <p>• Labor support payments are due before the baby is born</p>
+                          <p>• Payments are scheduled as per your selected cadence</p>
                           <p>• All payments are processed securely through Stripe</p>
                         </div>
                       </div>
                     </div>
                   </div>
-                )}
+                }
 
                 <DialogFooter className="pt-4">
                   <Button
@@ -921,8 +893,8 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                     </div>
                   </div>
 
-                  {/* Payment Schedule - Only show for Labor Support Services */}
-                  {selectedContractType === 'Labor Support Services' && (
+                  {/* Payment Schedule - Show when using deposit/installments (flat services or admin fee) */}
+                  {shouldUseDepositPlan && (
                     <div className="mt-4">
                       <h4 className="font-semibold mb-3">Labor Support Payment Schedule:</h4>
                       <div className="space-y-2">
@@ -944,8 +916,8 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                     </div>
                   )}
 
-                  {/* For Postpartum Doula Services contracts, show billing information instead */}
-                  {selectedContractType === 'Postpartum Doula Services' && (
+                  {/* For hourly-only selections, show billing information instead */}
+                  {hasHourlyOnly && (
                     <div className="mt-4">
                       <h4 className="font-semibold mb-3">Billing Information:</h4>
                       <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
@@ -961,8 +933,8 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                     </div>
                   )}
 
-                  {/* Payment Timing Information - Only show for Labor Support Services */}
-                  {selectedContractType === 'Labor Support Services' && (
+                  {/* Payment Timing Information - Show when deposit is used */}
+                  {shouldUseDepositPlan && (
                     <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                       <h4 className="text-sm font-semibold text-blue-800 mb-2">
                         Labor Support Payment Schedule:
@@ -971,6 +943,9 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                         <p>• {getDepositInfo(contractForm.watch('deposit_type') || 'percent', contractForm.watch('deposit_value') || 0, calculatedAmounts.total_amount)}</p>
                         <p>• First payment (deposit) will be charged immediately upon contract signing</p>
                         <p>• {getPaymentTiming(contractForm.watch('cadence') || 'monthly')}</p>
+                        {discountState.discountApplied && (
+                          <p>• Multi‑Service Discount (10%) applied to services total</p>
+                        )}
                       </div>
                     </div>
                   )}
@@ -1044,7 +1019,11 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                     <div className="p-4 text-center text-gray-500">
                       Loading clients...
                     </div>
-                  ) : clients
+                  ) : (clients as any[])
+                    .filter((c: any) => {
+                      const st = (c.status || c.user?.status || '').toString().toLowerCase();
+                      return st === 'contract';
+                    })
                     .filter(client =>
                       !searchTerm ||
                       `${client.user.firstname} ${client.user.lastname}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1081,11 +1060,16 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                     </div>
                   )}
 
-                  {!clientsLoading && clients.length > 0 && clients.filter(client =>
-                    !searchTerm ||
-                    `${client.user.firstname} ${client.user.lastname}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    client.user.email?.toLowerCase().includes(searchTerm.toLowerCase())
-                  ).length === 0 && (
+                  {!clientsLoading && clients.length > 0 && (clients as any[])
+                    .filter((c: any) => {
+                      const st = (c.status || c.user?.status || '').toString().toLowerCase();
+                      return st === 'contract';
+                    })
+                    .filter(client =>
+                      !searchTerm ||
+                      `${client.user.firstname} ${client.user.lastname}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      client.user.email?.toLowerCase().includes(searchTerm.toLowerCase())
+                    ).length === 0 && (
                       <div className="p-4 text-center text-gray-500">
                         No clients found matching your search.
                       </div>

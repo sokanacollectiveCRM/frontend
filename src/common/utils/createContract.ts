@@ -1,6 +1,15 @@
 import { Client } from '@/features/clients/data/schema';
 
 // New contract generation API interfaces
+export interface ServiceSelectionData {
+  id: string;
+  name: string;
+  type: 'flat' | 'hourly';
+  amount?: number;
+  hourlyRate?: number;
+  totalHours?: number;
+}
+
 export interface ContractData {
   clientName: string;
   clientEmail: string;
@@ -16,6 +25,47 @@ export interface ContractData {
   totalHours?: string;       // Total hours for Postpartum contracts
   hourlyRate?: string;       // Hourly rate for Postpartum contracts
   overnightFee?: string;     // Overnight fee for Postpartum contracts
+  // Multi-service extensions
+  selectedServices?: ServiceSelectionData[];
+  totalAmount?: number;      // Combined total of all selected services
+  // Administrative fee
+  adminFee?: number;               // e.g., 150 when applied
+  adminFeeInstallments?: number;   // 2-4 when applied
+  // Discount fields
+  discount?: number;               // absolute discount amount applied
+  discountRate?: number;           // rate (e.g., 0.10)
+  discountApplied?: boolean;       // convenience flag
+  totalAfterDiscount?: number;     // services total after discount, excluding admin fee
+}
+
+// Compute services total with automatic multi-service discount (10% when >1 service)
+export function applyMultiServiceDiscount(
+  selectedServices?: ServiceSelectionData[]
+) {
+  const services = selectedServices || [];
+  const computeServiceAmount = (svc: ServiceSelectionData) => {
+    if (svc.type === 'flat') return Number(svc.amount || 0);
+    const rate = Number(svc.hourlyRate || 0);
+    const hours = Number(svc.totalHours || 0);
+    return rate * hours;
+  };
+
+  const totalBeforeDiscount = services.reduce((sum, s) => sum + computeServiceAmount(s), 0);
+  let discount = 0;
+  let discountRate = 0;
+  if (services.filter(s => (s.type === 'flat' ? (s.amount || 0) > 0 : ((s.hourlyRate || 0) > 0 && (s.totalHours || 0) > 0))).length > 1) {
+    discountRate = 0.10;
+    discount = totalBeforeDiscount * discountRate;
+  }
+  const totalAfterDiscount = Math.max(totalBeforeDiscount - discount, 0);
+
+  return {
+    totalBeforeDiscount,
+    discount,
+    discountRate,
+    totalAfterDiscount,
+    discountApplied: discount > 0,
+  };
 }
 
 export interface ContractResponse {
