@@ -47,6 +47,7 @@ interface LeadProfileModalProps {
   onOpenChange: (open: boolean) => void;
   client: Client | null;
   refreshClients?: () => void;
+  missingClientId?: string;
 }
 
 const NOTE_CATEGORIES = ['General', 'Communication', 'Milestone', 'Follow-up', 'Health', 'Billing'];
@@ -120,7 +121,13 @@ const NUMBER_OF_BABIES_OPTIONS = [
 ];
 const PROVIDER_TYPE_OPTIONS = ['Midwife', 'OB', 'Family Doctor', 'Other'];
 
-export function LeadProfileModal({ open, onOpenChange, client, refreshClients }: LeadProfileModalProps) {
+export function LeadProfileModal({
+  open,
+  onOpenChange,
+  client,
+  refreshClients,
+  missingClientId,
+}: LeadProfileModalProps) {
   const { user } = useContext(UserContext);
   const [notes, setNotes] = useState<ClientNote[]>([]);
   const [newNote, setNewNote] = useState('');
@@ -595,7 +602,37 @@ export function LeadProfileModal({ open, onOpenChange, client, refreshClients }:
     );
   };
 
-  if (!client) return null;
+  if (!client) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className='max-w-lg'>
+          <DialogHeader>
+            <DialogTitle>Client Not Found</DialogTitle>
+          </DialogHeader>
+          <div className='space-y-4 text-sm text-muted-foreground'>
+            <p>
+              {missingClientId
+                ? `We couldn't find a client with ID ${missingClientId}.`
+                : "We couldn't find a client that matches this link."}
+            </p>
+            <p>
+              The client may have been removed, or you might not have permission
+              to view the profile.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              type='button'
+              variant='secondary'
+              onClick={() => onOpenChange(false)}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
