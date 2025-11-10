@@ -24,6 +24,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { DataTablePagination } from './data-table-pagination';
 import { DataTableToolbar } from './data-table-toolbar';
 
@@ -51,6 +52,11 @@ export function UsersTable({ columns, data, clients }: DataTableProps) {
       desc: true,
     },
   ]);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const basePath = location.pathname.startsWith('/admin/clients')
+    ? '/admin/clients'
+    : '/clients';
 
   const table = useReactTable({
     data,
@@ -111,6 +117,10 @@ export function UsersTable({ columns, data, clients }: DataTableProps) {
                   onClick={() => {
                     setCurrentRow(row.original);
                     setOpen('lead-profile');
+                    const targetPath = `${basePath}/${String(row.original.id)}`;
+                    if (location.pathname !== targetPath) {
+                      navigate(targetPath);
+                    }
                   }}
                 >
                   {row.getVisibleCells().map((cell) => (
