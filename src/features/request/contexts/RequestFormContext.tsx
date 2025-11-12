@@ -1,7 +1,16 @@
+import {
+  RequestFormValues,
+  fullSchema,
+} from '@/features/request/useRequestForm';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ReactNode, createContext, useContext, useEffect, useState } from 'react';
+import {
+  ReactNode,
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 import { useForm } from 'react-hook-form';
-import { RequestFormValues, fullSchema } from '../useRequestForm';
 
 interface RequestFormContextType {
   form: ReturnType<typeof useForm<RequestFormValues>>;
@@ -20,7 +29,9 @@ interface RequestFormContextType {
   setShowRefreshWarning: (show: boolean) => void;
 }
 
-const RequestFormContext = createContext<RequestFormContextType | undefined>(undefined);
+const RequestFormContext = createContext<RequestFormContextType | undefined>(
+  undefined
+);
 
 interface RequestFormProviderProps {
   children: ReactNode;
@@ -29,7 +40,10 @@ interface RequestFormProviderProps {
 
 // Removed client-side storage for HIPAA compliance
 
-export function RequestFormProvider({ children, onSubmit }: RequestFormProviderProps) {
+export function RequestFormProvider({
+  children,
+  onSubmit,
+}: RequestFormProviderProps) {
   const [step, setStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -39,10 +53,6 @@ export function RequestFormProvider({ children, onSubmit }: RequestFormProviderP
   // No client-side storage for HIPAA compliance
   const getSavedFormData = (): Partial<RequestFormValues> => {
     return {};
-  };
-
-  const getSavedStep = (): number => {
-    return 0;
   };
 
   const form = useForm<RequestFormValues>({
@@ -86,11 +96,11 @@ export function RequestFormProvider({ children, onSubmit }: RequestFormProviderP
       number_of_babies: '',
       baby_name: '',
       provider_type: '',
-      pregnancy_number: '',
+      pregnancy_number: 0,
       hospital: '',
       had_previous_pregnancies: false,
-      previous_pregnancies_count: '',
-      living_children_count: '',
+      previous_pregnancies_count: 0,
+      living_children_count: 0,
       past_pregnancy_experience: '',
       services_interested: [],
       service_support_details: '',
@@ -113,7 +123,7 @@ export function RequestFormProvider({ children, onSubmit }: RequestFormProviderP
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       const values = form.getValues();
-      const hasData = Object.values(values).some(value => {
+      const hasData = Object.values(values).some((value) => {
         if (Array.isArray(value)) return value.length > 0;
         if (typeof value === 'string') return value.trim() !== '';
         if (typeof value === 'number') return value !== 0;
@@ -123,7 +133,8 @@ export function RequestFormProvider({ children, onSubmit }: RequestFormProviderP
 
       if (hasData && !submitted) {
         e.preventDefault();
-        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        e.returnValue =
+          'You have unsaved changes. Are you sure you want to leave?';
         return e.returnValue;
       }
     };
@@ -307,7 +318,9 @@ export function RequestFormProvider({ children, onSubmit }: RequestFormProviderP
 export function useRequestFormContext() {
   const context = useContext(RequestFormContext);
   if (context === undefined) {
-    throw new Error('useRequestFormContext must be used within a RequestFormProvider');
+    throw new Error(
+      'useRequestFormContext must be used within a RequestFormProvider'
+    );
   }
   return context;
-} 
+}
