@@ -43,7 +43,7 @@ const DUMMY_CLIENTS: Record<string, Partial<Client>> = {
     birth_hospital: 'Northwestern Memorial Hospital',
     number_of_babies: 'Singleton',
     provider_type: 'OB',
-    pregnancy_number: '1',
+    pregnancy_number: 1,
     status: 'active',
     requestedAt: new Date(),
     updatedAt: new Date(),
@@ -71,7 +71,7 @@ const DUMMY_CLIENTS: Record<string, Partial<Client>> = {
     birth_hospital: 'Evanston Hospital',
     number_of_babies: 'Singleton',
     provider_type: 'Midwife',
-    pregnancy_number: '2',
+    pregnancy_number: 2,
     status: 'contract',
     requestedAt: new Date(),
     updatedAt: new Date(),
@@ -98,7 +98,7 @@ const DUMMY_CLIENTS: Record<string, Partial<Client>> = {
     birth_location: 'Birth Center',
     number_of_babies: 'Singleton',
     provider_type: 'Midwife',
-    pregnancy_number: '1',
+    pregnancy_number: 1,
     status: 'matching',
     requestedAt: new Date(),
     updatedAt: new Date(),
@@ -157,7 +157,7 @@ export function DueDatePopover({ date, events, children, open, onOpenChange }: D
         // Fetch real client data from backend
         const client = await getClientById(clientId, true); // detailed=true
         if (client) {
-          setSelectedClient(client);
+          setSelectedClient(client as unknown as Client);
           setClientModalOpen(true);
           onOpenChange(false); // Close the date popover
         } else {
