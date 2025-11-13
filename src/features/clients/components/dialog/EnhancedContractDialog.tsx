@@ -178,6 +178,9 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
     return rate * hours;
   };
 
+  const formatNumberInputValue = (value?: number | null) =>
+    value === undefined || value === null || value === 0 ? '' : value;
+
   const hasFlatServices = selectedServices.some((s) => s.type === 'flat');
   const hasHourlyOnly =
     selectedServices.length > 0 &&
@@ -648,11 +651,9 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                                     type='number'
                                     step='0.01'
                                     placeholder='0.00'
-                                    value={
-                                      current?.amount && current?.amount !== 0
-                                        ? current?.amount
-                                        : ''
-                                    }
+                                    value={formatNumberInputValue(
+                                      current?.amount
+                                    )}
                                     onChange={(e) =>
                                       updateServiceField(
                                         svc.id,
@@ -678,12 +679,9 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                                       type='number'
                                       step='0.01'
                                       placeholder='0.00'
-                                      value={
-                                        current?.hourlyRate &&
-                                          current?.hourlyRate !== 0
-                                          ? current?.hourlyRate
-                                          : ''
-                                      }
+                                      value={formatNumberInputValue(
+                                        current?.hourlyRate
+                                      )}
                                       onChange={(e) =>
                                         updateServiceField(
                                           svc.id,
@@ -703,12 +701,9 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                                     <Input
                                       type='number'
                                       placeholder='0'
-                                      value={
-                                        current?.totalHours &&
-                                          current?.totalHours !== 0
-                                          ? current?.totalHours
-                                          : ''
-                                      }
+                                      value={formatNumberInputValue(
+                                        current?.totalHours
+                                      )}
                                       onChange={(e) =>
                                         updateServiceField(
                                           svc.id,
