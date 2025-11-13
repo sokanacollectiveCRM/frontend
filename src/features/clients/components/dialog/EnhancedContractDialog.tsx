@@ -178,9 +178,6 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
     return rate * hours;
   };
 
-  const computeTotalAmount = (services: ServiceSelection[]) =>
-    services.reduce((sum, s) => sum + computeServiceAmount(s), 0);
-
   const hasFlatServices = selectedServices.some((s) => s.type === 'flat');
   const hasHourlyOnly =
     selectedServices.length > 0 &&
@@ -652,10 +649,9 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                                     step='0.01'
                                     placeholder='0.00'
                                     value={
-                                      current?.amount === 0 ||
-                                        current?.amount === undefined
-                                        ? ''
-                                        : current?.amount
+                                      current?.amount && current?.amount !== 0
+                                        ? current?.amount
+                                        : ''
                                     }
                                     onChange={(e) =>
                                       updateServiceField(
@@ -683,10 +679,10 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                                       step='0.01'
                                       placeholder='0.00'
                                       value={
-                                        current?.hourlyRate === 0 ||
-                                          current?.hourlyRate === undefined
-                                          ? ''
-                                          : current?.hourlyRate
+                                        current?.hourlyRate &&
+                                          current?.hourlyRate !== 0
+                                          ? current?.hourlyRate
+                                          : ''
                                       }
                                       onChange={(e) =>
                                         updateServiceField(
@@ -708,10 +704,10 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                                       type='number'
                                       placeholder='0'
                                       value={
-                                        current?.totalHours === 0 ||
-                                          current?.totalHours === undefined
-                                          ? ''
-                                          : current?.totalHours
+                                        current?.totalHours &&
+                                          current?.totalHours !== 0
+                                          ? current?.totalHours
+                                          : ''
                                       }
                                       onChange={(e) =>
                                         updateServiceField(
