@@ -7,19 +7,22 @@ const API_BASE =
  * Kick off the OAuth flow by retrieving the Intuit consent URL.
  */
 export async function getQuickBooksAuthUrl(): Promise<string> {
-  // Pull the JWT from localStorage (same key your auth module uses)
-
+  // Pull the JWT from localStorage (stored as plain string)
   const token = localStorage.getItem('authToken');
-  console.log(token);
-  if (!token) {
+  
+  // Validate token exists and is not empty
+  if (!token || token.trim() === '') {
     throw new Error('Not authenticated — please log in first');
   }
 
+  // Trim token to remove any whitespace
+  const cleanToken = token.trim();
+
   const res = await fetch(`${API_BASE}/quickbooks/auth`, {
     method: 'GET',
-    credentials: 'include', // include cookies if your backend needs them
+    credentials: 'include', // Include session cookies
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${cleanToken}`, // Send token in Authorization header
     },
   });
 

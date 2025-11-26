@@ -10,23 +10,19 @@ export function useQuickBooksConnect() {
   const [error, setError] = useState<string | null>(null);
 
   const connectQuickBooks = useCallback(async (): Promise<void> => {
-    // Pull Supabase session from localStorage
-    const raw = localStorage.getItem('authToken');
-    if (!raw) {
+    // Get token from localStorage (stored as plain string)
+    const token = localStorage.getItem('authToken');
+
+    // Validate token exists and is not empty
+    if (!token || token.trim() === '') {
       const msg = 'Not authenticated — no session in localStorage';
       setError(msg);
       toast.error(msg);
       return;
     }
 
-    let token: string;
-    try {
-      const session = JSON.parse(raw) as { access_token: string };
-      token = session.access_token;
-    } catch {
-      // raw is the token itself
-      token = raw;
-    }
+    // Trim token to remove any whitespace
+    const cleanToken = token.trim();
 
     setIsLoading(true);
     setError(null);
@@ -38,15 +34,18 @@ export function useQuickBooksConnect() {
       ).replace(/\/$/, '');
       const response = await fetch(`${base}/quickbooks/auth/url`, {
         method: 'GET',
-        credentials: 'include',
+        credentials: 'include', // Include session cookies
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${cleanToken}`, // Send token in Authorization header
         },
       });
 
       if (!response.ok) {
-        throw new Error('Could not fetch QuickBooks auth URL');
+        const errorText = await response.text();
+        const errorMsg =
+          errorText || `HTTP ${response.status}: ${response.statusText}`;
+        throw new Error(`Could not fetch QuickBooks auth URL: ${errorMsg}`);
       }
 
       // 2️⃣ Extract the Intuit consent URL
