@@ -38,22 +38,21 @@ export default function CreateCustomerPage() {
     try {
       // 1️⃣ Create customer in your DB and/or QuickBooks (hit your backend endpoint)
       const token = localStorage.getItem('authToken');
-      const res = await fetch(
-        `http://localhost:5050/quickbooks/customers`, // ← use your correct endpoint!
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
-          },
-          body: JSON.stringify({
-            internalCustomerId: client.user.id, // UUID
-            firstName: client.user.firstname,
-            lastName: client.user.lastname,
-            email: client.user.email,
-          }),
-        }
-      );
+      const baseUrl =
+        import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050';
+      const res = await fetch(`${baseUrl}/quickbooks/customers`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({
+          internalCustomerId: client.user.id, // UUID
+          firstName: client.user.firstname,
+          lastName: client.user.lastname,
+          email: client.user.email,
+        }),
+      });
       if (!res.ok) {
         const errText = await res.text().catch(() => res.statusText);
         throw new Error(`DB/QuickBooks creation failed: ${errText}`);

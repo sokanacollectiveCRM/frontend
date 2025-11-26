@@ -9,7 +9,8 @@ import { useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-const API_BASE = 'http://localhost:5050';
+const API_BASE =
+  import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050';
 
 export default function QuickBooksConnectPage() {
   const { connectQuickBooks, isLoading, error } = useQuickBooksConnect();
@@ -51,11 +52,18 @@ export default function QuickBooksConnectPage() {
   // Listen for the popup's postMessage
   useEffect(() => {
     function onMessage(e: MessageEvent) {
+      // Get allowed origins from environment or use defaults
+      const frontendUrl =
+        import.meta.env.VITE_APP_FRONTEND_URL || window.location.origin;
+      const backendUrl =
+        import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050';
+
+      // Extract origin from URLs
+      const frontendOrigin = new URL(frontendUrl).origin;
+      const backendOrigin = new URL(backendUrl).origin;
+
       // Only accept messages from your frontend or backend origins
-      if (
-        e.origin !== 'http://localhost:3001' &&
-        e.origin !== 'http://localhost:5050'
-      ) {
+      if (e.origin !== frontendOrigin && e.origin !== backendOrigin) {
         return;
       }
       if (e.data?.success) {
