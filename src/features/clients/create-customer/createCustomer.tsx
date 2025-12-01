@@ -1,10 +1,11 @@
 // src/features/clients/CreateCustomerPage.tsx
 'use client';
 
-import SubmitButton from '@/common/components/form/SubmitButton';
 import { UserContext } from '@/common/contexts/UserContext';
-import { useClients } from '@/common/hooks/clients/useClients';
-import type { Client } from '@/features/pipeline/data/schema';
+import {
+  getQuickBooksCustomers,
+  type QuickBooksCustomer,
+} from '@/api/quickbooks/auth/customer';
 import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
@@ -14,8 +15,9 @@ export default function CreateCustomerPage() {
   const { user, isLoading: authLoading } = useContext(UserContext);
   const navigate = useNavigate();
 
-  const { clients, isLoading, error, getClients } = useClients();
-  const [convertingIds, setConvertingIds] = useState<string[]>([]);
+  const [customers, setCustomers] = useState<QuickBooksCustomer[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Admin guard
   useEffect(() => {
@@ -25,101 +27,137 @@ export default function CreateCustomerPage() {
     }
   }, [authLoading, user, navigate]);
 
-  // Fetch clients on mount
-  useEffect(() => {
-    getClients();
-  }, [getClients]);
-
-  if (isLoading) return <p className='p-8 text-center'>Loading clients…</p>;
-  if (error) return <p className='p-8 text-center text-red-500'>{error}</p>;
-  console.log(clients);
-  const convert = async (client: Client) => {
-    setConvertingIds((ids) => [...ids, client.id]);
+  // Fetch QuickBooks customers on mount
+  const fetchCustomers = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      // 1️⃣ Create customer in your DB and/or QuickBooks (hit your backend endpoint)
-      const token = localStorage.getItem('authToken');
-      const baseUrl =
-        import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050';
-      const res = await fetch(`${baseUrl}/quickbooks/customers`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
-        body: JSON.stringify({
-          internalCustomerId: client.user.id, // UUID
-          firstName: client.user.firstname,
-          lastName: client.user.lastname,
-          email: client.user.email,
-        }),
-      });
-      if (!res.ok) {
-        const errText = await res.text().catch(() => res.statusText);
-        throw new Error(`DB/QuickBooks creation failed: ${errText}`);
-      }
-
-      // 2️⃣ (OPTIONAL) If you still need to hit QuickBooks directly, call your API utility here:
-      // await createQuickBooksCustomer({ ... });
-
-      toast.success('Client converted and synced to QuickBooks!');
+      const data = await getQuickBooksCustomers();
+      setCustomers(data);
     } catch (err: any) {
-      toast.error(err.message);
+      const errorMessage =
+        err.message || 'Failed to load customers from QuickBooks';
+      setError(errorMessage);
+      console.error('Error fetching customers:', err);
     } finally {
-      setConvertingIds((ids) => ids.filter((id) => id !== client.id));
+      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!authLoading && user?.role === 'admin') {
+      fetchCustomers();
+    }
+  }, [authLoading, user]);
+
+  const formatCurrency = (amount: number | undefined) => {
+    if (amount === undefined || amount === null) return '$0.00';
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
+  };
+
 
   return (
     <div className='min-h-screen flex items-start justify-center bg-white px-4 pt-8'>
       <section className='max-w-4xl w-full text-gray-900'>
-        <h1 className='text-3xl font-bold text-center mb-4'>Create Customer</h1>
-        <p className='text-sm text-gray-700 text-center mb-6'>
-          Select a client to bill.
-        </p>
+        <h1 className='text-3xl font-bold text-center mb-4'>Customers</h1>
 
         <div className='overflow-x-auto'>
-          <table className='min-w-full table-auto border-collapse'>
-            <thead>
-              <tr className='bg-gray-100'>
-                <th className='px-4 py-2 text-left'>Name</th>
-                <th className='px-4 py-2 text-left'>Needs</th>
-                <th className='px-4 py-2 text-left'>Status</th>
-                <th className='px-4 py-2'>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {clients.map((client: Client) => (
-                <tr key={client.id} className='border-t'>
-                  <td className='px-4 py-3'>
-                    {client.user.firstname} {client.user.lastname}
-                  </td>
-                  <td className='px-4 py-3 text-sm text-gray-700'>
-                    {client.serviceNeeded}
-                  </td>
-                  <td className='px-4 py-3 text-sm text-gray-500'>
-                    {client.status}
-                  </td>
-                  <td className='px-4 py-3 text-center'>
-                    <SubmitButton
-                      onClick={() => convert(client)}
-                      // Disable if already a customer or converting
-                      disabled={
-                        client.status === 'active' ||
-                        convertingIds.includes(client.id)
-                      }
-                      className='px-4 py-1'
-                    >
-                      {client.status === 'active'
-                        ? 'Already Customer'
-                        : convertingIds.includes(client.id)
-                          ? 'Creating…'
-                          : 'Create Customer'}
-                    </SubmitButton>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {loading && (
+            <div className='flex justify-center items-center p-8'>
+              <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900'></div>
+              <span className='ml-2 text-gray-600'>
+                Loading customers...
+              </span>
+            </div>
+          )}
+
+          {error && (
+            <div className='bg-red-50 border border-red-200 rounded-lg p-4 mb-4'>
+              <p className='text-red-600 mb-2'>{error}</p>
+              {error.includes('not connected') && (
+                <button
+                  onClick={() => navigate('/integrations/quickbooks')}
+                  className='px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 mr-2'
+                >
+                  Connect QuickBooks
+                </button>
+              )}
+              <button
+                onClick={fetchCustomers}
+                className='px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700'
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
+          {!loading && !error && customers.length === 0 && (
+            <div className='text-center p-8 bg-white rounded border'>
+              <p className='text-gray-500 mb-4'>No customers found.</p>
+              <button
+                onClick={fetchCustomers}
+                className='px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700'
+              >
+                Refresh
+              </button>
+            </div>
+          )}
+
+          {!loading && !error && customers.length > 0 && (
+            <>
+              <table className='min-w-full table-auto border-collapse'>
+                <thead>
+                  <tr className='bg-gray-100'>
+                    <th className='px-4 py-2 text-left'>Name</th>
+                    <th className='px-4 py-2 text-left'>Email</th>
+                    <th className='px-4 py-2 text-left'>Phone</th>
+                    <th className='px-4 py-2 text-left'>Balance</th>
+                    <th className='px-4 py-2 text-left'>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {customers.map((customer) => (
+                    <tr key={customer.Id} className='border-t hover:bg-gray-50'>
+                      <td className='px-4 py-3 text-gray-900'>
+                        {customer.DisplayName}
+                      </td>
+                      <td className='px-4 py-3 text-sm text-gray-600'>
+                        {customer.PrimaryEmailAddr?.Address || '—'}
+                      </td>
+                      <td className='px-4 py-3 text-sm text-gray-600'>
+                        {customer.PrimaryPhone?.FreeFormNumber || '—'}
+                      </td>
+                      <td className='px-4 py-3 text-sm text-gray-900'>
+                        {formatCurrency(customer.Balance)}
+                      </td>
+                      <td className='px-4 py-3'>
+                        <span
+                          className={`px-2 py-1 text-xs rounded ${
+                            customer.Active
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
+                          {customer.Active ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className='mt-4 flex justify-end'>
+                <button
+                  onClick={fetchCustomers}
+                  className='px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700'
+                >
+                  Refresh
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </section>
       <ToastContainer position='top-right' newestOnTop closeOnClick />

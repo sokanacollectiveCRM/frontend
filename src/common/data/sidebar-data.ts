@@ -32,8 +32,8 @@ export const sidebarSections = [
     items: [
       { title: 'Dashboard', url: '/', icon: Home },
       { title: 'Inbox', url: '/inbox', icon: Inbox },
-      { title: 'Clients', url: '/clients', icon: Search },
-      { title: 'New Client', url: '/clients/new', icon: UserPlus }, // ← our new link
+      { title: 'Leads', url: '/clients', icon: Search },
+      { title: 'Customers', url: '/clients/new', icon: UserPlus },
       { title: 'Calendar', url: '#', icon: Calendar },
     ],
   },

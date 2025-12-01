@@ -39,7 +39,7 @@ const GeneralItems = [
     icon: Inbox,
   },
   {
-    title: 'Clients',
+    title: 'Leads',
     url: 'clients',
     icon: Search,
   },

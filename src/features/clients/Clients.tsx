@@ -148,13 +148,20 @@ export default function Users() {
         <Main>
           <div className='flex-1 space-y-4 p-8 pt-6'>
             <div className='flex items-center justify-between space-y-2'>
-              <h2 className='text-3xl font-bold tracking-tight'>Clients</h2>
+              <h2 className='text-3xl font-bold tracking-tight'>Leads</h2>
             </div>
-            <UsersTable
-              columns={columns(getClients)}
-              data={userList}
-              clients={clients}
-            />
+            {isLoading ? (
+              <div className='flex justify-center items-center p-12'>
+                <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900'></div>
+                <span className='ml-3 text-gray-600'>Loading leads...</span>
+              </div>
+            ) : (
+              <UsersTable
+                columns={columns(getClients)}
+                data={userList}
+                clients={clients}
+              />
+            )}
           </div>
         </Main>
         <UsersDialogs
