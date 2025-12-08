@@ -71,3 +71,80 @@ export async function getInvoiceableCustomers(): Promise<
     return res.json();
   });
 }
+
+export interface QuickBooksCustomer {
+  Id: string;
+  DisplayName: string;
+  GivenName?: string;
+  FamilyName?: string;
+  PrimaryEmailAddr?: {
+    Address: string;
+  };
+  PrimaryPhone?: {
+    FreeFormNumber?: string;
+  };
+  Balance?: number;
+  BalanceWithJobs?: number;
+  Active?: boolean;
+}
+
+/**
+ * Fetch all customers from QuickBooks Online.
+ * @param maxResults - Maximum number of customers to return (default: 100)
+ */
+export async function getQuickBooksCustomers(
+  maxResults?: number
+): Promise<QuickBooksCustomer[]> {
+  const token = localStorage.getItem('authToken');
+  if (!token) throw new Error('Not authenticated — please log in first');
+
+  return withTokenRefresh(async () => {
+    const url = maxResults
+      ? `${API_BASE}/quickbooks/customers?maxResults=${maxResults}`
+      : `${API_BASE}/quickbooks/customers`;
+
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      credentials: 'include',
+    });
+
+    if (!res.ok) {
+      // Handle 404 as "no customers found" - return empty array instead of error
+      if (res.status === 404) {
+        return [];
+      }
+
+      let errorMessage = 'Failed to fetch customers from QuickBooks';
+      try {
+        const err = await res.text();
+        if (err) {
+          // Check if it's an HTML error page (like "Cannot GET /quickbooks/customers")
+          if (err.includes('<!DOCTYPE html>') || err.includes('Cannot GET')) {
+            // Treat as no customers found
+            return [];
+          }
+          try {
+            const errorData = JSON.parse(err);
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } catch {
+            // If it's not JSON and not HTML, use the text as error
+            if (!err.includes('<html>')) {
+              errorMessage = err;
+            } else {
+              // HTML error page - treat as no customers found
+              return [];
+            }
+          }
+        }
+      } catch {
+        // Use default error message
+      }
+      throw new Error(errorMessage);
+    }
+    return res.json();
+  });
+}

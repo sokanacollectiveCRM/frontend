@@ -1,5 +1,4 @@
 import {
-  Calendar,
   FileText,
   Home,
   Inbox,
@@ -39,14 +38,9 @@ const GeneralItems = [
     icon: Inbox,
   },
   {
-    title: 'Clients',
+    title: 'Leads',
     url: 'clients',
     icon: Search,
-  },
-  {
-    title: 'Calendar',
-    url: '#',
-    icon: Calendar,
   },
 ];
 

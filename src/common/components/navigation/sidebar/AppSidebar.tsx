@@ -39,8 +39,8 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         // Legacy admin filtering for specific items
         if (
           item.title === 'Invoices' ||
-          item.title === 'New Client' ||
-          item.title === 'Clients'
+          item.title === 'Customers' ||
+          item.title === 'Leads'
         ) {
           return isAdmin;
         }

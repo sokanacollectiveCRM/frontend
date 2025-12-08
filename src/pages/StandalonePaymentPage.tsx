@@ -155,6 +155,23 @@ const StandalonePaymentPage = () => {
     );
   }
 
+  // Calculate the payment amount - use same logic as PaymentSummary
+  const depositPayment = paymentDetails.installments?.find(p => p.payment_type === 'deposit');
+  const isFirstPayment = paymentDetails.total_paid === 0;
+  
+  let paymentAmount = paymentDetails.next_payment_amount;
+  
+  if (depositPayment) {
+    // Use the deposit payment record if available
+    paymentAmount = depositPayment.amount;
+  } else if (isFirstPayment && paymentDetails.next_payment_amount === 0) {
+    // If this is the first payment and next_payment_amount is 0, use total_due
+    paymentAmount = paymentDetails.total_due;
+  } else if (paymentDetails.next_payment_amount === 0 && paymentDetails.total_due > 0) {
+    // If next_payment_amount is 0 but there's still amount due, use total_due
+    paymentAmount = paymentDetails.total_due;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
@@ -176,7 +193,7 @@ const StandalonePaymentPage = () => {
           <div>
             <PaymentForm
               contractId={contractId}
-              amount={paymentDetails.next_payment_amount}
+              amount={paymentAmount}
               onSuccess={handlePaymentSuccess}
             />
           </div>
