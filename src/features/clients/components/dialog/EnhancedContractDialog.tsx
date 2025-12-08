@@ -242,10 +242,23 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
         discountInfo.totalAfterDiscount + (applyAdminFee ? 150 : 0);
 
       if (shouldUseDepositPlan) {
-        const depositValue = data.deposit_value || 0;
+        // Get deposit value from form data, with fallback to form watch if not in data
+        const formDepositValue = contractForm.getValues('deposit_value');
+        const formDepositType = contractForm.getValues('deposit_type');
+        const depositValue = data.deposit_value ?? formDepositValue ?? 0;
+        const depositType = data.deposit_type ?? formDepositType ?? 'percent';
         const installmentsCount = data.installments_count || 3;
+
+        console.log('Deposit calculation:', {
+          depositValue,
+          depositType,
+          totalAmount,
+          formDepositValue,
+          dataDepositValue: data.deposit_value,
+        });
+
         const depositAmount =
-          (data.deposit_type || 'percent') === 'percent'
+          depositType === 'percent'
             ? (totalAmount * depositValue) / 100
             : depositValue;
         const balanceAmount = Math.max(totalAmount - depositAmount, 0);
@@ -286,11 +299,25 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
         setStep('calculation');
         toast.success('Contract calculated successfully!');
       } else {
+        // For hourly-only contracts, still allow deposits if deposit value is provided
+        const formDepositValue = contractForm.getValues('deposit_value') ?? 0;
+        const formDepositType =
+          contractForm.getValues('deposit_type') ?? 'percent';
+        const depositValue = data.deposit_value ?? formDepositValue ?? 0;
+        const depositType = data.deposit_type ?? formDepositType ?? 'percent';
+
+        const depositAmount =
+          depositValue > 0
+            ? depositType === 'percent'
+              ? (totalAmount * depositValue) / 100
+              : depositValue
+            : 0;
+
         const localAmounts: CalculatedAmounts = {
           total_amount: totalAmount,
-          deposit_amount: 0,
-          balance_amount: totalAmount,
-          installments_amounts: [totalAmount],
+          deposit_amount: depositAmount,
+          balance_amount: Math.max(totalAmount - depositAmount, 0),
+          installments_amounts: [Math.max(totalAmount - depositAmount, 0)],
         };
 
         const totalHoursSum = selectedServices
@@ -300,7 +327,7 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
         const localSignNowFields = {
           total_hours: totalHoursSum.toString(),
           hourly_rate_fee: '0.00',
-          deposit: '0.00',
+          deposit: depositAmount.toFixed(2),
           overnight_fee_amount: '0.00',
           total_amount: totalAmount.toFixed(2),
         };

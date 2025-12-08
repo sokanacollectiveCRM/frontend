@@ -1,0 +1,220 @@
+import { useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Mail, Phone } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/common/components/ui/card';
+import { Input } from '@/common/components/ui/input';
+import { Badge } from '@/common/components/ui/badge';
+import { Header } from '@/common/layouts/Header';
+import { Main } from '@/common/layouts/Main';
+import { ProfileDropdown } from '@/common/components/user/ProfileDropdown';
+import UserAvatar from '@/common/components/user/UserAvatar';
+import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
+import { getAllDoulas } from '@/api/doulas/doulaApi';
+import type { Doula } from '@/features/hours/types/doula';
+import { toast } from 'sonner';
+import { UserContext } from '@/common/contexts/UserContext';
+
+export default function DoulaListPage() {
+  const navigate = useNavigate();
+  const { user, isLoading: authLoading } = useContext(UserContext);
+  const [doulas, setDoulas] = useState<Doula[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Admin-only access check
+  useEffect(() => {
+    if (!authLoading && user?.role !== 'admin') {
+      toast.error('Access denied. Admin only.');
+      navigate('/');
+    }
+  }, [authLoading, user, navigate]);
+
+  useEffect(() => {
+    fetchDoulas();
+  }, []);
+
+  const fetchDoulas = async () => {
+    setIsLoading(true);
+    try {
+      // For now, fetch from team members with role 'doula'
+      // This will be replaced with actual doula API endpoint
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        toast.error('Not authenticated');
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_APP_BACKEND_URL}/clients/team/all`,
+        {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch doulas');
+      }
+
+      const data = await response.json();
+      // Filter for doulas only and map to Doula type
+      const doulaData = data
+        .filter((member: any) => member.role === 'doula')
+        .map((member: any) => ({
+          id: member.id,
+          first_name: member.firstname,
+          last_name: member.lastname,
+          email: member.email,
+          phone: member.phone || 'No phone listed',
+          address: member.address || '',
+          profile_photo_url: null,
+          years_experience: null,
+          specialties: null,
+          certifications: null,
+          bio: member.bio || null,
+          contract_status: 'not_sent' as const,
+          contract_signed_at: null,
+          certifications_files: null,
+          created_at: member.created_at || new Date().toISOString(),
+        }));
+
+      setDoulas(doulaData);
+    } catch (error: any) {
+      console.error('Error fetching doulas:', error);
+      toast.error(error.message || 'Failed to load doulas');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filteredDoulas = searchQuery
+    ? doulas.filter(
+        (doula) =>
+          `${doula.first_name} ${doula.last_name}`
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          doula.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          doula.phone.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : doulas;
+
+  const getContractStatusBadge = (status: string) => {
+    switch (status) {
+      case 'signed':
+        return (
+          <Badge className='bg-green-100 text-green-700 border-green-200'>
+            Contract Signed
+          </Badge>
+        );
+      case 'pending':
+        return (
+          <Badge className='bg-amber-100 text-amber-700 border-amber-200'>
+            Pending
+          </Badge>
+        );
+      default:
+        return (
+          <Badge className='bg-gray-100 text-gray-700 border-gray-200'>
+            Not Sent
+          </Badge>
+        );
+    }
+  };
+
+  return (
+    <>
+      <Header fixed>
+        <Search />
+        <div className='ml-auto flex items-center space-x-4'>
+          <ProfileDropdown />
+        </div>
+      </Header>
+
+      <LoadingOverlay isLoading={isLoading} />
+
+      <Main>
+        <div className='flex-1 overflow-auto p-4'>
+          <div className='mb-6'>
+            <h2 className='text-3xl font-bold tracking-tight text-gray-900'>
+              Doulas
+            </h2>
+            <p className='text-sm text-gray-500 mt-1'>
+              Manage doulas and view their profiles
+            </p>
+          </div>
+
+          <div className='mb-6'>
+            <div className='relative w-full sm:w-80'>
+              <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400' />
+              <Input
+                placeholder='Search by name, email, or phone...'
+                className='pl-10 h-10 bg-white border-gray-300 focus:border-green-600 focus:ring-green-600'
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {filteredDoulas.length === 0 && !isLoading && (
+            <div className='flex flex-col items-center justify-center py-20 text-center bg-white rounded-xl border border-gray-200'>
+              <div className='rounded-full bg-gray-100 p-4 mb-4'>
+                <Search className='h-8 w-8 text-gray-400' />
+              </div>
+              <h3 className='text-xl font-semibold text-gray-900 mb-2'>
+                {searchQuery ? 'No doulas found' : 'No doulas yet'}
+              </h3>
+              <p className='text-gray-500 max-w-md'>
+                {searchQuery
+                  ? "We couldn't find any doulas matching your search."
+                  : 'Get started by adding doulas to your team.'}
+              </p>
+            </div>
+          )}
+
+          {filteredDoulas.length > 0 && (
+            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'>
+              {filteredDoulas.map((doula) => (
+                <Card
+                  key={doula.id}
+                  className='group bg-white rounded-xl border border-gray-200 hover:border-green-300 hover:shadow-lg transition-all duration-200 cursor-pointer'
+                  onClick={() => navigate(`/hours/${doula.id}`)}
+                >
+                  <CardHeader className='pb-4'>
+                    <div className='flex items-center gap-4'>
+                      <UserAvatar
+                        fullName={`${doula.first_name} ${doula.last_name}`}
+                        className='h-14 w-14 ring-2 ring-gray-100 group-hover:ring-green-200 transition-all'
+                      />
+                      <div className='flex-1 min-w-0'>
+                        <CardTitle className='text-lg font-semibold text-gray-900 mb-1 truncate'>
+                          {doula.first_name} {doula.last_name}
+                        </CardTitle>
+                        {getContractStatusBadge(doula.contract_status)}
+                      </div>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className='pt-0 space-y-3'>
+                    <div className='flex items-center gap-3 text-sm text-gray-600'>
+                      <Mail className='h-4 w-4 text-gray-400 flex-shrink-0' />
+                      <span className='truncate'>{doula.email}</span>
+                    </div>
+                    <div className='flex items-center gap-3 text-sm text-gray-600'>
+                      <Phone className='h-4 w-4 text-gray-400 flex-shrink-0' />
+                      <span className='truncate'>{doula.phone}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      </Main>
+    </>
+  );
+}
+

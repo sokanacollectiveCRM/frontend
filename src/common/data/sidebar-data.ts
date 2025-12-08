@@ -1,5 +1,4 @@
 import {
-  Calendar,
   FileText,
   Home,
   Inbox,
@@ -34,15 +33,13 @@ export const sidebarSections = [
       { title: 'Inbox', url: '/inbox', icon: Inbox },
       { title: 'Leads', url: '/clients', icon: Search },
       { title: 'Customers', url: '/clients/new', icon: UserPlus },
-      { title: 'Calendar', url: '#', icon: Calendar },
     ],
   },
   {
     label: 'Manage',
     items: [
       { title: 'Team', url: '/team', icon: LucideUsers },
-      { title: 'Contracts', url: '/contracts', icon: FileText },
-      { title: 'Hours', url: '/hours', icon: LucideClock5 },
+      { title: 'Doulas', url: '/hours', icon: LucideUsers, adminOnly: true },
       {
         title: 'Payments',
         url: '/payments',
