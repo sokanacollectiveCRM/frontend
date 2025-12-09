@@ -1,9 +1,19 @@
 import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Mail, Phone } from 'lucide-react';
+import { Search, Mail, Phone, UserPlus, MailPlus } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/common/components/ui/card';
 import { Input } from '@/common/components/ui/input';
 import { Badge } from '@/common/components/ui/badge';
+import { Button } from '@/common/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/common/components/ui/dialog';
+import { Label } from '@/common/components/ui/label';
 import { Header } from '@/common/layouts/Header';
 import { Main } from '@/common/layouts/Main';
 import { ProfileDropdown } from '@/common/components/user/ProfileDropdown';
@@ -13,6 +23,7 @@ import { getAllDoulas } from '@/api/doulas/doulaApi';
 import type { Doula } from '@/features/hours/types/doula';
 import { toast } from 'sonner';
 import { UserContext } from '@/common/contexts/UserContext';
+import { MatchClientModal } from './MatchClientModal';
 
 export default function DoulaListPage() {
   const navigate = useNavigate();
@@ -20,6 +31,15 @@ export default function DoulaListPage() {
   const [doulas, setDoulas] = useState<Doula[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [matchModalOpen, setMatchModalOpen] = useState(false);
+  const [selectedDoula, setSelectedDoula] = useState<Doula | null>(null);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [inviteForm, setInviteForm] = useState({
+    email: '',
+    firstname: '',
+    lastname: '',
+  });
+  const [isInviting, setIsInviting] = useState(false);
 
   // Admin-only access check
   useEffect(() => {
@@ -91,6 +111,66 @@ export default function DoulaListPage() {
     }
   };
 
+  const handleMatchClient = (doula: Doula, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click navigation
+    setSelectedDoula(doula);
+    setMatchModalOpen(true);
+  };
+
+  const handleMatchSuccess = () => {
+    // Optionally refresh doulas or show success message
+    toast.success('Client matched successfully');
+    // You could refresh the doula list here if needed
+  };
+
+  const handleInviteSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsInviting(true);
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        toast.error('Not authenticated');
+        return;
+      }
+
+      const API_BASE =
+        (import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050') + '/api';
+
+      // Use the admin doula invite endpoint
+      const response = await fetch(`${API_BASE}/admin/doulas/invite`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: inviteForm.email,
+          firstname: inviteForm.firstname,
+          lastname: inviteForm.lastname,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || errorData.message || 'Failed to invite doula');
+      }
+
+      const data = await response.json();
+      toast.success(data.message || 'Doula invited successfully');
+
+      // Refresh doula list and reset form
+      fetchDoulas();
+      setInviteForm({ email: '', firstname: '', lastname: '' });
+      setInviteDialogOpen(false);
+    } catch (error: any) {
+      console.error('Error inviting doula:', error);
+      toast.error(error.message || 'Failed to invite doula');
+    } finally {
+      setIsInviting(false);
+    }
+  };
+
   const filteredDoulas = searchQuery
     ? doulas.filter(
         (doula) =>
@@ -138,13 +218,19 @@ export default function DoulaListPage() {
 
       <Main>
         <div className='flex-1 overflow-auto p-4'>
-          <div className='mb-6'>
-            <h2 className='text-3xl font-bold tracking-tight text-gray-900'>
-              Doulas
-            </h2>
-            <p className='text-sm text-gray-500 mt-1'>
-              Manage doulas and view their profiles
-            </p>
+          <div className='mb-6 flex justify-between items-start'>
+            <div>
+              <h2 className='text-3xl font-bold tracking-tight text-gray-900'>
+                Doulas
+              </h2>
+              <p className='text-sm text-gray-500 mt-1'>
+                Manage doulas and view their profiles
+              </p>
+            </div>
+            <Button onClick={() => setInviteDialogOpen(true)}>
+              <MailPlus className='h-4 w-4 mr-2' />
+              Invite Doula
+            </Button>
           </div>
 
           <div className='mb-6'>
@@ -180,17 +266,24 @@ export default function DoulaListPage() {
               {filteredDoulas.map((doula) => (
                 <Card
                   key={doula.id}
-                  className='group bg-white rounded-xl border border-gray-200 hover:border-green-300 hover:shadow-lg transition-all duration-200 cursor-pointer'
-                  onClick={() => navigate(`/hours/${doula.id}`)}
+                  className='group bg-white rounded-xl border border-gray-200 hover:border-green-300 hover:shadow-lg transition-all duration-200'
                 >
                   <CardHeader className='pb-4'>
                     <div className='flex items-center gap-4'>
-                      <UserAvatar
-                        fullName={`${doula.first_name} ${doula.last_name}`}
-                        className='h-14 w-14 ring-2 ring-gray-100 group-hover:ring-green-200 transition-all'
-                      />
+                      <div
+                        onClick={() => navigate(`/hours/${doula.id}`)}
+                        className='cursor-pointer'
+                      >
+                        <UserAvatar
+                          fullName={`${doula.first_name} ${doula.last_name}`}
+                          className='h-14 w-14 ring-2 ring-gray-100 group-hover:ring-green-200 transition-all'
+                        />
+                      </div>
                       <div className='flex-1 min-w-0'>
-                        <CardTitle className='text-lg font-semibold text-gray-900 mb-1 truncate'>
+                        <CardTitle
+                          className='text-lg font-semibold text-gray-900 mb-1 truncate cursor-pointer hover:text-green-600'
+                          onClick={() => navigate(`/hours/${doula.id}`)}
+                        >
                           {doula.first_name} {doula.last_name}
                         </CardTitle>
                         {getContractStatusBadge(doula.contract_status)}
@@ -207,11 +300,111 @@ export default function DoulaListPage() {
                       <Phone className='h-4 w-4 text-gray-400 flex-shrink-0' />
                       <span className='truncate'>{doula.phone}</span>
                     </div>
+                    <div className='pt-2 border-t border-gray-100'>
+                      <Button
+                        variant='outline'
+                        size='sm'
+                        className='w-full'
+                        onClick={(e) => handleMatchClient(doula, e)}
+                      >
+                        <UserPlus className='h-4 w-4 mr-2' />
+                        Match Client
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
           )}
+
+          {/* Match Client Modal */}
+          {selectedDoula && (
+            <MatchClientModal
+              doula={{
+                id: selectedDoula.id,
+                first_name: selectedDoula.first_name,
+                last_name: selectedDoula.last_name,
+                email: selectedDoula.email,
+              }}
+              isOpen={matchModalOpen}
+              onClose={() => {
+                setMatchModalOpen(false);
+                setSelectedDoula(null);
+              }}
+              onSuccess={handleMatchSuccess}
+            />
+          )}
+
+          {/* Invite Doula Dialog */}
+          <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
+            <DialogContent className='sm:max-w-md'>
+              <DialogHeader>
+                <DialogTitle className='flex items-center gap-2'>
+                  <MailPlus className='h-5 w-5' />
+                  Invite Doula
+                </DialogTitle>
+                <DialogDescription>
+                  Invite a new doula to join your team. They will receive an email
+                  invitation to create their account.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleInviteSubmit} className='space-y-4'>
+                <div className='space-y-2'>
+                  <Label htmlFor='firstname'>First Name</Label>
+                  <Input
+                    id='firstname'
+                    value={inviteForm.firstname}
+                    onChange={(e) =>
+                      setInviteForm((prev) => ({ ...prev, firstname: e.target.value }))
+                    }
+                    placeholder='Enter first name'
+                    required
+                  />
+                </div>
+                <div className='space-y-2'>
+                  <Label htmlFor='lastname'>Last Name</Label>
+                  <Input
+                    id='lastname'
+                    value={inviteForm.lastname}
+                    onChange={(e) =>
+                      setInviteForm((prev) => ({ ...prev, lastname: e.target.value }))
+                    }
+                    placeholder='Enter last name'
+                    required
+                  />
+                </div>
+                <div className='space-y-2'>
+                  <Label htmlFor='email'>Email</Label>
+                  <Input
+                    id='email'
+                    type='email'
+                    value={inviteForm.email}
+                    onChange={(e) =>
+                      setInviteForm((prev) => ({ ...prev, email: e.target.value }))
+                    }
+                    placeholder='Enter email address'
+                    required
+                  />
+                </div>
+                <DialogFooter>
+                  <Button
+                    type='button'
+                    variant='outline'
+                    onClick={() => {
+                      setInviteDialogOpen(false);
+                      setInviteForm({ email: '', firstname: '', lastname: '' });
+                    }}
+                    disabled={isInviting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type='submit' disabled={isInviting}>
+                    {isInviting ? 'Inviting...' : 'Send Invite'}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
       </Main>
     </>
