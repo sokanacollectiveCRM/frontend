@@ -9,7 +9,7 @@ import {
   SidebarHeader,
 } from '@/common/components/ui/sidebar';
 import { UserContext } from '@/common/contexts/UserContext';
-import { sidebarSections } from '@/common/data/sidebar-data';
+import { sidebarSections, type SidebarItem } from '@/common/data/sidebar-data';
 import { useContext } from 'react';
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
@@ -27,7 +27,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const visible = sidebarSections
     .map((section) => {
       // Filter items based on role
-      const filteredItems = section.items.filter((item) => {
+      const filteredItems = section.items.filter((item: SidebarItem) => {
         // Admin-only items - only show to admins
         if (item.adminOnly === true) {
           return isAdmin;

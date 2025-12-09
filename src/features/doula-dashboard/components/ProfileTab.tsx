@@ -150,7 +150,7 @@ export default function ProfileTab() {
             <UserAvatar
               fullName={`${profile.firstname} ${profile.lastname}`}
               className='h-20 w-20'
-              src={profile.profile_picture || undefined}
+              profile_picture={profile.profile_picture || undefined}
             />
             <div>
               <CardTitle className='text-2xl'>
