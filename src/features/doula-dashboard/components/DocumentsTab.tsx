@@ -187,7 +187,7 @@ export default function DocumentsTab() {
                         <FileText className='h-5 w-5 text-blue-600' />
                         <div>
                           <CardTitle className='text-sm font-medium'>
-                            {doc.fileName || doc.name || 'Untitled Document'}
+                            {doc.fileName || (doc as any).name || 'Untitled Document'}
                           </CardTitle>
                           <Badge
                             className={`mt-1 text-xs ${getStatusBadgeColor(doc.status || 'pending')}`}
@@ -202,21 +202,21 @@ export default function DocumentsTab() {
                     <div>
                       <p className='text-xs text-gray-500'>Type</p>
                       <p className='text-sm font-medium'>
-                        {getDocumentTypeLabel(doc.documentType || doc.type || 'other')}
+                        {getDocumentTypeLabel(doc.documentType || (doc as any).type || 'other')}
                       </p>
                     </div>
                     <div>
                       <p className='text-xs text-gray-500'>Size</p>
                       <p className='text-sm'>
-                        {formatFileSize(doc.fileSize || doc.size || 0)}
+                        {formatFileSize(doc.fileSize || (doc as any).size || 0)}
                       </p>
                     </div>
                     <div>
                       <p className='text-xs text-gray-500'>Uploaded</p>
                       <p className='text-sm'>
-                        {doc.uploadedAt || doc.created_at || doc.uploaded_at
+                        {doc.uploadedAt || (doc as any).created_at || (doc as any).uploaded_at
                           ? format(
-                              new Date(doc.uploadedAt || doc.created_at || doc.uploaded_at),
+                              new Date(doc.uploadedAt || (doc as any).created_at || (doc as any).uploaded_at),
                               'MMM dd, yyyy'
                             )
                           : 'Unknown'}
@@ -235,7 +235,7 @@ export default function DocumentsTab() {
                         onClick={() => {
                           // Open the document URL directly
                           // Backend should provide signed URLs for private buckets
-                          const url = doc.fileUrl || doc.url || doc.file_url;
+                          const url = doc.fileUrl || (doc as any).url || (doc as any).file_url;
                           if (!url) {
                             console.error('No URL found for document:', doc);
                             toast.error('Document URL not available');

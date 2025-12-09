@@ -38,13 +38,13 @@ export function CommandMenu() {
   const filteredSections = sidebarSections
     .map((section) => {
       // Filter items based on role
-      const filteredItems = section.items.filter((item) => {
+      const filteredItems = section.items.filter((item: SidebarItem) => {
         // Admin-only items - only show to admins
         if (item.adminOnly === true) {
           return isAdmin;
         }
         // Doula-only items - only show to doulas
-        if (item.doulaOnly === true) {
+        if ((item as SidebarItem).doulaOnly === true) {
           return isDoula;
         }
         // Non-admin items (like Payments) - show to non-admins

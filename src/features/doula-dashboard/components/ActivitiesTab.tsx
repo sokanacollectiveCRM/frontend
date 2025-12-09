@@ -257,7 +257,7 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
               <Label>Select Client</Label>
               <select
                 className='w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
-                value={selectedClient?.id || ''}
+                value={(selectedClient as AssignedClientLite | null)?.id || ''}
                 onChange={(e) => {
                   if (e.target.value) {
                     handleClientSelect(e.target.value);
@@ -307,7 +307,7 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                       <div>
                         <p className='text-xs text-gray-500'>Name</p>
                         <p className='text-sm font-medium text-gray-900'>
-                          {selectedClient.firstname || 'No'} {selectedClient.lastname || 'Name'}
+                          {(selectedClient as AssignedClientLite).firstname || 'No'} {(selectedClient as AssignedClientLite).lastname || 'Name'}
                         </p>
                       </div>
                     </div>
@@ -316,26 +316,26 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                       <div>
                         <p className='text-xs text-gray-500'>Email</p>
                         <p className='text-sm font-medium text-gray-900'>
-                          {selectedClient.email || 'No email provided'}
+                          {(selectedClient as AssignedClientLite).email || 'No email provided'}
                         </p>
                       </div>
                     </div>
-                    {selectedClient.phone && (
+                    {(selectedClient as AssignedClientLite).phone && (
                       <div className='flex items-center gap-2'>
                         <Phone className='h-4 w-4 text-gray-400' />
                         <div>
                           <p className='text-xs text-gray-500'>Phone</p>
-                          <p className='text-sm font-medium text-gray-900'>{selectedClient.phone}</p>
+                          <p className='text-sm font-medium text-gray-900'>{(selectedClient as AssignedClientLite).phone}</p>
                         </div>
                       </div>
                     )}
-                    {selectedClient.dueDate && (
+                    {(selectedClient as AssignedClientLite).dueDate && (
                       <div className='flex items-center gap-2'>
                         <Calendar className='h-4 w-4 text-gray-400' />
                         <div>
                           <p className='text-xs text-gray-500'>Due Date</p>
                           <p className='text-sm font-medium text-gray-900'>
-                            {format(new Date(selectedClient.dueDate), 'MMM dd, yyyy')}
+                            {format(new Date((selectedClient as AssignedClientLite).dueDate), 'MMM dd, yyyy')}
                           </p>
                         </div>
                       </div>
