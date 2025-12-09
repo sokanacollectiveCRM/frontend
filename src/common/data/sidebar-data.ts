@@ -18,6 +18,7 @@ export interface SidebarItem {
   url: string;
   icon: React.ElementType;
   adminOnly?: boolean;
+  doulaOnly?: boolean;
 }
 
 export interface SidebarSection {
@@ -31,20 +32,26 @@ export const sidebarSections = [
     items: [
       { title: 'Dashboard', url: '/', icon: Home },
       { title: 'Inbox', url: '/inbox', icon: Inbox },
-      { title: 'Leads', url: '/clients', icon: Search },
-      { title: 'Customers', url: '/clients/new', icon: UserPlus },
+      { title: 'Leads', url: '/clients', icon: Search, adminOnly: true },
+      { title: 'Customers', url: '/clients/new', icon: UserPlus, adminOnly: true },
     ],
   },
   {
     label: 'Manage',
     items: [
-      { title: 'Team', url: '/team', icon: LucideUsers },
+      { title: 'Team', url: '/team', icon: LucideUsers, adminOnly: true },
       { title: 'Doulas', url: '/hours', icon: LucideUsers, adminOnly: true },
+      {
+        title: 'My Dashboard',
+        url: '/doula-dashboard',
+        icon: LucideUsers,
+        doulaOnly: true,
+      },
       {
         title: 'Payments',
         url: '/payments',
         icon: LucideCreditCard,
-        adminOnly: false,
+        adminOnly: true,
       },
       {
         title: 'Billing',
@@ -52,7 +59,7 @@ export const sidebarSections = [
         icon: LucideCreditCard,
         adminOnly: true,
       },
-      { title: 'Invoices', url: '/invoices', icon: FileText },
+      { title: 'Invoices', url: '/invoices', icon: FileText, adminOnly: true },
     ],
   },
   {
@@ -68,8 +75,8 @@ export const sidebarSections = [
   {
     label: 'Analytics',
     items: [
-      { title: 'Financial', url: '#', icon: LucideCircleDollarSign },
-      { title: 'Demographics', url: '#', icon: LucideChartColumnIncreasing },
+      { title: 'Financial', url: '#', icon: LucideCircleDollarSign, adminOnly: true },
+      { title: 'Demographics', url: '#', icon: LucideChartColumnIncreasing, adminOnly: true },
     ],
   },
 ];

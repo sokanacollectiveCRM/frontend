@@ -32,18 +32,22 @@ export function CommandMenu() {
   );
 
   const isAdmin = user?.role === 'admin';
+  const isDoula = user?.role === 'doula';
 
   // Filter sidebar sections based on user role (same logic as AppSidebar)
   const filteredSections = sidebarSections
-    .filter((section) => section.label !== 'Integrations' || isAdmin)
-    .map((section) => ({
-      ...section,
-      items: section.items.filter((item) => {
-        // Admin-only items
+    .map((section) => {
+      // Filter items based on role
+      const filteredItems = section.items.filter((item) => {
+        // Admin-only items - only show to admins
         if (item.adminOnly === true) {
           return isAdmin;
         }
-        // Non-admin items (like Payments)
+        // Doula-only items - only show to doulas
+        if (item.doulaOnly === true) {
+          return isDoula;
+        }
+        // Non-admin items (like Payments) - show to non-admins
         if (item.adminOnly === false) {
           return !isAdmin;
         }
@@ -55,11 +59,20 @@ export function CommandMenu() {
         ) {
           return isAdmin;
         }
-        // Show all other items
+        // Show all other items to everyone
         return true;
-      }),
-    }))
-    .filter((section) => section.items.length > 0); // Remove empty sections
+      });
+
+      // Return section with filtered items
+      return {
+        ...section,
+        items: filteredItems,
+      };
+    })
+    // Filter out empty sections
+    .filter((section) => section.items.length > 0)
+    // Filter out "Integrations" section unless admin
+    .filter((section) => section.label !== 'Integrations' || isAdmin);
 
   return (
     <CommandDialog modal open={open} onOpenChange={setOpen}>

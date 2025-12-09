@@ -74,6 +74,8 @@ export default function Teams() {
   });
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [memberToDelete, setMemberToDelete] = useState<string | null>(null);
+  const [invitePopoverOpen, setInvitePopoverOpen] = useState(false);
+  const [isInviting, setIsInviting] = useState(false);
 
   const fetchTeam = async () => {
     //function to fetch all team members
@@ -295,10 +297,15 @@ export default function Teams() {
   const handleInviteSubmit = async (e: React.FormEvent) => {
     //Function to handle click of invite team member button on teams page
     e.preventDefault();
+    
+    if (isInviting) return; // Prevent double submission
+    
+    setIsInviting(true);
     try {
       const token = localStorage.getItem('authToken');
       if (!token) {
-        console.error('No auth token found');
+        toast.error('No auth token found');
+        setIsInviting(false);
         return;
       }
 
@@ -323,7 +330,9 @@ export default function Teams() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to invite team member');
+        const errorMessage = errorData.error || 'Failed to invite team member';
+        toast.error(errorMessage);
+        throw new Error(errorMessage);
       }
 
       const emailResponse = await fetch(
@@ -347,9 +356,21 @@ export default function Teams() {
 
       if (!emailResponse.ok) {
         const errorData = await emailResponse.json();
+        const errorMessage = errorData.error || 'Failed to send invite email';
         console.error('Failed to send invite email:', errorData);
-        throw new Error(errorData.error || 'Failed to send invite email');
+        toast.warning('Team member created but invite email failed to send');
+        throw new Error(errorMessage);
       }
+
+      // Success - show notification
+      toast.success(
+        `Team member ${inviteForm.firstname} ${inviteForm.lastname} invited successfully!`
+      );
+
+      // Close popover after showing toast
+      setTimeout(() => {
+        setInvitePopoverOpen(false);
+      }, 100);
 
       fetchTeam(); //Refresh to include new team & clear invite form
       setInviteForm({
@@ -358,8 +379,14 @@ export default function Teams() {
         lastname: '',
         role: 'doula',
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error inviting team member:', error);
+      // Only show error toast if it wasn't already shown above
+      if (!error.message || (!error.message.includes('Failed to invite') && !error.message.includes('Failed to send invite email'))) {
+        toast.error(error.message || 'Failed to invite team member');
+      }
+    } finally {
+      setIsInviting(false);
     }
   };
 
@@ -392,7 +419,7 @@ export default function Teams() {
               </div>
 
               <div className='flex gap-2'>
-                <Popover>
+                <Popover open={invitePopoverOpen} onOpenChange={setInvitePopoverOpen}>
                   <PopoverTrigger asChild>
                     <Button className='flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white h-10 px-4'>
                       <UserPlus size={18} />
@@ -493,8 +520,9 @@ export default function Teams() {
                       <Button
                         type='submit'
                         className='w-full bg-green-600 hover:bg-green-700 h-10'
+                        disabled={isInviting}
                       >
-                        Send Invitation
+                        {isInviting ? 'Sending...' : 'Send Invitation'}
                       </Button>
                     </form>
                   </PopoverContent>

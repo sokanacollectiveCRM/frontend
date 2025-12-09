@@ -21,18 +21,22 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   }
 
   const isAdmin = user?.role === 'admin';
+  const isDoula = user?.role === 'doula';
 
-  // filter out "Integrations" unless admin
+  // Filter sections and items based on role
   const visible = sidebarSections
-    .filter((section) => section.label !== 'Integrations' || isAdmin)
-    .map((section) => ({
-      ...section,
-      items: section.items.filter((item) => {
-        // Admin-only items
+    .map((section) => {
+      // Filter items based on role
+      const filteredItems = section.items.filter((item) => {
+        // Admin-only items - only show to admins
         if (item.adminOnly === true) {
           return isAdmin;
         }
-        // Non-admin items (like Payments)
+        // Doula-only items - only show to doulas
+        if (item.doulaOnly === true) {
+          return isDoula;
+        }
+        // Non-admin items (like Payments) - show to non-admins
         if (item.adminOnly === false) {
           return !isAdmin;
         }
@@ -44,10 +48,20 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         ) {
           return isAdmin;
         }
-        // Show all other items
+        // Show all other items to everyone
         return true;
-      }),
-    }));
+      });
+
+      // Return section with filtered items
+      return {
+        ...section,
+        items: filteredItems,
+      };
+    })
+    // Filter out empty sections
+    .filter((section) => section.items.length > 0)
+    // Filter out "Integrations" section unless admin
+    .filter((section) => section.label !== 'Integrations' || isAdmin);
 
   return (
     <Sidebar collapsible='icon' variant='floating' {...props}>
