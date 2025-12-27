@@ -1,4 +1,9 @@
-<!-- 0c08af26-ff9a-4352-8e54-196c4349f0c2 35320b03-cbc0-4bab-8887-41c8302a1988 -->
+---
+name: Lead Profile Modal Implementation Plan
+overview: ""
+todos: []
+---
+
 # Lead Profile Modal Implementation Plan
 
 ## Overview

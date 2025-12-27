@@ -71,23 +71,40 @@ export async function updateDoulaProfile(
   data: UpdateProfileData
 ): Promise<DoulaProfile> {
   const token = getAuthToken();
+  
+  // Log the payload being sent
+  console.log('updateDoulaProfile - Sending payload:', JSON.stringify(data, null, 2));
+  
   const response = await fetch(`${API_BASE}/doulas/profile`, {
     method: 'PUT',
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
+    credentials: 'include', // Ensure cookies are sent
     body: JSON.stringify(data),
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to update profile' }));
-    throw new Error(error.error || 'Failed to update profile');
+    const errorText = await response.text();
+    console.error('updateDoulaProfile - Error response:', errorText);
+    let error;
+    try {
+      error = JSON.parse(errorText);
+    } catch {
+      error = { error: 'Failed to update profile' };
+    }
+    throw new Error(error.error || error.message || 'Failed to update profile');
   }
 
   const result = await response.json();
+  console.log('updateDoulaProfile - Response received:', JSON.stringify(result, null, 2));
+  
   // Handle both {success: true, profile: {...}} and direct profile object
-  return result.profile || result;
+  const profile = result.profile || result;
+  console.log('updateDoulaProfile - Returning profile:', JSON.stringify(profile, null, 2));
+  
+  return profile;
 }
 
 // ============================================
