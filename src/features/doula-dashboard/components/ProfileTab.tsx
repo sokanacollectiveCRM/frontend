@@ -34,9 +34,10 @@ export default function ProfileTab() {
     fetchProfile();
   }, []);
 
-  // Sync form data when profile changes
+  // Sync form data when profile changes (but only if formData hasn't been manually updated)
+  // This prevents resetting form data immediately after a successful update
   useEffect(() => {
-    if (profile) {
+    if (profile && !isSaving) {
       const newFormData = {
         firstname: profile.firstname || '',
         lastname: profile.lastname || '',
@@ -50,9 +51,15 @@ export default function ProfileTab() {
         business: profile.business || '',
         bio: profile.bio || '',
       };
-      setFormData(newFormData);
+      // Only update if the form data is different (to avoid unnecessary re-renders)
+      setFormData((prev) => {
+        const hasChanges = Object.keys(newFormData).some(
+          (key) => prev[key as keyof UpdateProfileData] !== newFormData[key as keyof typeof newFormData]
+        );
+        return hasChanges ? newFormData : prev;
+      });
     }
-  }, [profile]);
+  }, [profile, isSaving]);
 
   const fetchProfile = async () => {
     setIsLoading(true);
@@ -101,11 +108,19 @@ export default function ProfileTab() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
+    
+    // Log the form data being submitted
+    console.log('ProfileTab - Submitting form data:', JSON.stringify(formData, null, 2));
+    
     try {
       const updated = await updateDoulaProfile(formData);
+      console.log('ProfileTab - Update response received:', JSON.stringify(updated, null, 2));
+      
+      // Update profile state - this will trigger the useEffect to sync formData
       setProfile(updated);
-      // Update form data with the response
-      setFormData({
+      
+      // Also update form data directly with the response to ensure consistency
+      const updatedFormData = {
         firstname: updated.firstname || '',
         lastname: updated.lastname || '',
         address: updated.address || '',
@@ -117,10 +132,14 @@ export default function ProfileTab() {
           : '',
         business: updated.business || '',
         bio: updated.bio || '',
-      });
+      };
+      
+      console.log('ProfileTab - Setting form data to:', JSON.stringify(updatedFormData, null, 2));
+      setFormData(updatedFormData);
+      
       toast.success('Profile updated successfully');
     } catch (error: any) {
-      console.error('Failed to update profile:', error);
+      console.error('ProfileTab - Failed to update profile:', error);
       toast.error(error.message || 'Failed to update profile');
     } finally {
       setIsSaving(false);
