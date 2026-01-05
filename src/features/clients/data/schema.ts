@@ -100,6 +100,22 @@ const userSchema = z
 
 export type User = z.infer<typeof userSchema>;
 
+// Portal status types (UI-only, not in Zod schema yet)
+export type PortalStatus =
+  | 'not_eligible'
+  | 'eligible'
+  | 'invited'
+  | 'active'
+  | 'disabled';
+
+// Extended User type with portal fields (UI-only for now)
+export type UserWithPortal = User & {
+  portal_status?: PortalStatus;
+  invited_at?: string;
+  last_invite_sent_at?: string;
+  invite_sent_count?: number;
+};
+
 export type UserSummary = z.infer<typeof userSchema>;
 export const userListSchema = z.array(userSchema);
 

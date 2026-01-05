@@ -1,4 +1,5 @@
 import { Badge } from '@/common/components/ui/badge';
+import { Button } from '@/common/components/ui/button';
 import LongText from '@/common/components/ui/long-text';
 import {
   Select,
@@ -7,12 +8,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/common/components/ui/select';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/common/components/ui/tooltip';
 import updateClientStatus from '@/common/utils/updateClientStatus';
 import {
   STATUS_LABELS,
   User,
   userStatusSchema,
+  type PortalStatus,
 } from '@/features/clients/data/schema';
+import { derivePortalStatus } from '@/features/clients/utils/portalStatus';
 import { cn } from '@/lib/utils';
 import { ColumnDef } from '@tanstack/react-table';
 import { toast } from 'sonner';
@@ -21,7 +30,16 @@ import { DataTableRowActions } from './data-table-row-actions';
 
 const statusOptions = userStatusSchema.options;
 
-export const columns = (refreshClients: () => void): ColumnDef<User>[] => [
+interface PortalHandlers {
+  onInviteClick: (lead: User) => void;
+  onResendInvite: (lead: User) => void;
+  onDisablePortal: (lead: User) => void;
+}
+
+export const columns = (
+  refreshClients: () => void,
+  portalHandlers?: PortalHandlers
+): ColumnDef<User>[] => [
   {
     id: 'client',
     header: ({ column }) => (
@@ -172,8 +190,102 @@ export const columns = (refreshClients: () => void): ColumnDef<User>[] => [
     enableSorting: true,
   },
   {
+    id: 'portal',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Portal' />
+    ),
+    cell: ({ row }) => {
+      const lead = row.original;
+      // Use existing portal_status if available, otherwise derive it
+      const portalStatus =
+        ((lead as any).portal_status as PortalStatus) ||
+        (derivePortalStatus(lead) as PortalStatus);
+
+      const handleInviteClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (portalHandlers?.onInviteClick) {
+          portalHandlers.onInviteClick(lead);
+        }
+      };
+
+      switch (portalStatus) {
+        case 'not_eligible':
+          return (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge
+                    variant='outline'
+                    className='bg-gray-100 text-gray-700 border-gray-200'
+                  >
+                    Not eligible
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Available after contract signed + first payment completed</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+
+        case 'eligible':
+          return (
+            <Button
+              size='sm'
+              variant='default'
+              onClick={handleInviteClick}
+              className='h-7'
+            >
+              Invite
+            </Button>
+          );
+
+        case 'invited':
+          return (
+            <Badge
+              variant='outline'
+              className='bg-amber-100 text-amber-700 border-amber-200'
+            >
+              Invited
+            </Badge>
+          );
+
+        case 'active':
+          return (
+            <Badge
+              variant='outline'
+              className='bg-green-100 text-green-700 border-green-200'
+            >
+              Active
+            </Badge>
+          );
+
+        case 'disabled':
+          return (
+            <Badge
+              variant='outline'
+              className='bg-red-100 text-red-700 border-red-200'
+            >
+              Disabled
+            </Badge>
+          );
+
+        default:
+          return (
+            <Badge variant='outline' className='bg-gray-100 text-gray-700'>
+              Unknown
+            </Badge>
+          );
+      }
+    },
+    meta: { className: 'w-32' },
+    enableHiding: false,
+  },
+  {
     id: 'actions',
-    cell: DataTableRowActions,
+    cell: ({ row }) => (
+      <DataTableRowActions row={row} portalHandlers={portalHandlers} />
+    ),
     meta: { className: 'sticky right-0 z-10 w-16' },
   },
 ];

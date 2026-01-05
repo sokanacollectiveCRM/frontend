@@ -24,8 +24,12 @@ export function useClients() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
+      console.log('🔍 DEBUG: API Response status:', res.status);
+      console.log('🔍 DEBUG: API Response ok:', res.ok);
+
       if (!res.ok) {
         const txt = await res.text();
+        console.error('🔍 DEBUG: API Error response:', res.status, txt);
 
         // Check for authentication/session expiration errors
         if (isSessionExpiredError(res.status, txt)) {
@@ -38,6 +42,7 @@ export function useClients() {
       // cast it to Client[] so setClients has the right shape
       const apiData = (await res.json()) as any[];
       console.log('🔍 DEBUG: Raw API data:', apiData);
+      console.log('🔍 DEBUG: API data length:', apiData?.length);
       console.log('🔍 DEBUG: First API client structure:', apiData[0]);
       console.log('🔍 DEBUG: First API client user object:', apiData[0]?.user);
 
