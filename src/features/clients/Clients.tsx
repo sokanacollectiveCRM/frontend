@@ -123,7 +123,10 @@ export default function Users() {
   // Enhance userList with portal_status
   const userListWithPortal = useMemo(() => {
     return userList.map((user) => {
-      const portalStatus = derivePortalStatus(user);
+      // Prioritize existing portal_status from user object (set by API or local state)
+      // Only derive if not already set
+      const existingPortalStatus = (user as any).portal_status;
+      const portalStatus = existingPortalStatus || derivePortalStatus(user);
       const userWithPortal: UserWithPortal = {
         ...user,
         portal_status: portalStatus,
@@ -181,13 +184,14 @@ export default function Users() {
       console.log('✅ Invite API response:', data);
 
       // Update local state with response data
+      // Use portal_status from API response if available, otherwise default to 'invited'
       setUserList((prevList) =>
         prevList.map((user) => {
           if (user.id === selectedLeadForPortal.id) {
             const now = new Date().toISOString();
             return {
               ...user,
-              portal_status: 'invited' as const,
+              portal_status: (data.portal_status || 'invited') as const,
               invited_at: data.invited_at || now,
               last_invite_sent_at: data.last_invite_sent_at || now,
               invite_sent_count: data.invite_sent_count || ((user as any).invite_sent_count || 0) + 1,
@@ -200,6 +204,12 @@ export default function Users() {
       toast.success(`Invite sent to ${selectedLeadForPortal.email || 'client'}`);
       setPortalInviteModalOpen(false);
       setSelectedLeadForPortal(null);
+      
+      // Refresh clients list to sync with backend (optional - helps if backend updates portal_status)
+      // Use setTimeout to avoid race conditions with state updates
+      setTimeout(() => {
+        getClients();
+      }, 500);
     } catch (error: any) {
       console.error('❌ Error sending invite:', error);
       toast.error(error.message || 'Failed to send invite. Please try again.');
@@ -237,12 +247,14 @@ export default function Users() {
       console.log('✅ Resend invite API response:', data);
 
       // Update local state with response data
+      // Preserve portal_status as 'invited' when resending
       setUserList((prevList) =>
         prevList.map((user) => {
           if (user.id === lead.id) {
             const now = new Date().toISOString();
             return {
               ...user,
+              portal_status: (data.portal_status || (user as any).portal_status || 'invited') as const,
               last_invite_sent_at: data.last_invite_sent_at || now,
               invite_sent_count: data.invite_sent_count || ((user as any).invite_sent_count || 0) + 1,
             } as UserWithPortal;
