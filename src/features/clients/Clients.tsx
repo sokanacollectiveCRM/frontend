@@ -22,7 +22,7 @@ import { UsersDialogs } from './components/users-dialogs';
 import { UsersTable } from './components/users-table';
 import UsersProvider from './context/users-context';
 import { TemplatesProvider } from './contexts/TemplatesContext';
-import { userListSchema, UserSummary, type UserWithPortal } from './data/schema';
+import { userListSchema, UserSummary, type UserWithPortal, type PortalStatus } from './data/schema';
 import { derivePortalStatus } from './utils/portalStatus';
 
 type RouteParams = {
@@ -189,9 +189,10 @@ export default function Users() {
         prevList.map((user) => {
           if (user.id === selectedLeadForPortal.id) {
             const now = new Date().toISOString();
+            const portalStatus: PortalStatus = (data.portal_status || 'invited') as PortalStatus;
             return {
               ...user,
-              portal_status: (data.portal_status || 'invited') as const,
+              portal_status: portalStatus,
               invited_at: data.invited_at || now,
               last_invite_sent_at: data.last_invite_sent_at || now,
               invite_sent_count: data.invite_sent_count || ((user as any).invite_sent_count || 0) + 1,
@@ -252,9 +253,10 @@ export default function Users() {
         prevList.map((user) => {
           if (user.id === lead.id) {
             const now = new Date().toISOString();
+            const portalStatus: PortalStatus = (data.portal_status || (user as any).portal_status || 'invited') as PortalStatus;
             return {
               ...user,
-              portal_status: (data.portal_status || (user as any).portal_status || 'invited') as const,
+              portal_status: portalStatus,
               last_invite_sent_at: data.last_invite_sent_at || now,
               invite_sent_count: data.invite_sent_count || ((user as any).invite_sent_count || 0) + 1,
             } as UserWithPortal;
