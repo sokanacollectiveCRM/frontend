@@ -10,35 +10,42 @@ import {
 } from '@/common/components/ui/sidebar';
 import { UserContext } from '@/common/contexts/UserContext';
 import { sidebarSections, type SidebarItem } from '@/common/data/sidebar-data';
+import { useClientAuth } from '@/common/hooks/auth/useClientAuth';
 import { useContext } from 'react';
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { user, isLoading } = useContext(UserContext);
+  const { client, isLoading: isClientLoading } = useClientAuth();
 
   // while we're still loading auth, render nothing or a spinner
-  if (isLoading) {
+  if (isLoading || isClientLoading) {
     return null;
   }
 
   const isAdmin = user?.role === 'admin';
   const isDoula = user?.role === 'doula';
+  const isClient = !!client;
 
   // Filter sections and items based on role
   const visible = sidebarSections
     .map((section) => {
       // Filter items based on role
       const filteredItems = section.items.filter((item: SidebarItem) => {
-        // Admin-only items - only show to admins
+        // Client-only items - only show to clients
+        if (item.clientOnly === true) {
+          return isClient;
+        }
+        // Admin-only items - only show to admins (and not clients)
         if (item.adminOnly === true) {
-          return isAdmin;
+          return isAdmin && !isClient;
         }
-        // Doula-only items - only show to doulas
+        // Doula-only items - only show to doulas (and not clients)
         if (item.doulaOnly === true) {
-          return isDoula;
+          return isDoula && !isClient;
         }
-        // Non-admin items (like Payments) - show to non-admins
+        // Non-admin items (like Payments) - show to non-admins (but not clients)
         if (item.adminOnly === false) {
-          return !isAdmin;
+          return !isAdmin && !isClient;
         }
         // Legacy admin filtering for specific items
         if (
@@ -46,10 +53,10 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           item.title === 'Customers' ||
           item.title === 'Leads'
         ) {
-          return isAdmin;
+          return isAdmin && !isClient;
         }
-        // Show all other items to everyone
-        return true;
+        // Show all other items to everyone (except clients, who should only see client-only items)
+        return !isClient;
       });
 
       // Return section with filtered items

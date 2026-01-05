@@ -19,6 +19,7 @@ export interface SidebarItem {
   icon: React.ElementType;
   adminOnly?: boolean;
   doulaOnly?: boolean;
+  clientOnly?: boolean;
 }
 
 export interface SidebarSection {
@@ -31,9 +32,15 @@ export const sidebarSections = [
     label: 'General',
     items: [
       { title: 'Dashboard', url: '/', icon: Home },
-      { title: 'Inbox', url: '/inbox', icon: Inbox },
+      { title: 'Inbox', url: '/inbox', icon: Inbox, clientOnly: false },
       { title: 'Leads', url: '/clients', icon: Search, adminOnly: true },
       { title: 'Customers', url: '/clients/new', icon: UserPlus, adminOnly: true },
+    ],
+  },
+  {
+    label: 'Client Portal',
+    items: [
+      { title: 'Dashboard', url: '/', icon: Home, clientOnly: true },
     ],
   },
   {

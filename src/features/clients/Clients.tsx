@@ -12,28 +12,35 @@ import {
   useMemo,
   useRef,
   useState,
+  useCallback,
 } from 'react';
 import type { MutableRefObject } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { columns } from './components/users-columns';
+import { PortalInviteModal } from './components/portal-invite-modal';
 import { UsersDialogs } from './components/users-dialogs';
 import { UsersTable } from './components/users-table';
 import UsersProvider from './context/users-context';
 import { TemplatesProvider } from './contexts/TemplatesContext';
-import { userListSchema, UserSummary } from './data/schema';
+import { userListSchema, UserSummary, type UserWithPortal } from './data/schema';
+import { derivePortalStatus } from './utils/portalStatus';
 
 type RouteParams = {
   clientId?: string;
 };
 
 export default function Users() {
-  const { clients, isLoading, getClients, getClientById } = useClients();
+  const { clients, isLoading, getClients, getClientById, error: clientsError } = useClients();
   const [userList, setUserList] = useState<UserSummary[]>([]);
   const { user, isLoading: userLoading } = useContext(UserContext);
   const { clientId } = useParams<RouteParams>();
   const location = useLocation();
   const [missingClientId, setMissingClientId] = useState<string | null>(null);
   const manualCloseRef = useRef(false);
+  
+  // Portal invite modal state
+  const [portalInviteModalOpen, setPortalInviteModalOpen] = useState(false);
+  const [selectedLeadForPortal, setSelectedLeadForPortal] = useState<UserSummary | null>(null);
 
   const normalizedRouteClientId = clientId ? String(clientId) : undefined;
   const isAdminClientsPath = location.pathname.startsWith('/admin/clients');
@@ -113,6 +120,204 @@ export default function Users() {
     return '/clients';
   }, [isAdminClientsPath]);
 
+  // Enhance userList with portal_status
+  const userListWithPortal = useMemo(() => {
+    return userList.map((user) => {
+      const portalStatus = derivePortalStatus(user);
+      const userWithPortal: UserWithPortal = {
+        ...user,
+        portal_status: portalStatus,
+        // Preserve existing portal fields if they exist
+        invited_at: (user as any).invited_at,
+        last_invite_sent_at: (user as any).last_invite_sent_at,
+        invite_sent_count: (user as any).invite_sent_count || 0,
+      };
+      return userWithPortal;
+    });
+  }, [userList]);
+
+  // Portal action handlers
+  const handleInviteToPortal = useCallback((lead: UserSummary) => {
+    console.log('🔔 handleInviteToPortal called with lead:', lead);
+    setSelectedLeadForPortal(lead);
+    setPortalInviteModalOpen(true);
+    console.log('🔔 Modal state set to open');
+  }, []);
+
+  const handleConfirmInvite = useCallback(async () => {
+    console.log('🔔 handleConfirmInvite called, selectedLeadForPortal:', selectedLeadForPortal);
+    if (!selectedLeadForPortal) {
+      console.error('❌ handleConfirmInvite: No lead selected');
+      return;
+    }
+
+    console.log('✅ Sending invite to:', selectedLeadForPortal.email);
+
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        toast.error('No auth token found');
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_APP_BACKEND_URL}/api/admin/clients/${selectedLeadForPortal.id}/portal/invite`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to send invite' }));
+        throw new Error(errorData.error || `Failed to send invite (${response.status})`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Invite API response:', data);
+
+      // Update local state with response data
+      setUserList((prevList) =>
+        prevList.map((user) => {
+          if (user.id === selectedLeadForPortal.id) {
+            const now = new Date().toISOString();
+            return {
+              ...user,
+              portal_status: 'invited' as const,
+              invited_at: data.invited_at || now,
+              last_invite_sent_at: data.last_invite_sent_at || now,
+              invite_sent_count: data.invite_sent_count || ((user as any).invite_sent_count || 0) + 1,
+            } as UserWithPortal;
+          }
+          return user;
+        })
+      );
+
+      toast.success(`Invite sent to ${selectedLeadForPortal.email || 'client'}`);
+      setPortalInviteModalOpen(false);
+      setSelectedLeadForPortal(null);
+    } catch (error: any) {
+      console.error('❌ Error sending invite:', error);
+      toast.error(error.message || 'Failed to send invite. Please try again.');
+    }
+  }, [selectedLeadForPortal]);
+
+  const handleResendInvite = useCallback(async (lead: UserSummary) => {
+    console.log('🔔 handleResendInvite called for:', lead.email);
+    
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        toast.error('No auth token found');
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_APP_BACKEND_URL}/api/admin/clients/${lead.id}/portal/resend`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to resend invite' }));
+        throw new Error(errorData.error || `Failed to resend invite (${response.status})`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Resend invite API response:', data);
+
+      // Update local state with response data
+      setUserList((prevList) =>
+        prevList.map((user) => {
+          if (user.id === lead.id) {
+            const now = new Date().toISOString();
+            return {
+              ...user,
+              last_invite_sent_at: data.last_invite_sent_at || now,
+              invite_sent_count: data.invite_sent_count || ((user as any).invite_sent_count || 0) + 1,
+            } as UserWithPortal;
+          }
+          return user;
+        })
+      );
+
+      toast.success(`Invite resent to ${lead.email || 'client'}`);
+    } catch (error: any) {
+      console.error('❌ Error resending invite:', error);
+      toast.error(error.message || 'Failed to resend invite. Please try again.');
+    }
+  }, []);
+
+  const handleDisablePortal = useCallback(async (lead: UserSummary) => {
+    console.log('🔔 handleDisablePortal called for:', lead.email);
+    
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        toast.error('No auth token found');
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_APP_BACKEND_URL}/api/admin/clients/${lead.id}/portal/disable`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to disable portal access' }));
+        throw new Error(errorData.error || `Failed to disable portal access (${response.status})`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Disable portal API response:', data);
+
+      // Update local state with response data
+      setUserList((prevList) =>
+        prevList.map((user) => {
+          if (user.id === lead.id) {
+            return {
+              ...user,
+              portal_status: 'disabled' as const,
+            } as UserWithPortal;
+          }
+          return user;
+        })
+      );
+
+      toast.success(`Portal access disabled for ${lead.email || 'client'}`);
+    } catch (error: any) {
+      console.error('❌ Error disabling portal access:', error);
+      toast.error(error.message || 'Failed to disable portal access. Please try again.');
+    }
+  }, []);
+
+  // Portal handlers object
+  const portalHandlers = useMemo(
+    () => ({
+      onInviteClick: handleInviteToPortal,
+      onResendInvite: handleResendInvite,
+      onDisablePortal: handleDisablePortal,
+    }),
+    [handleInviteToPortal, handleResendInvite, handleDisablePortal]
+  );
+
   // Show loading while user data is being fetched
   if (userLoading) {
     return <div className='p-8 text-center'>Loading...</div>;
@@ -150,6 +355,18 @@ export default function Users() {
             <div className='flex items-center justify-between space-y-2'>
               <h2 className='text-3xl font-bold tracking-tight'>Leads</h2>
             </div>
+            {clientsError && (
+              <div className='p-4 mb-4 bg-red-50 border border-red-200 rounded-md'>
+                <p className='text-red-800 font-semibold'>Error loading leads:</p>
+                <p className='text-red-600 text-sm'>{clientsError}</p>
+                <button
+                  onClick={() => getClients()}
+                  className='mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm'
+                >
+                  Retry
+                </button>
+              </div>
+            )}
             {isLoading ? (
               <div className='flex justify-center items-center p-12'>
                 <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900'></div>
@@ -157,8 +374,8 @@ export default function Users() {
               </div>
             ) : (
               <UsersTable
-                columns={columns(getClients)}
-                data={userList}
+                columns={columns(getClients, portalHandlers)}
+                data={userListWithPortal}
                 clients={clients}
               />
             )}
@@ -169,6 +386,12 @@ export default function Users() {
           onLeadProfileClose={() => {
             manualCloseRef.current = true;
           }}
+        />
+        <PortalInviteModal
+          open={portalInviteModalOpen}
+          onOpenChange={setPortalInviteModalOpen}
+          lead={selectedLeadForPortal}
+          onConfirm={handleConfirmInvite}
         />
       </UsersProvider>
     </TemplatesProvider>

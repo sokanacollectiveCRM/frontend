@@ -1,5 +1,7 @@
 import NavLayout from '@/common/layouts/NavLayout';
 import { AuthPublicRoutes, AuthRoutes } from '@/features/auth/AuthRoutes';
+import ClientLogin from '@/features/auth/ClientLogin';
+import SetPassword from '@/features/auth/SetPassword';
 import ClientRoutes from '@/features/clients/ClientRoutes';
 import Home from '@/features/dashboard-home/Home';
 import NotFound from '@/features/not-found/NotFound';
@@ -29,6 +31,20 @@ import StandalonePaymentPage from './pages/StandalonePaymentPage';
 
 const AppRoutes = () => (
   <Routes>
+    {/* Client Portal Auth Routes - Must be first, No Sidebar, Always Accessible */}
+    {/* These routes are completely standalone, outside all wrappers */}
+    <Route path="/auth/set-password" element={<SetPassword />} />
+    <Route path="/auth/client-login" element={<ClientLogin />} />
+
+    {/* Standalone Payment Routes - No Sidebar */}
+    {StandalonePaymentDemoRoute()}
+
+    {/* Contract Payment Page - No Sidebar, No Auth */}
+    <Route path="/payment" element={<StandalonePaymentPage />} />
+
+    {/* Contract Signed Success Page - No Sidebar, No Auth */}
+    <Route path="/contract-signed" element={<ContractSignedPage />} />
+
     <Route>
       <Route element={<NavLayout />}>
         {RequestRoutes()}

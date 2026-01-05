@@ -18,10 +18,14 @@ export default function UserAvatar({
   className,
   large = false,
 }: UserAvatarProps) {
-  const initials = fullName
+  // Handle undefined/null fullName
+  const safeFullName = fullName || '';
+  const initials = safeFullName
     .split(' ')
+    .filter((word) => word.length > 0)
     .map((word) => word[0]?.toUpperCase())
-    .join('');
+    .join('')
+    || '?';
 
   return (
     <div className={cn('flex items-center justify-center', className)}>
