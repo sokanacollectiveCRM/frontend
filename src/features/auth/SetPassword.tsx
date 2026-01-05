@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
+import { PasswordInput } from '@/common/components/form/PasswordInput';
+import { Alert, AlertDescription } from '@/common/components/ui/alert';
 import { Button } from '@/common/components/ui/button';
 import {
   Card,
@@ -9,13 +8,13 @@ import {
   CardHeader,
   CardTitle,
 } from '@/common/components/ui/card';
-import { Input } from '@/common/components/ui/input';
 import { Label } from '@/common/components/ui/label';
-import { PasswordInput } from '@/common/components/form/PasswordInput';
-import { Loader2, AlertCircle } from 'lucide-react';
-import { toast } from 'sonner';
-import { Alert, AlertDescription } from '@/common/components/ui/alert';
+import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
+import { AlertCircle, Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 export default function SetPassword() {
   const navigate = useNavigate();
@@ -41,7 +40,9 @@ export default function SetPassword() {
     if (!token) {
       setError('Invalid or missing access token. Please request a new invite.');
     } else if (type !== 'recovery') {
-      setError('Invalid invite link type. Please use the link from your email.');
+      setError(
+        'Invalid invite link type. Please use the link from your email.'
+      );
     } else {
       setAccessToken(token);
       // Supabase should automatically detect the session from the hash
@@ -110,7 +111,7 @@ export default function SetPassword() {
       // Supabase automatically detects the session from the URL hash (detectSessionInUrl: true)
       // Wait a moment for Supabase to process the hash, then get the session
       await new Promise((resolve) => setTimeout(resolve, 500));
-      
+
       const { data: sessionData, error: sessionError } =
         await supabase.auth.getSession();
 
@@ -120,7 +121,7 @@ export default function SetPassword() {
       if (sessionError) {
         throw new Error(
           sessionError.message ||
-            'Invalid or expired token. Please request a new invite.'
+          'Invalid or expired token. Please request a new invite.'
         );
       }
 
@@ -168,9 +169,12 @@ export default function SetPassword() {
       <div className='flex flex-col gap-6 max-w-md mx-auto p-4'>
         <Card>
           <CardHeader>
-            <CardTitle className='text-2xl'>Password Set Successfully!</CardTitle>
+            <CardTitle className='text-2xl'>
+              Password Set Successfully!
+            </CardTitle>
             <CardDescription>
-              Your password has been set. You can now log in to your client portal.
+              Your password has been set. You can now log in to your client
+              portal.
             </CardDescription>
           </CardHeader>
           <CardContent className='flex flex-col gap-4'>
@@ -195,8 +199,9 @@ export default function SetPassword() {
         <CardHeader>
           <CardTitle className='text-2xl'>Set Your Password</CardTitle>
           <CardDescription>
-            Create a secure password to access your client portal. This will email a
-            secure link to create a password and access the client dashboard.
+            Create a secure password to access your client portal. This will
+            email a secure link to create a password and access the client
+            dashboard.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -258,8 +263,8 @@ export default function SetPassword() {
                 disabled={isLoading || !accessToken}
                 className={cn(
                   confirmPassword &&
-                    password !== confirmPassword &&
-                    'border-destructive'
+                  password !== confirmPassword &&
+                  'border-destructive'
                 )}
               />
               {confirmPassword && password !== confirmPassword && (
@@ -276,7 +281,11 @@ export default function SetPassword() {
                 )}
             </div>
 
-            <Button type='submit' className='w-full' disabled={isLoading || !accessToken}>
+            <Button
+              type='submit'
+              className='w-full'
+              disabled={isLoading || !accessToken}
+            >
               {isLoading ? (
                 <>
                   <Loader2 className='h-4 w-4 animate-spin mr-2' />
@@ -292,7 +301,8 @@ export default function SetPassword() {
             <div className='mt-4 text-center text-sm text-muted-foreground'>
               <p>Need a new invite?</p>
               <p className='mt-1'>
-                Please contact your administrator to request a new portal invite.
+                Please contact your administrator to request a new portal
+                invite.
               </p>
             </div>
           )}
@@ -301,4 +311,3 @@ export default function SetPassword() {
     </div>
   );
 }
-
