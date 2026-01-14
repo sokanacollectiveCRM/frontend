@@ -41,6 +41,7 @@ export default function Users() {
   // Portal invite modal state
   const [portalInviteModalOpen, setPortalInviteModalOpen] = useState(false);
   const [selectedLeadForPortal, setSelectedLeadForPortal] = useState<UserSummary | null>(null);
+  const [isSendingInvite, setIsSendingInvite] = useState(false);
 
   const normalizedRouteClientId = clientId ? String(clientId) : undefined;
   const isAdminClientsPath = location.pathname.startsWith('/admin/clients');
@@ -151,12 +152,14 @@ export default function Users() {
       return;
     }
 
+    setIsSendingInvite(true);
     console.log('✅ Sending invite to:', selectedLeadForPortal.email);
 
     try {
       const token = localStorage.getItem('authToken');
       if (!token) {
         toast.error('No auth token found');
+        setIsSendingInvite(false);
         return;
       }
 
@@ -203,6 +206,8 @@ export default function Users() {
     } catch (error: any) {
       console.error('❌ Error sending invite:', error);
       toast.error(error.message || 'Failed to send invite. Please try again.');
+    } finally {
+      setIsSendingInvite(false);
     }
   }, [selectedLeadForPortal]);
 
@@ -392,6 +397,7 @@ export default function Users() {
           onOpenChange={setPortalInviteModalOpen}
           lead={selectedLeadForPortal}
           onConfirm={handleConfirmInvite}
+          isLoading={isSendingInvite}
         />
       </UsersProvider>
     </TemplatesProvider>

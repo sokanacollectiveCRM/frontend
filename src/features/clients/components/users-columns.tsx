@@ -21,7 +21,7 @@ import {
   userStatusSchema,
   type PortalStatus,
 } from '@/features/clients/data/schema';
-import { derivePortalStatus } from '@/features/clients/utils/portalStatus';
+import { derivePortalStatus, isPortalEligible } from '@/features/clients/utils/portalStatus';
 import { cn } from '@/lib/utils';
 import { ColumnDef } from '@tanstack/react-table';
 import { toast } from 'sonner';
@@ -196,10 +196,10 @@ export const columns = (
     ),
     cell: ({ row }) => {
       const lead = row.original;
-      // Use existing portal_status if available, otherwise derive it
-      const portalStatus =
-        ((lead as any).portal_status as PortalStatus) ||
-        (derivePortalStatus(lead) as PortalStatus);
+      // Get portal_status (invitation state) from backend
+      const portalStatus = derivePortalStatus(lead);
+      // Check eligibility separately (contract signed + payment succeeded)
+      const eligible = isPortalEligible(lead);
 
       const handleInviteClick = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -208,27 +208,31 @@ export const columns = (
         }
       };
 
-      switch (portalStatus) {
-        case 'not_eligible':
-          return (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Badge
-                    variant='outline'
-                    className='bg-gray-100 text-gray-700 border-gray-200'
-                  >
-                    Not eligible
-                  </Badge>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Available after contract signed + first payment completed</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
+      // If not eligible, always show "Not eligible" badge
+      if (!eligible) {
+        return (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge
+                  variant='outline'
+                  className='bg-gray-100 text-gray-700 border-gray-200'
+                >
+                  Not eligible
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Available after contract signed + first payment completed</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        );
+      }
 
-        case 'eligible':
+      // If eligible, show appropriate UI based on portal_status
+      switch (portalStatus) {
+        case 'not_invited':
+          // Eligible and not invited yet - show invite button
           return (
             <Button
               size='sm'
@@ -271,10 +275,16 @@ export const columns = (
           );
 
         default:
+          // Fallback: if portal_status is missing but eligible, show invite button
           return (
-            <Badge variant='outline' className='bg-gray-100 text-gray-700'>
-              Unknown
-            </Badge>
+            <Button
+              size='sm'
+              variant='default'
+              onClick={handleInviteClick}
+              className='h-7'
+            >
+              Invite
+            </Button>
           );
       }
     },

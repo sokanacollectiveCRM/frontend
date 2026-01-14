@@ -99,7 +99,7 @@ export default function ClientLogin() {
     setIsLoading(true);
 
     try {
-      // Sign in with Supabase Auth
+      // Sign in with Supabase Auth (same approach as admin login - just authenticate)
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -117,66 +117,13 @@ export default function ClientLogin() {
         throw new Error('No user data received. Please try again.');
       }
 
-      // Verify user role is 'client'
-      // Check user metadata first
-      const userRole = data.user.user_metadata?.role;
-
-      // If not in metadata, check database
-      if (userRole !== 'client') {
-        const { data: userData, error: dbError } = await supabase
-          .from('users')
-          .select('role')
-          .eq('id', data.user.id)
-          .single();
-
-        if (dbError || !userData) {
-          // If we can't verify role, check metadata as fallback
-          if (userRole && userRole !== 'client') {
-            await supabase.auth.signOut();
-            throw new Error(
-              'This login is for clients only. Please use the admin/doula login page.'
-            );
-          }
-        } else if (userData.role !== 'client') {
-          await supabase.auth.signOut();
-          throw new Error(
-            'This login is for clients only. Please use the admin/doula login page.'
-          );
-        }
-      }
-
-      // Check portal status (optional - if endpoint exists)
-      // This is a completely fire-and-forget check - we don't wait for it or block on it
-      // We fire it off and continue with login regardless of success/failure
-      // Only if the portal is explicitly disabled will we handle it (but not block login)
-      fetch(
-        `${import.meta.env.VITE_APP_BACKEND_URL}/api/clients/me/portal-status`,
-        {
-          headers: {
-            Authorization: `Bearer ${data.session?.access_token}`,
-          },
-        }
-      )
-        .then(async (response) => {
-          if (response.ok) {
-            const portalData = await response.json();
-            if (portalData.portal_status === 'disabled') {
-              // If portal is disabled, sign out in background (don't block login flow)
-              supabase.auth.signOut().catch(() => {});
-              // Show toast but don't throw error (login already succeeded)
-              toast.error('Your portal access has been disabled. Please contact support.');
-            }
-          }
-          // Silently ignore all other responses (404, 500, etc.) - endpoint may not exist
-        })
-        .catch(() => {
-          // Silently ignore all errors (404, network errors, etc.)
-          // This endpoint is optional and may not exist yet
-        });
-
       // Success - client is logged in via Supabase
       setError(null);
       toast.success('Welcome! Redirecting to your dashboard...');
+      
+      // Wait a moment for auth state to propagate so useClientAuth can detect the session
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
       // Redirect to home page which will show client dashboard
       navigate('/', { replace: true });
     } catch (err: any) {

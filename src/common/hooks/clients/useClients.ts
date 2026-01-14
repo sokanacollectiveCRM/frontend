@@ -65,6 +65,25 @@ export function useClients() {
           updatedAt: client.updatedAt ? new Date(client.updatedAt) : new Date(),
           // Map status from top level or user object
           status: client.status || client.user?.status || 'lead',
+          // Preserve portal-related fields (from backend or top-level)
+          portal_status: client.portal_status || client.user?.portal_status || undefined,
+          // Backend-computed eligibility field (preferred - server-side computation)
+          is_eligible: client.is_eligible !== undefined ? client.is_eligible : (client.user?.is_eligible !== undefined ? client.user.is_eligible : undefined),
+          portal_eligible: client.portal_eligible || client.user?.portal_eligible || undefined,
+          is_portal_eligible: client.is_portal_eligible || client.user?.is_portal_eligible || undefined,
+          // Preserve contract and payment data for eligibility checking
+          contracts: client.contracts || client.user?.contracts || undefined,
+          contract_status: client.contract_status || client.user?.contract_status || undefined,
+          has_signed_contract: client.has_signed_contract || client.user?.has_signed_contract || undefined,
+          payments: client.payments || client.user?.payments || undefined,
+          payment_status: client.payment_status || client.user?.payment_status || undefined,
+          has_completed_payment: client.has_completed_payment || client.user?.has_completed_payment || undefined,
+          contract_signed: client.contract_signed || client.user?.contract_signed || undefined,
+          payment_succeeded: client.payment_succeeded || client.user?.payment_succeeded || undefined,
+          // Preserve portal invite fields
+          invited_at: client.invited_at || client.user?.invited_at || undefined,
+          last_invite_sent_at: client.last_invite_sent_at || client.user?.last_invite_sent_at || undefined,
+          invite_sent_count: client.invite_sent_count || client.user?.invite_sent_count || undefined,
           // Ensure all form fields are preserved (if they exist in user object)
           preferred_contact_method: client.user?.preferred_contact_method || client.preferred_contact_method || undefined,
           preferred_name: client.user?.preferred_name || client.preferred_name || undefined,
@@ -75,12 +94,26 @@ export function useClients() {
         };
         console.log('🔍 DEBUG: Client mapping:', {
           clientId: client.id,
+          clientName: `${mappedClient.firstname} ${mappedClient.lastname}`,
           userObjectKeys: client.user ? Object.keys(client.user) : [],
           topLevelKeys: Object.keys(client),
-          hasPreferredContactInUser: !!client.user?.preferred_contact_method,
-          hasPreferredContactTopLevel: !!client.preferred_contact_method,
-          preferredContactValue: client.user?.preferred_contact_method || client.preferred_contact_method,
-          mappedPreferredContact: mappedClient.preferred_contact_method,
+          // Portal eligibility data (backend-computed is preferred)
+          is_eligible: mappedClient.is_eligible, // ← Backend-computed eligibility
+          portal_status: mappedClient.portal_status,
+          contracts: mappedClient.contracts,
+          contract_status: mappedClient.contract_status,
+          has_signed_contract: mappedClient.has_signed_contract,
+          contract_signed: mappedClient.contract_signed,
+          payments: mappedClient.payments,
+          payment_status: mappedClient.payment_status,
+          has_completed_payment: mappedClient.has_completed_payment,
+          payment_succeeded: mappedClient.payment_succeeded,
+          // Raw contract/payment data from API
+          rawIsEligible: client.is_eligible || client.user?.is_eligible,
+          rawContracts: client.contracts || client.user?.contracts,
+          rawPayments: client.payments || client.user?.payments,
+          rawContractStatus: client.contract_status || client.user?.contract_status,
+          rawPaymentStatus: client.payment_status || client.user?.payment_status,
         });
         return mappedClient;
       });

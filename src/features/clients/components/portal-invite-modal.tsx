@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from '@/common/components/ui/dialog';
 import { Button } from '@/common/components/ui/button';
+import { Loader2 } from 'lucide-react';
 import type { User } from '../data/schema';
 
 interface PortalInviteModalProps {
@@ -14,6 +15,7 @@ interface PortalInviteModalProps {
   onOpenChange: (open: boolean) => void;
   lead: User | null;
   onConfirm: () => void;
+  isLoading?: boolean;
 }
 
 export function PortalInviteModal({
@@ -21,6 +23,7 @@ export function PortalInviteModal({
   onOpenChange,
   lead,
   onConfirm,
+  isLoading = false,
 }: PortalInviteModalProps) {
   console.log('PortalInviteModal - open:', open, 'lead:', lead);
 
@@ -35,7 +38,12 @@ export function PortalInviteModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(open) => {
+      // Prevent closing while loading
+      if (!isLoading) {
+        onOpenChange(open);
+      }
+    }}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Invite client to portal</DialogTitle>
@@ -51,10 +59,23 @@ export function PortalInviteModal({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant='outline' onClick={() => onOpenChange(false)}>
+          <Button 
+            variant='outline' 
+            onClick={() => onOpenChange(false)}
+            disabled={isLoading}
+          >
             Cancel
           </Button>
-          <Button onClick={handleConfirm}>Send Invite</Button>
+          <Button onClick={handleConfirm} disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className='h-4 w-4 animate-spin mr-2' />
+                Sending...
+              </>
+            ) : (
+              'Send Invite'
+            )}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

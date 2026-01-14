@@ -26,7 +26,9 @@ export function useClientAuth() {
 
         if (session?.user) {
           const userRole = session.user.user_metadata?.role;
-          if (userRole === 'client') {
+          // If role is 'client' OR role is not set (undefined/null), treat as client
+          // This allows clients who logged in via Supabase even if role metadata isn't set
+          if (!userRole || userRole === 'client') {
             setClient({
               id: session.user.id,
               email: session.user.email || '',
@@ -35,6 +37,7 @@ export function useClientAuth() {
               role: 'client',
             });
           } else {
+            // Only set to null if role is explicitly set to something other than 'client'
             setClient(null);
           }
         } else {
@@ -56,7 +59,8 @@ export function useClientAuth() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         const userRole = session.user.user_metadata?.role;
-        if (userRole === 'client') {
+        // If role is 'client' OR role is not set (undefined/null), treat as client
+        if (!userRole || userRole === 'client') {
           setClient({
             id: session.user.id,
             email: session.user.email || '',
@@ -65,6 +69,7 @@ export function useClientAuth() {
             role: 'client',
           });
         } else {
+          // Only set to null if role is explicitly set to something other than 'client'
           setClient(null);
         }
       } else {

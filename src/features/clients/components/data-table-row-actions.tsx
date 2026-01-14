@@ -9,7 +9,7 @@ import {
 } from '@/common/components/ui/dropdown-menu';
 import { useUsers } from '@/features/clients/context/users-context';
 import { User } from '@/features/clients/data/schema';
-import { derivePortalStatus } from '@/features/clients/utils/portalStatus';
+import { derivePortalStatus, isPortalEligible } from '@/features/clients/utils/portalStatus';
 import { DotsHorizontalIcon } from '@radix-ui/react-icons';
 import { Row } from '@tanstack/react-table';
 import { Archive, Mail, Trash2, XCircle } from 'lucide-react';
@@ -31,9 +31,10 @@ export function DataTableRowActions({
 }: DataTableRowActionsProps) {
   const { setOpen, setCurrentRow } = useUsers();
   const lead = row.original;
-  // Use existing portal_status if available, otherwise derive it
-  const portalStatus =
-    ((lead as any).portal_status as string) || derivePortalStatus(lead);
+  // Get portal_status (invitation state) from backend
+  const portalStatus = derivePortalStatus(lead);
+  // Check eligibility separately (contract signed + payment succeeded)
+  const eligible = isPortalEligible(lead);
 
   const handleInviteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -56,7 +57,8 @@ export function DataTableRowActions({
     }
   };
 
-  const isInviteEnabled = portalStatus === 'eligible';
+  // Enable invite button if eligible and not yet invited/active
+  const isInviteEnabled = eligible && (portalStatus === 'not_invited' || !portalStatus);
   const isResendEnabled = portalStatus === 'invited';
   const isDisableEnabled = portalStatus === 'active';
   return (
@@ -88,16 +90,6 @@ export function DataTableRowActions({
             <DropdownMenuShortcut>
               <Archive size={16} />
             </DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={(e) => {
-              e.stopPropagation();
-              setCurrentRow(row.original);
-              setOpen('invite');
-            }}
-          >
-            Invite to CRM
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           {portalHandlers && (
