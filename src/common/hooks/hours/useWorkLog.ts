@@ -12,17 +12,11 @@ export default function useWorkLog(userId?: string) {
 
     async function fetchWorkLog() {
       try {
-        const token = localStorage.getItem('authToken');
-
-        if (!token) {
-          throw new Error('Not authenticated');
-        }
 
         const response = await fetch(
           `${import.meta.env.VITE_APP_BACKEND_URL}/users/${userId}/hours`,
           {
             headers: {
-              Authorization: `Bearer ${token}`,
             },
           }
         );

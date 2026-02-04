@@ -23,13 +23,11 @@ export function PdfPreview() {
       setIsLoading(true);
       try {
         console.log(selectedTemplateName);
-        const token = localStorage.getItem('authToken');
         const res = await fetch(
           `${import.meta.env.VITE_APP_BACKEND_URL}/contracts/templates/generate`,
           {
             method: 'POST',
             headers: {
-              Authorization: `Bearer ${token}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({

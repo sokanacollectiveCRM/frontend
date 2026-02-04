@@ -37,12 +37,10 @@ export function useDashboardStats() {
       return DUMMY_STATS;
     }
 
-    const token = localStorage.getItem('authToken');
     
     const response = await fetch(url, {
       credentials: 'include',
       headers: {
-        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     });

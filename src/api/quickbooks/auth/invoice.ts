@@ -56,8 +56,6 @@ export interface CreateInvoiceParams {
 export async function createQuickBooksInvoice(
   params: CreateInvoiceParams
 ): Promise<QuickBooksInvoiceResponse> {
-  const token = localStorage.getItem('authToken');
-  if (!token) throw new Error('Not authenticated — please log in first');
 
   return withTokenRefresh(async () => {
     // Since we're using admin-only approach, set userId to 'admin'
@@ -70,7 +68,6 @@ export async function createQuickBooksInvoice(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       credentials: 'include',
       body: JSON.stringify(requestBody),
@@ -91,14 +88,11 @@ export async function createQuickBooksInvoice(
 // export async function createQuickBooksInvoice(
 //   params: CreateInvoiceParams
 // ): Promise<QuickBooksInvoiceResponse> {
-//   const token = localStorage.getItem('authToken');
-//   if (!token) throw new Error('Not authenticated — please log in first');
 
 //   const res = await fetch(`${API_BASE}/quickbooks/invoice`, {
 //     method: 'POST',
 //     headers: {
 //       'Content-Type': 'application/json',
-//       Authorization: `Bearer ${token}`,
 //     },
 //     credentials: 'include',
 //     body: JSON.stringify(params),
@@ -115,15 +109,12 @@ export async function createQuickBooksInvoice(
  * Automatically pulls the JWT from localStorage.
  */
 export async function getQuickBooksInvoices(): Promise<any[]> {
-  const token = localStorage.getItem('authToken');
-  if (!token) throw new Error('Not authenticated — please log in first');
 
   return withTokenRefresh(async () => {
     const res = await fetch(`${API_BASE}/quickbooks/invoices`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       credentials: 'include',
     });

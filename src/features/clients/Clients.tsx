@@ -156,22 +156,21 @@ export default function Users() {
     console.log('✅ Sending invite to:', selectedLeadForPortal.email);
 
     try {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        toast.error('No auth token found');
-        setIsSendingInvite(false);
-        return;
-      }
 
+      // Get the frontend URL (production or current origin)
+      const frontendUrl = import.meta.env.VITE_APP_FRONTEND_URL || window.location.origin;
+      
       const response = await fetch(
         `${import.meta.env.VITE_APP_BACKEND_URL}/api/admin/clients/${selectedLeadForPortal.id}/portal/invite`,
         {
           method: 'POST',
           credentials: 'include',
           headers: {
-            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
+          body: JSON.stringify({
+            frontend_url: frontendUrl, // Pass frontend URL to backend
+          }),
         }
       );
 
@@ -215,11 +214,9 @@ export default function Users() {
     console.log('🔔 handleResendInvite called for:', lead.email);
     
     try {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        toast.error('No auth token found');
-        return;
-      }
+
+      // Get the frontend URL (production or current origin)
+      const frontendUrl = import.meta.env.VITE_APP_FRONTEND_URL || window.location.origin;
 
       const response = await fetch(
         `${import.meta.env.VITE_APP_BACKEND_URL}/api/admin/clients/${lead.id}/portal/resend`,
@@ -227,9 +224,11 @@ export default function Users() {
           method: 'POST',
           credentials: 'include',
           headers: {
-            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
+          body: JSON.stringify({
+            frontend_url: frontendUrl, // Pass frontend URL to backend
+          }),
         }
       );
 
@@ -267,11 +266,6 @@ export default function Users() {
     console.log('🔔 handleDisablePortal called for:', lead.email);
     
     try {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        toast.error('No auth token found');
-        return;
-      }
 
       const response = await fetch(
         `${import.meta.env.VITE_APP_BACKEND_URL}/api/admin/clients/${lead.id}/portal/disable`,
@@ -279,7 +273,6 @@ export default function Users() {
           method: 'POST',
           credentials: 'include',
           headers: {
-            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         }

@@ -56,14 +56,12 @@ export default function UsersList() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const token = localStorage.getItem('authToken');
         const baseUrl = import.meta.env.VITE_APP_BACKEND_URL;
         const response = await fetch(
           `${baseUrl}/auth/users`,
           {
             credentials: 'include',
             headers: {
-              Authorization: `Bearer ${token}`,
             },
           }
         );

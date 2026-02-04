@@ -21,14 +21,10 @@ export function useClientProfileData(
       try {
         setLoading(true);
 
-        const token = localStorage.getItem('authToken');
-        if (!token) throw new Error('Missing auth token');
-
         const res = await fetch(
           `${import.meta.env.VITE_APP_BACKEND_URL}/clients/${clientId}?detailed=true`,
           {
             headers: {
-              Authorization: `Bearer ${token}`,
             },
           }
         );

@@ -48,7 +48,6 @@ export default function ClientPaymentHistoryTab() {
           `${import.meta.env.VITE_APP_BACKEND_URL}/api/clients/me/payments`,
           {
             headers: {
-              Authorization: `Bearer ${session.access_token}`,
               'Content-Type': 'application/json',
             },
           }

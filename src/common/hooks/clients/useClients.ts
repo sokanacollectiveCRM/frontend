@@ -17,11 +17,9 @@ export function useClients() {
 
     try {
       const BASE = import.meta.env.VITE_APP_BACKEND_URL;
-      const token = localStorage.getItem('authToken');
 
       const res = await fetch(`${BASE}/clients`, {
         credentials: 'include',
-        headers: { Authorization: `Bearer ${token}` },
       });
 
       console.log('🔍 DEBUG: API Response status:', res.status);
@@ -132,7 +130,6 @@ export function useClients() {
     id: string,
     detailed = false
   ): Promise<Client | null> => {
-    const token = localStorage.getItem('authToken');
     setIsLoading(true);
     setError(null);
 
@@ -143,7 +140,6 @@ export function useClients() {
         {
           credentials: 'include',
           headers: {
-            Authorization: `Bearer ${token}`,
           },
         }
       );

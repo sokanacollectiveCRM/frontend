@@ -58,11 +58,6 @@ export default function DoulaListPage() {
     try {
       // For now, fetch from team members with role 'doula'
       // This will be replaced with actual doula API endpoint
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        toast.error('Not authenticated');
-        return;
-      }
 
       const response = await fetch(
         `${import.meta.env.VITE_APP_BACKEND_URL}/clients/team/all`,
@@ -70,7 +65,6 @@ export default function DoulaListPage() {
           method: 'GET',
           credentials: 'include',
           headers: {
-            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         }
@@ -127,12 +121,6 @@ export default function DoulaListPage() {
     e.preventDefault();
     setIsInviting(true);
     try {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        toast.error('Not authenticated');
-        return;
-      }
-
       const API_BASE =
         (import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050') + '/api';
 
@@ -141,7 +129,6 @@ export default function DoulaListPage() {
         method: 'POST',
         credentials: 'include',
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -410,4 +397,3 @@ export default function DoulaListPage() {
     </>
   );
 }
-

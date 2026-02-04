@@ -75,13 +75,7 @@ export default function DoulaDetailPage() {
 
     setIsLoading(true);
     try {
-      // For now, fetch from team members API
-      // This will be replaced with actual doula API endpoints
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        toast.error('Not authenticated');
-        return;
-      }
+      // For now, fetch from team members API (replace with real doula endpoints when available)
 
       const response = await fetch(
         `${import.meta.env.VITE_APP_BACKEND_URL}/clients/team/all`,
@@ -89,7 +83,6 @@ export default function DoulaDetailPage() {
           method: 'GET',
           credentials: 'include',
           headers: {
-            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         }
@@ -753,4 +746,3 @@ export default function DoulaDetailPage() {
     </>
   );
 }
-

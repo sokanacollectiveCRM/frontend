@@ -7,7 +7,6 @@ export default async function updateClient(
   clientId: string,
   updateData: any
 ): Promise<{ success: boolean; client?: any; error?: string }> {
-  const token = localStorage.getItem('authToken');
 
   // Debug logging
   console.log('🚨 DEBUG START - Client Update');
@@ -15,7 +14,6 @@ export default async function updateClient(
   console.log('🚨 Client ID type:', typeof clientId);
   console.log('🚨 Update Data:', updateData);
   console.log('🚨 Update Data keys:', Object.keys(updateData));
-  console.log('🚨 Auth Token:', token ? 'Present' : 'Missing');
   console.log(
     '🚨 Full request URL:',
     `${import.meta.env.VITE_APP_BACKEND_URL}/clients/${clientId}`
@@ -29,7 +27,6 @@ export default async function updateClient(
       method: 'PUT',
       credentials: 'include',
       headers: {
-        Authorization: `Bearer ${token}`,
         'Content-type': 'application/json',
       },
       body: JSON.stringify(updateData),

@@ -70,7 +70,6 @@ export function EditTemplateDialog({
             formData.append('fee', feeInput.value);
             if (file) formData.append('contract', file);
 
-            const token = localStorage.getItem('authToken');
 
             try {
               const res = await fetch(
@@ -78,7 +77,6 @@ export function EditTemplateDialog({
                 {
                   method: 'PUT',
                   headers: {
-                    Authorization: `Bearer ${token}`,
                   },
                   body: formData,
                 }

@@ -23,7 +23,6 @@ export interface CreateNoteRequest {
 }
 
 export const getClientNotes = async (clientId: string): Promise<ClientNote[]> => {
-  const token = localStorage.getItem('authToken');
   
   try {
     const response = await fetch(
@@ -32,7 +31,6 @@ export const getClientNotes = async (clientId: string): Promise<ClientNote[]> =>
         method: 'GET',
         credentials: 'include',
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       }
@@ -54,7 +52,6 @@ export const createClientNote = async (
   clientId: string,
   noteData: CreateNoteRequest
 ): Promise<ClientNote> => {
-  const token = localStorage.getItem('authToken');
   
   try {
     const response = await fetch(
@@ -63,7 +60,6 @@ export const createClientNote = async (
         method: 'POST',
         credentials: 'include',
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(noteData),

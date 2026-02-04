@@ -1,6 +1,7 @@
 import type { UserContextType } from '@/common/types/auth';
 import { User } from '@/common/types/user';
 import React, { createContext, ReactNode, useEffect, useState } from 'react';
+import { useIdleTimeout } from '@/common/hooks/auth/useIdleTimeout';
 
 export const UserContext = createContext<UserContextType>({
   user: null,
@@ -27,21 +28,34 @@ export function UserProvider({
   const buildUrl = (endpoint: string): string =>
     `${import.meta.env.VITE_APP_BACKEND_URL.replace(/\/$/, '')}${endpoint}`;
 
+  const logout = async (): Promise<void> => {
+    try {
+      const response = await fetch(buildUrl('/auth/logout'), {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Logout failed');
+      }
+
+      setUser(null);
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Logout error:', error);
+      throw error;
+    }
+  };
+
   const checkAuth = async (): Promise<boolean> => {
     setIsLoading(true);
-    const token = localStorage.getItem('authToken');
-    console.log('Token from localStorage:', token);
 
     try {
       const response = await fetch(buildUrl('/auth/me'), {
         credentials: 'include',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       });
 
       if (!response.ok) {
-        localStorage.removeItem('authToken');
         throw new Error('Auth check failed');
       }
 
@@ -74,33 +88,10 @@ export function UserProvider({
         throw new Error(data.error || 'Login failed');
       }
 
-      const { token } = await response.json();
-      console.log('Token received:', token);
-      localStorage.setItem('authToken', token);
       await checkAuth();
       return true;
     } catch (error) {
       console.error('Login error:', error);
-      throw error;
-    }
-  };
-
-  const logout = async (): Promise<void> => {
-    try {
-      const response = await fetch(buildUrl('/auth/logout'), {
-        method: 'POST',
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error('Logout failed');
-      }
-
-      setUser(null);
-      localStorage.removeItem('authToken');
-      window.location.href = '/login';
-    } catch (error) {
-      console.error('Logout error:', error);
       throw error;
     }
   };
@@ -156,7 +147,6 @@ export function UserProvider({
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({ password }),
       });
@@ -177,6 +167,9 @@ export function UserProvider({
     checkAuth();
   }, []);
 
+  // Auto-logout on inactivity with warning
+  const { showWarning, acknowledgeWarning } = useIdleTimeout(logout);
+
   const contextValue = {
     user,
     setUser,
@@ -190,6 +183,32 @@ export function UserProvider({
   };
 
   return (
-    <UserContext.Provider value={contextValue}>{children}</UserContext.Provider>
+    <UserContext.Provider value={contextValue}>
+      {children}
+      {showWarning && (
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50'>
+          <div className='bg-white text-gray-900 rounded-lg shadow-xl p-6 max-w-sm w-full space-y-4'>
+            <h2 className='text-lg font-semibold'>Session expiring soon</h2>
+            <p className='text-sm text-gray-600'>
+              Your session is about to expire due to inactivity. Click below to stay logged in.
+            </p>
+            <div className='flex justify-end gap-3'>
+              <button
+                onClick={logout}
+                className='px-3 py-2 rounded-md bg-red-600 text-white text-sm'
+              >
+                Logout now
+              </button>
+              <button
+                onClick={acknowledgeWarning}
+                className='px-3 py-2 rounded-md bg-blue-600 text-white text-sm'
+              >
+                Stay logged in
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </UserContext.Provider>
   );
 }

@@ -7,27 +7,11 @@ export default async function updateClientStatus(
   clientId: string,
   status: string
 ): Promise<{ success: boolean; client?: any; error?: string }> {
-  const token = localStorage.getItem('authToken');
 
   // Debug logging - FORCE VISIBLE
   console.log('🚨 DEBUG START - Status Update');
   console.log('🚨 Client ID:', clientId);
   console.log('🚨 New Status:', status);
-  console.log('🚨 Auth Token:', token ? 'Present' : 'Missing');
-
-  // Decode token to see user info (if it's a JWT)
-  if (token) {
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      console.log('Token Payload:', payload);
-      console.log(
-        'User ID from token:',
-        payload.userId || payload.sub || payload.id
-      );
-    } catch (e) {
-      console.log('Could not decode token payload');
-    }
-  }
 
   try {
     const response = await fetch(
@@ -36,7 +20,6 @@ export default async function updateClientStatus(
         method: 'PUT',
         credentials: 'include',
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-type': 'application/json',
         },
         body: JSON.stringify({

@@ -46,19 +46,13 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
   }, [clientId]);
 
   const loadData = async () => {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      setError('No authentication token found');
-      return;
-    }
-
     setLoading((prev) => ({ ...prev, list: true }));
     setError(null);
 
     try {
       const [doulas, assigned] = await Promise.all([
-        fetchAvailableDoulas(token),
-        fetchAssignedDoulas(clientId, token),
+        fetchAvailableDoulas(),
+        fetchAssignedDoulas(clientId),
       ]);
 
       console.log('🔍 Doula Assignment - Available doulas:', doulas);
@@ -77,12 +71,6 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
   const handleAssign = async () => {
     if (!selectedDoulaId) return;
 
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      toast.error('No authentication token found');
-      return;
-    }
-
     // Check if doula is already assigned
     const isAlreadyAssigned = assignedDoulas.some((a) => a.doulaId === selectedDoulaId);
     if (isAlreadyAssigned) {
@@ -94,13 +82,13 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
     setError(null);
 
     try {
-      await assignDoula(clientId, selectedDoulaId, token);
+      await assignDoula(clientId, selectedDoulaId);
       toast.success('Doula assigned successfully');
       setSelectedDoulaId('');
       setOpen(false); // Close popover after assignment
 
       // Refetch assigned doulas
-      const assigned = await fetchAssignedDoulas(clientId, token);
+      const assigned = await fetchAssignedDoulas(clientId);
       setAssignedDoulas(assigned);
     } catch (err) {
       console.error('Error assigning doula:', err);
@@ -113,21 +101,15 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
   };
 
   const handleRemove = async (doulaId: string) => {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      toast.error('No authentication token found');
-      return;
-    }
-
     setLoading((prev) => ({ ...prev, remove: doulaId }));
     setError(null);
 
     try {
-      await unassignDoula(clientId, doulaId, token);
+      await unassignDoula(clientId, doulaId);
       toast.success('Doula unassigned successfully');
 
       // Refetch assigned doulas
-      const assigned = await fetchAssignedDoulas(clientId, token);
+      const assigned = await fetchAssignedDoulas(clientId);
       setAssignedDoulas(assigned);
     } catch (err) {
       console.error('Error removing doula:', err);
@@ -376,4 +358,3 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
     </div>
   );
 }
-

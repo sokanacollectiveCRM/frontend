@@ -163,7 +163,6 @@ describe('useSaveUser', () => {
 
       await useSaveUser(mockUserData);
 
-      expect(mockLocalStorage.getItem).toHaveBeenCalledWith('authToken');
       expect(global.fetch).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
