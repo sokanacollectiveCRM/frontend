@@ -3,17 +3,39 @@ import {
   isSessionExpiredError,
 } from './sessionUtils';
 
+/**
+ * Columns that may not exist on backend client_info table yet.
+ * Stripping these from the payload avoids "Could not find the 'X' column in the schema cache" errors.
+ * Remove a key from this list once the backend schema includes it.
+ */
+const UNSUPPORTED_CLIENT_INFO_COLUMNS = new Set([
+  'pronouns',
+  'family_pronouns',
+]);
+
+function stripUnsupportedColumns(payload: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(payload)) {
+    if (!UNSUPPORTED_CLIENT_INFO_COLUMNS.has(key)) {
+      out[key] = value;
+    }
+  }
+  return out;
+}
+
 export default async function updateClient(
   clientId: string,
   updateData: any
 ): Promise<{ success: boolean; client?: any; error?: string }> {
 
+  const payload = stripUnsupportedColumns(
+    typeof updateData === 'object' && updateData !== null ? updateData : {}
+  );
+
   // Debug logging
   console.log('🚨 DEBUG START - Client Update');
   console.log('🚨 Client ID:', clientId);
-  console.log('🚨 Client ID type:', typeof clientId);
-  console.log('🚨 Update Data:', updateData);
-  console.log('🚨 Update Data keys:', Object.keys(updateData));
+  console.log('🚨 Update Data:', payload);
   console.log(
     '🚨 Full request URL:',
     `${import.meta.env.VITE_APP_BACKEND_URL}/clients/${clientId}`
@@ -29,7 +51,7 @@ export default async function updateClient(
       headers: {
         'Content-type': 'application/json',
       },
-      body: JSON.stringify(updateData),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
@@ -41,7 +63,7 @@ export default async function updateClient(
         console.log(
           '⚠️ Backend update succeeded but no data returned - treating as success'
         );
-        return { success: true, client: { id: clientId, ...updateData } };
+        return { success: true, client: { id: clientId, ...payload } };
       }
 
       // Check for authentication/session expiration errors

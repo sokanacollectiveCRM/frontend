@@ -114,6 +114,7 @@ export function mapClient(dto: ClientListItemDTO): Client {
 /**
  * Map a ClientDetailDTO to domain ClientDetail.
  * Canonical mode only - no legacy format handling.
+ * PHI fields are mapped only if present (undefined if omitted).
  */
 export function mapClientDetail(dto: ClientDetailDTO): ClientDetail {
   return {
@@ -131,5 +132,25 @@ export function mapClientDetail(dto: ClientDetailDTO): ClientDetail {
     requestedAt: dto.requested_at,
     updatedAt: dto.updated_at,
     isEligible: dto.is_eligible,
+    // PHI fields - pass through only if present, keep undefined if omitted
+    dueDate: dto.due_date,
+    healthHistory: dto.health_history,
+    healthNotes: dto.health_notes,
+    allergies: dto.allergies,
+    medications: dto.medications,
+    dateOfBirth: dto.date_of_birth,
+    addressLine1: dto.address_line1,
+    pregnancyNumber: dto.pregnancy_number,
+    hadPreviousPregnancies: dto.had_previous_pregnancies,
+    previousPregnanciesCount: dto.previous_pregnancies_count,
+    livingChildrenCount: dto.living_children_count,
+    pastPregnancyExperience: dto.past_pregnancy_experience,
+    babySex: dto.baby_sex,
+    babyName: dto.baby_name,
+    numberOfBabies: dto.number_of_babies,
+    raceEthnicity: dto.race_ethnicity,
+    clientAgeRange: dto.client_age_range,
+    annualIncome: dto.annual_income,
+    insurance: dto.insurance,
   };
 }

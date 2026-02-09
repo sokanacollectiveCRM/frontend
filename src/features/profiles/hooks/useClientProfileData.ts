@@ -30,8 +30,9 @@ export function useClientProfileData(
         );
 
         if (!res.ok) throw new Error('Failed to fetch client details');
-        const data = await res.json();
-        // console.log(data);
+        const raw = await res.json();
+        // Unwrap { success, data } so form gets phone_number, due_date, etc. at top level
+        const data = raw?.success && raw?.data && typeof raw.data === 'object' ? raw.data : raw;
         setClient(data);
       } catch (err: any) {
         setError(err.message || 'Unknown error');

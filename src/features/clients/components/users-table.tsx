@@ -118,9 +118,7 @@ export function UsersTable({ columns, data, clients }: DataTableProps) {
                     setCurrentRow(row.original);
                     setOpen('lead-profile');
                     const targetPath = `${basePath}/${String(row.original.id)}`;
-                    if (location.pathname !== targetPath) {
-                      navigate(targetPath);
-                    }
+                    navigate(targetPath);
                   }}
                 >
                   {row.getVisibleCells().map((cell) => (

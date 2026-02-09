@@ -81,4 +81,24 @@ export interface ClientDetail {
   requestedAt?: string;
   updatedAt?: string;
   isEligible?: boolean;
+  // PHI fields - optional, only present when authorized
+  dueDate?: string;
+  healthHistory?: string;
+  healthNotes?: string;
+  allergies?: string;
+  medications?: string;
+  dateOfBirth?: string;
+  addressLine1?: string;
+  pregnancyNumber?: number;
+  hadPreviousPregnancies?: boolean;
+  previousPregnanciesCount?: number;
+  livingChildrenCount?: number;
+  pastPregnancyExperience?: string;
+  babySex?: string;
+  babyName?: string;
+  numberOfBabies?: number;
+  raceEthnicity?: string;
+  clientAgeRange?: string;
+  annualIncome?: string;
+  insurance?: string;
 }

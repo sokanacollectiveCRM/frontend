@@ -18,6 +18,7 @@ import {
 } from '@/common/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/common/components/ui/select';
 import { Textarea } from '@/common/components/ui/textarea';
+import { useClients } from '@/common/hooks/clients/useClients';
 import { UserContext } from '@/common/contexts/UserContext';
 import updateClient from '@/common/utils/updateClient';
 import updateClientStatus from '@/common/utils/updateClientStatus';
@@ -128,7 +129,11 @@ export function LeadProfileModal({
   refreshClients,
   missingClientId,
 }: LeadProfileModalProps) {
+  if (open) {
+    console.warn('[LeadProfileModal] render (open=true)', { clientId: client?.id });
+  }
   const { user } = useContext(UserContext);
+  const { getClientById } = useClients();
   const [notes, setNotes] = useState<ClientNote[]>([]);
   const [newNote, setNewNote] = useState('');
   const [noteCategory, setNoteCategory] = useState('General');
@@ -143,12 +148,82 @@ export function LeadProfileModal({
   // Use the client data directly since it already contains the form fields
   const detailedClient = client;
 
+  // Merge Supabase (base) + Cloud Run (PHI) into one object so all fields populate.
+  // Backend may return: { data: { ...base }, phi: { phone_number, due_date, ... } } or { data: { ...base, ...phi } }.
+  const detailSource: Record<string, unknown> | null = React.useMemo(() => {
+    if (!client || typeof client !== 'object') return null;
+    const c = client as Record<string, unknown>;
+    const dataObj = c.data && typeof c.data === 'object' && !Array.isArray(c.data) ? (c.data as Record<string, unknown>) : null;
+    const base = dataObj ?? c;
+    const phi = (c.phi && typeof c.phi === 'object' && !Array.isArray(c.phi))
+      ? (c.phi as Record<string, unknown>)
+      : (dataObj?.phi && typeof dataObj.phi === 'object' && !Array.isArray(dataObj.phi))
+        ? (dataObj.phi as Record<string, unknown>)
+        : null;
+    if (phi) return { ...base, ...phi };
+    return base;
+  }, [client]);
+
+  // Log when modal is open so we can confirm component is mounted (check console for "LeadProfileModal")
+  React.useEffect(() => {
+    if (open) {
+      console.warn('[LeadProfileModal] Modal opened', { clientId: client?.id, hasClient: !!client, hasDetailSource: !!detailSource });
+    }
+  }, [open, client?.id, client, detailSource]);
+
   // Fetch notes when client changes
   React.useEffect(() => {
     if (client?.id) {
       fetchNotes();
     }
   }, [client?.id]);
+
+  // Fallback: when modal opens with list data (no phone), fetch full detail and merge into editedData
+  // so the phone number and service_needed show even if the route loader didn't run or returned late.
+  const detailFetchRef = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    if (!open) {
+      detailFetchRef.current = null;
+      return;
+    }
+    if (!client?.id || !detailSource) return;
+    const d = detailSource as Record<string, unknown>;
+    const hasPhone = !!((d.phone_number ?? d.phoneNumber) as string)?.trim();
+    if (hasPhone) return;
+    const clientId = String(client.id);
+    if (detailFetchRef.current === clientId) return;
+    detailFetchRef.current = clientId;
+    let cancelled = false;
+    getClientById(clientId)
+      .then((data) => {
+        if (cancelled || !data) return;
+        const raw = data as Record<string, unknown>;
+        const phone = (raw.phone_number ?? raw.phoneNumber ?? '') as string;
+        const service = (raw.service_needed ?? raw.serviceNeeded ?? '') as string;
+        if (!phone.trim() && !service.trim()) return;
+        setEditedData((prev) => {
+          const prevPhone = ((prev.phone_number ?? prev.phoneNumber) ?? '') as string;
+          const prevService = ((prev.service_needed ?? prev.serviceNeeded) ?? '') as string;
+          const updates: Partial<Client> = {};
+          if (phone.trim() && !prevPhone.trim()) {
+            updates.phoneNumber = phone;
+            updates.phone_number = phone;
+          }
+          if (service.trim() && !prevService.trim()) {
+            updates.serviceNeeded = service;
+            updates.service_needed = service;
+          }
+          return Object.keys(updates).length ? { ...prev, ...updates } : prev;
+        });
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) detailFetchRef.current = null;
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, client?.id, detailSource, getClientById]);
 
   const fetchNotes = async () => {
     if (!client?.id) return;
@@ -190,26 +265,58 @@ export function LeadProfileModal({
     }
   };
 
-  // Initialize edited data when client changes
+  // Build a fingerprint from key data fields so init re-runs when detail data
+  // arrives (e.g. phone_number, service_needed) — not just when the client ID changes.
+  const dataFingerprint = React.useMemo(() => {
+    if (!detailSource) return '';
+    const d = detailSource as Record<string, unknown>;
+    const clientId = (d.id ?? client?.id ?? '') as string;
+    const phone = ((d.phone_number ?? d.phoneNumber) || '') as string;
+    const service = ((d.service_needed ?? d.serviceNeeded) || '') as string;
+    const dueDate = ((d.due_date ?? d.dueDate) || '') as string;
+    return `${clientId}|${phone}|${service}|${dueDate}`;
+  }, [detailSource, client?.id]);
+
+  const lastInitFingerprintRef = React.useRef<string | null>(null);
   React.useEffect(() => {
-    if (client) {
-      console.log('Client data received:', client);
-      console.log('Preferred Contact Method:', client.preferred_contact_method);
-      console.log('ServiceNeeded field:', {
-        serviceNeeded: client.serviceNeeded,
-        service_needed: client.service_needed,
-        hasServiceNeeded: !!client.serviceNeeded,
-        hasService_needed: !!client.service_needed
-      });
-      // Spread client first, then add/override specific properties
-      const initializedData: Partial<Client> = {
-        ...client,
-        // Override with specific mappings where needed
-        service_needed: (client as any).serviceNeeded || (client as any).service_needed || '',
-      };
-      setEditedData(initializedData);
+    if (!client || !detailSource) {
+      lastInitFingerprintRef.current = null;
+      return;
     }
-  }, [client]);
+    if (lastInitFingerprintRef.current === dataFingerprint) {
+      return;
+    }
+    lastInitFingerprintRef.current = dataFingerprint;
+    const d = detailSource;
+    const get = (key: string, alt: string) => (d[key] ?? d[alt]) as string | undefined;
+    const rawPhone = get('phone_number', 'phoneNumber');
+    const phoneNumber = (rawPhone ?? '') as string;
+    // Use undefined (not '') when no phone data exists so ?? falls through correctly
+    const phone_number = rawPhone || undefined;
+    console.warn('[LeadProfileModal] phone number mapped in editedData init:', {
+      'detailSource.phone_number': d.phone_number,
+      'detailSource.phoneNumber': d.phoneNumber,
+      rawPhone,
+      phoneNumber,
+      phone_number,
+    });
+    const initializedData: Partial<Client> = {
+      ...client,
+      ...detailSource,
+      firstname: (get('firstname', 'first_name') ?? get('firstName', 'first_name') ?? '') as string,
+      lastname: (get('lastname', 'last_name') ?? get('lastName', 'last_name') ?? '') as string,
+      email: d.email as string | undefined,
+      phoneNumber,
+      phone_number,
+      due_date: get('due_date', 'dueDate'),
+      address: (get('address_line1', 'address') ?? get('addressLine1', 'address') ?? '') as string | undefined,
+      address_line1: get('address_line1', 'addressLine1'),
+      date_of_birth: get('date_of_birth', 'dateOfBirth'),
+      serviceNeeded: (get('service_needed', 'serviceNeeded') ?? '') as string,
+      service_needed: (get('service_needed', 'serviceNeeded') ?? '') as string,
+    };
+    setEditedData(initializedData);
+  }, [client, detailSource, dataFingerprint]);
 
   const toggleSection = (sectionId: string) => {
     setOpenSections(prev => {
@@ -417,6 +524,17 @@ export function LeadProfileModal({
     return String(value);
   };
 
+  // Single source for display: detailSource (merged base+phi), then client prop, then editedData.
+  const getDisplayValue = (fieldKey: string, altKey: string | null): string => {
+    const c = client as Record<string, unknown> | null;
+    const fromDetail = detailSource ? ((altKey ? detailSource[altKey] : undefined) ?? detailSource[fieldKey]) : undefined;
+    const fromClient = c ? ((altKey ? c[altKey] : undefined) ?? c[fieldKey]) : undefined;
+    const fromEdited = (altKey ? editedData[altKey] : undefined) ?? editedData[fieldKey];
+    const v = fromDetail ?? fromClient ?? fromEdited;
+    if (v === null || v === undefined) return '';
+    return String(v);
+  };
+
   const renderEditableField = (
     label: string,
     fieldKey: string,
@@ -424,14 +542,26 @@ export function LeadProfileModal({
     type: 'text' | 'email' | 'tel' | 'textarea' | 'select' | 'multiselect' | 'date' = 'text',
     options?: string[]
   ) => {
-    // Get value from editedData (which is initialized with all client data)
-    let value = editedData[fieldKey] || '';
+    const altKey = fieldKey === 'phoneNumber' ? 'phone_number' : fieldKey === 'service_needed' ? 'serviceNeeded' : null;
+    let value: string | Date = altKey !== null ? getDisplayValue(fieldKey, altKey) : (editedData[fieldKey] ?? '');
 
     // Convert Date objects to string format for non-date fields
     if (value instanceof Date && type !== 'date') {
       value = value.toISOString().split('T')[0];
     }
 
+    // Log phone number mapping to input (fieldKey 'phoneNumber', type 'tel')
+    if (fieldKey === 'phoneNumber' && type === 'tel') {
+      const inputValue = String((altKey ? (editedData[altKey] ?? editedData[fieldKey]) : editedData[fieldKey]) ?? '');
+      console.warn('[LeadProfileModal] phone number → input:', {
+        fieldKey,
+        altKey,
+        'editedData.phone_number': editedData.phone_number,
+        'editedData.phoneNumber': editedData.phoneNumber,
+        displayValue: String(value),
+        inputValue,
+      });
+    }
 
     return (
       <div className="flex items-start gap-2 py-2">
@@ -445,7 +575,11 @@ export function LeadProfileModal({
               <Textarea
                 id={fieldKey}
                 value={String(value)}
-                onChange={(e) => setEditedData(prev => ({ ...prev, [fieldKey]: e.target.value }))}
+                onChange={(e) => {
+                  const updates: Record<string, string> = { [fieldKey]: e.target.value };
+                  if (altKey) updates[altKey] = e.target.value;
+                  setEditedData(prev => ({ ...prev, ...updates }));
+                }}
                 className="mt-1"
                 rows={3}
               />
@@ -460,7 +594,9 @@ export function LeadProfileModal({
                 className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 value={String(value || '')}
                 onChange={(e) => {
-                  setEditedData(prev => ({ ...prev, [fieldKey]: e.target.value }));
+                  const updates: Record<string, string> = { [fieldKey]: e.target.value };
+                  if (altKey) updates[altKey] = e.target.value;
+                  setEditedData(prev => ({ ...prev, ...updates }));
                 }}
               >
                 <option value="">Select...</option>
@@ -561,15 +697,28 @@ export function LeadProfileModal({
               </div>
             )
           ) : (
-            isEditing ? (
+            (fieldKey === 'phoneNumber' && type === 'tel') || isEditing ? (
+              (() => {
+                const inputValue = String((altKey ? (editedData[altKey] ?? editedData[fieldKey]) : editedData[fieldKey]) ?? '');
+                if (fieldKey === 'phoneNumber') {
+                  console.warn('[LeadProfileModal] Input value (phone):', inputValue);
+                }
+                return (
               <Input
                 id={fieldKey}
                 type={type}
-                value={String(value)}
-                onChange={(e) => setEditedData(prev => ({ ...prev, [fieldKey]: e.target.value }))}
+                value={inputValue}
+                onChange={(e) => {
+                  const updates: Record<string, string> = { [fieldKey]: e.target.value };
+                  // Keep both key variants in sync so inputValue reads the latest value
+                  if (altKey) updates[altKey] = e.target.value;
+                  setEditedData(prev => ({ ...prev, ...updates }));
+                }}
                 className="mt-1"
                 placeholder="Not provided"
               />
+                );
+              })()
             ) : (
               <div className="mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm">
                 {String(value || 'Not provided')}
@@ -641,10 +790,12 @@ export function LeadProfileModal({
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
-              {client.firstname && client.lastname
-                ? `${client.firstname} ${client.lastname}`
-                : client.email || `Client ${client.id}`
-              }
+              {(() => {
+                const c = detailSource ?? (client as Record<string, unknown>);
+                const first = (c.firstname ?? c.first_name ?? c.firstName) as string;
+                const last = (c.lastname ?? c.last_name ?? c.lastName) as string;
+                return first && last ? `${first} ${last}` : (c.email || `Client ${c.id}`);
+              })()}
             </DialogTitle>
             <div className="flex items-center gap-2">
               {isEditing ? (

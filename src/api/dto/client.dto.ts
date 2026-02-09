@@ -80,4 +80,24 @@ export interface ClientDetailDTO {
   requested_at?: string;
   updated_at?: string;
   is_eligible?: boolean;
+  // PHI fields - optional, only present when authorized
+  due_date?: string;
+  health_history?: string;
+  health_notes?: string;
+  allergies?: string;
+  medications?: string;
+  date_of_birth?: string;
+  address_line1?: string;
+  pregnancy_number?: number;
+  had_previous_pregnancies?: boolean;
+  previous_pregnancies_count?: number;
+  living_children_count?: number;
+  past_pregnancy_experience?: string;
+  baby_sex?: string;
+  baby_name?: string;
+  number_of_babies?: number;
+  race_ethnicity?: string;
+  client_age_range?: string;
+  annual_income?: string;
+  insurance?: string;
 }

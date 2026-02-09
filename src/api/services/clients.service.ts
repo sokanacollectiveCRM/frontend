@@ -5,6 +5,20 @@ import type { ClientListItemDTO, ClientDetailDTO } from '../dto/client.dto';
 import type { Client, ClientDetail } from '@/domain/client';
 
 /**
+ * Normalize API response to an array of client list DTOs.
+ * Handles production responses that may return { clients: [] } or non-array data.
+ */
+function normalizeClientListResponse(raw: unknown): ClientListItemDTO[] {
+  if (Array.isArray(raw)) return raw as ClientListItemDTO[];
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    const obj = raw as Record<string, unknown>;
+    if (Array.isArray(obj.clients)) return obj.clients as ClientListItemDTO[];
+    if (Array.isArray(obj.data)) return obj.data as ClientListItemDTO[];
+  }
+  return [];
+}
+
+/**
  * Fetch all clients.
  *
  * - Legacy mode: get<unknown>() + extractClientList + map
@@ -17,8 +31,9 @@ export async function fetchClients(): Promise<Client[]> {
     const dtos = extractClientList(response);
     return dtos.map(mapClient);
   } else {
-    // Canonical: http.ts already unwrapped ApiResponse.data as ClientListItemDTO[]
-    const dtos = await get<ClientListItemDTO[]>('/clients');
+    // Canonical: unwrap may return array or object; normalize so .map never throws
+    const raw = await get<ClientListItemDTO[] | Record<string, unknown>>('/clients');
+    const dtos = normalizeClientListResponse(raw);
     return dtos.map(mapClient);
   }
 }
