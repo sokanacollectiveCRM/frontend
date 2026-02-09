@@ -1,10 +1,10 @@
 import type { UserContextType } from '@/common/types/auth';
 import { User } from '@/common/types/user';
 import React, { createContext, ReactNode, useEffect, useState } from 'react';
-import { get } from '@/api/http';
+import { get, buildUrl, fetchWithAuth } from '@/api/http';
+import { ApiError } from '@/api/errors';
 import { API_CONFIG } from '@/api/config';
 import { useIdleTimeout } from '@/common/hooks/auth/useIdleTimeout';
-import { buildUrl } from '@/api/http';
 import { supabase } from '@/lib/supabase';
 
 export const UserContext = createContext<UserContextType>({
@@ -63,8 +63,12 @@ export function UserProvider({
       const userData = await response.json();
       setUser(userData);
       return true;
-    } catch {
+    } catch (err) {
       setUser(null);
+      // Let login flow show actionable backend/network errors
+      if (err instanceof ApiError && (err.options?.code === 'NETWORK_ERROR' || err.options?.code === 'MISSING_BACKEND_URL')) {
+        throw err;
+      }
       return false;
     } finally {
       setIsLoading(false);
@@ -94,6 +98,15 @@ export function UserProvider({
       return true;
     } catch (error) {
       console.error('Login error:', error);
+      // Surface actionable message for "Failed to fetch" (Supabase or backend)
+      if (error instanceof ApiError && (error.options?.code === 'NETWORK_ERROR' || error.options?.code === 'MISSING_BACKEND_URL')) {
+        throw error;
+      }
+      if (error instanceof TypeError && (error.message === 'Failed to fetch' || error.message === 'Load failed')) {
+        throw new Error(
+          'Network error. Check: (1) Supabase URL and anon key (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY), (2) Backend URL (VITE_API_URL) and CORS / Cloud Run invoker.'
+        );
+      }
       throw error;
     }
   };
@@ -125,7 +138,7 @@ export function UserProvider({
 
   const requestPasswordReset = async (email: string): Promise<boolean> => {
     try {
-      const response = await fetch(buildUrl('/auth/reset-password'), {
+      const response = await fetchWithAuth(buildUrl('/auth/reset-password'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -153,7 +166,7 @@ export function UserProvider({
     accessToken: string
   ): Promise<boolean> => {
     try {
-      const response = await fetch(buildUrl('/auth/reset-password'), {
+      const response = await fetchWithAuth(buildUrl('/auth/reset-password'), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

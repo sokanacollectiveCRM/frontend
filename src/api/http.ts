@@ -38,6 +38,24 @@ export function buildUrl(path: string, params?: QueryParams): string {
   return url.toString();
 }
 
+/** Throw if production build is using localhost (env not set in Vercel). */
+function assertProductionBackendUrl(_path: string): void {
+  const isProductionBuild = import.meta.env.MODE === 'production';
+  const base = API_CONFIG.baseUrl;
+  const isLocalhost = base.includes('localhost') || base.startsWith('http://127.');
+  if (isProductionBuild && isLocalhost) {
+    throw new ApiError(
+      'Backend URL is not set for production. Set VITE_API_URL (or VITE_API_BASE_URL) in Vercel to your backend, e.g. https://backend-634744984887.us-central1.run.app',
+      0,
+      { code: 'MISSING_BACKEND_URL' }
+    );
+  }
+}
+
+function isNetworkError(err: unknown): err is TypeError {
+  return err instanceof TypeError && (err.message === 'Failed to fetch' || err.message === 'Load failed');
+}
+
 async function parseResponseBody(response: Response): Promise<unknown> {
   const text = await response.text();
   if (!text) return null;
@@ -64,7 +82,7 @@ function buildBaseHeaders(hasBody: boolean, fetchHeaders: HeadersInit | undefine
 }
 
 /** Resolve credentials and Authorization. Send Supabase token when available (Bearer + X-Session-Token). */
-async function getRequestAuth(): Promise<{ credentials: RequestCredentials; headers: Record<string, string> }> {
+export async function getRequestAuth(): Promise<{ credentials: RequestCredentials; headers: Record<string, string> }> {
   if (API_CONFIG.authMode === 'cookie') {
     return { credentials: 'include', headers: {} };
   }
@@ -77,19 +95,48 @@ async function getRequestAuth(): Promise<{ credentials: RequestCredentials; head
   return { credentials: 'omit', headers };
 }
 
+/**
+ * Fetch with auth applied: cookie mode sends credentials; supabase mode sends Bearer + X-Session-Token.
+ * Use for any direct fetch to the backend so session is always sent. Prefer get/post/put/del when possible.
+ */
+export async function fetchWithAuth(url: string, init?: RequestInit): Promise<Response> {
+  const auth = await getRequestAuth();
+  const headers = new Headers(init?.headers);
+  Object.entries(auth.headers).forEach(([k, v]) => headers.set(k, v));
+  return fetch(url, {
+    ...init,
+    credentials: auth.credentials,
+    headers,
+  });
+}
+
 async function requestLegacy<T>(path: string, options?: RequestOptions): Promise<T> {
+  assertProductionBackendUrl(path);
   const { params, body, ...fetchOptions } = options ?? {};
   const hasBody = body !== undefined;
   const auth = await getRequestAuth();
   const headers = { ...buildBaseHeaders(hasBody, fetchOptions.headers), ...auth.headers };
+  const url = buildUrl(path, params);
 
-  const response = await fetch(buildUrl(path, params), {
-    ...fetchOptions,
-    method: fetchOptions.method ?? 'GET',
-    credentials: auth.credentials,
-    headers,
-    body: hasBody ? JSON.stringify(body) : undefined,
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...fetchOptions,
+      method: fetchOptions.method ?? 'GET',
+      credentials: auth.credentials,
+      headers,
+      body: hasBody ? JSON.stringify(body) : undefined,
+    });
+  } catch (err) {
+    if (isNetworkError(err)) {
+      throw new ApiError(
+        `Network error: could not reach the server. Check VITE_API_URL, CORS (allow your frontend origin), and Cloud Run invoker access. URL: ${url}`,
+        0,
+        { code: 'NETWORK_ERROR' }
+      );
+    }
+    throw err;
+  }
 
   const parsed = await parseResponseBody(response);
   if (!response.ok) {
@@ -101,18 +148,32 @@ async function requestLegacy<T>(path: string, options?: RequestOptions): Promise
 }
 
 async function requestCanonical<T>(path: string, options?: RequestOptions): Promise<T> {
+  assertProductionBackendUrl(path);
   const { params, body, ...fetchOptions } = options ?? {};
   const hasBody = body !== undefined;
   const auth = await getRequestAuth();
   const headers = { ...buildBaseHeaders(hasBody, fetchOptions.headers), ...auth.headers };
+  const url = buildUrl(path, params);
 
-  const response = await fetch(buildUrl(path, params), {
-    ...fetchOptions,
-    method: fetchOptions.method ?? 'GET',
-    credentials: auth.credentials,
-    headers,
-    body: hasBody ? JSON.stringify(body) : undefined,
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...fetchOptions,
+      method: fetchOptions.method ?? 'GET',
+      credentials: auth.credentials,
+      headers,
+      body: hasBody ? JSON.stringify(body) : undefined,
+    });
+  } catch (err) {
+    if (isNetworkError(err)) {
+      throw new ApiError(
+        `Network error: could not reach the server. Check VITE_API_URL, CORS (allow your frontend origin), and Cloud Run invoker access. URL: ${url}`,
+        0,
+        { code: 'NETWORK_ERROR' }
+      );
+    }
+    throw err;
+  }
 
   const parsed = await parseResponseBody(response);
 

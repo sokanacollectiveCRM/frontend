@@ -1,9 +1,8 @@
 import { PaymentIntent, PaymentResponse, PaymentSummary } from '../types/payment';
-
-const API_BASE_URL = import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050';
+import { buildUrl, fetchWithAuth } from '@/api/http';
 
 export const fetchPaymentDetails = async (contractId: string): Promise<PaymentSummary> => {
-  const response = await fetch(`${API_BASE_URL}/api/stripe/contract/${contractId}/payment-summary`, {
+  const response = await fetchWithAuth(buildUrl(`/api/stripe/contract/${contractId}/payment-summary`), {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -20,7 +19,7 @@ export const fetchPaymentDetails = async (contractId: string): Promise<PaymentSu
 };
 
 export const createPaymentIntent = async (contractId: string): Promise<PaymentIntent> => {
-  const response = await fetch(`${API_BASE_URL}/api/stripe/contract/${contractId}/create-payment`, {
+  const response = await fetchWithAuth(buildUrl(`/api/stripe/contract/${contractId}/create-payment`), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

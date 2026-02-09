@@ -5,8 +5,8 @@ export type AuthMode = 'supabase' | 'cookie';
 function getAuthMode(): AuthMode {
   const v = import.meta.env.VITE_AUTH_MODE;
   if (v === 'supabase' || v === 'cookie') return v;
-  // Default to supabase so production sends Bearer token without requiring env var
-  return 'supabase';
+  // Default to cookie: login via backend, avoids Supabase CORS in production
+  return 'cookie';
 }
 
 export const API_CONFIG = {

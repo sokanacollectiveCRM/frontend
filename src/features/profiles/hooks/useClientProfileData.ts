@@ -1,5 +1,6 @@
 import type { Client } from '@/features/clients/data/schema';
 import { useEffect, useState } from 'react';
+import { buildUrl, fetchWithAuth } from '@/api/http';
 
 interface UseClientProfileDataResult {
   client: Client | null;
@@ -21,13 +22,7 @@ export function useClientProfileData(
       try {
         setLoading(true);
 
-        const res = await fetch(
-          `${import.meta.env.VITE_APP_BACKEND_URL}/clients/${clientId}?detailed=true`,
-          {
-            headers: {
-            },
-          }
-        );
+        const res = await fetchWithAuth(buildUrl(`/clients/${clientId}`, { detailed: true }));
 
         if (!res.ok) throw new Error('Failed to fetch client details');
         const raw = await res.json();
