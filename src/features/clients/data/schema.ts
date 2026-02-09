@@ -50,6 +50,8 @@ const userSchema = z
     id: z.union([z.string(), z.number()]).transform((val) => String(val)),
     firstName: z.string().optional(),
     lastName: z.string().optional(),
+    first_name: z.string().optional(),
+    last_name: z.string().optional(),
     firstname: z.string().optional(),
     lastname: z.string().optional(),
     email: z.string().optional(),
@@ -57,6 +59,7 @@ const userSchema = z
     phone_number: z.string().optional(),
     role: z.string().optional(),
     serviceNeeded: serviceSchema.optional(),
+    service_needed: serviceSchema.optional(),
     requestedAt: z.union([z.string(), z.date()]).transform((val) => {
       if (typeof val === 'string') {
         return new Date(val);
@@ -82,12 +85,12 @@ const userSchema = z
   })
   .transform((data) => ({
     id: data.id,
-    firstname: data.firstname || data.firstName || '',
-    lastname: data.lastname || data.lastName || '',
+    firstname: data.firstname || data.firstName || data.first_name || '',
+    lastname: data.lastname || data.lastName || data.last_name || '',
     email: data.email || '',
     phoneNumber: data.phoneNumber || data.phone_number || '',
     role: data.role || '',
-    serviceNeeded: data.serviceNeeded,
+    serviceNeeded: data.serviceNeeded ?? data.service_needed,
     requestedAt: data.requestedAt || new Date(),
     updatedAt: data.updatedAt || new Date(),
     status: data.status,

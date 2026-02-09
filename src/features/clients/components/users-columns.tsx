@@ -46,45 +46,51 @@ export const columns = (
       <DataTableColumnHeader column={column} title='Client' />
     ),
     cell: ({ row }) => {
-      const { firstname, lastname, email, id } = row.original;
+      const u = row.original as Record<string, unknown>;
+      const firstname = (u.firstname ?? u.first_name ?? u.firstName) as string | undefined;
+      const lastname = (u.lastname ?? u.last_name ?? u.lastName) as string | undefined;
+      const email = u.email as string | undefined;
+      const id = (u.id ?? '') as string;
       let displayName = '—';
 
-      // Check if names are not empty strings and have content
-      const hasValidFirstname = firstname && firstname.trim();
-      const hasValidLastname = lastname && lastname.trim();
+      const hasValidFirstname = firstname && String(firstname).trim();
+      const hasValidLastname = lastname && String(lastname).trim();
 
       if (hasValidFirstname && hasValidLastname) {
-        displayName = `${firstname.trim()} ${lastname.trim()}`;
+        displayName = `${String(firstname).trim()} ${String(lastname).trim()}`;
       } else if (hasValidFirstname) {
-        displayName = firstname.trim();
+        displayName = String(firstname).trim();
       } else if (hasValidLastname) {
-        displayName = lastname.trim();
-      } else if (email) {
-        displayName = email;
+        displayName = String(lastname).trim();
+      } else if (email && String(email).trim()) {
+        displayName = String(email).trim();
       } else {
-        displayName = `Client ${id}`;
+        displayName = id ? `Client ${id}` : '—';
       }
 
       return <LongText className='max-w-36'>{displayName}</LongText>;
     },
     filterFn: (row, _columnId, filterValue) => {
-      const { firstname, lastname, email, id } = row.original;
+      const u = row.original as Record<string, unknown>;
+      const firstname = (u.firstname ?? u.first_name ?? u.firstName) as string | undefined;
+      const lastname = (u.lastname ?? u.last_name ?? u.lastName) as string | undefined;
+      const email = u.email as string | undefined;
+      const id = (u.id ?? '') as string;
 
-      // Use the same logic as the display cell
-      const hasValidFirstname = firstname && firstname.trim();
-      const hasValidLastname = lastname && lastname.trim();
+      const hasValidFirstname = firstname && String(firstname).trim();
+      const hasValidLastname = lastname && String(lastname).trim();
 
       let displayName = '';
       if (hasValidFirstname && hasValidLastname) {
-        displayName = `${firstname.trim()} ${lastname.trim()}`;
+        displayName = `${String(firstname).trim()} ${String(lastname).trim()}`;
       } else if (hasValidFirstname) {
-        displayName = firstname.trim();
+        displayName = String(firstname).trim();
       } else if (hasValidLastname) {
-        displayName = lastname.trim();
-      } else if (email) {
-        displayName = email;
+        displayName = String(lastname).trim();
+      } else if (email && String(email).trim()) {
+        displayName = String(email).trim();
       } else {
-        displayName = `Client ${id}`;
+        displayName = id ? `Client ${id}` : '';
       }
 
       return displayName
@@ -99,10 +105,11 @@ export const columns = (
       <DataTableColumnHeader column={column} title='Contract' />
     ),
     cell: ({ row }) => {
-      const { serviceNeeded } = row.original;
+      const u = row.original as Record<string, unknown>;
+      const service = (u.service_needed ?? u.serviceNeeded ?? '') as string;
       return (
         <Badge variant='outline' className='max-w-36'>
-          {serviceNeeded}
+          {service || '—'}
         </Badge>
       );
     },
