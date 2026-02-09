@@ -296,10 +296,11 @@ export function LeadProfileModal({
     lastInitFingerprintRef.current = dataFingerprint;
     const d = detailSource;
     const get = (key: string, alt: string) => (d[key] ?? d[alt]) as string | undefined;
+    const stripRedacted = (v: unknown): string | undefined =>
+      (v === '[redacted]' || v === null || v === undefined) ? undefined : String(v);
     const rawPhone = get('phone_number', 'phoneNumber');
-    const phoneNumber = (rawPhone ?? '') as string;
-    // Use undefined (not '') when no phone data exists so ?? falls through correctly
-    const phone_number = rawPhone || undefined;
+    const phoneNumber = (stripRedacted(rawPhone) ?? '') as string;
+    const phone_number = stripRedacted(rawPhone) ?? undefined;
     console.warn('[LeadProfileModal] phone number mapped in editedData init:', {
       'detailSource.phone_number': d.phone_number,
       'detailSource.phoneNumber': d.phoneNumber,
@@ -310,9 +311,9 @@ export function LeadProfileModal({
     const initializedData: Partial<Client> = {
       ...client,
       ...detailSource,
-      firstname: (get('firstname', 'first_name') ?? get('firstName', 'first_name') ?? '') as string,
-      lastname: (get('lastname', 'last_name') ?? get('lastName', 'last_name') ?? '') as string,
-      email: d.email as string | undefined,
+      firstname: (stripRedacted(get('firstname', 'first_name') ?? get('firstName', 'first_name')) ?? '') as string,
+      lastname: (stripRedacted(get('lastname', 'last_name') ?? get('lastName', 'last_name')) ?? '') as string,
+      email: stripRedacted(d.email) as string | undefined,
       phoneNumber,
       phone_number,
       due_date: get('due_date', 'dueDate'),
@@ -562,6 +563,9 @@ export function LeadProfileModal({
       : null;
     let value: string | Date = altKey !== null ? getDisplayValue(fieldKey, altKey) : (editedData[fieldKey] ?? '');
 
+    // Never show [redacted] in the detail modal (authorized view; backend gates PHI on GET /clients/:id)
+    if (value === '[redacted]') value = '';
+
     // Convert Date objects to string format for non-date fields
     if (value instanceof Date && type !== 'date') {
       value = value.toISOString().split('T')[0];
@@ -716,7 +720,8 @@ export function LeadProfileModal({
           ) : (
             (fieldKey === 'phoneNumber' && type === 'tel') || isEditing ? (
               (() => {
-                const inputValue = String((altKey ? (editedData[altKey] ?? editedData[fieldKey]) : editedData[fieldKey]) ?? '');
+                let inputValue = String((altKey ? (editedData[altKey] ?? editedData[fieldKey]) : editedData[fieldKey]) ?? '');
+                if (inputValue === '[redacted]') inputValue = '';
                 if (fieldKey === 'phoneNumber') {
                   console.warn('[LeadProfileModal] Input value (phone):', inputValue);
                 }

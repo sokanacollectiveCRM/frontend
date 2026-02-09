@@ -2,9 +2,15 @@
  * PHI (Protected Health Information) safety for split-db architecture.
  * List views must not display PHI; detail view may only when authorized (GET /clients/:id).
  * Do not log PHI values. Do not persist PHI to localStorage/sessionStorage.
+ *
+ * IMPORTANT – Clients list (GET /clients):
+ * The backend intentionally returns first_name, last_name, and email for admins and
+ * assigned doulas. Do NOT use assertNoPhiInListRow or redactPhiForList on the
+ * clients list data in Clients.tsx. The backend controls what PHI is in the list.
+ * Using this guard there would redact allowed fields and show [redacted] in the UI.
  */
 
-/** Keys classified as PHI by backend; must not appear in list row data. */
+/** Keys classified as PHI; used only by redactPhiForList / assertNoPhiInListRow. */
 export const PHI_KEYS = [
   'phone_number',
   'phoneNumber',
@@ -58,6 +64,7 @@ export function hasPhiKeys(obj: unknown): boolean {
 /**
  * Redact PHI keys from an object for display in list context.
  * Returns a copy with PHI keys set to '[redacted]' (does not mutate; does not log values).
+ * Do NOT use on the main clients list (Clients.tsx) – backend controls list PHI.
  */
 export function redactPhiForList<T extends Record<string, unknown>>(row: T): T {
   const out = { ...row } as T;
@@ -70,8 +77,9 @@ export function redactPhiForList<T extends Record<string, unknown>>(row: T): T {
 }
 
 /**
- * Assert list row has no PHI keys. If PHI is present, redact for display and optionally report.
- * Use when rendering list rows. Does not log PHI values.
+ * Assert list row has no PHI keys. If PHI is present, redact for display.
+ * Do NOT use on the main clients list (Clients.tsx) – backend controls list PHI.
+ * Does not log PHI values.
  */
 export function assertNoPhiInListRow<T extends Record<string, unknown>>(row: T): T {
   if (hasPhiKeys(row)) return redactPhiForList(row);
