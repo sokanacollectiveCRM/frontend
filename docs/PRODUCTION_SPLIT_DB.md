@@ -2,6 +2,26 @@
 
 This doc explains how the frontend is production-ready for the split-db backend (Supabase operational + Cloud SQL PHI broker), auth modes, PHI safety, and where to set env vars.
 
+## Login flow (Supabase Auth)
+
+Staff login is handled by **Supabase Auth** when `VITE_AUTH_MODE` is `supabase` (default):
+
+- **Login:** The frontend calls `supabase.auth.signInWithPassword({ email, password })` (see `UserContext`). No backend `/auth/login` call in this mode.
+- **Env vars:** Set **`VITE_SUPABASE_URL`** and **`VITE_SUPABASE_ANON_KEY`** in Vercel (from your Supabase project URL and anon key). If these are missing, Supabase calls will fail (e.g. “failed to fetch” on Log In—check URL, key, and CORS).
+- **Session storage:** Supabase client uses `persistSession: true`, `storage: window.localStorage`, and `storageKey: 'sb-auth'` so the session survives reloads and is refreshed automatically.
+
+When `VITE_AUTH_MODE=cookie`, login uses the backend `/auth/login` endpoint with `credentials: 'include'`.
+
+## API calls to the backend
+
+After login, all requests that use the central HTTP client (`src/api/http.ts`) automatically:
+
+- **Supabase mode (default):** Send `Authorization: Bearer <token>` and `X-Session-Token: <token>` (token from `supabase.auth.getSession()`). No cookies.
+- **Cookie mode:** Send `credentials: 'include'` on every request (required for cookie-based backend auth).
+
+**Backend URL:** Set **`VITE_API_BASE_URL`**, **`VITE_API_URL`**, or **`VITE_APP_BACKEND_URL`** in Vercel to your Cloud Run URL, e.g.  
+`https://backend-634744984887.us-central1.run.app`
+
 ## Supabase session token on API requests
 
 The frontend **reads the Supabase session after sign-in** and **attaches it to all API requests** that go through the central HTTP client (`src/api/http.ts`):
@@ -73,3 +93,41 @@ Use `.env.local` (or `.env`) with `VITE_APP_BACKEND_URL=http://localhost:5050`, 
   `VITE_API_BASE_URL=https://api.example.com npm run smoke:api`
 
 No debug endpoints were added. The frontend does not read HttpOnly cookies via JavaScript.
+
+---
+
+## Quick checklist (login + API)
+
+| Item | Check |
+|------|--------|
+| Supabase URL & anon key | `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` set in Vercel for production |
+| Backend URL | `VITE_API_BASE_URL` or `VITE_API_URL` or `VITE_APP_BACKEND_URL` = e.g. `https://backend-634744984887.us-central1.run.app` |
+| Credentials / token | Supabase mode: Bearer + X-Session-Token sent by central client. Cookie mode: `credentials: 'include'` on backend calls |
+| Cloud Run | Service must allow unauthenticated (invoker) access for browser requests, or use a server-side proxy that forwards with IAM |
+| CORS | Backend must allow your frontend origin (e.g. `https://sokanacrm.vercel.app`) |
+
+### Cloud Run IAM (browser access)
+
+If Cloud Run requires IAM and does not allow unauthenticated access, browser requests will often fail with 403 or “failed to fetch”. To allow browser access:
+
+```bash
+gcloud run services add-iam-policy-binding backend \
+  --project=sokana-private-data \
+  --region=us-central1 \
+  --member="allUsers" \
+  --role="roles/run.invoker"
+```
+
+If org policy blocks `allUsers`, use a server-side proxy that authenticates to Cloud Run and forwards requests.
+
+### Debugging
+
+1. In DevTools → **Network** → enable **Preserve log**.
+2. Click **Log In** and check:
+   - Requests to `supabase.co` → Supabase Auth (login).
+   - Requests to your backend domain → API (e.g. `/clients`, `/auth/me`).
+3. Inspect status and headers:
+   - **403** → Cloud Run IAM or CORS.
+   - **CORS error** → Origin not allowed or missing credentials support.
+   - **Blocked / failed before response** → Often IAM or CORS.
+   - **“No session token provided”** → Frontend not sending Bearer; ensure `VITE_AUTH_MODE` is not `cookie` and Supabase session exists.

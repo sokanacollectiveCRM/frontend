@@ -19,9 +19,9 @@ const appEnv: AppEnv =
     ? rawAppEnv
     : 'development';
 
-/** API base URL: VITE_API_BASE_URL (prod) or VITE_APP_BACKEND_URL, no trailing slash. */
+/** API base URL: VITE_API_BASE_URL, VITE_API_URL, or VITE_APP_BACKEND_URL, no trailing slash. */
 export const apiBaseUrl = (
-  (getEnv('VITE_API_BASE_URL') ?? getEnv('VITE_APP_BACKEND_URL'))?.replace(/\/+$/, '') ||
+  (getEnv('VITE_API_BASE_URL') ?? getEnv('VITE_API_URL') ?? getEnv('VITE_APP_BACKEND_URL'))?.replace(/\/+$/, '') ||
   'http://localhost:5050'
 );
 
