@@ -7,7 +7,6 @@ export function useTemplates() {
   const [error, setError] = useState<string | null>(null);
 
   const getTemplates = async (): Promise<Template[]> => {
-    const token = localStorage.getItem('authToken');
     setIsLoading(true);
     setError(null);
 
@@ -17,7 +16,6 @@ export function useTemplates() {
         {
           credentials: 'include',
           headers: {
-            Authorization: `Bearer ${token}`,
           },
         }
       );

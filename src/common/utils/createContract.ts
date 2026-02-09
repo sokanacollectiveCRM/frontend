@@ -135,7 +135,6 @@ export async function generateContract(contractData: ContractData): Promise<Cont
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${localStorage.getItem('authToken')}`,
     },
     body: requestBody
   });
@@ -215,7 +214,6 @@ export async function calculateContractAmounts(contractInput: ContractInput): Pr
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${localStorage.getItem('authToken')}`,
     },
     body: JSON.stringify(contractInput),
   });
@@ -246,7 +244,6 @@ export async function sendContractForSignature(
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${localStorage.getItem('authToken')}`,
     },
     body: JSON.stringify({
       // Basic client info
@@ -304,7 +301,6 @@ export async function createPaymentIntent(contractId: string): Promise<PaymentIn
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${localStorage.getItem('authToken')}`,
     },
   });
 
@@ -333,7 +329,6 @@ export async function createContract({
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${localStorage.getItem('authToken')}`,
     },
     body: JSON.stringify({
       templateId: templateId,

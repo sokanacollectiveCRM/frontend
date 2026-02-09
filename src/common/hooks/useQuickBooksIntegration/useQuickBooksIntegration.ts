@@ -10,20 +10,6 @@ export function useQuickBooksConnect() {
   const [error, setError] = useState<string | null>(null);
 
   const connectQuickBooks = useCallback(async (): Promise<void> => {
-    // Get token from localStorage (stored as plain string)
-    const token = localStorage.getItem('authToken');
-
-    // Validate token exists and is not empty
-    if (!token || token.trim() === '') {
-      const msg = 'Not authenticated — no session in localStorage';
-      setError(msg);
-      toast.error(msg);
-      return;
-    }
-
-    // Trim token to remove any whitespace
-    const cleanToken = token.trim();
-
     setIsLoading(true);
     setError(null);
 
@@ -37,7 +23,6 @@ export function useQuickBooksConnect() {
         credentials: 'include', // Include session cookies
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${cleanToken}`, // Send token in Authorization header
         },
       });
 

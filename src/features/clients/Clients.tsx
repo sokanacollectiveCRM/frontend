@@ -22,6 +22,7 @@ import { UsersDialogs } from './components/users-dialogs';
 import { UsersTable } from './components/users-table';
 import UsersProvider from './context/users-context';
 import { TemplatesProvider } from './contexts/TemplatesContext';
+import { assertNoPhiInListRow } from '@/config/phi';
 import { userListSchema, UserSummary, type UserWithPortal } from './data/schema';
 import { derivePortalStatus } from './utils/portalStatus';
 
@@ -121,19 +122,18 @@ export default function Users() {
     return '/clients';
   }, [isAdminClientsPath]);
 
-  // Enhance userList with portal_status
+  // Enhance userList with portal_status; defensive PHI guard: redact any PHI keys in list rows
   const userListWithPortal = useMemo(() => {
     return userList.map((user) => {
       const portalStatus = derivePortalStatus(user);
       const userWithPortal: UserWithPortal = {
         ...user,
         portal_status: portalStatus,
-        // Preserve existing portal fields if they exist
         invited_at: (user as any).invited_at,
         last_invite_sent_at: (user as any).last_invite_sent_at,
         invite_sent_count: (user as any).invite_sent_count || 0,
       };
-      return userWithPortal;
+      return assertNoPhiInListRow(userWithPortal as Record<string, unknown>) as UserWithPortal;
     });
   }, [userList]);
 
@@ -156,22 +156,21 @@ export default function Users() {
     console.log('✅ Sending invite to:', selectedLeadForPortal.email);
 
     try {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        toast.error('No auth token found');
-        setIsSendingInvite(false);
-        return;
-      }
 
+      // Get the frontend URL (production or current origin)
+      const frontendUrl = import.meta.env.VITE_APP_FRONTEND_URL || window.location.origin;
+      
       const response = await fetch(
         `${import.meta.env.VITE_APP_BACKEND_URL}/api/admin/clients/${selectedLeadForPortal.id}/portal/invite`,
         {
           method: 'POST',
           credentials: 'include',
           headers: {
-            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
+          body: JSON.stringify({
+            frontend_url: frontendUrl, // Pass frontend URL to backend
+          }),
         }
       );
 
@@ -215,11 +214,9 @@ export default function Users() {
     console.log('🔔 handleResendInvite called for:', lead.email);
     
     try {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        toast.error('No auth token found');
-        return;
-      }
+
+      // Get the frontend URL (production or current origin)
+      const frontendUrl = import.meta.env.VITE_APP_FRONTEND_URL || window.location.origin;
 
       const response = await fetch(
         `${import.meta.env.VITE_APP_BACKEND_URL}/api/admin/clients/${lead.id}/portal/resend`,
@@ -227,9 +224,11 @@ export default function Users() {
           method: 'POST',
           credentials: 'include',
           headers: {
-            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
+          body: JSON.stringify({
+            frontend_url: frontendUrl, // Pass frontend URL to backend
+          }),
         }
       );
 
@@ -267,11 +266,6 @@ export default function Users() {
     console.log('🔔 handleDisablePortal called for:', lead.email);
     
     try {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        toast.error('No auth token found');
-        return;
-      }
 
       const response = await fetch(
         `${import.meta.env.VITE_APP_BACKEND_URL}/api/admin/clients/${lead.id}/portal/disable`,
@@ -279,7 +273,6 @@ export default function Users() {
           method: 'POST',
           credentials: 'include',
           headers: {
-            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         }
@@ -442,27 +435,8 @@ function RouteAwareLeadProfileLoader({
 
     const normalizedId = String(requestedClientId);
 
-    if (
-      open === 'lead-profile' &&
-      currentRow?.id &&
-      String(currentRow.id) === normalizedId
-    ) {
-      lastRequestedIdRef.current = normalizedId;
-      return;
-    }
-
-    const existingClient = knownClients.find((client) =>
-      matchesClientIdentifier(client as ClientIdentifier, normalizedId)
-    );
-
-    if (existingClient) {
-      setCurrentRow(ensureClientIdentifiers(existingClient, null, normalizedId));
-      setOpen('lead-profile');
-      lastRequestedIdRef.current = normalizedId;
-      setMissingClientId(null);
-      return;
-    }
-
+    // Always fetch full detail when URL has a client id so modal gets phone_number, service_needed, etc.
+    // (Avoid using list row or currentRow to skip fetch; list data may not include PHI.)
     if (attemptedRouteIdsRef.current.has(normalizedId)) {
       return;
     }
@@ -645,23 +619,73 @@ const ensureClientIdentifiers = (
   return nextClient;
 };
 
+/**
+ * Merge API detail/PHI fields (snake_case or camelCase) into the parsed result
+ * so the lead profile modal receives and displays them.
+ */
+function mergeDetailFieldsIntoResult(result: UserSummary & Record<string, any>, raw: any): UserSummary & Record<string, any> {
+  if (!raw || typeof raw !== 'object') return result;
+  return {
+    ...result,
+    // Name: support both conventions so modal title and fields work (API returns snake_case)
+    firstname: result.firstname || raw.firstname || raw.first_name || raw.firstName || '',
+    lastname: result.lastname || raw.lastname || raw.last_name || raw.lastName || '',
+    first_name: raw.first_name ?? raw.firstName ?? result.firstname,
+    last_name: raw.last_name ?? raw.lastName ?? result.lastname,
+    // PHI / detail fields: explicitly map API snake_case → UI keys so form always gets values
+    due_date: raw.due_date ?? raw.dueDate ?? result.due_date,
+    date_of_birth: raw.date_of_birth ?? raw.dateOfBirth ?? (result as any).date_of_birth,
+    address: raw.address ?? raw.address_line1 ?? raw.addressLine1 ?? (result as any).address,
+    address_line1: raw.address_line1 ?? raw.addressLine1 ?? (result as any).address_line1,
+    phoneNumber: raw.phone_number ?? raw.phoneNumber ?? result.phoneNumber ?? '',
+    phone_number: raw.phone_number ?? raw.phoneNumber ?? result.phoneNumber ?? '',
+    serviceNeeded: raw.service_needed ?? raw.serviceNeeded ?? result.serviceNeeded ?? '',
+    service_needed: raw.service_needed ?? raw.serviceNeeded ?? result.serviceNeeded ?? '',
+    health_history: raw.health_history ?? raw.healthHistory,
+    health_notes: raw.health_notes ?? raw.healthNotes,
+    allergies: raw.allergies,
+    medications: raw.medications,
+    pregnancy_number: raw.pregnancy_number ?? raw.pregnancyNumber,
+    had_previous_pregnancies: raw.had_previous_pregnancies,
+    previous_pregnancies_count: raw.previous_pregnancies_count,
+    living_children_count: raw.living_children_count,
+    past_pregnancy_experience: raw.past_pregnancy_experience,
+    baby_sex: raw.baby_sex,
+    baby_name: raw.baby_name,
+    number_of_babies: raw.number_of_babies,
+    race_ethnicity: raw.race_ethnicity,
+    client_age_range: raw.client_age_range,
+    annual_income: raw.annual_income,
+    insurance: raw.insurance,
+    portal_status: raw.portal_status,
+    invited_at: raw.invited_at,
+    last_invite_sent_at: raw.last_invite_sent_at,
+    invite_sent_count: raw.invite_sent_count,
+    requested_at: raw.requested_at,
+    updated_at: raw.updated_at,
+    is_eligible: raw.is_eligible,
+  };
+}
+
 function mapApiClientToUserSummary(
   client: any,
   fallbackId?: string
 ): UserSummary | null {
   try {
     const parsed = userListSchema.parse([client]);
-    const result = parsed[0];
-    if (fallbackId && !matchesClientIdentifier(result as ClientIdentifier, fallbackId)) {
-      return ensureClientIdentifiers(result as ClientIdentifier, client, fallbackId);
+    const result = parsed[0] as UserSummary & Record<string, any>;
+    const merged = mergeDetailFieldsIntoResult(result, client);
+    if (fallbackId && !matchesClientIdentifier(merged as ClientIdentifier, fallbackId)) {
+      return ensureClientIdentifiers(merged as ClientIdentifier, client, fallbackId);
     }
-    return result;
+    return merged;
   } catch (error) {
     console.error('Failed to parse client from API response:', error, client);
     const rawClient = client ?? {};
     if (fallbackId && !rawClient.id) {
       rawClient.id = fallbackId;
     }
-    return rawClient as UserSummary;
+    const merged = mergeDetailFieldsIntoResult(rawClient as UserSummary & Record<string, any>, rawClient);
+    return merged;
   }
 }

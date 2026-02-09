@@ -117,12 +117,6 @@ export function EditDoulaDialog({
 
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        toast.error('Not authenticated');
-        return;
-      }
-
       // Use FormData to handle file uploads
       const formDataToSend = new FormData();
       formDataToSend.append('firstname', formData.first_name);
@@ -150,7 +144,6 @@ export function EditDoulaDialog({
           method: 'PUT',
           credentials: 'include',
           headers: {
-            Authorization: `Bearer ${token}`,
             // Don't set Content-Type header - browser will set it with boundary for FormData
           },
           body: formDataToSend,
@@ -454,4 +447,3 @@ export function EditDoulaDialog({
     </Dialog>
   );
 }
-

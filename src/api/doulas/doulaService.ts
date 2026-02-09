@@ -4,14 +4,6 @@
 const API_BASE =
   (import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050') + '/api';
 
-function getAuthToken(): string {
-  const token = localStorage.getItem('authToken');
-  if (!token) {
-    throw new Error('Not authenticated — please log in first');
-  }
-  return token;
-}
-
 // ============================================
 // 1. Doula Profile Management
 // ============================================
@@ -37,10 +29,8 @@ export interface DoulaProfile {
 }
 
 export async function getDoulaProfile(): Promise<DoulaProfile> {
-  const token = getAuthToken();
   const response = await fetch(`${API_BASE}/doulas/profile`, {
     headers: {
-      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
   });
@@ -70,7 +60,6 @@ export interface UpdateProfileData {
 export async function updateDoulaProfile(
   data: UpdateProfileData
 ): Promise<DoulaProfile> {
-  const token = getAuthToken();
   
   // Log the payload being sent
   console.log('updateDoulaProfile - Sending payload:', JSON.stringify(data, null, 2));
@@ -78,7 +67,6 @@ export async function updateDoulaProfile(
   const response = await fetch(`${API_BASE}/doulas/profile`, {
     method: 'PUT',
     headers: {
-      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
     credentials: 'include', // Ensure cookies are sent
@@ -135,7 +123,6 @@ export async function uploadDocument(
   documentType: DocumentType,
   notes?: string
 ): Promise<UploadDocumentResponse> {
-  const token = getAuthToken();
 
   // Validate file size (max 10MB)
   if (file.size > 10 * 1024 * 1024) {
@@ -171,7 +158,6 @@ export async function uploadDocument(
   const response = await fetch(`${API_BASE}/doulas/documents`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${token}`,
     },
     body: formData,
   });
@@ -186,10 +172,8 @@ export async function uploadDocument(
 }
 
 export async function getDoulaDocuments(): Promise<DoulaDocument[]> {
-  const token = getAuthToken();
   const response = await fetch(`${API_BASE}/doulas/documents`, {
     headers: {
-      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
   });
@@ -224,11 +208,9 @@ export async function getDoulaDocuments(): Promise<DoulaDocument[]> {
 }
 
 export async function deleteDoulaDocument(documentId: string): Promise<void> {
-  const token = getAuthToken();
   const response = await fetch(`${API_BASE}/doulas/documents/${documentId}`, {
     method: 'DELETE',
     headers: {
-      Authorization: `Bearer ${token}`,
     },
   });
 
@@ -266,14 +248,12 @@ export interface AssignedClientDetailed extends AssignedClientLite {
 export async function getAssignedClients(
   detailed = false
 ): Promise<AssignedClientLite[] | AssignedClientDetailed[]> {
-  const token = getAuthToken();
   const url = `${API_BASE}/doulas/clients?detailed=${detailed}`;
   console.log('getAssignedClients - Calling URL:', url);
   console.log('getAssignedClients - Detailed mode:', detailed);
   
   const response = await fetch(url, {
     headers: {
-      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
   });
@@ -378,12 +358,10 @@ export async function getAssignedClientDetails(
   clientId: string,
   detailed = false
 ): Promise<AssignedClientLite | AssignedClientDetailed> {
-  const token = getAuthToken();
   const response = await fetch(
     `${API_BASE}/doulas/clients/${clientId}?detailed=${detailed}`,
     {
       headers: {
-        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     }
@@ -423,11 +401,9 @@ export interface LogHoursData {
 }
 
 export async function logHours(data: LogHoursData): Promise<HoursEntry> {
-  const token = getAuthToken();
   const response = await fetch(`${API_BASE}/doulas/hours`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(data),
@@ -442,10 +418,8 @@ export async function logHours(data: LogHoursData): Promise<HoursEntry> {
 }
 
 export async function getDoulaHours(): Promise<HoursEntry[]> {
-  const token = getAuthToken();
   const response = await fetch(`${API_BASE}/doulas/hours`, {
     headers: {
-      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
   });
@@ -486,11 +460,9 @@ export async function addClientActivity(
   clientId: string,
   data: AddActivityData
 ): Promise<ClientActivity> {
-  const token = getAuthToken();
   const response = await fetch(`${API_BASE}/doulas/clients/${clientId}/activities`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(data),
@@ -505,10 +477,8 @@ export async function addClientActivity(
 }
 
 export async function getClientActivities(clientId: string): Promise<ClientActivity[]> {
-  const token = getAuthToken();
   const response = await fetch(`${API_BASE}/doulas/clients/${clientId}/activities`, {
     headers: {
-      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
   });
@@ -573,4 +543,3 @@ export async function getClientActivities(clientId: string): Promise<ClientActiv
   console.log('getClientActivities - Normalized activities:', normalizedActivities);
   return normalizedActivities;
 }
-

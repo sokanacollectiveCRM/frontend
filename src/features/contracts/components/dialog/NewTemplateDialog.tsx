@@ -42,7 +42,6 @@ export function NewTemplateDialog({ onUploadSuccess }: Props) {
     formData.append('deposit', depositInput.value);
     formData.append('fee', feeInput.value);
 
-    const token = localStorage.getItem('authToken');
 
     try {
       const res = await fetch(
@@ -50,7 +49,6 @@ export function NewTemplateDialog({ onUploadSuccess }: Props) {
         {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${token}`,
           },
           body: formData,
         }

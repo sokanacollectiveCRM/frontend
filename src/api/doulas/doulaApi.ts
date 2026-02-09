@@ -12,14 +12,11 @@ const API_BASE =
 
 // Get all doulas (for list page)
 export async function getAllDoulas(): Promise<Doula[]> {
-  const token = localStorage.getItem('authToken');
-  if (!token) throw new Error('Not authenticated');
 
   const response = await fetch(`${API_BASE}/admin/doulas`, {
     method: 'GET',
     credentials: 'include',
     headers: {
-      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
   });
@@ -34,14 +31,11 @@ export async function getAllDoulas(): Promise<Doula[]> {
 
 // Get doula by ID (for detail page)
 export async function getDoulaById(doulaId: string): Promise<Doula> {
-  const token = localStorage.getItem('authToken');
-  if (!token) throw new Error('Not authenticated');
 
   const response = await fetch(`${API_BASE}/admin/doulas/${doulaId}`, {
     method: 'GET',
     credentials: 'include',
     headers: {
-      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
   });
@@ -58,8 +52,6 @@ export async function getDoulaById(doulaId: string): Promise<Doula> {
 export async function getAssignedClients(
   doulaId: string
 ): Promise<AssignedClient[]> {
-  const token = localStorage.getItem('authToken');
-  if (!token) throw new Error('Not authenticated');
 
   const response = await fetch(
     `${API_BASE}/admin/doulas/${doulaId}/clients`,
@@ -67,7 +59,6 @@ export async function getAssignedClients(
       method: 'GET',
       credentials: 'include',
       headers: {
-        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     }
@@ -83,14 +74,11 @@ export async function getAssignedClients(
 
 // Get visits for a doula
 export async function getDoulaVisits(doulaId: string): Promise<Visit[]> {
-  const token = localStorage.getItem('authToken');
-  if (!token) throw new Error('Not authenticated');
 
   const response = await fetch(`${API_BASE}/admin/doulas/${doulaId}/visits`, {
     method: 'GET',
     credentials: 'include',
     headers: {
-      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
   });
@@ -105,14 +93,11 @@ export async function getDoulaVisits(doulaId: string): Promise<Visit[]> {
 
 // Get notes for a doula
 export async function getDoulaNotes(doulaId: string): Promise<DoulaNote[]> {
-  const token = localStorage.getItem('authToken');
-  if (!token) throw new Error('Not authenticated');
 
   const response = await fetch(`${API_BASE}/admin/doulas/${doulaId}/notes`, {
     method: 'GET',
     credentials: 'include',
     headers: {
-      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
   });
@@ -129,8 +114,6 @@ export async function getDoulaNotes(doulaId: string): Promise<DoulaNote[]> {
 export async function getActivityLog(
   doulaId: string
 ): Promise<ActivityLog[]> {
-  const token = localStorage.getItem('authToken');
-  if (!token) throw new Error('Not authenticated');
 
   const response = await fetch(
     `${API_BASE}/admin/doulas/${doulaId}/activity`,
@@ -138,7 +121,6 @@ export async function getActivityLog(
       method: 'GET',
       credentials: 'include',
       headers: {
-        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     }
@@ -157,14 +139,11 @@ export async function updateDoula(
   doulaId: string,
   updateData: Partial<Doula>
 ): Promise<Doula> {
-  const token = localStorage.getItem('authToken');
-  if (!token) throw new Error('Not authenticated');
 
   const response = await fetch(`${API_BASE}/admin/doulas/${doulaId}`, {
     method: 'PUT',
     credentials: 'include',
     headers: {
-      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(updateData),
@@ -177,4 +156,3 @@ export async function updateDoula(
 
   return response.json();
 }
-

@@ -88,14 +88,10 @@ export default function QuickBooksConnectPage() {
 
     // Disconnect flow
     try {
-      const token = localStorage.getItem('authToken');
-      if (!token) throw new Error('Not authenticated');
-
       const res = await fetch(`${API_BASE}/quickbooks/disconnect`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
       });
       if (!res.ok) {

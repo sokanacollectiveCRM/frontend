@@ -24,7 +24,6 @@ export function isSessionExpiredError(
  */
 export function handleSessionExpiration(): void {
   // Clear the auth token
-  localStorage.removeItem('authToken');
 
   // Redirect to login page
   window.location.href = '/login';

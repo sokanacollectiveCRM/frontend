@@ -1,19 +1,15 @@
 const API_BASE =
-  import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050';
+ import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050';
 
 /**
  * Check QuickBooks connection status using the global token.
  * @returns Promise<{ connected: boolean }>
  */
 export async function getQuickBooksStatus(): Promise<{ connected: boolean }> {
-  const token = localStorage.getItem('authToken');
-  if (!token) throw new Error('Not authenticated — please log in first');
-
   const res = await fetch(`${API_BASE}/quickbooks/status`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
     },
     credentials: 'include',
   });
@@ -33,14 +29,10 @@ export async function getQuickBooksStatus(): Promise<{ connected: boolean }> {
 export async function refreshQuickBooksToken(): Promise<{
   connected: boolean;
 }> {
-  const token = localStorage.getItem('authToken');
-  if (!token) throw new Error('Not authenticated — please log in first');
-
   const res = await fetch(`${API_BASE}/quickbooks/refresh`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
     },
     credentials: 'include',
   });

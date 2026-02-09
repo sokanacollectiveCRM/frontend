@@ -80,19 +80,12 @@ export default function Teams() {
     //function to fetch all team members
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        console.error('No auth token found');
-        return;
-      }
-
       const response = await fetch(
         `${import.meta.env.VITE_APP_BACKEND_URL}/clients/team/all`,
         {
           method: 'GET',
           credentials: 'include',
           headers: {
-            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         }
@@ -180,12 +173,6 @@ export default function Teams() {
       return;
     }
 
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      toast.error('No auth token found. Please log in again.');
-      return;
-    }
-
     setIsUpdating(true);
     try {
       const response = await fetch(
@@ -194,7 +181,6 @@ export default function Teams() {
           method: 'PUT',
           credentials: 'include',
           headers: {
-            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -240,12 +226,6 @@ export default function Teams() {
   const deleteMember = async () => {
     if (!memberToDelete || isDeleting) return;
 
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      toast.error('No auth token found. Please log in again.');
-      return;
-    }
-
     setIsDeleting(true);
     const abortController = new AbortController();
     const timeoutId = setTimeout(() => abortController.abort(), 30000); // 30 second timeout
@@ -257,7 +237,6 @@ export default function Teams() {
           method: 'DELETE',
           credentials: 'include',
           headers: {
-            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
           signal: abortController.signal,
@@ -384,13 +363,6 @@ export default function Teams() {
 
     setIsInviting(true);
     try {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        toast.error('No auth token found');
-        setIsInviting(false);
-        return;
-      }
-
       const response = await fetch(
         `${import.meta.env.VITE_APP_BACKEND_URL}/clients/team/add`,
         {
@@ -398,7 +370,6 @@ export default function Teams() {
           method: 'POST',
           credentials: 'include',
           headers: {
-            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -424,7 +395,6 @@ export default function Teams() {
           method: 'POST',
           credentials: 'include',
           headers: {
-            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({

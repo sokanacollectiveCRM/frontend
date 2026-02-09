@@ -11,18 +11,12 @@ export default async function addWorkSession(
 
   async function addSession() {
     try {
-      const token = localStorage.getItem('authToken');
-
-      if (!token) {
-        throw new Error('Not authenticated');
-      }
 
       const response = await fetch(
         `${import.meta.env.VITE_APP_BACKEND_URL}/users/${doula_id}/addhours`,
         {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({

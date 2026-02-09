@@ -16,14 +16,12 @@ export function UsersPrimaryButtons({
   const [isEnhancedContractDialogOpen, setIsEnhancedContractDialogOpen] = useState(false);
 
   const fetchCSV = async () => {
-    const token = localStorage.getItem('authToken');
     const baseUrl =
       import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050';
     try {
       const data = await fetch(`${baseUrl}/clients/fetchCSV`, {
         credentials: 'include',
         headers: {
-          Authorization: `Bearer ${token}`,
         },
       });
 

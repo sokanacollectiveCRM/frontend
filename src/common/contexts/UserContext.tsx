@@ -1,6 +1,11 @@
 import type { UserContextType } from '@/common/types/auth';
 import { User } from '@/common/types/user';
 import React, { createContext, ReactNode, useEffect, useState } from 'react';
+import { get } from '@/api/http';
+import { API_CONFIG } from '@/api/config';
+import { useIdleTimeout } from '@/common/hooks/auth/useIdleTimeout';
+import { buildUrl } from '@/api/http';
+import { supabase } from '@/lib/supabase';
 
 export const UserContext = createContext<UserContextType>({
   user: null,
@@ -24,33 +29,41 @@ export function UserProvider({
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const buildUrl = (endpoint: string): string =>
-    `${import.meta.env.VITE_APP_BACKEND_URL.replace(/\/$/, '')}${endpoint}`;
+  const logout = async (): Promise<void> => {
+    try {
+      if (API_CONFIG.authMode === 'supabase') {
+        await supabase.auth.signOut();
+      }
+      const response = await fetch(buildUrl('/auth/logout'), {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Logout failed');
+      setUser(null);
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Logout error:', error);
+      setUser(null);
+      window.location.href = '/login';
+    }
+  };
 
   const checkAuth = async (): Promise<boolean> => {
     setIsLoading(true);
-    const token = localStorage.getItem('authToken');
-    console.log('Token from localStorage:', token);
-
     try {
+      if (API_CONFIG.authMode === 'supabase') {
+        const userData = await get<User>('/auth/me');
+        setUser(userData);
+        return true;
+      }
       const response = await fetch(buildUrl('/auth/me'), {
         credentials: 'include',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       });
-
-      if (!response.ok) {
-        localStorage.removeItem('authToken');
-        throw new Error('Auth check failed');
-      }
-
+      if (!response.ok) throw new Error('Auth check failed');
       const userData = await response.json();
-      console.log('User data:', userData);
       setUser(userData);
       return true;
-    } catch (error) {
-      console.error('Auth check error:', error);
+    } catch {
       setUser(null);
       return false;
     } finally {
@@ -60,23 +73,23 @@ export function UserProvider({
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
+      if (API_CONFIG.authMode === 'supabase') {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw new Error(error.message);
+        if (!data.session) throw new Error('No session after sign in');
+        await checkAuth();
+        return true;
+      }
       const response = await fetch(buildUrl('/auth/login'), {
         method: 'POST',
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.error || 'Login failed');
       }
-
-      const { token } = await response.json();
-      console.log('Token received:', token);
-      localStorage.setItem('authToken', token);
       await checkAuth();
       return true;
     } catch (error) {
@@ -85,28 +98,16 @@ export function UserProvider({
     }
   };
 
-  const logout = async (): Promise<void> => {
-    try {
-      const response = await fetch(buildUrl('/auth/logout'), {
-        method: 'POST',
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error('Logout failed');
-      }
-
-      setUser(null);
-      localStorage.removeItem('authToken');
-      window.location.href = '/login';
-    } catch (error) {
-      console.error('Logout error:', error);
-      throw error;
-    }
-  };
-
   const googleAuth = async (): Promise<void> => {
     try {
+      const opts = API_CONFIG.authMode === 'supabase'
+        ? { redirectTo: `${window.location.origin}/auth/callback` }
+        : {};
+      if (API_CONFIG.authMode === 'supabase') {
+        const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: opts });
+        if (error) throw new Error(error.message);
+        return;
+      }
       const response = await fetch(buildUrl('/auth/google'), {
         credentials: 'include',
       });
@@ -156,7 +157,6 @@ export function UserProvider({
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({ password }),
       });
@@ -177,6 +177,9 @@ export function UserProvider({
     checkAuth();
   }, []);
 
+  // Auto-logout on inactivity with warning
+  const { showWarning, acknowledgeWarning } = useIdleTimeout(logout);
+
   const contextValue = {
     user,
     setUser,
@@ -190,6 +193,32 @@ export function UserProvider({
   };
 
   return (
-    <UserContext.Provider value={contextValue}>{children}</UserContext.Provider>
+    <UserContext.Provider value={contextValue}>
+      {children}
+      {showWarning && (
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50'>
+          <div className='bg-white text-gray-900 rounded-lg shadow-xl p-6 max-w-sm w-full space-y-4'>
+            <h2 className='text-lg font-semibold'>Session expiring soon</h2>
+            <p className='text-sm text-gray-600'>
+              Your session is about to expire due to inactivity. Click below to stay logged in.
+            </p>
+            <div className='flex justify-end gap-3'>
+              <button
+                onClick={logout}
+                className='px-3 py-2 rounded-md bg-red-600 text-white text-sm'
+              >
+                Logout now
+              </button>
+              <button
+                onClick={acknowledgeWarning}
+                className='px-3 py-2 rounded-md bg-blue-600 text-white text-sm'
+              >
+                Stay logged in
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </UserContext.Provider>
   );
 }

@@ -30,7 +30,6 @@ export function DeleteTemplateDialog({ templateName, onDelete }: Props) {
   const handleDelete = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('authToken');
       const baseUrl =
         import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050';
       const res = await fetch(
@@ -38,7 +37,6 @@ export function DeleteTemplateDialog({ templateName, onDelete }: Props) {
         {
           method: 'DELETE',
           headers: {
-            Authorization: `Bearer ${token}`,
           },
         }
       );

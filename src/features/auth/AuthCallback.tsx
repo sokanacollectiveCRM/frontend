@@ -48,8 +48,6 @@ export default function AuthCallback() {
           throw new Error(error.error || 'Authentication failed');
         }
 
-        localStorage.setItem('authToken', access_token);
-
         await new Promise((resolve) => setTimeout(resolve, 100));
 
         const authSuccess = await checkAuth();

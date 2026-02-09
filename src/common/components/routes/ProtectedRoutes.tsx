@@ -10,7 +10,7 @@ export function PrivateRoute() {
   // Allow access if either backend user (admin/doula) or Supabase client is authenticated
   // Show loading state while checking auth - this prevents redirecting clients who just logged in
   if (isLoading || isClientLoading) {
-    return <Outlet />;
+    return <div className='p-6 text-center'>Loading session…</div>;
   }
 
   // Allow access if user has backend auth OR client has Supabase auth

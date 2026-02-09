@@ -21,21 +21,18 @@ export function useClientProfileData(
       try {
         setLoading(true);
 
-        const token = localStorage.getItem('authToken');
-        if (!token) throw new Error('Missing auth token');
-
         const res = await fetch(
           `${import.meta.env.VITE_APP_BACKEND_URL}/clients/${clientId}?detailed=true`,
           {
             headers: {
-              Authorization: `Bearer ${token}`,
             },
           }
         );
 
         if (!res.ok) throw new Error('Failed to fetch client details');
-        const data = await res.json();
-        // console.log(data);
+        const raw = await res.json();
+        // Unwrap { success, data } so form gets phone_number, due_date, etc. at top level
+        const data = raw?.success && raw?.data && typeof raw.data === 'object' ? raw.data : raw;
         setClient(data);
       } catch (err: any) {
         setError(err.message || 'Unknown error');

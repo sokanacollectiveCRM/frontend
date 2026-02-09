@@ -23,15 +23,12 @@ export interface InvoiceableCustomer {
 export async function createQuickBooksCustomer(
   params: CreateCustomerParams
 ): Promise<{ qbCustomerId: string }> {
-  const token = localStorage.getItem('authToken');
-  if (!token) throw new Error('Not authenticated — please log in first');
 
   return withTokenRefresh(async () => {
     const res = await fetch(`${API_BASE}/quickbooks/customer`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       credentials: 'include',
       body: JSON.stringify(params),
@@ -51,15 +48,12 @@ export async function createQuickBooksCustomer(
 export async function getInvoiceableCustomers(): Promise<
   InvoiceableCustomer[]
 > {
-  const token = localStorage.getItem('authToken');
-  if (!token) throw new Error('Not authenticated — please log in first');
 
   return withTokenRefresh(async () => {
     const res = await fetch(`${API_BASE}/quickbooks/customers/invoiceable`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       credentials: 'include',
     });
@@ -95,8 +89,6 @@ export interface QuickBooksCustomer {
 export async function getQuickBooksCustomers(
   maxResults?: number
 ): Promise<QuickBooksCustomer[]> {
-  const token = localStorage.getItem('authToken');
-  if (!token) throw new Error('Not authenticated — please log in first');
 
   return withTokenRefresh(async () => {
     const url = maxResults
@@ -107,7 +99,6 @@ export async function getQuickBooksCustomers(
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       credentials: 'include',
     });

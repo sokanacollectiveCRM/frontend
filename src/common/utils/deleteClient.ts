@@ -6,13 +6,11 @@ import {
 export default async function deleteClient(
   clientId: string
 ): Promise<{ success: boolean; error?: string }> {
-  const token = localStorage.getItem('authToken');
 
   // Debug logging
   console.log('🚨 DEBUG START - Client Delete');
   console.log('🚨 Client ID:', clientId);
   console.log('🚨 Client ID type:', typeof clientId);
-  console.log('🚨 Auth Token:', token ? 'Present' : 'Missing');
   console.log(
     '🚨 Full request URL:',
     `${import.meta.env.VITE_APP_BACKEND_URL}/clients/delete`
@@ -27,7 +25,6 @@ export default async function deleteClient(
       method: 'DELETE',
       credentials: 'include',
       headers: {
-        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ id: clientId }),

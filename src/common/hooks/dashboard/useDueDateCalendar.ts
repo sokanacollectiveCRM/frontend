@@ -100,12 +100,10 @@ export function useDueDateCalendar() {
       return { events: DUMMY_EVENTS };
     }
 
-    const token = localStorage.getItem('authToken');
     
     const response = await fetch(url, {
       credentials: 'include',
       headers: {
-        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     });

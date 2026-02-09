@@ -23,7 +23,7 @@ const getBaseUrl = (): string => {
 /**
  * Fetch all available doulas (team members with doula role)
  */
-export const fetchAvailableDoulas = async (token: string): Promise<Doula[]> => {
+export const fetchAvailableDoulas = async (): Promise<Doula[]> => {
   const url = `${getBaseUrl()}/clients/team/doulas`;
   console.log('🔍 API: Fetching available doulas from:', url);
   
@@ -31,7 +31,6 @@ export const fetchAvailableDoulas = async (token: string): Promise<Doula[]> => {
     method: 'GET',
     credentials: 'include',
     headers: {
-      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
   });
@@ -52,7 +51,7 @@ export const fetchAvailableDoulas = async (token: string): Promise<Doula[]> => {
 /**
  * Fetch doulas assigned to a specific client
  */
-export const fetchAssignedDoulas = async (clientId: string, token: string): Promise<AssignedDoula[]> => {
+export const fetchAssignedDoulas = async (clientId: string): Promise<AssignedDoula[]> => {
   const url = `${getBaseUrl()}/clients/${clientId}/assigned-doulas`;
   console.log('🔍 API: Fetching assigned doulas from:', url);
   
@@ -60,7 +59,6 @@ export const fetchAssignedDoulas = async (clientId: string, token: string): Prom
     method: 'GET',
     credentials: 'include',
     headers: {
-      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
   });
@@ -81,13 +79,12 @@ export const fetchAssignedDoulas = async (clientId: string, token: string): Prom
 /**
  * Assign a doula to a client
  */
-export const assignDoula = async (clientId: string, doulaId: string, token: string): Promise<void> => {
+export const assignDoula = async (clientId: string, doulaId: string): Promise<void> => {
   const response = await fetch(`${getBaseUrl()}/clients/${clientId}/assign-doula`, {
     method: 'POST',
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ doulaId }),
   });
@@ -101,12 +98,11 @@ export const assignDoula = async (clientId: string, doulaId: string, token: stri
 /**
  * Unassign a doula from a client
  */
-export const unassignDoula = async (clientId: string, doulaId: string, token: string): Promise<void> => {
+export const unassignDoula = async (clientId: string, doulaId: string): Promise<void> => {
   const response = await fetch(`${getBaseUrl()}/clients/${clientId}/assign-doula/${doulaId}`, {
     method: 'DELETE',
     credentials: 'include',
     headers: {
-      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
   });
@@ -115,4 +111,3 @@ export const unassignDoula = async (clientId: string, doulaId: string, token: st
     throw new Error(`Failed to unassign doula: ${response.status}`);
   }
 };
-

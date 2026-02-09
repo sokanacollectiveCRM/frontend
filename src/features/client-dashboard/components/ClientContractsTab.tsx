@@ -49,7 +49,6 @@ export default function ClientContractsTab() {
           `${import.meta.env.VITE_APP_BACKEND_URL}/api/clients/me/contracts`,
           {
             headers: {
-              Authorization: `Bearer ${session.access_token}`,
               'Content-Type': 'application/json',
             },
           }

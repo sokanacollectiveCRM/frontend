@@ -17,17 +17,11 @@ export default function useUserData(userId: string) {
       setError(null);
 
       try {
-        const token = localStorage.getItem('authToken');
-
-        if (!token) {
-          throw new Error('Not authenticated');
-        }
 
         const response = await fetch(
           `${import.meta.env.VITE_APP_BACKEND_URL}/users/${userId}`,
           {
             headers: {
-              Authorization: `Bearer ${token}`,
               'Content-Type': 'application/json',
             },
           }

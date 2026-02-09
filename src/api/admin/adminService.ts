@@ -2,14 +2,6 @@
 const API_BASE =
   (import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050') + '/api';
 
-function getAuthToken(): string {
-  const token = localStorage.getItem('authToken');
-  if (!token) {
-    throw new Error('Not authenticated — please log in first');
-  }
-  return token;
-}
-
 export interface MatchingClient {
   id: string;
   name: string;
@@ -58,10 +50,9 @@ export interface MatchingClientsResponse {
  * Get clients in matching phase
  */
 export async function getMatchingClients(): Promise<MatchingClientsResponse> {
-  const token = getAuthToken();
   const response = await fetch(`${API_BASE}/admin/clients/matching`, {
+    credentials: 'include',
     headers: {
-      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
   });
@@ -96,11 +87,10 @@ export async function matchDoulaWithClient(
   doulaId: string,
   notes?: string
 ): Promise<MatchAssignmentResponse> {
-  const token = getAuthToken();
   const response = await fetch(`${API_BASE}/admin/assignments/match`, {
     method: 'POST',
+    credentials: 'include',
     headers: {
-      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -119,4 +109,3 @@ export async function matchDoulaWithClient(
 
   return response.json();
 }
-
