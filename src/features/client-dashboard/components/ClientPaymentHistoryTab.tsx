@@ -4,6 +4,7 @@ import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
 import { toast } from 'sonner';
 import { useClientAuth } from '@/common/hooks/auth/useClientAuth';
 import { supabase } from '@/lib/supabase';
+import { buildUrl, fetchWithAuth } from '@/api/http';
 import { CreditCard, Calendar, DollarSign, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -44,14 +45,11 @@ export default function ClientPaymentHistoryTab() {
       // TODO: Replace with actual client payment history API endpoint
       // Example: GET /api/clients/me/payments
       try {
-        const response = await fetch(
-          `${import.meta.env.VITE_APP_BACKEND_URL}/api/clients/me/payments`,
-          {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          }
-        );
+        const response = await fetchWithAuth(buildUrl('/api/clients/me/payments'), {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
 
         if (response.ok) {
           const data = await response.json();

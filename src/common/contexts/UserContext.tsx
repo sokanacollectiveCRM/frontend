@@ -1,7 +1,7 @@
 import type { UserContextType } from '@/common/types/auth';
 import { User } from '@/common/types/user';
 import React, { createContext, ReactNode, useEffect, useState } from 'react';
-import { get, buildUrl } from '@/api/http';
+import { get, buildUrl, fetchWithAuth } from '@/api/http';
 import { ApiError } from '@/api/errors';
 import { API_CONFIG } from '@/api/config';
 import { useIdleTimeout } from '@/common/hooks/auth/useIdleTimeout';
@@ -138,7 +138,7 @@ export function UserProvider({
 
   const requestPasswordReset = async (email: string): Promise<boolean> => {
     try {
-      const response = await fetch(buildUrl('/auth/reset-password'), {
+      const response = await fetchWithAuth(buildUrl('/auth/reset-password'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -166,7 +166,7 @@ export function UserProvider({
     accessToken: string
   ): Promise<boolean> => {
     try {
-      const response = await fetch(buildUrl('/auth/reset-password'), {
+      const response = await fetchWithAuth(buildUrl('/auth/reset-password'), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

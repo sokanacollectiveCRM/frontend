@@ -1,4 +1,5 @@
 import { Client } from '@/features/clients/data/schema';
+import { buildUrl, fetchWithAuth } from '@/api/http';
 
 // New contract generation API interfaces
 export interface ServiceSelectionData {
@@ -131,7 +132,7 @@ export async function generateContract(contractData: ContractData): Promise<Cont
   console.log('- Request body includes hourlyRate:', requestBody.includes('hourlyRate'));
   console.log('- Request body includes overnightFee:', requestBody.includes('overnightFee'));
   
-  const response = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL}/api/contract-signing/generate-contract`, {
+  const response = await fetchWithAuth(buildUrl('/api/contract-signing/generate-contract'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -210,7 +211,7 @@ export async function calculateContractAmounts(contractInput: ContractInput): Pr
   console.log('🔍 Sending to backend:', contractInput);
   console.log('🔍 Backend URL:', `${import.meta.env.VITE_APP_BACKEND_URL}/api/contract/postpartum/calculate`);
   
-  const res = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL}/api/contract/postpartum/calculate`, {
+  const res = await fetchWithAuth(buildUrl('/api/contract/postpartum/calculate'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -240,7 +241,7 @@ export async function sendContractForSignature(
     throw new Error('Failed to calculate contract amounts before sending');
   }
 
-  const res = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL}/api/contract-signing/generate-contract`, {
+  const res = await fetchWithAuth(buildUrl('/api/contract-signing/generate-contract'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -297,7 +298,7 @@ export async function sendContractForSignature(
 
 // Create payment intent after contract signing
 export async function createPaymentIntent(contractId: string): Promise<PaymentIntentResponse> {
-  const res = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL}/api/stripe/contract/${contractId}/create-payment`, {
+  const res = await fetchWithAuth(buildUrl(`/api/stripe/contract/${contractId}/create-payment`), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -325,7 +326,7 @@ export async function createContract({
   fee?: string;
   deposit?: string;
 }) {
-  const res = await fetch(`${import.meta.env.VITE_APP_BACKEND_URL}/contracts`, {
+  const res = await fetchWithAuth(buildUrl('/contracts'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

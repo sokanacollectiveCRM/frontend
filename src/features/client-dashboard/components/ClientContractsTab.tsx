@@ -4,6 +4,7 @@ import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
 import { toast } from 'sonner';
 import { useClientAuth } from '@/common/hooks/auth/useClientAuth';
 import { supabase } from '@/lib/supabase';
+import { buildUrl, fetchWithAuth } from '@/api/http';
 import { FileText, Calendar, DollarSign, CheckCircle, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -45,14 +46,11 @@ export default function ClientContractsTab() {
       // TODO: Replace with actual client contracts API endpoint
       // Example: GET /api/clients/me/contracts
       try {
-        const response = await fetch(
-          `${import.meta.env.VITE_APP_BACKEND_URL}/api/clients/me/contracts`,
-          {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          }
-        );
+        const response = await fetchWithAuth(buildUrl('/api/clients/me/contracts'), {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
 
         if (response.ok) {
           const data = await response.json();

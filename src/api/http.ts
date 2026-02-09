@@ -82,7 +82,7 @@ function buildBaseHeaders(hasBody: boolean, fetchHeaders: HeadersInit | undefine
 }
 
 /** Resolve credentials and Authorization. Send Supabase token when available (Bearer + X-Session-Token). */
-async function getRequestAuth(): Promise<{ credentials: RequestCredentials; headers: Record<string, string> }> {
+export async function getRequestAuth(): Promise<{ credentials: RequestCredentials; headers: Record<string, string> }> {
   if (API_CONFIG.authMode === 'cookie') {
     return { credentials: 'include', headers: {} };
   }
@@ -93,6 +93,21 @@ async function getRequestAuth(): Promise<{ credentials: RequestCredentials; head
     headers['X-Session-Token'] = token;
   }
   return { credentials: 'omit', headers };
+}
+
+/**
+ * Fetch with auth applied: cookie mode sends credentials; supabase mode sends Bearer + X-Session-Token.
+ * Use for any direct fetch to the backend so session is always sent. Prefer get/post/put/del when possible.
+ */
+export async function fetchWithAuth(url: string, init?: RequestInit): Promise<Response> {
+  const auth = await getRequestAuth();
+  const headers = new Headers(init?.headers);
+  Object.entries(auth.headers).forEach(([k, v]) => headers.set(k, v));
+  return fetch(url, {
+    ...init,
+    credentials: auth.credentials,
+    headers,
+  });
 }
 
 async function requestLegacy<T>(path: string, options?: RequestOptions): Promise<T> {
