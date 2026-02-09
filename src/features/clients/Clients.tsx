@@ -22,7 +22,6 @@ import { UsersDialogs } from './components/users-dialogs';
 import { UsersTable } from './components/users-table';
 import UsersProvider from './context/users-context';
 import { TemplatesProvider } from './contexts/TemplatesContext';
-import { assertNoPhiInListRow } from '@/config/phi';
 import { userListSchema, UserSummary, type UserWithPortal } from './data/schema';
 import { derivePortalStatus } from './utils/portalStatus';
 
@@ -122,7 +121,7 @@ export default function Users() {
     return '/clients';
   }, [isAdminClientsPath]);
 
-  // Enhance userList with portal_status; defensive PHI guard: redact any PHI keys in list rows
+  // Enhance userList with portal_status. List PHI is controlled by backend (admin/assigned doulas get first_name, last_name, email).
   const userListWithPortal = useMemo(() => {
     return userList.map((user) => {
       const portalStatus = derivePortalStatus(user);
@@ -133,7 +132,7 @@ export default function Users() {
         last_invite_sent_at: (user as any).last_invite_sent_at,
         invite_sent_count: (user as any).invite_sent_count || 0,
       };
-      return assertNoPhiInListRow(userWithPortal as Record<string, unknown>) as UserWithPortal;
+      return userWithPortal;
     });
   }, [userList]);
 
@@ -627,11 +626,12 @@ function mergeDetailFieldsIntoResult(result: UserSummary & Record<string, any>, 
   if (!raw || typeof raw !== 'object') return result;
   return {
     ...result,
-    // Name: support both conventions so modal title and fields work (API returns snake_case)
+    // Name and email: support both conventions so modal title and fields work (API returns snake_case)
     firstname: result.firstname || raw.firstname || raw.first_name || raw.firstName || '',
     lastname: result.lastname || raw.lastname || raw.last_name || raw.lastName || '',
     first_name: raw.first_name ?? raw.firstName ?? result.firstname,
     last_name: raw.last_name ?? raw.lastName ?? result.lastname,
+    email: raw.email ?? result.email ?? '',
     // PHI / detail fields: explicitly map API snake_case → UI keys so form always gets values
     due_date: raw.due_date ?? raw.dueDate ?? result.due_date,
     date_of_birth: raw.date_of_birth ?? raw.dateOfBirth ?? (result as any).date_of_birth,

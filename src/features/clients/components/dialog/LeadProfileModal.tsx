@@ -144,13 +144,16 @@ export function LeadProfileModal({
   const [isEditing, setIsEditing] = useState(true);
   const [editedData, setEditedData] = useState<Partial<Client>>({});
   const [isSaving, setIsSaving] = useState(false);
+  // Primary source for display: full detail from GET /clients/:id (authorized users get PHI).
+  const [fetchedDetail, setFetchedDetail] = useState<Record<string, unknown> | null>(null);
 
-  // Use the client data directly since it already contains the form fields
+  // Use the client data directly when no fetched detail yet
   const detailedClient = client;
 
-  // Merge Supabase (base) + Cloud Run (PHI) into one object so all fields populate.
-  // Backend may return: { data: { ...base }, phi: { phone_number, due_date, ... } } or { data: { ...base, ...phi } }.
+  // Primary source for modal: fetched detail from GET /clients/:id when available; otherwise client prop.
+  // Detail modal is for authorized users only – backend gates PHI on GET /clients/:id.
   const detailSource: Record<string, unknown> | null = React.useMemo(() => {
+    if (fetchedDetail && typeof fetchedDetail === 'object') return fetchedDetail;
     if (!client || typeof client !== 'object') return null;
     const c = client as Record<string, unknown>;
     const dataObj = c.data && typeof c.data === 'object' && !Array.isArray(c.data) ? (c.data as Record<string, unknown>) : null;
@@ -162,14 +165,14 @@ export function LeadProfileModal({
         : null;
     if (phi) return { ...base, ...phi };
     return base;
-  }, [client]);
+  }, [client, fetchedDetail]);
 
   // Log when modal is open so we can confirm component is mounted (check console for "LeadProfileModal")
   React.useEffect(() => {
     if (open) {
-      console.warn('[LeadProfileModal] Modal opened', { clientId: client?.id, hasClient: !!client, hasDetailSource: !!detailSource });
+      console.warn('[LeadProfileModal] Modal opened', { clientId: client?.id, hasClient: !!client, hasDetailSource: !!detailSource, hasFetchedDetail: !!fetchedDetail });
     }
-  }, [open, client?.id, client, detailSource]);
+  }, [open, client?.id, client, detailSource, fetchedDetail]);
 
   // Fetch notes when client changes
   React.useEffect(() => {
@@ -178,18 +181,16 @@ export function LeadProfileModal({
     }
   }, [client?.id]);
 
-  // Fallback: when modal opens with list data (no phone), fetch full detail and merge into editedData
-  // so the phone number and service_needed show even if the route loader didn't run or returned late.
+  // On modal open with client.id: always fetch GET /clients/:id and use as primary source for display.
+  // Do not rely solely on list row; backend returns full PHI for authorized users on detail.
   const detailFetchRef = React.useRef<string | null>(null);
   React.useEffect(() => {
     if (!open) {
       detailFetchRef.current = null;
+      setFetchedDetail(null);
       return;
     }
-    if (!client?.id || !detailSource) return;
-    const d = detailSource as Record<string, unknown>;
-    const hasPhone = !!((d.phone_number ?? d.phoneNumber) as string)?.trim();
-    if (hasPhone) return;
+    if (!client?.id) return;
     const clientId = String(client.id);
     if (detailFetchRef.current === clientId) return;
     detailFetchRef.current = clientId;
@@ -198,23 +199,29 @@ export function LeadProfileModal({
       .then((data) => {
         if (cancelled || !data) return;
         const raw = data as unknown as Record<string, unknown>;
-        const phone = (raw.phone_number ?? raw.phoneNumber ?? '') as string;
-        const service = (raw.service_needed ?? raw.serviceNeeded ?? '') as string;
-        if (!phone.trim() && !service.trim()) return;
-        setEditedData((prev) => {
-          const prevPhone = ((prev.phone_number ?? prev.phoneNumber) ?? '') as string;
-          const prevService = ((prev.service_needed ?? prev.serviceNeeded) ?? '') as string;
-          const updates: Partial<Client> = {};
-          if (phone.trim() && !prevPhone.trim()) {
-            updates.phoneNumber = phone;
-            updates.phone_number = phone;
-          }
-          if (service.trim() && !prevService.trim()) {
-            updates.serviceNeeded = service;
-            updates.service_needed = service;
-          }
-          return Object.keys(updates).length ? { ...prev, ...updates } : prev;
-        });
+        setFetchedDetail(raw);
+        // Merge full detail into editedData so all fields (first_name, last_name, email, phone_number, service_needed, address, etc.) display correctly.
+        const get = (key: string, alt: string) => (raw[key] ?? raw[alt]) as string | undefined;
+        setEditedData((prev) => ({
+          ...prev,
+          firstname: (get('firstname', 'first_name') ?? get('firstName', 'first_name') ?? prev.firstname ?? '') as string,
+          lastname: (get('lastname', 'last_name') ?? get('lastName', 'last_name') ?? prev.lastname ?? '') as string,
+          first_name: get('first_name', 'firstname') ?? (prev as any).first_name,
+          last_name: get('last_name', 'lastname') ?? (prev as any).last_name,
+          email: (get('email', 'email') ?? prev.email) as string | undefined,
+          phoneNumber: (get('phone_number', 'phoneNumber') ?? prev.phoneNumber ?? '') as string,
+          phone_number: get('phone_number', 'phoneNumber') ?? prev.phone_number,
+          serviceNeeded: (get('service_needed', 'serviceNeeded') ?? prev.serviceNeeded ?? '') as string,
+          service_needed: get('service_needed', 'serviceNeeded') ?? prev.service_needed,
+          due_date: raw.due_date ?? raw.dueDate ?? prev.due_date,
+          address: (raw.address ?? raw.address_line1 ?? raw.addressLine1 ?? prev.address) as string | undefined,
+          address_line1: (raw.address_line1 ?? raw.addressLine1 ?? prev.address_line1) as string | undefined,
+          date_of_birth: (raw.date_of_birth ?? raw.dateOfBirth ?? (prev as any).date_of_birth) as string | undefined,
+          health_history: (raw.health_history ?? raw.healthHistory ?? (prev as any).health_history) as string | undefined,
+          health_notes: (raw.health_notes ?? raw.healthNotes ?? (prev as any).health_notes) as string | undefined,
+          allergies: (raw.allergies ?? (prev as any).allergies) as string | undefined,
+          ...raw,
+        }));
       })
       .catch(() => {})
       .finally(() => {
@@ -223,7 +230,7 @@ export function LeadProfileModal({
     return () => {
       cancelled = true;
     };
-  }, [open, client?.id, detailSource, getClientById]);
+  }, [open, client?.id, getClientById]);
 
   const fetchNotes = async () => {
     if (!client?.id) return;
@@ -524,7 +531,8 @@ export function LeadProfileModal({
     return String(value);
   };
 
-  // Single source for display: detailSource (merged base+phi), then client prop, then editedData.
+  // Single source for display: detailSource (from GET /clients/:id when available), then client prop, then editedData.
+  // Handle both snake_case and camelCase from API. Do not display [redacted] in detail modal (authorized view only).
   const getDisplayValue = (fieldKey: string, altKey: string | null): string => {
     const c = client as Record<string, unknown> | null;
     const fromDetail = detailSource ? ((altKey ? detailSource[altKey] : undefined) ?? detailSource[fieldKey]) : undefined;
@@ -532,7 +540,9 @@ export function LeadProfileModal({
     const fromEdited = (altKey ? editedData[altKey] : undefined) ?? editedData[fieldKey];
     const v = fromDetail ?? fromClient ?? fromEdited;
     if (v === null || v === undefined) return '';
-    return String(v);
+    const s = String(v);
+    if (s === '[redacted]') return '';
+    return s;
   };
 
   const renderEditableField = (
@@ -542,7 +552,14 @@ export function LeadProfileModal({
     type: 'text' | 'email' | 'tel' | 'textarea' | 'select' | 'multiselect' | 'date' = 'text',
     options?: string[]
   ) => {
-    const altKey = fieldKey === 'phoneNumber' ? 'phone_number' : fieldKey === 'service_needed' ? 'serviceNeeded' : null;
+    const altKey =
+      fieldKey === 'phoneNumber' ? 'phone_number'
+      : fieldKey === 'service_needed' ? 'serviceNeeded'
+      : fieldKey === 'firstname' ? 'first_name'
+      : fieldKey === 'lastname' ? 'last_name'
+      : fieldKey === 'first_name' ? 'firstname'
+      : fieldKey === 'last_name' ? 'lastname'
+      : null;
     let value: string | Date = altKey !== null ? getDisplayValue(fieldKey, altKey) : (editedData[fieldKey] ?? '');
 
     // Convert Date objects to string format for non-date fields
