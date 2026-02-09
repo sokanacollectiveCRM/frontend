@@ -39,27 +39,33 @@ export const CLIENT_STATUS_LABELS: Record<ClientStatus, string> = {
 };
 
 /**
- * Client domain type for list views.
- * Contains only fields needed by the clients list UI.
+ * Client lite: non-PHI list view type for GET /clients.
+ * Backend must not return PHI in list; use this type for list table data.
  */
-export interface Client {
+export interface ClientLite {
   id: string;
-  email: string;
   firstname: string;
   lastname: string;
-  phoneNumber: string;
   status: ClientStatus;
   serviceNeeded: string;
   requestedAt: Date;
   updatedAt: Date;
   profilePicture: string | null;
-  // Portal eligibility fields
   portalStatus?: string;
   isEligible?: boolean;
   contractStatus?: string;
   hasSignedContract?: boolean;
   paymentStatus?: string;
   hasCompletedPayment?: boolean;
+}
+
+/**
+ * Client domain type for list views (extends ClientLite; may include display-only non-PHI).
+ * PHI (phone, email, address, etc.) must not be shown in list—only in detail when authorized.
+ */
+export interface Client extends ClientLite {
+  email: string;
+  phoneNumber: string;
 }
 
 /**

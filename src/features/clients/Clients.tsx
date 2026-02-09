@@ -22,6 +22,7 @@ import { UsersDialogs } from './components/users-dialogs';
 import { UsersTable } from './components/users-table';
 import UsersProvider from './context/users-context';
 import { TemplatesProvider } from './contexts/TemplatesContext';
+import { assertNoPhiInListRow } from '@/config/phi';
 import { userListSchema, UserSummary, type UserWithPortal } from './data/schema';
 import { derivePortalStatus } from './utils/portalStatus';
 
@@ -121,19 +122,18 @@ export default function Users() {
     return '/clients';
   }, [isAdminClientsPath]);
 
-  // Enhance userList with portal_status
+  // Enhance userList with portal_status; defensive PHI guard: redact any PHI keys in list rows
   const userListWithPortal = useMemo(() => {
     return userList.map((user) => {
       const portalStatus = derivePortalStatus(user);
       const userWithPortal: UserWithPortal = {
         ...user,
         portal_status: portalStatus,
-        // Preserve existing portal fields if they exist
         invited_at: (user as any).invited_at,
         last_invite_sent_at: (user as any).last_invite_sent_at,
         invite_sent_count: (user as any).invite_sent_count || 0,
       };
-      return userWithPortal;
+      return assertNoPhiInListRow(userWithPortal as Record<string, unknown>) as UserWithPortal;
     });
   }, [userList]);
 
