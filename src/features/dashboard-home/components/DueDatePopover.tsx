@@ -155,7 +155,7 @@ export function DueDatePopover({ date, events, children, open, onOpenChange }: D
         onOpenChange(false);
       } else {
         // Fetch real client data from backend
-        const client = await getClientById(clientId, true); // detailed=true
+        const client = await getClientById(clientId);
         if (client) {
           setSelectedClient(client as unknown as Client);
           setClientModalOpen(true);

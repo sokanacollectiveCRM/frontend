@@ -197,7 +197,7 @@ export function LeadProfileModal({
     getClientById(clientId)
       .then((data) => {
         if (cancelled || !data) return;
-        const raw = data as Record<string, unknown>;
+        const raw = data as unknown as Record<string, unknown>;
         const phone = (raw.phone_number ?? raw.phoneNumber ?? '') as string;
         const service = (raw.service_needed ?? raw.serviceNeeded ?? '') as string;
         if (!phone.trim() && !service.trim()) return;
@@ -794,7 +794,8 @@ export function LeadProfileModal({
                 const c = detailSource ?? (client as Record<string, unknown>);
                 const first = (c.firstname ?? c.first_name ?? c.firstName) as string;
                 const last = (c.lastname ?? c.last_name ?? c.lastName) as string;
-                return first && last ? `${first} ${last}` : (c.email || `Client ${c.id}`);
+                const title = first && last ? `${first} ${last}` : (c.email || `Client ${c.id}` || 'Client');
+                return title as React.ReactNode;
               })()}
             </DialogTitle>
             <div className="flex items-center gap-2">
@@ -817,7 +818,7 @@ export function LeadProfileModal({
           </div>
         </DialogHeader>
 
-        {detailedClient && (
+        {detailedClient != null ? (
           <div className="space-y-3">
             {/* Contact & Basic Info */}
             {renderCollapsibleSection(
@@ -1081,7 +1082,7 @@ export function LeadProfileModal({
               </CollapsibleContent>
             </Collapsible>
           </div>
-        )}
+        ) : null}
 
         <DialogFooter className="pt-4">
           <Button onClick={() => onOpenChange(false)}>Close</Button>
