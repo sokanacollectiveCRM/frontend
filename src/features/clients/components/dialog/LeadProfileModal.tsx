@@ -188,21 +188,30 @@ export function LeadProfileModal({
     const clientId = String(client.id);
     if (detailFetchRef.current === clientId) return;
 
+    console.log('🔍 [Fetch] Starting fetch for client:', clientId);
     let cancelled = false;
     getClientById(clientId)
       .then((data) => {
         if (cancelled) return;
         if (!data) {
           // Fetch failed, don't set ref so it can retry
+          console.error('❌ [Fetch] No data returned for client:', clientId);
           return;
         }
         console.log('🔍 [Fetch] phoneNumber in fetched data:', (data as any)?.phoneNumber);
         console.log('🔍 [Fetch] phone_number in fetched data:', (data as any)?.phone_number);
+        console.log('🔍 [Fetch] Full data:', data);
         detailFetchRef.current = clientId;
         setFetchedDetail(data);
       })
-      .catch(() => {
+      .catch((error) => {
         // On error, don't set ref so it can retry
+        console.error('❌ [Fetch] Error fetching client detail:', error);
+        console.error('❌ [Fetch] Error details:', {
+          message: error?.message,
+          status: error?.status,
+          statusText: error?.statusText,
+        });
       });
     return () => {
       cancelled = true;
