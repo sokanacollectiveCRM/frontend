@@ -153,7 +153,7 @@ export function LeadProfileModal({
   // Primary source for modal: fetched detail from GET /clients/:id when available; otherwise client prop.
   // Detail modal is for authorized users only – backend gates PHI on GET /clients/:id.
   const detailSource: Record<string, unknown> | null = React.useMemo(() => {
-    if (fetchedDetail && typeof fetchedDetail === 'object') return fetchedDetail as Record<string, unknown>;
+    if (fetchedDetail && typeof fetchedDetail === 'object') return fetchedDetail as unknown as Record<string, unknown>;
     if (!client || typeof client !== 'object') return null;
     const c = client as Record<string, unknown>;
     const dataObj = c.data && typeof c.data === 'object' && !Array.isArray(c.data) ? (c.data as Record<string, unknown>) : null;
@@ -478,7 +478,7 @@ export function LeadProfileModal({
       }
 
       // Split update data into PHI fields and operational fields
-      const phiSet = new Set(PHI_KEYS);
+      const phiSet = new Set<string>(PHI_KEYS);
       const phiData: Record<string, unknown> = {};
       const operationalData: Record<string, unknown> = {};
 
