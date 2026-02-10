@@ -569,10 +569,12 @@ export function LeadProfileModal({
   // Handle both snake_case and camelCase from API. Do not display [redacted] in detail modal (authorized view only).
   const getDisplayValue = (fieldKey: string, altKey: string | null): string => {
     const c = client as Record<string, unknown> | null;
+    // Priority: editedData (current form state) > detailSource (fetched) > client (list prop)
+    // This ensures inputs show what's in the editable state, not stale fetched data
+    const fromEdited = (altKey ? editedData[altKey] : undefined) ?? editedData[fieldKey];
     const fromDetail = detailSource ? ((altKey ? detailSource[altKey] : undefined) ?? detailSource[fieldKey]) : undefined;
     const fromClient = c ? ((altKey ? c[altKey] : undefined) ?? c[fieldKey]) : undefined;
-    const fromEdited = (altKey ? editedData[altKey] : undefined) ?? editedData[fieldKey];
-    const v = fromDetail ?? fromClient ?? fromEdited;
+    const v = fromEdited ?? fromDetail ?? fromClient;
     if (v === null || v === undefined) return '';
     const s = String(v);
     if (s === '[redacted]') return '';
