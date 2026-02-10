@@ -42,13 +42,23 @@ export async function fetchClients(): Promise<Client[]> {
  * Fetch a single client by ID.
  *
  * Canonical mode only - throws if legacy mode is enabled.
+ * Backend returns { success: true, data: { id, first_name, last_name, email, phone_number, ... } };
+ * get() returns apiResponse.data (the inner object). Defensive unwrap in case response is ever wrapped.
  */
 export async function fetchClientById(id: string): Promise<ClientDetail> {
   if (API_CONFIG.useLegacyApi) {
     throw new Error('Legacy mode disabled. Set VITE_USE_LEGACY_API=false.');
   }
 
-  const dto = await get<ClientDetailDTO>(`/clients/${id}`);
+  const response = await get<ClientDetailDTO | { data?: ClientDetailDTO }>(`/clients/${id}`);
+  const dto: ClientDetailDTO =
+    response &&
+    typeof response === 'object' &&
+    'data' in response &&
+    response.data != null &&
+    typeof response.data === 'object'
+      ? response.data
+      : (response as ClientDetailDTO);
   return mapClientDetail(dto);
 }
 
