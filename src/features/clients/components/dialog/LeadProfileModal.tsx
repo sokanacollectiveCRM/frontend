@@ -22,7 +22,10 @@ import { useClients } from '@/common/hooks/clients/useClients';
 import { UserContext } from '@/common/contexts/UserContext';
 import updateClient from '@/common/utils/updateClient';
 import updateClientStatus from '@/common/utils/updateClientStatus';
+import { updateClientPhi } from '@/api/services/clients.service';
+import { PHI_KEYS } from '@/config/phi';
 import { Client } from '@/features/clients/data/schema';
+import type { ClientDetail } from '@/domain/client';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
 import {
@@ -129,9 +132,6 @@ export function LeadProfileModal({
   refreshClients,
   missingClientId,
 }: LeadProfileModalProps) {
-  if (open) {
-    console.warn('[LeadProfileModal] render (open=true)', { clientId: client?.id });
-  }
   const { user } = useContext(UserContext);
   const { getClientById } = useClients();
   const [notes, setNotes] = useState<ClientNote[]>([]);
@@ -145,7 +145,7 @@ export function LeadProfileModal({
   const [editedData, setEditedData] = useState<Partial<Client>>({});
   const [isSaving, setIsSaving] = useState(false);
   // Primary source for display: full detail from GET /clients/:id (authorized users get PHI).
-  const [fetchedDetail, setFetchedDetail] = useState<Record<string, unknown> | null>(null);
+  const [fetchedDetail, setFetchedDetail] = useState<ClientDetail | null>(null);
 
   // Use the client data directly when no fetched detail yet
   const detailedClient = client;
@@ -153,7 +153,7 @@ export function LeadProfileModal({
   // Primary source for modal: fetched detail from GET /clients/:id when available; otherwise client prop.
   // Detail modal is for authorized users only – backend gates PHI on GET /clients/:id.
   const detailSource: Record<string, unknown> | null = React.useMemo(() => {
-    if (fetchedDetail && typeof fetchedDetail === 'object') return fetchedDetail;
+    if (fetchedDetail && typeof fetchedDetail === 'object') return fetchedDetail as Record<string, unknown>;
     if (!client || typeof client !== 'object') return null;
     const c = client as Record<string, unknown>;
     const dataObj = c.data && typeof c.data === 'object' && !Array.isArray(c.data) ? (c.data as Record<string, unknown>) : null;
@@ -166,13 +166,6 @@ export function LeadProfileModal({
     if (phi) return { ...base, ...phi };
     return base;
   }, [client, fetchedDetail]);
-
-  // Log when modal is open so we can confirm component is mounted (check console for "LeadProfileModal")
-  React.useEffect(() => {
-    if (open) {
-      console.warn('[LeadProfileModal] Modal opened', { clientId: client?.id, hasClient: !!client, hasDetailSource: !!detailSource, hasFetchedDetail: !!fetchedDetail });
-    }
-  }, [open, client?.id, client, detailSource, fetchedDetail]);
 
   // Fetch notes when client changes
   React.useEffect(() => {
@@ -191,50 +184,25 @@ export function LeadProfileModal({
       return;
     }
     if (!client?.id) return;
+
     const clientId = String(client.id);
     if (detailFetchRef.current === clientId) return;
-    detailFetchRef.current = clientId;
+
     let cancelled = false;
     getClientById(clientId)
       .then((data) => {
-        if (cancelled || !data) return;
-        const raw = data as unknown as Record<string, unknown>;
-        setFetchedDetail(raw);
-        // Extract phone from flat or nested response (backend may use data.phone_number, phi.phone_number, or root)
-        const nested = (obj: unknown, key: string) =>
-          obj && typeof obj === 'object' && !Array.isArray(obj) ? (obj as Record<string, unknown>)[key] : undefined;
-        const phoneFromRaw =
-          (raw.phone_number ?? raw.phoneNumber ?? nested(raw.phi, 'phone_number') ?? nested(raw.data, 'phone_number') ?? raw.mobile_phone) as string | undefined;
-        const phoneVal = typeof phoneFromRaw === 'string' && phoneFromRaw.trim() ? phoneFromRaw.trim() : '';
-        // Merge full detail into editedData so all fields (first_name, last_name, email, phone_number, service_needed, address, etc.) display correctly.
-        const get = (key: string, alt: string) => (raw[key] ?? raw[alt]) as string | undefined;
-        setEditedData((prev) => {
-          const merged = {
-            ...prev,
-            ...raw,
-            firstname: (get('firstname', 'first_name') ?? get('firstName', 'first_name') ?? prev.firstname ?? '') as string,
-            lastname: (get('lastname', 'last_name') ?? get('lastName', 'last_name') ?? prev.lastname ?? '') as string,
-            first_name: get('first_name', 'firstname') ?? (prev as any).first_name,
-            last_name: get('last_name', 'lastname') ?? (prev as any).last_name,
-            email: (get('email', 'email') ?? prev.email) as string | undefined,
-            phoneNumber: phoneVal || (raw.phone_number ?? raw.phoneNumber ?? prev.phoneNumber) || '',
-            phone_number: phoneVal || (raw.phone_number ?? raw.phoneNumber ?? prev.phone_number) || undefined,
-            serviceNeeded: (get('service_needed', 'serviceNeeded') ?? prev.serviceNeeded ?? '') as string,
-            service_needed: get('service_needed', 'serviceNeeded') ?? prev.service_needed,
-            due_date: raw.due_date ?? raw.dueDate ?? prev.due_date,
-            address: (raw.address ?? raw.address_line1 ?? raw.addressLine1 ?? prev.address) as string | undefined,
-            address_line1: (raw.address_line1 ?? raw.addressLine1 ?? prev.address_line1) as string | undefined,
-            date_of_birth: (raw.date_of_birth ?? raw.dateOfBirth ?? (prev as any).date_of_birth) as string | undefined,
-            health_history: (raw.health_history ?? raw.healthHistory ?? (prev as any).health_history) as string | undefined,
-            health_notes: (raw.health_notes ?? raw.healthNotes ?? (prev as any).health_notes) as string | undefined,
-            allergies: (raw.allergies ?? (prev as any).allergies) as string | undefined,
-          };
-          return merged;
-        });
+        if (cancelled) return;
+        if (!data) {
+          // Fetch failed, don't set ref so it can retry
+          return;
+        }
+        console.log('🔍 [Fetch] phoneNumber in fetched data:', (data as any)?.phoneNumber);
+        console.log('🔍 [Fetch] phone_number in fetched data:', (data as any)?.phone_number);
+        detailFetchRef.current = clientId;
+        setFetchedDetail(data);
       })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) detailFetchRef.current = null;
+      .catch(() => {
+        // On error, don't set ref so it can retry
       });
     return () => {
       cancelled = true;
@@ -305,17 +273,20 @@ export function LeadProfileModal({
     lastInitFingerprintRef.current = dataFingerprint;
     const d = detailSource as Record<string, unknown>;
     const get = (key: string, alt: string) => (d[key] ?? d[alt]) as string | undefined;
-    const stripRedacted = (v: unknown): string | undefined =>
-      (v === '[redacted]' || v === null || v === undefined) ? undefined : String(v);
+    const stripRedacted = (v: unknown): string | undefined => {
+      if (v === '[redacted]' || v === null || v === undefined) return undefined;
+      const str = String(v).trim();
+      return str === '' ? undefined : str;
+    };
     const nested = (obj: unknown, key: string) =>
       obj && typeof obj === 'object' && !Array.isArray(obj) ? (obj as Record<string, unknown>)[key] : undefined;
     const rawPhone =
       get('phone_number', 'phoneNumber') ?? nested(d.phi, 'phone_number') ?? nested(d.data, 'phone_number') ?? d.mobile_phone;
     const phoneNumber = (stripRedacted(rawPhone) ?? '') as string;
     const phone_number = stripRedacted(rawPhone) ?? undefined;
-    console.warn('[LeadProfileModal] phone number mapped in editedData init:', {
-      'detailSource.phone_number': d.phone_number,
+    console.log('🔍 [Init] Phone extraction:', {
       'detailSource.phoneNumber': d.phoneNumber,
+      'detailSource.phone_number': d.phone_number,
       rawPhone,
       phoneNumber,
       phone_number,
@@ -335,6 +306,10 @@ export function LeadProfileModal({
       serviceNeeded: (get('service_needed', 'serviceNeeded') ?? '') as string,
       service_needed: (get('service_needed', 'serviceNeeded') ?? '') as string,
     };
+    console.log('🔍 [Init] Final initializedData:', {
+      phoneNumber: initializedData.phoneNumber,
+      phone_number: (initializedData as any).phone_number,
+    });
     setEditedData(initializedData);
   }, [client, detailSource, dataFingerprint]);
 
@@ -493,18 +468,35 @@ export function LeadProfileModal({
         return;
       }
 
-      // Call the API to update the remaining client fields
-      const result = await updateClient(client.id, updateData);
+      // Split update data into PHI fields and operational fields
+      const phiSet = new Set(PHI_KEYS);
+      const phiData: Record<string, unknown> = {};
+      const operationalData: Record<string, unknown> = {};
 
-      if (result.success) {
-        toast.success('Client profile updated successfully!');
-        setIsEditing(false);
+      Object.entries(updateData).forEach(([key, value]) => {
+        if (phiSet.has(key)) {
+          phiData[key] = value;
+        } else {
+          operationalData[key] = value;
+        }
+      });
 
-        // Merge update response into editedData without wiping fields the backend didn't return.
-        // PUT often returns only updated keys (e.g. updated_keys: ["last_name"]) and omits phone_number etc.,
-        // so we only overwrite when the response has a defined value to avoid clearing phone/PHI.
-        if (result.client && typeof result.client === 'object') {
-          console.log('✅ Updated client data from backend:', result.client);
+      console.log('PHI fields to update:', Object.keys(phiData));
+      console.log('Operational fields to update:', Object.keys(operationalData));
+
+      // Track update results
+      let operationalSuccess = true;
+      let phiSuccess = true;
+      const errors: string[] = [];
+
+      // Update operational fields (Supabase client_info)
+      if (Object.keys(operationalData).length > 0) {
+        const result = await updateClient(client.id, operationalData);
+        if (!result.success) {
+          operationalSuccess = false;
+          errors.push(result.error || 'Failed to update operational fields');
+        } else if (result.client && typeof result.client === 'object') {
+          console.log('✅ Updated operational fields:', result.client);
           setEditedData((prev) => {
             const merged = { ...prev };
             const c = result.client as Record<string, unknown>;
@@ -513,24 +505,39 @@ export function LeadProfileModal({
                 (merged as Record<string, unknown>)[key] = value;
               }
             });
-            // Keep phone in sync when backend sends one variant
-            const phone = (c.phone_number ?? c.phoneNumber) as string | undefined;
-            if (phone !== undefined && phone !== null && String(phone).trim()) {
-              (merged as Record<string, unknown>).phone_number = phone;
-              (merged as Record<string, unknown>).phoneNumber = phone;
-            }
             return merged;
           });
-        } else {
-          setEditedData((prev) => ({ ...prev, ...updateData }));
         }
+      }
 
-        // Refresh the clients list to show updated data in the table
+      // Update PHI fields (Google Cloud SQL)
+      if (Object.keys(phiData).length > 0) {
+        const phiResult = await updateClientPhi(client.id, phiData);
+        if (!phiResult.success) {
+          phiSuccess = false;
+          errors.push(phiResult.error || 'Failed to update PHI fields');
+        } else {
+          console.log('✅ Updated PHI fields successfully');
+          // Merge PHI data into editedData
+          setEditedData((prev) => ({ ...prev, ...phiData }));
+        }
+      }
+
+      // Show appropriate success/error message
+      if (operationalSuccess && phiSuccess) {
+        toast.success('Client profile updated successfully!');
+        setIsEditing(false);
         if (refreshClients) {
           refreshClients();
         }
-      } else {
-        toast.error(result.error || 'Failed to update client profile');
+      } else if (!operationalSuccess && !phiSuccess) {
+        toast.error(`Update failed: ${errors.join('; ')}`);
+      } else if (!operationalSuccess) {
+        toast.error(`Operational fields update failed: ${errors.join('; ')}`);
+        toast.success('PHI fields updated successfully');
+      } else if (!phiSuccess) {
+        toast.error(`PHI fields update failed: ${errors.join('; ')}`);
+        toast.success('Operational fields updated successfully');
       }
     } catch (error) {
       console.error('Error saving changes:', error);
@@ -595,19 +602,6 @@ export function LeadProfileModal({
     // Convert Date objects to string format for non-date fields
     if (value instanceof Date && type !== 'date') {
       value = value.toISOString().split('T')[0];
-    }
-
-    // Log phone number mapping to input (fieldKey 'phoneNumber', type 'tel')
-    if (fieldKey === 'phoneNumber' && type === 'tel') {
-      const inputValue = String((altKey ? (editedData[altKey] ?? editedData[fieldKey]) : editedData[fieldKey]) ?? '');
-      console.warn('[LeadProfileModal] phone number → input:', {
-        fieldKey,
-        altKey,
-        'editedData.phone_number': editedData.phone_number,
-        'editedData.phoneNumber': editedData.phoneNumber,
-        displayValue: String(value),
-        inputValue,
-      });
     }
 
     return (
@@ -748,9 +742,6 @@ export function LeadProfileModal({
               (() => {
                 let inputValue = String((altKey ? (editedData[altKey] ?? editedData[fieldKey]) : editedData[fieldKey]) ?? '');
                 if (inputValue === '[redacted]') inputValue = '';
-                if (fieldKey === 'phoneNumber') {
-                  console.warn('[LeadProfileModal] Input value (phone):', inputValue);
-                }
                 return (
               <Input
                 id={fieldKey}

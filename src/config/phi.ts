@@ -12,22 +12,40 @@
 
 /** Keys classified as PHI; used only by redactPhiForList / assertNoPhiInListRow. */
 export const PHI_KEYS = [
+  // Identity
+  'first_name',
+  'firstName',
+  'last_name',
+  'lastName',
   'phone_number',
   'phoneNumber',
+  'email',
+
+  // Dates
   'date_of_birth',
   'dateOfBirth',
+  'due_date',
+  'dueDate',
+
+  // Address
   'address_line1',
   'addressLine1',
   'address',
-  'due_date',
-  'dueDate',
-  'email',
+  'city',
+  'state',
+  'zip_code',
+  'zipCode',
+  'country',
+
+  // Clinical/Health
   'health_history',
   'healthHistory',
   'health_notes',
   'healthNotes',
   'allergies',
   'medications',
+
+  // Pregnancy/Baby
   'pregnancy_number',
   'pregnancyNumber',
   'had_previous_pregnancies',
@@ -38,6 +56,8 @@ export const PHI_KEYS = [
   'baby_name',
   'babyName',
   'number_of_babies',
+
+  // Demographics
   'race_ethnicity',
   'raceEthnicity',
   'client_age_range',
