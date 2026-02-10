@@ -2,15 +2,26 @@ import {
   getSessionExpirationMessage,
   isSessionExpiredError,
 } from './sessionUtils';
+import { PHI_KEYS } from '@/config/phi';
 
 /**
- * Columns that may not exist on backend client_info table yet.
+ * Columns that cannot be updated via PUT /clients/:id to Supabase client_info table.
  * Stripping these from the payload avoids "Could not find the 'X' column in the schema cache" errors.
- * Remove a key from this list once the backend schema includes it.
+ *
+ * Includes:
+ * - PHI fields (stored in Google Cloud via separate API, not Supabase client_info)
+ * - Form fields not yet in client_info schema
+ *
+ * Operational fields (status, firstname, lastname, service_needed, etc.) ARE in client_info.
  */
 const UNSUPPORTED_CLIENT_INFO_COLUMNS = new Set([
+  // PHI fields (stored in Google Cloud, not Supabase client_info) - imported from config/phi.ts
+  ...PHI_KEYS,
+
+  // Additional form fields not yet in schema
   'pronouns',
   'family_pronouns',
+  'payment_method',
 ]);
 
 function stripUnsupportedColumns(payload: Record<string, unknown>): Record<string, unknown> {
