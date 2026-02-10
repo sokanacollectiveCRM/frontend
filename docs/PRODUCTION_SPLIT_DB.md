@@ -43,11 +43,11 @@ Controlled by **`VITE_AUTH_MODE`**:
 
 ## List vs detail data types (PHI leakage prevention)
 
-- **List (GET /clients):** Backend returns **non-PHI** list items. The frontend treats list data as **ClientLite** (see `src/domain/client.ts`): id, name, status, serviceNeeded, dates, portal fields only. No phone, email, address, DOB, or other PHI in list responses.
-- **Detail (GET /clients/:id):** Backend returns merged detail when the user is authorized (broker overwrites Supabase for PHI fields). The frontend may display PHI **only** in the detail view (e.g. Lead Profile modal) and only when the data came from the detail endpoint and the user role is admin/staff.
-- **Defensive guard:** When rendering list rows, the app runs `assertNoPhiInListRow()` (see `src/config/phi.ts`). If any PHI key is present in list data (e.g. backend misconfiguration), values are redacted to `[redacted]` and never logged.
+- **List (GET /clients):** The **backend** controls what PHI is in the list. For admins and assigned doulas, the backend may return `first_name`, `last_name`, and `email` (assigned doulas only for their clients). For others, the backend returns no PHI. The frontend does **not** redact list rows; it displays whatever the backend sends. Do **not** use `assertNoPhiInListRow` or `redactPhiForList` on the clients list in `Clients.tsx` (see `src/config/phi.ts`).
+- **Detail (GET /clients/:id):** Backend returns full PHI when the user is authorized (admin or assigned doula for that client). The frontend displays PHI in the detail modal (Lead Profile) when it comes from this endpoint.
+- **Modal fallback:** The detail modal treats any `[redacted]` value as empty for display. Prefer fixing the source (backend / list guard) over relying on that fallback.
 
-PHI keys are centralized in `src/config/phi.ts` (`PHI_KEYS`). List table data is passed through the guard in `src/features/clients/Clients.tsx` before being sent to the table.
+PHI keys are defined in `src/config/phi.ts` (`PHI_KEYS`) for reference only. The clients list is **not** passed through the guard; backend controls list PHI.
 
 ## Data caching policy
 

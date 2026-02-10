@@ -500,15 +500,29 @@ export function LeadProfileModal({
         toast.success('Client profile updated successfully!');
         setIsEditing(false);
 
-        // Update the local editedData with the full client response from backend
-        // This ensures the modal shows ALL updated data immediately, including fields
-        // that were successfully saved to the database
-        if (result.client) {
+        // Merge update response into editedData without wiping fields the backend didn't return.
+        // PUT often returns only updated keys (e.g. updated_keys: ["last_name"]) and omits phone_number etc.,
+        // so we only overwrite when the response has a defined value to avoid clearing phone/PHI.
+        if (result.client && typeof result.client === 'object') {
           console.log('✅ Updated client data from backend:', result.client);
-          setEditedData(prev => ({ ...prev, ...result.client }));
+          setEditedData((prev) => {
+            const merged = { ...prev };
+            const c = result.client as Record<string, unknown>;
+            Object.entries(c).forEach(([key, value]) => {
+              if (value !== undefined && value !== null) {
+                (merged as Record<string, unknown>)[key] = value;
+              }
+            });
+            // Keep phone in sync when backend sends one variant
+            const phone = (c.phone_number ?? c.phoneNumber) as string | undefined;
+            if (phone !== undefined && phone !== null && String(phone).trim()) {
+              (merged as Record<string, unknown>).phone_number = phone;
+              (merged as Record<string, unknown>).phoneNumber = phone;
+            }
+            return merged;
+          });
         } else {
-          // Fallback: use the updateData we sent
-          setEditedData(prev => ({ ...prev, ...updateData }));
+          setEditedData((prev) => ({ ...prev, ...updateData }));
         }
 
         // Refresh the clients list to show updated data in the table
