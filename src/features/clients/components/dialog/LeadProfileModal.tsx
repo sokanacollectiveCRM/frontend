@@ -200,28 +200,37 @@ export function LeadProfileModal({
         if (cancelled || !data) return;
         const raw = data as unknown as Record<string, unknown>;
         setFetchedDetail(raw);
+        // Extract phone from flat or nested response (backend may use data.phone_number, phi.phone_number, or root)
+        const nested = (obj: unknown, key: string) =>
+          obj && typeof obj === 'object' && !Array.isArray(obj) ? (obj as Record<string, unknown>)[key] : undefined;
+        const phoneFromRaw =
+          (raw.phone_number ?? raw.phoneNumber ?? nested(raw.phi, 'phone_number') ?? nested(raw.data, 'phone_number') ?? raw.mobile_phone) as string | undefined;
+        const phoneVal = typeof phoneFromRaw === 'string' && phoneFromRaw.trim() ? phoneFromRaw.trim() : '';
         // Merge full detail into editedData so all fields (first_name, last_name, email, phone_number, service_needed, address, etc.) display correctly.
         const get = (key: string, alt: string) => (raw[key] ?? raw[alt]) as string | undefined;
-        setEditedData((prev) => ({
-          ...prev,
-          firstname: (get('firstname', 'first_name') ?? get('firstName', 'first_name') ?? prev.firstname ?? '') as string,
-          lastname: (get('lastname', 'last_name') ?? get('lastName', 'last_name') ?? prev.lastname ?? '') as string,
-          first_name: get('first_name', 'firstname') ?? (prev as any).first_name,
-          last_name: get('last_name', 'lastname') ?? (prev as any).last_name,
-          email: (get('email', 'email') ?? prev.email) as string | undefined,
-          phoneNumber: (get('phone_number', 'phoneNumber') ?? prev.phoneNumber ?? '') as string,
-          phone_number: get('phone_number', 'phoneNumber') ?? prev.phone_number,
-          serviceNeeded: (get('service_needed', 'serviceNeeded') ?? prev.serviceNeeded ?? '') as string,
-          service_needed: get('service_needed', 'serviceNeeded') ?? prev.service_needed,
-          due_date: raw.due_date ?? raw.dueDate ?? prev.due_date,
-          address: (raw.address ?? raw.address_line1 ?? raw.addressLine1 ?? prev.address) as string | undefined,
-          address_line1: (raw.address_line1 ?? raw.addressLine1 ?? prev.address_line1) as string | undefined,
-          date_of_birth: (raw.date_of_birth ?? raw.dateOfBirth ?? (prev as any).date_of_birth) as string | undefined,
-          health_history: (raw.health_history ?? raw.healthHistory ?? (prev as any).health_history) as string | undefined,
-          health_notes: (raw.health_notes ?? raw.healthNotes ?? (prev as any).health_notes) as string | undefined,
-          allergies: (raw.allergies ?? (prev as any).allergies) as string | undefined,
-          ...raw,
-        }));
+        setEditedData((prev) => {
+          const merged = {
+            ...prev,
+            ...raw,
+            firstname: (get('firstname', 'first_name') ?? get('firstName', 'first_name') ?? prev.firstname ?? '') as string,
+            lastname: (get('lastname', 'last_name') ?? get('lastName', 'last_name') ?? prev.lastname ?? '') as string,
+            first_name: get('first_name', 'firstname') ?? (prev as any).first_name,
+            last_name: get('last_name', 'lastname') ?? (prev as any).last_name,
+            email: (get('email', 'email') ?? prev.email) as string | undefined,
+            phoneNumber: phoneVal || (raw.phone_number ?? raw.phoneNumber ?? prev.phoneNumber) || '',
+            phone_number: phoneVal || (raw.phone_number ?? raw.phoneNumber ?? prev.phone_number) || undefined,
+            serviceNeeded: (get('service_needed', 'serviceNeeded') ?? prev.serviceNeeded ?? '') as string,
+            service_needed: get('service_needed', 'serviceNeeded') ?? prev.service_needed,
+            due_date: raw.due_date ?? raw.dueDate ?? prev.due_date,
+            address: (raw.address ?? raw.address_line1 ?? raw.addressLine1 ?? prev.address) as string | undefined,
+            address_line1: (raw.address_line1 ?? raw.addressLine1 ?? prev.address_line1) as string | undefined,
+            date_of_birth: (raw.date_of_birth ?? raw.dateOfBirth ?? (prev as any).date_of_birth) as string | undefined,
+            health_history: (raw.health_history ?? raw.healthHistory ?? (prev as any).health_history) as string | undefined,
+            health_notes: (raw.health_notes ?? raw.healthNotes ?? (prev as any).health_notes) as string | undefined,
+            allergies: (raw.allergies ?? (prev as any).allergies) as string | undefined,
+          };
+          return merged;
+        });
       })
       .catch(() => {})
       .finally(() => {
@@ -294,11 +303,14 @@ export function LeadProfileModal({
       return;
     }
     lastInitFingerprintRef.current = dataFingerprint;
-    const d = detailSource;
+    const d = detailSource as Record<string, unknown>;
     const get = (key: string, alt: string) => (d[key] ?? d[alt]) as string | undefined;
     const stripRedacted = (v: unknown): string | undefined =>
       (v === '[redacted]' || v === null || v === undefined) ? undefined : String(v);
-    const rawPhone = get('phone_number', 'phoneNumber');
+    const nested = (obj: unknown, key: string) =>
+      obj && typeof obj === 'object' && !Array.isArray(obj) ? (obj as Record<string, unknown>)[key] : undefined;
+    const rawPhone =
+      get('phone_number', 'phoneNumber') ?? nested(d.phi, 'phone_number') ?? nested(d.data, 'phone_number') ?? d.mobile_phone;
     const phoneNumber = (stripRedacted(rawPhone) ?? '') as string;
     const phone_number = stripRedacted(rawPhone) ?? undefined;
     console.warn('[LeadProfileModal] phone number mapped in editedData init:', {
