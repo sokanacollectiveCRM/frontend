@@ -178,15 +178,32 @@ export function LeadProfileModal({
   // Do not rely solely on list row; backend returns full PHI for authorized users on detail.
   const detailFetchRef = React.useRef<string | null>(null);
   React.useEffect(() => {
+    console.log('🔍 [Effect] Running', { open, hasClient: !!client?.id, refValue: detailFetchRef.current });
     if (!open) {
+      console.log('🔍 [Effect] Modal closed, resetting');
       detailFetchRef.current = null;
       setFetchedDetail(null);
       return;
     }
-    if (!client?.id) return;
+    if (!client?.id) {
+      console.log('🔍 [Effect] No client ID');
+      return;
+    }
 
     const clientId = String(client.id);
-    if (detailFetchRef.current === clientId) return;
+    // Only skip if we have both: ref is set AND we have the actual data for this client
+    if (detailFetchRef.current === clientId && fetchedDetail && (fetchedDetail as any).id === clientId) {
+      console.log('🔍 [Effect] Already fetched and have data, skipping');
+      return;
+    }
+
+    // Set ref immediately to prevent duplicate fetches while this one is in progress
+    detailFetchRef.current = clientId;
+    console.log('🔍 [Effect] Fetching because:', {
+      'ref matches': detailFetchRef.current === clientId,
+      'have data': !!fetchedDetail,
+      'data matches': fetchedDetail ? (fetchedDetail as any).id === clientId : false
+    });
 
     console.log('🔍 [Fetch] Starting fetch for client:', clientId);
     let cancelled = false;
@@ -194,24 +211,25 @@ export function LeadProfileModal({
       .then((data) => {
         if (cancelled) return;
         if (!data) {
-          // Fetch failed, don't set ref so it can retry
+          // Fetch failed, clear ref so it can retry
           console.error('❌ [Fetch] No data returned for client:', clientId);
+          detailFetchRef.current = null;
           return;
         }
         console.log('🔍 [Fetch] phoneNumber in fetched data:', (data as any)?.phoneNumber);
         console.log('🔍 [Fetch] phone_number in fetched data:', (data as any)?.phone_number);
         console.log('🔍 [Fetch] Full data:', data);
-        detailFetchRef.current = clientId;
         setFetchedDetail(data);
       })
       .catch((error) => {
-        // On error, don't set ref so it can retry
+        // On error, clear ref so it can retry
         console.error('❌ [Fetch] Error fetching client detail:', error);
         console.error('❌ [Fetch] Error details:', {
           message: error?.message,
           status: error?.status,
           statusText: error?.statusText,
         });
+        detailFetchRef.current = null;
       });
     return () => {
       cancelled = true;
@@ -580,13 +598,15 @@ export function LeadProfileModal({
     const c = client as Record<string, unknown> | null;
     // Priority: editedData (current form state) > detailSource (fetched) > client (list prop)
     // This ensures inputs show what's in the editable state, not stale fetched data
+    const isEmpty = (v: unknown) => v === null || v === undefined || v === '';
     const fromEdited = (altKey ? editedData[altKey] : undefined) ?? editedData[fieldKey];
     const fromDetail = detailSource ? ((altKey ? detailSource[altKey] : undefined) ?? detailSource[fieldKey]) : undefined;
     const fromClient = c ? ((altKey ? c[altKey] : undefined) ?? c[fieldKey]) : undefined;
-    const v = fromEdited ?? fromDetail ?? fromClient;
+    // Use isEmpty to treat empty string as "no value" and fallback to next source
+    const v = isEmpty(fromEdited) ? (isEmpty(fromDetail) ? fromClient : fromDetail) : fromEdited;
     if (v === null || v === undefined) return '';
     const s = String(v);
-    if (s === '[redacted]') return '';
+    if (s === '[redacted]' || s === '') return '';
     return s;
   };
 
@@ -751,8 +771,19 @@ export function LeadProfileModal({
           ) : (
             (fieldKey === 'phoneNumber' && type === 'tel') || isEditing ? (
               (() => {
-                let inputValue = String((altKey ? (editedData[altKey] ?? editedData[fieldKey]) : editedData[fieldKey]) ?? '');
+                // Use getDisplayValue which has correct priority: editedData > detailSource > client
+                let inputValue = getDisplayValue(fieldKey, altKey);
                 if (inputValue === '[redacted]') inputValue = '';
+                if (fieldKey === 'phoneNumber') {
+                  console.log('📱 [Input] Phone input render:', {
+                    fieldKey,
+                    altKey,
+                    inputValue,
+                    'editedData.phoneNumber': editedData.phoneNumber,
+                    'editedData.phone_number': (editedData as any).phone_number,
+                    'detailSource?.phoneNumber': detailSource?.phoneNumber,
+                  });
+                }
                 return (
               <Input
                 id={fieldKey}
@@ -1133,6 +1164,34 @@ export function LeadProfileModal({
             </Collapsible>
           </div>
         ) : null}
+
+        {/* Debug Section - Shows all data from Supabase and Google Cloud */}
+        <Collapsible className="border-t pt-4 mt-4">
+          <CollapsibleTrigger className="flex items-center gap-2 w-full text-sm font-medium hover:underline">
+            <ChevronRight className="h-4 w-4 transition-transform [[data-state=open]>&]:rotate-90" />
+            Debug: View All Data (Supabase + Google Cloud)
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-2">
+            <div className="space-y-4 text-xs font-mono bg-muted p-4 rounded-lg">
+              <div>
+                <div className="font-bold text-sm mb-2">📋 List Data (client prop)</div>
+                <pre className="overflow-auto">{JSON.stringify(client, null, 2)}</pre>
+              </div>
+              <div>
+                <div className="font-bold text-sm mb-2">🔍 Fetched Detail (GET /clients/:id)</div>
+                <pre className="overflow-auto">{JSON.stringify(fetchedDetail, null, 2)}</pre>
+              </div>
+              <div>
+                <div className="font-bold text-sm mb-2">🎯 Detail Source (used for display)</div>
+                <pre className="overflow-auto">{JSON.stringify(detailSource, null, 2)}</pre>
+              </div>
+              <div>
+                <div className="font-bold text-sm mb-2">✏️ Edited Data (current form state)</div>
+                <pre className="overflow-auto">{JSON.stringify(editedData, null, 2)}</pre>
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         <DialogFooter className="pt-4">
           <Button onClick={() => onOpenChange(false)}>Close</Button>

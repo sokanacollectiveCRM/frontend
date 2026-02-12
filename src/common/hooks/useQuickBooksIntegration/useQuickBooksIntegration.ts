@@ -39,12 +39,12 @@ export function useQuickBooksConnect() {
       // 3️⃣ Open the OAuth consent screen in a popup
       const popup = window.open(url, '_blank', 'width=600,height=700');
 
-      // 4️⃣ Listen for the postMessage from your callback handler
+      // 4️⃣ Listen for the postMessage from your callback handler (opener may redirect to dashboard and show toast there)
       const onMessage = (e: MessageEvent) => {
         if (e.origin !== window.location.origin) return;
         popup?.close();
         window.removeEventListener('message', onMessage);
-        toast.success('QuickBooks connected 🎉');
+        // Toast is shown on dashboard after redirect from QuickBooksConnect
       };
 
       window.addEventListener('message', onMessage);

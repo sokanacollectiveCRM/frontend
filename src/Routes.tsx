@@ -14,6 +14,8 @@ import {
 } from './common/components/routes/ProtectedRoutes';
 import DashboardLayout from './common/layouts/DashboardLayout';
 import BillingRoute from './features/billing/BillingRoute';
+import { DemographicsRoute } from './features/demographics/DemographicsRoute';
+import { FinancialRoute } from './features/financial/FinancialRoute';
 import CreateCustomerRoutes from './features/clients/create-customer/createCustomerRoute';
 import ContractRoutes from './features/contracts/ContractRoutes';
 import HoursRoutes from './features/hours/HoursRoute';
@@ -82,6 +84,8 @@ const AppRoutes = () => (
           {CreateCustomerRoutes()}
           {InvoiceRoute()}
           {BillingRoute()}
+          {FinancialRoute()}
+          {DemographicsRoute()}
           {DoulaDashboardRoutes()}
         </Route>
       </Route>

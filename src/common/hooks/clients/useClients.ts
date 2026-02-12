@@ -47,7 +47,7 @@ export function useClients() {
    * Fetch a single client by ID using the migrated service.
    * Returns domain ClientDetail type (canonical mode only).
    */
-  const getClientById = async (id: string): Promise<ClientDetail | null> => {
+  const getClientById = useCallback(async (id: string): Promise<ClientDetail | null> => {
     setIsLoading(true);
     setError(null);
 
@@ -70,7 +70,7 @@ export function useClients() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []); // Empty deps - function doesn't depend on any props/state
 
   /**
    * Update a client's status using the migrated service.

@@ -4,7 +4,7 @@ import { DueDateEvent } from '@/common/hooks/dashboard/useDueDateCalendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/common/components/ui/popover';
 import { Button } from '@/common/components/ui/button';
 import { Calendar, Eye } from 'lucide-react';
-import { format, addDays } from 'date-fns';
+import { format } from 'date-fns';
 import { LeadProfileModal } from '@/features/clients/components/dialog/LeadProfileModal';
 import { useClients } from '@/common/hooks/clients/useClients';
 import { Client } from '@/features/clients/data/schema';
@@ -18,93 +18,6 @@ interface DueDatePopoverProps {
   onOpenChange: (open: boolean) => void;
 }
 
-// Dummy client data for demonstration (maps fake client IDs to full client objects)
-const DUMMY_CLIENTS: Record<string, Partial<Client>> = {
-  'client-1': {
-    id: 'client-1',
-    firstname: 'Sarah',
-    lastname: 'Johnson',
-    email: 'sarah.johnson@example.com',
-    phoneNumber: '(555) 123-4567',
-    preferred_name: 'Sarah',
-    pronouns: 'She/Her',
-    preferred_contact_method: 'Phone',
-    address: '123 Main Street, Apt 4B',
-    city: 'Chicago',
-    state: 'IL',
-    zip_code: '60601',
-    home_type: 'Apartment',
-    services_interested: ['Labor Support', 'Postpartum Support', 'Lactation Support'],
-    service_needed: 'Looking for comprehensive labor and postpartum support for first pregnancy',
-    annual_income: '$45,000-$64,999',
-    payment_method: 'Private Insurance',
-    due_date: format(new Date(), 'yyyy-MM-dd'),
-    birth_location: 'Hospital',
-    birth_hospital: 'Northwestern Memorial Hospital',
-    number_of_babies: 'Singleton',
-    provider_type: 'OB',
-    pregnancy_number: 1,
-    status: 'active',
-    requestedAt: new Date(),
-    updatedAt: new Date(),
-  },
-  'client-2': {
-    id: 'client-2',
-    firstname: 'Maria',
-    lastname: 'Garcia',
-    email: 'maria.garcia@example.com',
-    phoneNumber: '(555) 234-5678',
-    preferred_name: 'Mari',
-    pronouns: 'She/Her',
-    preferred_contact_method: 'Email',
-    address: '456 Oak Avenue',
-    city: 'Evanston',
-    state: 'IL',
-    zip_code: '60201',
-    home_type: 'House',
-    services_interested: ['Labor Support', '1st Night Care'],
-    service_needed: 'Need support during labor and first night after birth',
-    annual_income: '$25,000-$44,999',
-    payment_method: 'Medicaid',
-    due_date: format(addDays(new Date(), 3), 'yyyy-MM-dd'),
-    birth_location: 'Hospital',
-    birth_hospital: 'Evanston Hospital',
-    number_of_babies: 'Singleton',
-    provider_type: 'Midwife',
-    pregnancy_number: 2,
-    status: 'contract',
-    requestedAt: new Date(),
-    updatedAt: new Date(),
-  },
-  'client-3': {
-    id: 'client-3',
-    firstname: 'Emily',
-    lastname: 'Chen',
-    email: 'emily.chen@example.com',
-    phoneNumber: '(555) 345-6789',
-    preferred_name: 'Emily',
-    pronouns: 'She/Her',
-    preferred_contact_method: 'Email',
-    address: '789 Elm Street',
-    city: 'Naperville',
-    state: 'IL',
-    zip_code: '60540',
-    home_type: 'House',
-    services_interested: ['Labor Support', 'Postpartum Support', 'Perinatal Education'],
-    service_needed: 'First-time parent seeking education and comprehensive support',
-    annual_income: '$65,000-$84,999',
-    payment_method: 'Self-Pay',
-    due_date: format(addDays(new Date(), 7), 'yyyy-MM-dd'),
-    birth_location: 'Birth Center',
-    number_of_babies: 'Singleton',
-    provider_type: 'Midwife',
-    pregnancy_number: 1,
-    status: 'matching',
-    requestedAt: new Date(),
-    updatedAt: new Date(),
-  },
-};
-
 /**
  * Popover that displays due date events for a specific day
  */
@@ -113,7 +26,6 @@ export function DueDatePopover({ date, events, children, open, onOpenChange }: D
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [loadingClient, setLoadingClient] = useState(false);
   const { getClientById } = useClients();
-  const USE_DUMMY_DATA = true; // Set to false when backend is ready
 
   if (events.length === 0) {
     return <>{children}</>;
@@ -129,40 +41,14 @@ export function DueDatePopover({ date, events, children, open, onOpenChange }: D
     if (!clientId) return;
 
     setLoadingClient(true);
-    
-    // Simulate loading delay for better UX demonstration
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
     try {
-      // Use dummy data for demonstration
-      if (USE_DUMMY_DATA && DUMMY_CLIENTS[clientId]) {
-        setSelectedClient(DUMMY_CLIENTS[clientId] as Client);
-        setClientModalOpen(true);
-        onOpenChange(false); // Close the date popover
-      } else if (USE_DUMMY_DATA) {
-        // Fallback dummy client if ID not found
-        setSelectedClient({
-          id: clientId,
-          firstname: parseClientName(events.find(e => e.clientId === clientId)?.title || ''),
-          lastname: '',
-          email: 'demo@example.com',
-          phoneNumber: '(555) 000-0000',
-          status: 'active',
-          requestedAt: new Date(),
-          updatedAt: new Date(),
-        } as Client);
+      const client = await getClientById(clientId);
+      if (client) {
+        setSelectedClient(client as unknown as Client);
         setClientModalOpen(true);
         onOpenChange(false);
       } else {
-        // Fetch real client data from backend
-        const client = await getClientById(clientId);
-        if (client) {
-          setSelectedClient(client as unknown as Client);
-          setClientModalOpen(true);
-          onOpenChange(false); // Close the date popover
-        } else {
-          toast.error('Client not found');
-        }
+        toast.error('Client not found');
       }
     } catch (error) {
       console.error('Error fetching client:', error);

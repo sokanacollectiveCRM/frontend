@@ -4,12 +4,12 @@ import {
   Inbox,
   LucideChartColumnIncreasing,
   LucideCircleDollarSign,
-  LucideClock5,
   LucideCreditCard,
   LucideLink,
   LucideUsers,
   Search,
   UserPlus,
+  Scale,
 } from 'lucide-react';
 import React from 'react';
 
@@ -61,6 +61,12 @@ export const sidebarSections = [
         adminOnly: true,
       },
       {
+        title: 'Reconciliation',
+        url: '/payments/reconciliation',
+        icon: Scale,
+        adminOnly: true,
+      },
+      {
         title: 'Billing',
         url: '/billing',
         icon: LucideCreditCard,
@@ -82,8 +88,7 @@ export const sidebarSections = [
   {
     label: 'Analytics',
     items: [
-      { title: 'Financial', url: '#', icon: LucideCircleDollarSign, adminOnly: true },
-      { title: 'Demographics', url: '#', icon: LucideChartColumnIncreasing, adminOnly: true },
+      { title: 'Demographics', url: '/demographics', icon: LucideChartColumnIncreasing, adminOnly: true },
     ],
   },
 ];

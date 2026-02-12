@@ -10,14 +10,13 @@ export interface DashboardStats {
   monthlyRevenue: number | null;
 }
 
-// Dummy data for demonstration
-const DUMMY_STATS: DashboardStats = {
-  totalDoulas: 24,
-  totalClients: 156,
-  pendingContracts: 8,
-  overdueNotes: 3,
-  upcomingTasks: 12,
-  monthlyRevenue: 45600,
+const EMPTY_STATS: DashboardStats = {
+  totalDoulas: 0,
+  totalClients: 0,
+  pendingContracts: 0,
+  overdueNotes: 0,
+  upcomingTasks: 0,
+  monthlyRevenue: null,
 };
 
 /**
@@ -26,18 +25,8 @@ const DUMMY_STATS: DashboardStats = {
  */
 export function useDashboardStats() {
   const BASE = import.meta.env.VITE_APP_BACKEND_URL;
-  const USE_DUMMY_DATA = true; // Set to false when backend is ready
-  
-  // Fetcher function for SWR
-  const fetcher = async (url: string): Promise<DashboardStats> => {
-    // Return dummy data for demonstration
-    if (USE_DUMMY_DATA) {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      return DUMMY_STATS;
-    }
 
-    
+  const fetcher = async (url: string): Promise<DashboardStats> => {
     const response = await fetch(url, {
       credentials: 'include',
       headers: {
@@ -46,6 +35,9 @@ export function useDashboardStats() {
     });
 
     if (!response.ok) {
+      if (response.status === 404) {
+        return EMPTY_STATS;
+      }
       const errorText = await response.text();
       throw new Error(
         `Failed to fetch dashboard stats (${response.status}): ${errorText || response.statusText}`
@@ -56,21 +48,21 @@ export function useDashboardStats() {
     return data as DashboardStats;
   };
 
-  // Use SWR for data fetching with automatic revalidation
   const { data, error, isLoading } = useSWR<DashboardStats>(
     `${BASE}/api/dashboard/stats`,
     fetcher,
     {
-      refreshInterval: USE_DUMMY_DATA ? 0 : 30000, // Disable refresh for dummy data
-      revalidateOnFocus: !USE_DUMMY_DATA,
-      revalidateOnReconnect: !USE_DUMMY_DATA,
+      refreshInterval: 30000,
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      fallbackData: EMPTY_STATS,
     }
   );
 
   return {
-    stats: data,
+    stats: data ?? EMPTY_STATS,
     loading: isLoading,
-    error: error?.message || null,
+    error: error?.message ?? null,
   };
 }
 

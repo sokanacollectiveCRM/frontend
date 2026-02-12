@@ -84,6 +84,7 @@ export function UserProvider({
         await checkAuth();
         return true;
       }
+      // Backend: POST /auth/login, body { email, password }; success: { message, user, token } + Set-Cookie sb-access-token
       const response = await fetch(buildUrl('/auth/login'), {
         method: 'POST',
         credentials: 'include',
@@ -91,8 +92,8 @@ export function UserProvider({
         body: JSON.stringify({ email, password }),
       });
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Login failed');
+        const data = await response.json().catch(() => ({}));
+        throw new Error((data as { error?: string })?.error || 'Login failed');
       }
       await checkAuth();
       return true;
@@ -104,7 +105,7 @@ export function UserProvider({
       }
       if (error instanceof TypeError && (error.message === 'Failed to fetch' || error.message === 'Load failed')) {
         throw new Error(
-          'Network error. Check: (1) Supabase URL and anon key (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY), (2) Backend URL (VITE_API_URL) and CORS / Cloud Run invoker.'
+          'Network error. Check: (1) Supabase URL and anon key (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY), (2) Backend URL (VITE_APP_BACKEND_URL or VITE_API_BASE_URL) and CORS.'
         );
       }
       throw error;

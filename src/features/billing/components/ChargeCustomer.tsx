@@ -1,4 +1,5 @@
-import { chargeCard, getCustomersWithStripeId } from '@/api/payments/stripe';
+import { chargeCard } from '@/api/payments/stripe';
+import { fetchClients } from '@/api/services/clients.service';
 import { Alert, AlertDescription } from '@/common/components/ui/alert';
 import { Badge } from '@/common/components/ui/badge';
 import { Button } from '@/common/components/ui/button';
@@ -23,15 +24,11 @@ import React, { useContext, useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 
 interface Customer {
-  id: string; // UUID from database
-  name: string; // Full name from API
+  id: string;
+  name: string;
   email: string;
-  stripeCustomerId: string; // Stripe customer ID
-  createdAt: string;
-  updatedAt: string;
-  // Computed fields for compatibility
-  firstname?: string;
-  lastname?: string;
+  firstname: string;
+  lastname: string;
 }
 
 export default function ChargeCustomer() {
@@ -45,11 +42,6 @@ export default function ChargeCustomer() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showDropdown, setShowDropdown] = useState(false);
-
-  // Debug: Log when selectedCustomerId changes
-  React.useEffect(() => {
-    console.log('selectedCustomerId changed to:', selectedCustomerId);
-  }, [selectedCustomerId]);
 
   // Handle click outside to close dropdown
   React.useEffect(() => {
@@ -73,98 +65,28 @@ export default function ChargeCustomer() {
   const loadCustomers = async () => {
     setIsLoadingCustomers(true);
     try {
-      const response = await getCustomersWithStripeId();
-      console.log('Raw API response:', response);
-
-      // Handle different response formats
-      let rawData: any[];
-      if (Array.isArray(response)) {
-        rawData = response;
-      } else if (
-        response &&
-        typeof response === 'object' &&
-        'data' in response &&
-        Array.isArray((response as any).data)
-      ) {
-        rawData = (response as any).data;
-      } else if (
-        response &&
-        typeof response === 'object' &&
-        'customers' in response &&
-        Array.isArray((response as any).customers)
-      ) {
-        rawData = (response as any).customers;
-      } else {
-        console.error('Unexpected response format:', response);
-        throw new Error('Invalid response format from customers API');
-      }
-
-      // Transform and filter the data
-      const customerList = rawData
-        .filter(
-          (customer: any) =>
-            customer.id &&
-            customer.name &&
-            customer.email &&
-            customer.stripeCustomerId &&
-            customer.stripeCustomerId !== 'NULL' &&
-            customer.stripeCustomerId !== null
-        )
-        .map((customer: any) => {
-          // Split name into first and last name for backward compatibility
-          const nameParts = customer.name.split(' ');
-          const firstname = nameParts[0] || '';
-          const lastname = nameParts.slice(1).join(' ') || '';
-
-          return {
-            ...customer,
-            firstname,
-            lastname,
-          } as Customer;
-        });
-
-      console.log(
-        'Loaded customers with Stripe IDs:',
-        customerList.map((c: Customer) => ({
+      const clients = await fetchClients();
+      const customerList: Customer[] = clients
+        .filter((c) => c.hasSignedContract === true)
+        .filter((c) => c.id && (c.email || `${c.firstname} ${c.lastname}`.trim()))
+        .map((c) => ({
           id: c.id,
-          name: c.name,
-          stripeCustomerId: c.stripeCustomerId,
-          email: c.email,
-        }))
-      );
-      console.log(
-        'Filtered out customers without Stripe IDs:',
-        rawData
-          .filter(
-            (customer: any) =>
-              !customer.id ||
-              !customer.name ||
-              !customer.stripeCustomerId ||
-              customer.stripeCustomerId === 'NULL' ||
-              customer.stripeCustomerId === null
-          )
-          .map((c: any) => ({
-            id: c.id,
-            name: c.name,
-            stripeCustomerId: c.stripeCustomerId,
-            email: c.email,
-          }))
-      );
+          name: `${c.firstname || ''} ${c.lastname || ''}`.trim() || 'Unknown',
+          email: c.email || '',
+          firstname: c.firstname || '',
+          lastname: c.lastname || '',
+        }));
       setCustomers(customerList);
 
-      // Ensure no customer is auto-selected
       if (
         selectedCustomerId &&
-        !customerList.find((c: Customer) => c.id === selectedCustomerId)
+        !customerList.find((c) => c.id === selectedCustomerId)
       ) {
-        console.log(
-          'Clearing selectedCustomerId because selected customer not found in new list'
-        );
         setSelectedCustomerId('');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error loading customers:', error);
-      toast.error(error.message || 'Failed to load customers');
+      toast.error(error instanceof Error ? error.message : 'Failed to load customers');
     } finally {
       setIsLoadingCustomers(false);
     }
@@ -203,14 +125,11 @@ export default function ChargeCustomer() {
       const selectedCustomerData = customers.find(
         (c) => c.id === selectedCustomerId
       );
-      if (!selectedCustomerData?.stripeCustomerId) {
-        throw new Error(
-          'Selected customer does not have a valid Stripe customer ID'
-        );
+      if (!selectedCustomerData) {
+        throw new Error('Please select a customer');
       }
 
-      // Pass the database customer ID to the API endpoint
-      const result = await chargeCard(
+      await chargeCard(
         selectedCustomerData.id,
         amountInCents,
         description
@@ -256,9 +175,6 @@ export default function ChargeCustomer() {
       selectedCustomerId !== 'no-customers' &&
       !isSelectedCustomerInFilteredList
     ) {
-      console.log(
-        'Clearing selection because selected customer not in filtered list'
-      );
       setSelectedCustomerId('');
     }
   }, [selectedCustomerId, isSelectedCustomerInFilteredList, searchQuery]);
@@ -269,39 +185,6 @@ export default function ChargeCustomer() {
     selectedCustomerId !== 'no-customers'
       ? customers.find((customer) => customer.id === selectedCustomerId)
       : undefined;
-
-  // Debug logging
-  React.useEffect(() => {
-    console.log('=== Customer Selection Debug ===');
-    console.log('Selected Customer ID:', selectedCustomerId);
-    console.log(
-      'All Customers:',
-      customers.map((c: Customer) => ({
-        id: c.id,
-        name: `${c.firstname} ${c.lastname}`,
-      }))
-    );
-    console.log(
-      'Filtered Customers:',
-      filteredCustomers.map((c: Customer) => ({
-        id: c.id,
-        name: `${c.firstname} ${c.lastname}`,
-      }))
-    );
-    console.log('Selected Customer Object:', selectedCustomer);
-    console.log(
-      'Is selected in filtered list:',
-      isSelectedCustomerInFilteredList
-    );
-    console.log('Search Query:', searchQuery);
-    console.log('===============================');
-  }, [
-    selectedCustomerId,
-    filteredCustomers,
-    selectedCustomer,
-    customers,
-    searchQuery,
-  ]);
 
   if (userLoading) {
     return (
@@ -332,7 +215,7 @@ export default function ChargeCustomer() {
             Charge Customer Payment Method
           </CardTitle>
           <CardDescription>
-            Select a customer and charge their default payment method
+            Charge customers who have signed a contract. Select a customer and amount.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -346,10 +229,7 @@ export default function ChargeCustomer() {
                     type='button'
                     variant='outline'
                     size='sm'
-                    onClick={() => {
-                      console.log('Manual clear selection clicked');
-                      setSelectedCustomerId('');
-                    }}
+                  onClick={() => setSelectedCustomerId('')}
                   >
                     Clear Selection
                   </Button>
@@ -420,24 +300,10 @@ export default function ChargeCustomer() {
                               }
                               className='px-3 py-2 hover:bg-gray-100 cursor-pointer'
                               onClick={() => {
-                                console.log(
-                                  'Customer clicked:',
-                                  customer.id,
-                                  customer.firstname,
-                                  customer.lastname
-                                );
-                                if (
-                                  customer.id &&
-                                  customer.id !== 'undefined'
-                                ) {
+                                if (customer.id && customer.id !== 'undefined') {
                                   setSelectedCustomerId(customer.id);
-                                  setSearchQuery(''); // Clear search after selection
-                                  setShowDropdown(false); // Close dropdown after selection
-                                } else {
-                                  console.error(
-                                    'Cannot select customer with invalid ID:',
-                                    customer
-                                  );
+                                  setSearchQuery('');
+                                  setShowDropdown(false);
                                 }
                               }}
                             >
@@ -554,8 +420,8 @@ export default function ChargeCustomer() {
       <Alert>
         <CheckCircle className='h-4 w-4' />
         <AlertDescription>
-          This will charge the customer's default payment method. Make sure the
-          customer has a saved payment method before proceeding.
+          Only customers with a signed contract are listed. The charge will use
+          the customer's saved payment method on file.
         </AlertDescription>
       </Alert>
     </div>
