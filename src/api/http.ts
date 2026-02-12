@@ -45,7 +45,7 @@ function assertProductionBackendUrl(_path: string): void {
   const isLocalhost = base.includes('localhost') || base.startsWith('http://127.');
   if (isProductionBuild && isLocalhost) {
     throw new ApiError(
-      'Backend URL is not set for production. Set VITE_API_URL (or VITE_API_BASE_URL) in Vercel to your backend, e.g. https://backend-634744984887.us-central1.run.app',
+      'Backend URL is not set for production. Set VITE_APP_BACKEND_URL or VITE_API_BASE_URL in Vercel to your backend, e.g. https://your-backend.run.app',
       0,
       { code: 'MISSING_BACKEND_URL' }
     );
@@ -130,7 +130,7 @@ async function requestLegacy<T>(path: string, options?: RequestOptions): Promise
   } catch (err) {
     if (isNetworkError(err)) {
       throw new ApiError(
-        `Network error: could not reach the server. Check VITE_API_URL, CORS (allow your frontend origin), and Cloud Run invoker access. URL: ${url}`,
+        `Network error: could not reach the server. Check backend URL (VITE_APP_BACKEND_URL), CORS (allow your frontend origin), and that the server is running. URL: ${url}`,
         0,
         { code: 'NETWORK_ERROR' }
       );
@@ -167,7 +167,7 @@ async function requestCanonical<T>(path: string, options?: RequestOptions): Prom
   } catch (err) {
     if (isNetworkError(err)) {
       throw new ApiError(
-        `Network error: could not reach the server. Check VITE_API_URL, CORS (allow your frontend origin), and Cloud Run invoker access. URL: ${url}`,
+        `Network error: could not reach the server. Check backend URL (VITE_APP_BACKEND_URL), CORS (allow your frontend origin), and that the server is running. URL: ${url}`,
         0,
         { code: 'NETWORK_ERROR' }
       );

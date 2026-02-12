@@ -17,7 +17,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
     'Please add the following to your .env file:\n' +
     'VITE_SUPABASE_URL=your_supabase_project_url\n' +
     'VITE_SUPABASE_ANON_KEY=your_supabase_anon_key\n\n' +
-    'Get these values from your Supabase project settings.';
+    'Use the same Supabase project as your backend (e.g. https://xxxxx.supabase.co).\n' +
+    'Get URL and anon key from Supabase Dashboard → Project Settings → API.';
   console.error(errorMessage);
   
   // Create a placeholder client that will throw helpful errors when used

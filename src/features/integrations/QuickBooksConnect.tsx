@@ -2,10 +2,18 @@
 import { getQuickBooksStatus } from '@/api/quickbooks/auth/qbo';
 import { withTokenRefresh } from '@/api/quickbooks/auth/utils';
 import SubmitButton from '@/common/components/form/SubmitButton';
+import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
 import { UserContext } from '@/common/contexts/UserContext';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/common/components/ui/card';
 import { useQuickBooksConnect } from '@/common/hooks/useQuickBooksIntegration/useQuickBooksIntegration';
-import { useCallback, useContext, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -17,6 +25,29 @@ export default function QuickBooksConnectPage() {
   const [connected, setConnected] = useState<boolean | null>(null);
   const { user, isLoading: authLoading } = useContext(UserContext);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const successHandledRef = useRef(false);
+
+  // OAuth callback: backend redirects here (popup or main window) with success params.
+  useEffect(() => {
+    const success =
+      searchParams.get('quickbooks') === 'connected' ||
+      searchParams.get('quickbooks_connected') === '1' ||
+      searchParams.get('success') === '1';
+    if (!success || successHandledRef.current) return;
+    successHandledRef.current = true;
+
+    if (window.opener) {
+      // Popup flow: post to opener so it shows toast and navigates
+      window.opener.postMessage({ success: true }, window.location.origin);
+      window.close();
+    } else {
+      // Main-window redirect: show toast and stay on QuickBooks page (clean URL)
+      setConnected(true);
+      toast.success('QuickBooks is connected. You can use it for invoicing and customers.');
+      navigate('/integrations/quickbooks', { replace: true });
+    }
+  }, [searchParams, navigate]);
 
   // Redirect non‑admins away
   useEffect(() => {
@@ -67,8 +98,11 @@ export default function QuickBooksConnectPage() {
         return;
       }
       if (e.data?.success) {
+        if (successHandledRef.current) return;
+        successHandledRef.current = true;
         setConnected(true);
-        toast.success('QuickBooks connected 🎉');
+        toast.success('QuickBooks is connected. You can use it for invoicing and customers.');
+        navigate('/integrations/quickbooks', { replace: true });
       } else {
         toast.error('QuickBooks connection failed');
       }
@@ -107,30 +141,41 @@ export default function QuickBooksConnectPage() {
     }
   }, [connected, connectQuickBooks, isLoading]);
 
+  // Loading: single indicator centered in the viewport
   if (connected === null) {
-    return <p>Loading QuickBooks status…</p>;
+    return (
+      <div className='min-h-[60vh] relative'>
+        <LoadingOverlay isLoading={true} />
+      </div>
+    );
   }
 
+  // Loaded: content higher on page, in a card
   return (
-    <div className='min-h-screen flex items-center justify-center px-4'>
-      <section className='max-w-md w-full space-y-6 text-center'>
-        <h1 className='text-3xl font-bold'>QuickBooks Integration</h1>
-        <p className='text-sm text-gray-500'>
-          {connected
-            ? 'Your QuickBooks account is connected.'
-            : 'QuickBooks is currently disconnected.'}
-        </p>
-
-        <SubmitButton onClick={handleClick} disabled={isLoading}>
-          {isLoading
-            ? connected
-              ? 'Disconnecting…'
-              : 'Connecting…'
-            : connected
-              ? 'Disconnect QuickBooks'
-              : 'Connect QuickBooks'}
-        </SubmitButton>
-      </section>
+    <div className='px-4 pt-6 pb-8'>
+      <div className='max-w-[480px] mx-auto'>
+        <Card>
+          <CardHeader className='space-y-1.5'>
+            <CardTitle className='text-2xl'>QuickBooks Integration</CardTitle>
+            <CardDescription>
+              {connected
+                ? 'Your QuickBooks account is connected.'
+                : 'QuickBooks is currently disconnected.'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SubmitButton onClick={handleClick} disabled={isLoading}>
+              {isLoading
+                ? connected
+                  ? 'Disconnecting…'
+                  : 'Connecting…'
+                : connected
+                  ? 'Disconnect QuickBooks'
+                  : 'Connect QuickBooks'}
+            </SubmitButton>
+          </CardContent>
+        </Card>
+      </div>
 
       <ToastContainer position='top-right' newestOnTop closeOnClick />
     </div>

@@ -18,8 +18,6 @@ import { Header } from '@/common/layouts/Header';
 import { Main } from '@/common/layouts/Main';
 import { ProfileDropdown } from '@/common/components/user/ProfileDropdown';
 import UserAvatar from '@/common/components/user/UserAvatar';
-import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
-import { getAllDoulas } from '@/api/doulas/doulaApi';
 import type { Doula } from '@/features/hours/types/doula';
 import { toast } from 'sonner';
 import { UserContext } from '@/common/contexts/UserContext';
@@ -29,7 +27,6 @@ export default function DoulaListPage() {
   const navigate = useNavigate();
   const { user, isLoading: authLoading } = useContext(UserContext);
   const [doulas, setDoulas] = useState<Doula[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [matchModalOpen, setMatchModalOpen] = useState(false);
   const [selectedDoula, setSelectedDoula] = useState<Doula | null>(null);
@@ -54,11 +51,7 @@ export default function DoulaListPage() {
   }, []);
 
   const fetchDoulas = async () => {
-    setIsLoading(true);
     try {
-      // For now, fetch from team members with role 'doula'
-      // This will be replaced with actual doula API endpoint
-
       const response = await fetch(
         `${import.meta.env.VITE_APP_BACKEND_URL}/clients/team/all`,
         {
@@ -71,11 +64,11 @@ export default function DoulaListPage() {
       );
 
       if (!response.ok) {
-        throw new Error('Failed to fetch doulas');
+        setDoulas([]);
+        return;
       }
 
       const data = await response.json();
-      // Filter for doulas only and map to Doula type
       const doulaData = data
         .filter((member: any) => member.role === 'doula')
         .map((member: any) => ({
@@ -97,11 +90,8 @@ export default function DoulaListPage() {
         }));
 
       setDoulas(doulaData);
-    } catch (error: any) {
-      console.error('Error fetching doulas:', error);
-      toast.error(error.message || 'Failed to load doulas');
-    } finally {
-      setIsLoading(false);
+    } catch {
+      setDoulas([]);
     }
   };
 
@@ -201,8 +191,6 @@ export default function DoulaListPage() {
         </div>
       </Header>
 
-      <LoadingOverlay isLoading={isLoading} />
-
       <Main>
         <div className='flex-1 overflow-auto p-4'>
           <div className='mb-6 flex justify-between items-start'>
@@ -232,7 +220,7 @@ export default function DoulaListPage() {
             </div>
           </div>
 
-          {filteredDoulas.length === 0 && !isLoading && (
+          {filteredDoulas.length === 0 && (
             <div className='flex flex-col items-center justify-center py-20 text-center bg-white rounded-xl border border-gray-200'>
               <div className='rounded-full bg-gray-100 p-4 mb-4'>
                 <Search className='h-8 w-8 text-gray-400' />

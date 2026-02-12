@@ -1,6 +1,7 @@
 // src/api/payments/stripe.ts
-const API_BASE =
-  import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050';
+import { buildUrl, fetchWithAuth } from '@/api/http';
+
+const API_BASE = import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050';
 
 export interface StoredCard {
   id: string;
@@ -122,24 +123,20 @@ export async function updateCard(
 }
 
 /**
- * Charge a customer's default payment method (Admin only)
+ * Charge a customer's default payment method (Admin only).
+ * customerId = app client UUID (from GET /clients). Backend resolves to Stripe customer and charges default payment method.
  */
 export async function chargeCard(
   customerId: string,
   amount: number,
   description: string
-): Promise<any> {
-
-  const response = await fetch(
-    `${API_BASE}/api/payments/customers/${customerId}/charge`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ amount, description }),
-    }
-  );
+): Promise<ChargeCardResponse['data']> {
+  const url = buildUrl(`/api/payments/customers/${customerId}/charge`);
+  const response = await fetchWithAuth(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ amount, description }),
+  });
 
   const result: ChargeCardResponse = await response.json();
 

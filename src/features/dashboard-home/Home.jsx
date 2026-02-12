@@ -3,12 +3,32 @@ import { useClientAuth } from '@/common/hooks/auth/useClientAuth';
 import { CalendarWidget } from './components/CalendarWidget';
 import { StatsOverview } from './components/StatsOverview';
 import ClientDashboard from '@/features/client-dashboard/ClientDashboard';
+import { useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
+
+const QUICKBOOKS_CONNECTED_KEY = 'quickbooks_just_connected';
 
 export default function Home() {
   const { user, isLoading: isUserLoading } = useUser();
   const { client, isLoading: isClientLoading } = useClientAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const isDoula = user?.role === 'doula';
   const isClient = !!client;
+
+  // Show notification when user is redirected back to dashboard after connecting QuickBooks
+  useEffect(() => {
+    const fromUrl = searchParams.get('quickbooks_connected') === '1';
+    const fromStorage = sessionStorage.getItem(QUICKBOOKS_CONNECTED_KEY);
+    if (fromUrl || fromStorage) {
+      toast.success('QuickBooks is connected. You can use it for invoicing and customers.');
+      sessionStorage.removeItem(QUICKBOOKS_CONNECTED_KEY);
+      if (fromUrl) {
+        searchParams.delete('quickbooks_connected');
+        setSearchParams(searchParams, { replace: true });
+      }
+    }
+  }, [searchParams, setSearchParams]);
 
   // Show loading state while checking auth
   if (isClientLoading || isUserLoading) {
