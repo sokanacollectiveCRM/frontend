@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/common/components/ui/button';
 import {
@@ -9,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/common/components/ui/card';
-import { Input } from '@/common/components/ui/input';
 import { Label } from '@/common/components/ui/label';
 import { PasswordInput } from '@/common/components/form/PasswordInput';
 import { Loader2, AlertCircle } from 'lucide-react';
@@ -25,34 +24,106 @@ export default function SetPassword() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [isInitializingSession, setIsInitializingSession] = useState(true);
   const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
 
-  // Extract access token from URL hash
+  // Extract tokens from URL hash and establish Supabase session
   useEffect(() => {
-    const hash = window.location.hash.substring(1);
-    const hashParams = new URLSearchParams(hash);
-    const token = hashParams.get('access_token');
-    const type = hashParams.get('type');
+    let cancelled = false;
 
-    console.log('SetPassword - Hash:', hash);
-    console.log('SetPassword - Token:', token ? 'present' : 'missing');
-    console.log('SetPassword - Type:', type);
+    const initializeSessionFromHash = async () => {
+      try {
+        const hash = window.location.hash.substring(1);
+        const hashParams = new URLSearchParams(hash);
+        const token = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+        const type = hashParams.get('type');
 
-    if (!token) {
-      setError('Invalid or missing access token. Please request a new invite.');
-    } else if (type !== 'recovery') {
-      setError('Invalid invite link type. Please use the link from your email.');
-    } else {
-      setAccessToken(token);
-      // Supabase should automatically detect the session from the hash
-      // Let's verify the session is available
-      supabase.auth.getSession().then(({ data, error }) => {
-        console.log('SetPassword - Session check:', { data, error });
-        if (error) {
-          console.error('SetPassword - Session error:', error);
+        console.log('SetPassword - Hash:', hash);
+        console.log(
+          'SetPassword - Access token:',
+          token ? 'present' : 'missing'
+        );
+        console.log(
+          'SetPassword - Refresh token:',
+          refreshToken ? 'present' : 'missing'
+        );
+        console.log('SetPassword - Type:', type);
+
+        // If hash tokens exist, establish session explicitly.
+        if (token && refreshToken) {
+          if (type && type !== 'recovery') {
+            if (!cancelled) {
+              setError(
+                'Invalid invite link type. Please use the link from your email.'
+              );
+              setAccessToken(null);
+            }
+            return;
+          }
+
+          const { error: setSessionError } = await supabase.auth.setSession({
+            access_token: token,
+            refresh_token: refreshToken,
+          });
+
+          if (setSessionError) {
+            throw new Error(
+              setSessionError.message ||
+                'Invalid or expired token. Please request a new invite.'
+            );
+          }
+
+          if (!cancelled) {
+            setAccessToken(token);
+            setError(null);
+          }
+
+          // Remove sensitive tokens from URL after session is established.
+          const cleanUrl = `${window.location.pathname}${window.location.search}`;
+          window.history.replaceState({}, document.title, cleanUrl);
+          return;
         }
-      });
-    }
+
+        // Fallback: if no hash tokens, use existing session if available.
+        const { data: sessionData, error: sessionError } =
+          await supabase.auth.getSession();
+        if (sessionError) {
+          throw new Error(sessionError.message);
+        }
+        if (!cancelled && sessionData.session) {
+          setAccessToken(sessionData.session.access_token);
+          setError(null);
+          return;
+        }
+
+        if (!cancelled) {
+          setAccessToken(null);
+          setError(
+            'Invalid or missing access token. Please request a new invite.'
+          );
+        }
+      } catch (err) {
+        if (!cancelled) {
+          const message =
+            err instanceof Error
+              ? err.message
+              : 'Invalid or expired token. Please request a new invite.';
+          setAccessToken(null);
+          setError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsInitializingSession(false);
+        }
+      }
+    };
+
+    initializeSessionFromHash();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Validate password requirements
@@ -107,10 +178,6 @@ export default function SetPassword() {
     setIsLoading(true);
 
     try {
-      // Supabase automatically detects the session from the URL hash (detectSessionInUrl: true)
-      // Wait a moment for Supabase to process the hash, then get the session
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      
       const { data: sessionData, error: sessionError } =
         await supabase.auth.getSession();
 
@@ -168,9 +235,12 @@ export default function SetPassword() {
       <div className='flex flex-col gap-6 max-w-md mx-auto p-4'>
         <Card>
           <CardHeader>
-            <CardTitle className='text-2xl'>Password Set Successfully!</CardTitle>
+            <CardTitle className='text-2xl'>
+              Password Set Successfully!
+            </CardTitle>
             <CardDescription>
-              Your password has been set. You can now log in to your client portal.
+              Your password has been set. You can now log in to your client
+              portal.
             </CardDescription>
           </CardHeader>
           <CardContent className='flex flex-col gap-4'>
@@ -195,8 +265,9 @@ export default function SetPassword() {
         <CardHeader>
           <CardTitle className='text-2xl'>Set Your Password</CardTitle>
           <CardDescription>
-            Create a secure password to access your client portal. This will email a
-            secure link to create a password and access the client dashboard.
+            Create a secure password to access your client portal. This will
+            email a secure link to create a password and access the client
+            dashboard.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -216,7 +287,7 @@ export default function SetPassword() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                disabled={isLoading || !accessToken}
+                disabled={isLoading || isInitializingSession || !accessToken}
                 className={cn(
                   passwordErrors.length > 0 && password && 'border-destructive'
                 )}
@@ -255,7 +326,7 @@ export default function SetPassword() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                disabled={isLoading || !accessToken}
+                disabled={isLoading || isInitializingSession || !accessToken}
                 className={cn(
                   confirmPassword &&
                     password !== confirmPassword &&
@@ -276,11 +347,20 @@ export default function SetPassword() {
                 )}
             </div>
 
-            <Button type='submit' className='w-full' disabled={isLoading || !accessToken}>
+            <Button
+              type='submit'
+              className='w-full'
+              disabled={isLoading || isInitializingSession || !accessToken}
+            >
               {isLoading ? (
                 <>
                   <Loader2 className='h-4 w-4 animate-spin mr-2' />
                   Setting Password...
+                </>
+              ) : isInitializingSession ? (
+                <>
+                  <Loader2 className='h-4 w-4 animate-spin mr-2' />
+                  Validating link...
                 </>
               ) : (
                 'Set Password'
@@ -292,7 +372,8 @@ export default function SetPassword() {
             <div className='mt-4 text-center text-sm text-muted-foreground'>
               <p>Need a new invite?</p>
               <p className='mt-1'>
-                Please contact your administrator to request a new portal invite.
+                Please contact your administrator to request a new portal
+                invite.
               </p>
             </div>
           )}
@@ -301,4 +382,3 @@ export default function SetPassword() {
     </div>
   );
 }
-

@@ -1,4 +1,7 @@
 // src/common/hooks/dashboard/useDashboardStats.ts
+import { fetchDoulas } from '@/api/doulas/doulaDirectoryApi';
+import { buildUrl, fetchWithAuth } from '@/api/http';
+import { fetchClients } from '@/api/services/clients.service';
 import useSWR from 'swr';
 
 export interface DashboardStats {
@@ -24,32 +27,89 @@ const EMPTY_STATS: DashboardStats = {
  * @returns {object} - { stats, loading, error }
  */
 export function useDashboardStats() {
-  const BASE = import.meta.env.VITE_APP_BACKEND_URL;
+  const computePendingContracts = (
+    clients: Awaited<ReturnType<typeof fetchClients>>
+  ): number => {
+    return clients.filter((client) => {
+      const contractStatus = String(client.contractStatus || '').toLowerCase();
+      const hasSigned =
+        client.hasSignedContract === true || contractStatus === 'signed';
+      if (hasSigned) return false;
 
-  const fetcher = async (url: string): Promise<DashboardStats> => {
-    const response = await fetch(url, {
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+      // Treat contract-stage unsigned records as pending.
+      if (contractStatus === 'pending' || contractStatus === 'not_sent')
+        return true;
+      return client.status === 'contract';
+    }).length;
+  };
 
-    if (!response.ok) {
-      if (response.status === 404) {
-        return EMPTY_STATS;
+  const fetcher = async (): Promise<DashboardStats> => {
+    // Best-effort fetch for optional metrics (overdue, tasks, revenue).
+    let baseStats: DashboardStats = EMPTY_STATS;
+    try {
+      const response = await fetchWithAuth(buildUrl('/api/dashboard/stats'), {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (response.ok) {
+        const raw = await response.json();
+        const obj =
+          raw && typeof raw === 'object' && !Array.isArray(raw)
+            ? (raw as Record<string, unknown>)
+            : {};
+        const payload =
+          obj.data && typeof obj.data === 'object'
+            ? (obj.data as Record<string, unknown>)
+            : obj;
+
+        baseStats = {
+          totalDoulas: Number(payload.totalDoulas ?? 0),
+          totalClients: Number(payload.totalClients ?? 0),
+          pendingContracts: Number(payload.pendingContracts ?? 0),
+          overdueNotes: Number(payload.overdueNotes ?? 0),
+          upcomingTasks: Number(payload.upcomingTasks ?? 0),
+          monthlyRevenue:
+            payload.monthlyRevenue === null ||
+            payload.monthlyRevenue === undefined
+              ? null
+              : Number(payload.monthlyRevenue),
+        };
       }
-      const errorText = await response.text();
-      throw new Error(
-        `Failed to fetch dashboard stats (${response.status}): ${errorText || response.statusText}`
-      );
+    } catch {
+      // Keep EMPTY_STATS fallback and continue with computed values below.
     }
 
-    const data = await response.json();
-    return data as DashboardStats;
+    const [doulasResult, clientsResult] = await Promise.allSettled([
+      fetchDoulas({ limit: 1, offset: 0 }),
+      fetchClients(),
+    ]);
+
+    const totalDoulas =
+      doulasResult.status === 'fulfilled'
+        ? doulasResult.value.meta.count
+        : baseStats.totalDoulas;
+
+    const clients =
+      clientsResult.status === 'fulfilled' ? clientsResult.value : [];
+    const totalClients =
+      clientsResult.status === 'fulfilled'
+        ? clients.length
+        : baseStats.totalClients;
+    const pendingContracts =
+      clientsResult.status === 'fulfilled'
+        ? computePendingContracts(clients)
+        : baseStats.pendingContracts;
+
+    return {
+      ...baseStats,
+      totalDoulas,
+      totalClients,
+      pendingContracts,
+    };
   };
 
   const { data, error, isLoading } = useSWR<DashboardStats>(
-    `${BASE}/api/dashboard/stats`,
+    'dashboard-stats-computed',
     fetcher,
     {
       refreshInterval: 30000,
@@ -65,4 +125,3 @@ export function useDashboardStats() {
     error: error?.message ?? null,
   };
 }
-

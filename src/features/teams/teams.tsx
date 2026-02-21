@@ -49,10 +49,31 @@ interface TeamMember {
   bio: string;
 }
 
+const ALLOWED_TEAM_ROLES = new Set(['admin', 'doula']);
+
+const normalizeTeamRole = (value: unknown): string =>
+  String(value ?? '')
+    .toLowerCase()
+    .trim();
+
+const toTeamMember = (member: any): TeamMember => ({
+  firstname: String(member?.firstname ?? member?.first_name ?? '').trim(),
+  lastname: String(member?.lastname ?? member?.last_name ?? '').trim(),
+  role: normalizeTeamRole(
+    member?.role ?? member?.user_metadata?.role ?? member?.app_metadata?.role
+  ),
+  email: String(member?.email ?? '').trim().toLowerCase(),
+  id: String(member?.id ?? member?.user_id ?? member?.email ?? ''),
+  bio: String(member?.bio ?? ''),
+});
+
 export default function Teams() {
+  const PAGE_SIZE = 10;
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]); //Team members state
   const [isLoading, setIsLoading] = useState(true); //Loading state
   const [searchQuery, setSearchQuery] = useState(''); //Search query state
+  const [roleFilter, setRoleFilter] = useState<'doula' | 'admin'>('doula');
+  const [currentPage, setCurrentPage] = useState(1);
   const [inviteForm, setInviteForm] = useState({
     //Invite form data state
     email: '',
@@ -80,49 +101,60 @@ export default function Teams() {
     //function to fetch all team members
     setIsLoading(true);
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_BACKEND_URL}/clients/team/all`,
-        {
-          method: 'GET',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      const baseUrl = import.meta.env.VITE_APP_BACKEND_URL;
+      const teamResponse = await fetch(`${baseUrl}/clients/team/all`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch team members');
+      if (!teamResponse.ok) {
+        let message = 'Failed to fetch team members';
+        try {
+          const errorData = await teamResponse.json();
+          message = errorData?.error || message;
+        } catch {
+          // Keep default message when response is not JSON
+        }
+        throw new Error(message);
       }
 
-      const data = await response.json();
-      const teamMemberData = data.map((member: any) => ({
-        firstname: member.firstname,
-        lastname: member.lastname,
-        role: member.role,
-        email: member.email,
-        id: member.id,
-        bio: member.bio,
-      }));
-      setTeamMembers(teamMemberData);
+      const teamData = await teamResponse.json();
+      const normalizedMembers = (Array.isArray(teamData) ? teamData : [])
+        .map((member: any) => toTeamMember(member))
+        .filter((member: TeamMember) => ALLOWED_TEAM_ROLES.has(member.role));
+      setTeamMembers(normalizedMembers);
     } catch (error) {
       console.error('Error fetching team members:', error);
+      toast.error('Failed to fetch team members');
     } finally {
       setIsLoading(false);
     }
   };
 
+  const roleFilteredMembers = teamMembers.filter(
+    (member) => member.role === roleFilter
+  );
+
   const filteredMembers = searchQuery //function to use search query to get the desired team member
-    ? teamMembers.filter(
-      (member) =>
-        `${member.firstname} ${member.lastname}`
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase()) ||
-        member.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        member.email.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    : teamMembers;
+    ? roleFilteredMembers.filter(
+        (member) =>
+          `${member.firstname} ${member.lastname}`
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          member.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          member.email.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : roleFilteredMembers;
+
+  const totalPages = Math.max(1, Math.ceil(filteredMembers.length / PAGE_SIZE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedMembers = filteredMembers.slice(
+    (safeCurrentPage - 1) * PAGE_SIZE,
+    safeCurrentPage * PAGE_SIZE
+  );
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     //handles change of search
@@ -450,6 +482,16 @@ export default function Teams() {
     fetchTeam();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, roleFilter]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
   return (
     <div className='flex flex-col h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden'>
       {/* Header Section */}
@@ -464,7 +506,7 @@ export default function Teams() {
             </div>
 
             <div className='flex flex-col sm:flex-row gap-3 w-full sm:w-auto'>
-              <div className='relative w-full sm:w-80'>
+              <div className='relative w-full sm:w-72'>
                 <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400' />
                 <Input
                   placeholder='Search by name, email, or role...'
@@ -473,6 +515,14 @@ export default function Teams() {
                   onChange={handleSearchChange}
                 />
               </div>
+              <select
+                className='h-10 rounded-md border border-gray-300 bg-white px-3 text-sm'
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value as 'doula' | 'admin')}
+              >
+                <option value='doula'>Doulas</option>
+                <option value='admin'>Admins</option>
+              </select>
 
               <div className='flex gap-2'>
                 <Popover
@@ -604,20 +654,20 @@ export default function Teams() {
       <div className='flex-1 overflow-y-auto'>
         <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
           {isLoading ? (
-            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'>
-              {[...Array(8)].map((_, i) => (
+            <div className='space-y-4'>
+              {[...Array(6)].map((_, i) => (
                 <div
                   key={i}
-                  className='bg-white rounded-xl border border-gray-200 p-6 animate-pulse'
+                  className='bg-white rounded-xl border border-gray-200 p-5 animate-pulse'
                 >
-                  <div className='flex items-center gap-4 mb-4'>
+                  <div className='flex items-center gap-4 mb-3'>
                     <div className='h-14 w-14 rounded-full bg-gray-200'></div>
                     <div className='flex-1'>
                       <div className='h-4 bg-gray-200 rounded w-3/4 mb-2'></div>
                       <div className='h-3 bg-gray-200 rounded w-1/2'></div>
                     </div>
                   </div>
-                  <div className='space-y-2'>
+                  <div className='space-y-2 max-w-md'>
                     <div className='h-3 bg-gray-200 rounded'></div>
                     <div className='h-3 bg-gray-200 rounded'></div>
                   </div>
@@ -625,15 +675,15 @@ export default function Teams() {
               ))}
             </div>
           ) : filteredMembers.length > 0 ? (
-            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'>
-              {filteredMembers.map((member, index) => (
+            <div className='space-y-4'>
+              {paginatedMembers.map((member) => (
                 <Card
-                  key={index}
-                  className='group bg-white rounded-xl border border-gray-200 hover:border-green-300 hover:shadow-lg transition-all duration-200 overflow-hidden'
+                  key={member.id}
+                  className='group bg-white rounded-xl border border-gray-200 hover:border-green-300 hover:shadow-md transition-all duration-200'
                 >
-                  <CardHeader className='pb-4'>
-                    <div className='flex items-start justify-between'>
-                      <div className='flex items-center gap-4 flex-1'>
+                  <CardHeader className='pb-3'>
+                    <div className='flex items-center justify-between gap-4'>
+                      <div className='flex items-center gap-4 min-w-0'>
                         <div className='relative'>
                           <UserAvatar
                             fullName={`${member?.firstname || ''} ${member?.lastname || ''}`}
@@ -641,16 +691,17 @@ export default function Teams() {
                           />
                           <div className='absolute -bottom-1 -right-1 h-5 w-5 bg-green-500 rounded-full border-2 border-white'></div>
                         </div>
-                        <div className='flex-1 min-w-0'>
+                        <div className='min-w-0'>
                           <CardTitle className='text-lg font-semibold text-gray-900 mb-1 truncate'>
                             {member.firstname} {member.lastname}
                           </CardTitle>
                           <Badge
                             variant='outline'
-                            className={`mt-1 font-medium text-xs ${member.role === 'admin'
+                            className={`mt-1 font-medium text-xs ${
+                              member.role === 'admin'
                                 ? 'bg-purple-50 text-purple-700 border-purple-200'
                                 : 'bg-blue-50 text-blue-700 border-blue-200'
-                              }`}
+                            }`}
                           >
                             {member.role.charAt(0).toUpperCase() +
                               member.role.slice(1)}
@@ -693,25 +744,27 @@ export default function Teams() {
                     </div>
                   </CardHeader>
 
-                  <CardContent className='pt-0 space-y-3'>
-                    <div className='flex items-center gap-3 text-sm text-gray-600 hover:text-gray-900 transition-colors'>
-                      <div className='flex-shrink-0'>
-                        <Mail className='h-4 w-4 text-gray-400' />
+                  <CardContent className='pt-0'>
+                    <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+                      <div className='flex items-center gap-3 text-sm text-gray-600 hover:text-gray-900 transition-colors'>
+                        <div className='flex-shrink-0'>
+                          <Mail className='h-4 w-4 text-gray-400' />
+                        </div>
+                        <a
+                          href={`mailto:${member.email}`}
+                          className='truncate hover:underline'
+                        >
+                          {member.email}
+                        </a>
                       </div>
-                      <a
-                        href={`mailto:${member.email}`}
-                        className='truncate hover:underline'
-                      >
-                        {member.email}
-                      </a>
-                    </div>
-                    <div className='flex items-center gap-3 text-sm text-gray-500'>
-                      <div className='flex-shrink-0'>
-                        <Phone className='h-4 w-4 text-gray-400' />
+                      <div className='flex items-center gap-3 text-sm text-gray-500'>
+                        <div className='flex-shrink-0'>
+                          <Phone className='h-4 w-4 text-gray-400' />
+                        </div>
+                        <span className='text-gray-400 italic'>
+                          No phone listed
+                        </span>
                       </div>
-                      <span className='text-gray-400 italic'>
-                        No phone listed
-                      </span>
                     </div>
                     {member.bio && (
                       <div className='pt-2 border-t border-gray-100'>
@@ -723,6 +776,40 @@ export default function Teams() {
                   </CardContent>
                 </Card>
               ))}
+
+              <div className='flex items-center justify-between rounded-xl border bg-white px-4 py-3'>
+                <p className='text-sm text-gray-600'>
+                  Showing {(safeCurrentPage - 1) * PAGE_SIZE + 1}-
+                  {Math.min(safeCurrentPage * PAGE_SIZE, filteredMembers.length)} of{' '}
+                  {filteredMembers.length}
+                </p>
+                <div className='flex items-center gap-3'>
+                  <span className='text-sm text-gray-500'>10 / page</span>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    disabled={safeCurrentPage <= 1}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(1, prev - 1))
+                    }
+                  >
+                    Prev
+                  </Button>
+                  <span className='text-sm font-medium text-gray-700'>
+                    Page {safeCurrentPage} of {totalPages}
+                  </span>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    disabled={safeCurrentPage >= totalPages}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                    }
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
             </div>
           ) : (
             <div className='flex flex-col items-center justify-center py-20 text-center bg-white rounded-xl border border-gray-200'>
@@ -734,7 +821,7 @@ export default function Teams() {
               </h3>
               <p className='text-gray-500 max-w-md'>
                 {searchQuery
-                  ? "We couldn't find any team members matching your search. Try adjusting your search terms."
+                  ? "We couldn't find any matching team members. Try adjusting search or role filter."
                   : "Get started by inviting your first team member. Click 'Invite Member' to begin."}
               </p>
               {!searchQuery && (
