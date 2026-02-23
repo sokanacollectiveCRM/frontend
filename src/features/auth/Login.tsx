@@ -15,6 +15,7 @@ import {
 } from '@/common/components/ui/card';
 import { Input } from '@/common/components/ui/input';
 import { Label } from '@/common/components/ui/label';
+import { PasswordInput } from '@/common/components/form/PasswordInput';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -104,10 +105,10 @@ export default function Login() {
                   Forgot your password?
                 </Link>
               </div>
-              <Input
+              <PasswordInput
                 id='password'
-                type='password'
                 name='password'
+                placeholder='Enter your password'
                 value={formState.password}
                 onChange={handleChange}
                 required
