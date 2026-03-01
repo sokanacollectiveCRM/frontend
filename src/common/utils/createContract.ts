@@ -14,29 +14,29 @@ export interface ServiceSelectionData {
 export interface ContractData {
   clientName: string;
   clientEmail: string;
-  totalInvestment: string;  // Format: "$2,500"
-  depositAmount: string;    // Format: "$500"
+  totalInvestment: string; // Format: "$2,500"
+  depositAmount: string; // Format: "$500"
   serviceType: 'Labor Support Services' | 'Postpartum Doula Services';
-  remainingBalance?: string;  // Optional - auto-calculated if not provided
-  contractDate?: string;     // Optional - auto-generated if not provided
-  dueDate?: string;         // Optional - auto-calculated if not provided
-  startDate?: string;        // Optional - auto-generated if not provided
-  endDate?: string;         // Optional - auto-calculated if not provided
+  remainingBalance?: string; // Optional - auto-calculated if not provided
+  contractDate?: string; // Optional - auto-generated if not provided
+  dueDate?: string; // Optional - auto-calculated if not provided
+  startDate?: string; // Optional - auto-generated if not provided
+  endDate?: string; // Optional - auto-calculated if not provided
   // Postpartum-specific fields
-  totalHours?: string;       // Total hours for Postpartum contracts
-  hourlyRate?: string;       // Hourly rate for Postpartum contracts
-  overnightFee?: string;     // Overnight fee for Postpartum contracts
+  totalHours?: string; // Total hours for Postpartum contracts
+  hourlyRate?: string; // Hourly rate for Postpartum contracts
+  overnightFee?: string; // Overnight fee for Postpartum contracts
   // Multi-service extensions
   selectedServices?: ServiceSelectionData[];
-  totalAmount?: number;      // Combined total of all selected services
+  totalAmount?: number; // Combined total of all selected services
   // Administrative fee
-  adminFee?: number;               // e.g., 150 when applied
-  adminFeeInstallments?: number;   // 2-4 when applied
+  adminFee?: number; // e.g., 150 when applied
+  adminFeeInstallments?: number; // 2-4 when applied
   // Discount fields
-  discount?: number;               // absolute discount amount applied
-  discountRate?: number;           // rate (e.g., 0.10)
-  discountApplied?: boolean;       // convenience flag
-  totalAfterDiscount?: number;     // services total after discount, excluding admin fee
+  discount?: number; // absolute discount amount applied
+  discountRate?: number; // rate (e.g., 0.10)
+  discountApplied?: boolean; // convenience flag
+  totalAfterDiscount?: number; // services total after discount, excluding admin fee
 }
 
 // Compute services total with automatic multi-service discount (10% when >1 service)
@@ -51,11 +51,20 @@ export function applyMultiServiceDiscount(
     return rate * hours;
   };
 
-  const totalBeforeDiscount = services.reduce((sum, s) => sum + computeServiceAmount(s), 0);
+  const totalBeforeDiscount = services.reduce(
+    (sum, s) => sum + computeServiceAmount(s),
+    0
+  );
   let discount = 0;
   let discountRate = 0;
-  if (services.filter(s => (s.type === 'flat' ? (s.amount || 0) > 0 : ((s.hourlyRate || 0) > 0 && (s.totalHours || 0) > 0))).length > 1) {
-    discountRate = 0.10;
+  if (
+    services.filter((s) =>
+      s.type === 'flat'
+        ? (s.amount || 0) > 0
+        : (s.hourlyRate || 0) > 0 && (s.totalHours || 0) > 0
+    ).length > 1
+  ) {
+    discountRate = 0.1;
     discount = totalBeforeDiscount * discountRate;
   }
   const totalAfterDiscount = Math.max(totalBeforeDiscount - discount, 0);
@@ -114,7 +123,9 @@ export interface ClientInfo {
 }
 
 // New contract generation function
-export async function generateContract(contractData: ContractData): Promise<ContractResponse> {
+export async function generateContract(
+  contractData: ContractData
+): Promise<ContractResponse> {
   console.log('🔍 API Request Debug:');
   console.log('- Contract data being sent:', contractData);
   console.log('- JSON stringified body:', JSON.stringify(contractData));
@@ -124,26 +135,38 @@ export async function generateContract(contractData: ContractData): Promise<Cont
   console.log('  - hourlyRate:', contractData.hourlyRate);
   console.log('  - overnightFee:', contractData.overnightFee);
   console.log('  - serviceType:', contractData.serviceType);
-  
+
   const requestBody = JSON.stringify(contractData);
   console.log('🔍 Final HTTP Request Body:');
   console.log('- Request body:', requestBody);
-  console.log('- Request body includes totalHours:', requestBody.includes('totalHours'));
-  console.log('- Request body includes hourlyRate:', requestBody.includes('hourlyRate'));
-  console.log('- Request body includes overnightFee:', requestBody.includes('overnightFee'));
-  
-  const response = await fetchWithAuth(buildUrl('/api/contract-signing/generate-contract'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: requestBody
-  });
-  
+  console.log(
+    '- Request body includes totalHours:',
+    requestBody.includes('totalHours')
+  );
+  console.log(
+    '- Request body includes hourlyRate:',
+    requestBody.includes('hourlyRate')
+  );
+  console.log(
+    '- Request body includes overnightFee:',
+    requestBody.includes('overnightFee')
+  );
+
+  const response = await fetchWithAuth(
+    buildUrl('/api/contract-signing/generate-contract'),
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: requestBody,
+    }
+  );
+
   if (!response.ok) {
     throw new Error(`Contract generation failed: ${response.statusText}`);
   }
-  
+
   return await response.json();
 }
 
@@ -160,7 +183,7 @@ function getServiceTypeName(contractType?: string): string {
 }
 
 // Helper function to get service end date
-function getServiceEndDate(_contractType?: string): string {
+function getServiceEndDate(): string {
   const endDate = new Date();
   endDate.setDate(endDate.getDate() + 90); // 90 days from now
   return endDate.toISOString().split('T')[0];
@@ -207,21 +230,25 @@ export interface PaymentIntentResponse {
 }
 
 // Calculate contract amounts using new API
-export async function calculateContractAmounts(contractInput: ContractInput): Promise<ContractCalculationResponse> {
+export async function calculateContractAmounts(
+  contractInput: ContractInput
+): Promise<ContractCalculationResponse> {
   console.log('🔍 Sending to backend:', contractInput);
-  console.log('🔍 Backend URL:', `${import.meta.env.VITE_APP_BACKEND_URL}/api/contract/postpartum/calculate`);
-  
-  const res = await fetchWithAuth(buildUrl('/api/contract/postpartum/calculate'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(contractInput),
-  });
+
+  const res = await fetchWithAuth(
+    buildUrl('/api/contract/postpartum/calculate'),
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(contractInput),
+    }
+  );
 
   const data = await res.json();
   console.log('🔍 Backend response:', { status: res.status, data });
-  
+
   if (!res.ok) {
     console.error('🔍 Backend error details:', data);
     throw new Error(data.error || 'Failed to calculate contract amounts');
@@ -236,55 +263,61 @@ export async function sendContractForSignature(
 ): Promise<ContractSendResponse> {
   // First, we need to get the calculated amounts and fields from the calculation API
   const calculationResponse = await calculateContractAmounts(contractInput);
-  
+
   if (!calculationResponse.success) {
     throw new Error('Failed to calculate contract amounts before sending');
   }
 
-  const res = await fetchWithAuth(buildUrl('/api/contract-signing/generate-contract'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      // Basic client info
-      clientName: clientInfo.name,
-      clientEmail: clientInfo.email,
-      
-      // Contract amounts
-      totalInvestment: `$${calculationResponse.amounts.total_amount.toFixed(2)}`,
-      depositAmount: `$${calculationResponse.amounts.deposit_amount.toFixed(2)}`,
-      
-      // Complete contract data
-      contractData: {
+  const res = await fetchWithAuth(
+    buildUrl('/api/contract-signing/generate-contract'),
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        // Basic client info
         clientName: clientInfo.name,
         clientEmail: clientInfo.email,
-        serviceType: getServiceTypeName(contractInput.contract_type),
-        serviceHours: contractInput.total_hours?.toString() || '0',
-        hourlyRate: contractInput.hourly_rate?.toString() || '0',
-        serviceDeposit: `$${calculationResponse.amounts.deposit_amount.toFixed(2)}`,
-        totalAmount: `$${calculationResponse.amounts.total_amount.toFixed(2)}`,
-        serviceStartDate: new Date().toISOString().split('T')[0],
-        serviceEndDate: getServiceEndDate(contractInput.contract_type),
-        date: new Date().toISOString().split('T')[0],
-        
-        // Additional contract details
-        contractType: contractInput.contract_type,
-        laborSupportAmount: contractInput.labor_support_amount?.toString() || '0',
-        depositType: contractInput.deposit_type || 'percent',
-        depositValue: contractInput.deposit_value?.toString() || '0',
-        installmentsCount: contractInput.installments_count?.toString() || '0',
-        cadence: contractInput.cadence || 'monthly',
-        paymentSchedule: calculationResponse.amounts.installments_amounts || []
-      }
-    }),
-  });
+
+        // Contract amounts
+        totalInvestment: `$${calculationResponse.amounts.total_amount.toFixed(2)}`,
+        depositAmount: `$${calculationResponse.amounts.deposit_amount.toFixed(2)}`,
+
+        // Complete contract data
+        contractData: {
+          clientName: clientInfo.name,
+          clientEmail: clientInfo.email,
+          serviceType: getServiceTypeName(contractInput.contract_type),
+          serviceHours: contractInput.total_hours?.toString() || '0',
+          hourlyRate: contractInput.hourly_rate?.toString() || '0',
+          serviceDeposit: `$${calculationResponse.amounts.deposit_amount.toFixed(2)}`,
+          totalAmount: `$${calculationResponse.amounts.total_amount.toFixed(2)}`,
+          serviceStartDate: new Date().toISOString().split('T')[0],
+          serviceEndDate: getServiceEndDate(),
+          date: new Date().toISOString().split('T')[0],
+
+          // Additional contract details
+          contractType: contractInput.contract_type,
+          laborSupportAmount:
+            contractInput.labor_support_amount?.toString() || '0',
+          depositType: contractInput.deposit_type || 'percent',
+          depositValue: contractInput.deposit_value?.toString() || '0',
+          installmentsCount:
+            contractInput.installments_count?.toString() || '0',
+          cadence: contractInput.cadence || 'monthly',
+          paymentSchedule:
+            calculationResponse.amounts.installments_amounts || [],
+        },
+      }),
+    }
+  );
 
   const data = await res.json();
   if (!res.ok) {
     throw new Error(data.error || 'Failed to send contract for signature');
   }
-  
+
   // Transform response to match expected ContractSendResponse format
   return {
     success: data.success,
@@ -292,18 +325,23 @@ export async function sendContractForSignature(
     amounts: calculationResponse.amounts,
     envelopeId: data.data?.signNow?.documentId || `SN-${Date.now()}`,
     signnow: data.data?.signNow,
-    prefilledValues: calculationResponse.fields
+    prefilledValues: calculationResponse.fields,
   };
 }
 
 // Create payment intent after contract signing
-export async function createPaymentIntent(contractId: string): Promise<PaymentIntentResponse> {
-  const res = await fetchWithAuth(buildUrl(`/api/stripe/contract/${contractId}/create-payment`), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+export async function createPaymentIntent(
+  contractId: string
+): Promise<PaymentIntentResponse> {
+  const res = await fetchWithAuth(
+    buildUrl(`/api/contract-payment/contract/${contractId}/create-payment`),
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
 
   const data = await res.json();
   if (!res.ok) {

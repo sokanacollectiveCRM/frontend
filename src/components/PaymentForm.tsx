@@ -8,7 +8,7 @@ import { CreditCard, Loader2, Lock } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { PaymentFormData } from '../types/payment';
-import { createPaymentIntent } from '../utils/paymentApi';
+import { createPaymentIntent, recordPayment } from '../utils/paymentApi';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
@@ -70,6 +70,11 @@ const PaymentFormInner = ({ contractId, amount, onSuccess }: PaymentFormProps) =
         console.error('Payment error:', error);
       } else if (confirmedPaymentIntent?.status === 'succeeded') {
         toast.success('Payment successful!');
+        try {
+          await recordPayment(confirmedPaymentIntent.id);
+        } catch (recordErr) {
+          console.error('Failed to record payment (QuickBooks sync may be delayed):', recordErr);
+        }
         onSuccess(confirmedPaymentIntent.id);
       } else {
         toast.error('Payment was not completed');

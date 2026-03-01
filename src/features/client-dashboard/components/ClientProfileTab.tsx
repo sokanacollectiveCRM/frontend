@@ -14,7 +14,11 @@ import { toast } from 'sonner';
 import { useClientAuth } from '@/common/hooks/auth/useClientAuth';
 import { supabase } from '@/lib/supabase';
 import UserAvatar from '@/common/components/user/UserAvatar';
-import { type AssignedDoula } from '@/api/clients/doulaAssignments';
+import {
+  ASSIGNMENT_ROLE_OPTIONS,
+  normalizeAssignmentRole,
+  type AssignedDoula,
+} from '@/api/clients/doulaAssignments';
 import { Badge } from '@/common/components/ui/badge';
 import { Loader2 } from 'lucide-react';
 
@@ -274,6 +278,13 @@ export default function ClientProfileTab() {
                 const fullName =
                   `${doula.firstname || ''} ${doula.lastname || ''}`.trim() ||
                   doula.email;
+                const role = normalizeAssignmentRole(
+                  assignment.role ?? assignment.category
+                );
+                const roleLabel = role
+                  ? ASSIGNMENT_ROLE_OPTIONS.find((option) => option.value === role)
+                      ?.label || 'Unspecified'
+                  : 'Unspecified';
                 return (
                   <div
                     key={assignment.id}
@@ -288,7 +299,10 @@ export default function ClientProfileTab() {
                         </p>
                       </div>
                     </div>
-                    <Badge variant='outline'>{assignment.status}</Badge>
+                    <div className='flex items-center gap-2'>
+                      <Badge variant='secondary'>{roleLabel}</Badge>
+                      <Badge variant='outline'>{assignment.status}</Badge>
+                    </div>
                   </div>
                 );
               })}

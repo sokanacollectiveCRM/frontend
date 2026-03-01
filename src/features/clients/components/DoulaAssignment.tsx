@@ -1,9 +1,12 @@
 import {
+  ASSIGNMENT_ROLE_OPTIONS,
   assignDoula,
   AssignedDoula,
+  DoulaAssignmentRole,
   Doula,
   fetchAssignedDoulas,
   fetchAvailableDoulas,
+  normalizeAssignmentRole,
   unassignDoula,
 } from '@/api/clients/doulaAssignments';
 import { Alert, AlertDescription } from '@/common/components/ui/alert';
@@ -21,6 +24,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/common/components/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/common/components/ui/select';
 import { cn } from '@/lib/utils';
 import { Check, ChevronsUpDown, Loader2, UserPlus, Users, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -35,6 +45,7 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
   const [availableDoulas, setAvailableDoulas] = useState<Doula[]>([]);
   const [assignedDoulas, setAssignedDoulas] = useState<AssignedDoula[]>([]);
   const [selectedDoulaId, setSelectedDoulaId] = useState<string>('');
+  const [selectedRole, setSelectedRole] = useState<DoulaAssignmentRole>('primary');
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState({ list: false, assign: false, remove: null as string | null });
   const [error, setError] = useState<string | null>(null);
@@ -77,14 +88,23 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
       toast.error('This doula is already assigned to this client');
       return;
     }
+    if (selectedRole === 'primary' && hasPrimaryAssigned) {
+      toast.error('A primary doula is already assigned');
+      return;
+    }
+    if (selectedRole === 'backup' && hasBackupAssigned) {
+      toast.error('A backup doula is already assigned');
+      return;
+    }
 
     setLoading((prev) => ({ ...prev, assign: true }));
     setError(null);
 
     try {
-      await assignDoula(clientId, selectedDoulaId);
+      await assignDoula(clientId, selectedDoulaId, { role: selectedRole });
       toast.success('Doula assigned successfully');
       setSelectedDoulaId('');
+      setSelectedRole('primary');
       setOpen(false); // Close popover after assignment
 
       // Refetch assigned doulas
@@ -127,6 +147,21 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
 
   // Get selected doula details
   const selectedDoula = availableDoulas.find((d) => d.id === selectedDoulaId);
+  const getRole = (assignment: AssignedDoula): DoulaAssignmentRole | null =>
+    normalizeAssignmentRole(assignment.role ?? assignment.category);
+  const hasPrimaryAssigned = assignedDoulas.some(
+    (assignment) => getRole(assignment) === 'primary'
+  );
+  const hasBackupAssigned = assignedDoulas.some(
+    (assignment) => getRole(assignment) === 'backup'
+  );
+  const roleLabelByValue = new Map(
+    ASSIGNMENT_ROLE_OPTIONS.map((option) => [option.value, option.label])
+  );
+  const roleAvailabilityText = `Primary: ${hasPrimaryAssigned ? 'assigned' : 'open'} • Backup: ${hasBackupAssigned ? 'assigned' : 'open'}`;
+  const assignmentDisabledByRole =
+    (selectedRole === 'primary' && hasPrimaryAssigned) ||
+    (selectedRole === 'backup' && hasBackupAssigned);
 
   return (
     <div className="space-y-4">
@@ -145,7 +180,7 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
       {canAssign && (
         <div className="space-y-3">
           {/* Combobox with search and Assign Button */}
-          <div className="flex items-end gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
             <div className="flex-1 space-y-1">
               <label className="text-sm font-medium text-muted-foreground">
                 Select Doula {availableDoulas.length > 0 && `(${availableDoulas.length} available)`}
@@ -235,9 +270,46 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
                 </PopoverContent>
               </Popover>
             </div>
+            <div className="w-full space-y-1 sm:w-[160px]">
+              <label className="text-sm font-medium text-muted-foreground">
+                Role
+              </label>
+              <Select
+                value={selectedRole}
+                onValueChange={(value) =>
+                  setSelectedRole(value as DoulaAssignmentRole)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ASSIGNMENT_ROLE_OPTIONS.map((option) => {
+                    const isTaken =
+                      (option.value === 'primary' && hasPrimaryAssigned) ||
+                      (option.value === 'backup' && hasBackupAssigned);
+                    return (
+                      <SelectItem
+                        key={option.value}
+                        value={option.value}
+                        disabled={isTaken}
+                      >
+                        {option.label}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
             <Button
               onClick={handleAssign}
-              disabled={!selectedDoulaId || loading.assign || loading.list || availableDoulas.length === 0}
+              disabled={
+                !selectedDoulaId ||
+                loading.assign ||
+                loading.list ||
+                availableDoulas.length === 0 ||
+                assignmentDisabledByRole
+              }
               size="default"
             >
               {loading.assign ? (
@@ -271,10 +343,20 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
           )}
 
           {/* Helper text */}
-          {!loading.list && availableDoulas.length === 0 && (
-            <p className="text-xs text-muted-foreground">
-              No doulas are currently available in the team. Please add doula team members first.
-            </p>
+          {!loading.list && (
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">{roleAvailabilityText}</p>
+              {assignmentDisabledByRole && (
+                <p className="text-xs text-amber-600">
+                  The selected role is already taken for this client.
+                </p>
+              )}
+              {availableDoulas.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  No doulas are currently available in the team. Please add doula team members first.
+                </p>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -299,6 +381,7 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
             {assignedDoulas.map((assignment) => {
               const { doula } = assignment;
               const isRemoving = loading.remove === assignment.doulaId;
+              const role = getRole(assignment);
 
               return (
                 <div
@@ -330,6 +413,9 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
 
                   {/* Status & Actions */}
                   <div className="flex items-center gap-2">
+                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                      {role ? roleLabelByValue.get(role) : 'Unspecified'}
+                    </span>
                     <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
                       {assignment.status}
                     </span>

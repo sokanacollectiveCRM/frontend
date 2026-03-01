@@ -13,7 +13,29 @@ export interface AssignedDoula {
   doulaId: string;
   assignedAt: string;
   status: string;
+  role?: DoulaAssignmentRole;
+  category?: string;
   doula: Doula;
+}
+
+export type DoulaAssignmentRole = 'primary' | 'backup';
+
+export const ASSIGNMENT_ROLE_OPTIONS: Array<{
+  value: DoulaAssignmentRole;
+  label: string;
+}> = [
+  { value: 'primary', label: 'Primary' },
+  { value: 'backup', label: 'Backup' },
+];
+
+export function normalizeAssignmentRole(
+  role: unknown
+): DoulaAssignmentRole | null {
+  if (typeof role !== 'string') return null;
+  const normalized = role.trim().toLowerCase();
+  if (normalized === 'primary') return 'primary';
+  if (normalized === 'backup') return 'backup';
+  return null;
 }
 
 const getBaseUrl = (): string => {
@@ -93,8 +115,14 @@ export const fetchAssignedDoulas = async (
  */
 export const assignDoula = async (
   clientId: string,
-  doulaId: string
+  doulaId: string,
+  options?: { role?: DoulaAssignmentRole }
 ): Promise<void> => {
+  const body: Record<string, string> = { doulaId };
+  if (options?.role) {
+    body.role = options.role;
+  }
+
   const response = await fetch(
     `${getBaseUrl()}/clients/${clientId}/assign-doula`,
     {
@@ -103,7 +131,7 @@ export const assignDoula = async (
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ doulaId }),
+      body: JSON.stringify(body),
     }
   );
 

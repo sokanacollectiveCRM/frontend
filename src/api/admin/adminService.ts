@@ -1,3 +1,5 @@
+import type { DoulaAssignmentRole } from '@/api/clients/doulaAssignments';
+
 // Admin API service functions
 const API_BASE =
   (import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050') + '/api';
@@ -26,6 +28,8 @@ export interface MatchAssignmentResponse {
       assignedBy: string;
       notes?: string;
       status: string;
+      role?: DoulaAssignmentRole;
+      category?: DoulaAssignmentRole;
     };
     client: {
       id: string;
@@ -85,19 +89,25 @@ export async function getMatchingClients(): Promise<MatchingClientsResponse> {
 export async function matchDoulaWithClient(
   clientId: string,
   doulaId: string,
-  notes?: string
+  notes?: string,
+  role?: DoulaAssignmentRole
 ): Promise<MatchAssignmentResponse> {
+  const body: Record<string, string | undefined> = {
+    clientId,
+    doulaId,
+    notes: notes?.trim() || undefined,
+  };
+  if (role) {
+    body.role = role;
+  }
+
   const response = await fetch(`${API_BASE}/admin/assignments/match`, {
     method: 'POST',
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      clientId,
-      doulaId,
-      notes: notes?.trim() || undefined,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {

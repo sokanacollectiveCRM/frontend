@@ -10,9 +10,20 @@ import {
 import { Button } from '@/common/components/ui/button';
 import { Input } from '@/common/components/ui/input';
 import { Label } from '@/common/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/common/components/ui/select';
 import { Textarea } from '@/common/components/ui/textarea';
 import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
 import { getMatchingClients, matchDoulaWithClient, type MatchingClient } from '@/api/admin/adminService';
+import {
+  ASSIGNMENT_ROLE_OPTIONS,
+  type DoulaAssignmentRole,
+} from '@/api/clients/doulaAssignments';
 import { toast } from 'sonner';
 import { Search, User, Mail, Phone, Calendar, Building2, ChevronDown, X } from 'lucide-react';
 import { format } from 'date-fns';
@@ -37,6 +48,7 @@ export function MatchClientModal({
 }: MatchClientModalProps) {
   const [clients, setClients] = useState<MatchingClient[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string>('');
+  const [selectedRole, setSelectedRole] = useState<DoulaAssignmentRole>('primary');
   const [notes, setNotes] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [fetchingClients, setFetchingClients] = useState(false);
@@ -51,6 +63,7 @@ export function MatchClientModal({
       fetchMatchingClients();
       // Reset form when modal opens
       setSelectedClientId('');
+      setSelectedRole('primary');
       setNotes('');
       setSearchTerm('');
       setError(null);
@@ -105,7 +118,12 @@ export function MatchClientModal({
     setError(null);
 
     try {
-      await matchDoulaWithClient(selectedClientId, doula.id, notes.trim() || undefined);
+      await matchDoulaWithClient(
+        selectedClientId,
+        doula.id,
+        notes.trim() || undefined,
+        selectedRole
+      );
       
       toast.success(
         `Successfully matched ${doula.first_name} ${doula.last_name} with client`
@@ -348,6 +366,29 @@ export function MatchClientModal({
                   )}
                 </>
               )}
+            </div>
+
+            <div className='space-y-2'>
+              <Label htmlFor='assignment-role'>
+                Assignment Role <span className='text-red-500'>*</span>
+              </Label>
+              <Select
+                value={selectedRole}
+                onValueChange={(value) =>
+                  setSelectedRole(value as DoulaAssignmentRole)
+                }
+              >
+                <SelectTrigger id='assignment-role'>
+                  <SelectValue placeholder='Select role' />
+                </SelectTrigger>
+                <SelectContent>
+                  {ASSIGNMENT_ROLE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Notes */}

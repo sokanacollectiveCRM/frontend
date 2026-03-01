@@ -1,4 +1,5 @@
 import { buildUrl, fetchWithAuth } from '@/api/http';
+import type { DoulaAssignmentRole } from '@/api/clients/doulaAssignments';
 
 type QueryValue = string | number | boolean | undefined;
 
@@ -34,6 +35,19 @@ export interface FetchDoulaAssignmentsParams {
 export interface FetchClientDoulaAssignmentsParams {
   limit?: number;
   offset?: number;
+}
+
+export interface UpdateDoulaAssignmentInput {
+  role?: DoulaAssignmentRole | null;
+}
+
+export function patchDoulaAssignmentRoleUrl(
+  clientId: string,
+  doulaId: string
+): string {
+  return buildUrl(
+    `/api/doula-assignments/${encodeURIComponent(clientId)}/${encodeURIComponent(doulaId)}`
+  );
 }
 
 function toQueryParams(
@@ -148,4 +162,48 @@ export async function fetchClientDoulaAssignments(
       offset: params.offset,
     }
   );
+}
+
+function isRouteContractMismatchResponse(
+  status: number,
+  contentType: string,
+  responseText: string
+): boolean {
+  const lowerText = responseText.toLowerCase();
+  return (
+    status === 404 &&
+    contentType.includes('text/html') &&
+    (lowerText.includes('cannot patch') || lowerText.includes('<!doctype html'))
+  );
+}
+
+export async function updateDoulaAssignmentRole(
+  clientId: string,
+  doulaId: string,
+  input: UpdateDoulaAssignmentInput
+): Promise<Record<string, unknown>> {
+  const requestUrl = patchDoulaAssignmentRoleUrl(clientId, doulaId);
+  const response = await fetchWithAuth(requestUrl, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    const message = await response.text().catch(() => '');
+    const contentType = response.headers.get('content-type') || '';
+    if (
+      isRouteContractMismatchResponse(response.status, contentType, message)
+    ) {
+      throw new Error(
+        'Role update endpoint mismatch (client/backend route contract).'
+      );
+    }
+    throw new Error(message || `Request failed (${response.status})`);
+  }
+
+  const payload = (await response.json().catch(() => ({}))) as
+    | Record<string, unknown>
+    | undefined;
+  return payload || {};
 }

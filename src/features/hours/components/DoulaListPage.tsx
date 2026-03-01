@@ -1,8 +1,15 @@
 import {
   fetchDoulaAssignments,
   fetchDoulas,
+  updateDoulaAssignmentRole,
 } from '@/api/doulas/doulaDirectoryApi';
-import { assignDoula, unassignDoula } from '@/api/clients/doulaAssignments';
+import {
+  ASSIGNMENT_ROLE_OPTIONS,
+  assignDoula,
+  normalizeAssignmentRole,
+  type DoulaAssignmentRole,
+  unassignDoula,
+} from '@/api/clients/doulaAssignments';
 import { fetchClients } from '@/api/services/clients.service';
 import { Search } from '@/common/components/header/Search';
 import { ProfileDropdown } from '@/common/components/user/ProfileDropdown';
@@ -84,6 +91,7 @@ interface AssignmentRow {
   clientPhone: string;
   doulaId: string;
   doulaName: string;
+  role: DoulaAssignmentRole | null;
   hospital: string;
   assignedAt: string;
   updatedAt: string;
@@ -104,6 +112,7 @@ interface Pager {
 
 const DEFAULT_PAGER: Pager = { limit: 10, offset: 0, count: 0 };
 const ALL_DOULAS_VALUE = '__all_doulas__';
+const UNASSIGNED_ROLE_VALUE = '__unassigned_role__';
 const SORT_OPTIONS = [
   { value: 'updatedAt_desc', label: 'Updated (newest first)' },
   { value: 'assignedAt_desc', label: 'Assigned (newest first)' },
@@ -281,6 +290,18 @@ function mapAssignmentRow(raw: ApiRecord): AssignmentRow {
     getString(doulaUser, ['email']) ||
     getString(assignedDoula, ['email']) ||
     getString(teamMember, ['email']);
+  const role =
+    normalizeAssignmentRole(
+      getString(raw, ['role', 'assignmentRole', 'assignment_role', 'category'])
+    ) ||
+    normalizeAssignmentRole(
+      getString(raw, [
+        'assignmentCategory',
+        'assignment_category',
+        'doulaRole',
+        'doula_role',
+      ])
+    );
 
   return {
     id:
@@ -336,6 +357,7 @@ function mapAssignmentRow(raw: ApiRecord): AssignmentRow {
       [doulaFirst, doulaLast].filter(Boolean).join(' ').trim() ||
       (doulaEmail || '').trim() ||
       '—',
+    role,
     hospital: getString(raw, ['hospital']) || '—',
     assignedAt:
       getString(raw, [
@@ -447,6 +469,7 @@ export default function DoulaListPage() {
   const [removingAssignment, setRemovingAssignment] = useState(false);
   const [confirmRemoveOpen, setConfirmRemoveOpen] = useState(false);
   const [assignmentEditMode, setAssignmentEditMode] = useState(false);
+  const [updatingAssignmentRole, setUpdatingAssignmentRole] = useState(false);
   const [confirmDoulaSaveOpen, setConfirmDoulaSaveOpen] = useState(false);
   const [confirmAssignmentSaveOpen, setConfirmAssignmentSaveOpen] =
     useState(false);
@@ -484,6 +507,8 @@ export default function DoulaListPage() {
   const [clientOptions, setClientOptions] = useState<ClientOption[]>([]);
   const [clientsLoading, setClientsLoading] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState('');
+  const [selectedAssignmentRole, setSelectedAssignmentRole] =
+    useState<DoulaAssignmentRole>('primary');
   const [clientPickerOpen, setClientPickerOpen] = useState(false);
   const [assigningClient, setAssigningClient] = useState(false);
 
@@ -505,6 +530,11 @@ export default function DoulaListPage() {
     },
     [doulaNameById]
   );
+  const getAssignmentRoleLabel = useCallback((role: DoulaAssignmentRole | null) => {
+    if (!role) return 'Unspecified';
+    const option = ASSIGNMENT_ROLE_OPTIONS.find((item) => item.value === role);
+    return option?.label || 'Unspecified';
+  }, []);
   const selectedClientOption = clientOptions.find(
     (client) => client.id === selectedClientId
   );
@@ -665,6 +695,56 @@ export default function DoulaListPage() {
     selectedDoula?.id,
   ]);
 
+  const handleRoleUpdate = useCallback(
+    async (nextRole: DoulaAssignmentRole | null) => {
+      if (!selectedAssignment) return;
+
+      const clientId = resolveClientIdForAssignment(selectedAssignment);
+      const doulaId = resolveDoulaIdForAssignment(selectedAssignment);
+      if (!clientId || !doulaId) {
+        toast.error('Missing client or doula id for this assignment.');
+        return;
+      }
+
+      setUpdatingAssignmentRole(true);
+      try {
+        await updateDoulaAssignmentRole(clientId, doulaId, { role: nextRole });
+
+        setSelectedAssignment((prev) =>
+          prev ? { ...prev, role: nextRole } : prev
+        );
+        setAssignmentRows((prev) =>
+          prev.map((row) =>
+            row.id === selectedAssignment.id ? { ...row, role: nextRole } : row
+          )
+        );
+        setDetailRows((prev) =>
+          prev.map((row) =>
+            row.id === selectedAssignment.id ? { ...row, role: nextRole } : row
+          )
+        );
+
+        setAssignmentsReloadKey((value) => value + 1);
+        setDetailReloadKey((value) => value + 1);
+        toast.success(
+          nextRole ? `Role updated to ${getAssignmentRoleLabel(nextRole)}.` : 'Role cleared.'
+        );
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : 'Failed to update assignment role.'
+        );
+      } finally {
+        setUpdatingAssignmentRole(false);
+      }
+    },
+    [
+      getAssignmentRoleLabel,
+      resolveClientIdForAssignment,
+      resolveDoulaIdForAssignment,
+      selectedAssignment,
+    ]
+  );
+
   const applyPendingDoulaUpdate = useCallback(() => {
     if (!pendingDoulaUpdate) return;
     const updated = pendingDoulaUpdate;
@@ -713,6 +793,7 @@ export default function DoulaListPage() {
       email: selectedDoula.email === '—' ? '' : selectedDoula.email,
       phone: selectedDoula.phone === '—' ? '' : selectedDoula.phone,
     });
+    setSelectedAssignmentRole('primary');
   }, [selectedDoula]);
 
   useEffect(() => {
@@ -1216,6 +1297,7 @@ export default function DoulaListPage() {
                           <TableHead>Email</TableHead>
                           <TableHead>Phone</TableHead>
                           <TableHead>Doula</TableHead>
+                          <TableHead>Role</TableHead>
                           <TableHead>Hospital</TableHead>
                           <TableHead>Assigned At</TableHead>
                           <TableHead>Updated At</TableHead>
@@ -1238,6 +1320,7 @@ export default function DoulaListPage() {
                             <TableCell className='max-w-[190px] truncate'>
                               {resolveDoulaName(row)}
                             </TableCell>
+                            <TableCell>{getAssignmentRoleLabel(row.role)}</TableCell>
                             <TableCell className='max-w-[160px] truncate'>
                               {row.hospital}
                             </TableCell>
@@ -1489,6 +1572,24 @@ export default function DoulaListPage() {
                       </PopoverContent>
                     </Popover>
 
+                    <Select
+                      value={selectedAssignmentRole}
+                      onValueChange={(value) =>
+                        setSelectedAssignmentRole(value as DoulaAssignmentRole)
+                      }
+                    >
+                      <SelectTrigger className='w-full sm:w-[150px]'>
+                        <SelectValue placeholder='Role' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ASSIGNMENT_ROLE_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
                     <Button
                       type='button'
                       disabled={
@@ -1500,9 +1601,12 @@ export default function DoulaListPage() {
                         if (!selectedDoula?.id || !selectedClientId) return;
                         setAssigningClient(true);
                         try {
-                          await assignDoula(selectedClientId, selectedDoula.id);
+                          await assignDoula(selectedClientId, selectedDoula.id, {
+                            role: selectedAssignmentRole,
+                          });
                           toast.success('Client assigned to doula.');
                           setSelectedClientId('');
+                          setSelectedAssignmentRole('primary');
                           setAssignmentsReloadKey((value) => value + 1);
                           setDetailReloadKey((value) => value + 1);
                           setDirectoryReloadKey((value) => value + 1);
@@ -1554,6 +1658,7 @@ export default function DoulaListPage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Client</TableHead>
+                        <TableHead>Role</TableHead>
                         <TableHead>Hospital</TableHead>
                         <TableHead>Assigned At</TableHead>
                         <TableHead>Updated At</TableHead>
@@ -1570,6 +1675,7 @@ export default function DoulaListPage() {
                           <TableCell className='font-medium'>
                             {row.clientName}
                           </TableCell>
+                          <TableCell>{getAssignmentRoleLabel(row.role)}</TableCell>
                           <TableCell>{row.hospital}</TableCell>
                           <TableCell>
                             {formatDateTime(row.assignedAt)}
@@ -1722,6 +1828,47 @@ export default function DoulaListPage() {
                     </div>
                   )}
                 </div>
+
+                {!assignmentEditMode && (
+                  <div className='mb-4 rounded-md border bg-background p-3'>
+                    <p className='text-xs uppercase text-muted-foreground'>
+                      Update Role
+                    </p>
+                    <div className='mt-2 flex flex-col gap-2 sm:flex-row sm:items-center'>
+                      <Select
+                        value={selectedAssignment.role ?? UNASSIGNED_ROLE_VALUE}
+                        onValueChange={(value) => {
+                          const nextRole =
+                            value === UNASSIGNED_ROLE_VALUE
+                              ? null
+                              : (value as DoulaAssignmentRole);
+                          void handleRoleUpdate(nextRole);
+                        }}
+                        disabled={updatingAssignmentRole}
+                      >
+                        <SelectTrigger className='w-full sm:w-[180px]'>
+                          <SelectValue placeholder='Select role' />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ASSIGNMENT_ROLE_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                          <SelectItem value={UNASSIGNED_ROLE_VALUE}>
+                            Unspecified
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {updatingAssignmentRole && (
+                        <span className='flex items-center text-xs text-muted-foreground'>
+                          <Loader2 className='mr-1 h-3 w-3 animate-spin' />
+                          Saving role...
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {assignmentEditMode ? (
                   <div className='grid gap-3 text-sm'>
@@ -1889,16 +2036,24 @@ export default function DoulaListPage() {
                       </div>
                       <div>
                         <p className='text-xs uppercase text-muted-foreground'>
+                          Role
+                        </p>
+                        <p>{getAssignmentRoleLabel(selectedAssignment.role)}</p>
+                      </div>
+                    </div>
+                    <div className='grid gap-3 sm:grid-cols-2'>
+                      <div>
+                        <p className='text-xs uppercase text-muted-foreground'>
                           Assigned At
                         </p>
                         <p>{formatDateTime(selectedAssignment.assignedAt)}</p>
                       </div>
-                    </div>
-                    <div>
-                      <p className='text-xs uppercase text-muted-foreground'>
-                        Updated At
-                      </p>
-                      <p>{formatDateTime(selectedAssignment.updatedAt)}</p>
+                      <div>
+                        <p className='text-xs uppercase text-muted-foreground'>
+                          Updated At
+                        </p>
+                        <p>{formatDateTime(selectedAssignment.updatedAt)}</p>
+                      </div>
                     </div>
                     <div>
                       <p className='text-xs uppercase text-muted-foreground'>

@@ -76,7 +76,10 @@ const contractInputSchema = z.object({
   total_hours: z.number().optional(),
   hourly_rate: z.number().optional(),
   deposit_type: z.enum(['percent', 'flat']).optional(),
-  deposit_value: z.number().optional(),
+  deposit_value: z
+    .number()
+    .min(0, 'Deposit value cannot be negative')
+    .optional(),
   installments_count: z.number().optional(),
   cadence: z.enum(['monthly', 'biweekly']).optional(),
 });
@@ -917,6 +920,7 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                           <FormControl>
                             <Input
                               type='number'
+                              min={0}
                               step={depositType === 'percent' ? '1' : '0.01'}
                               placeholder={
                                 depositType === 'percent'
@@ -931,9 +935,9 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                                   field.onChange(0); // Set to 0 instead of empty string
                                 } else {
                                   const cleanValue = value.replace(/^0+/, '');
-                                  field.onChange(
-                                    cleanValue === '' ? 0 : Number(cleanValue)
-                                  );
+                                  const num =
+                                    cleanValue === '' ? 0 : Number(cleanValue);
+                                  field.onChange(Math.max(0, num));
                                 }
                               }}
                             />
@@ -1360,39 +1364,41 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                       .filter(
                         (client) =>
                           !searchTerm ||
-                          `${client.user.firstname} ${client.user.lastname}`
+                          `${client.firstname ?? client.user?.firstname ?? ''} ${client.lastname ?? client.user?.lastname ?? ''}`
                             .toLowerCase()
                             .includes(searchTerm.toLowerCase()) ||
-                          client.user.email
+                          (client.email || client.user?.email)
                             ?.toLowerCase()
                             .includes(searchTerm.toLowerCase())
                       )
                       .map((client) => (
                         <div
                           key={client.id}
-                          className={`p-3 border-b cursor-pointer hover:bg-gray-50 ${selectedClient?.id === client.id
+                          className={`p-3 border-b cursor-pointer hover:bg-gray-50 ${
+                            selectedClient?.id === client.id
                               ? 'bg-blue-50 border-blue-200'
                               : ''
-                            }`}
+                          }`}
                           onClick={() => {
                             setSelectedClient(client);
                             clientForm.setValue(
                               'email',
-                              client.user.email || ''
+                              client.email || client.user?.email || ''
                             );
                             clientForm.setValue(
                               'name',
-                              `${client.user.firstname} ${client.user.lastname}`
+                              `${client.firstname ?? client.user?.firstname ?? ''} ${client.lastname ?? client.user?.lastname ?? ''}`.trim()
                             );
                           }}
                         >
                           <div className='flex justify-between items-center'>
                             <div>
                               <p className='font-medium text-gray-900'>
-                                {client.user.firstname} {client.user.lastname}
+                                {client.firstname ?? client.user?.firstname}{' '}
+                                {client.lastname ?? client.user?.lastname}
                               </p>
                               <p className='text-sm text-gray-500'>
-                                {client.user.email}
+                                {client.email ?? client.user?.email}
                               </p>
                             </div>
                             {selectedClient?.id === client.id && (
@@ -1421,10 +1427,10 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                       .filter(
                         (client) =>
                           !searchTerm ||
-                          `${client.user.firstname} ${client.user.lastname}`
+                          `${client.firstname ?? client.user?.firstname ?? ''} ${client.lastname ?? client.user?.lastname ?? ''}`
                             .toLowerCase()
                             .includes(searchTerm.toLowerCase()) ||
-                          client.user.email
+                          (client.email || client.user?.email)
                             ?.toLowerCase()
                             .includes(searchTerm.toLowerCase())
                       ).length === 0 && (
@@ -1441,8 +1447,10 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                       Selected Client:
                     </p>
                     <p className='text-green-700'>
-                      {selectedClient.firstname} {selectedClient.lastname} (
-                      {selectedClient.email})
+                      {selectedClient.firstname ??
+                        selectedClient.user?.firstname}{' '}
+                      {selectedClient.lastname ?? selectedClient.user?.lastname}{' '}
+                      ({selectedClient.email ?? selectedClient.user?.email})
                     </p>
                   </div>
                 )}
