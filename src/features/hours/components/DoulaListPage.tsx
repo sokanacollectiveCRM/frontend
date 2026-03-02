@@ -91,6 +91,7 @@ interface AssignmentRow {
   clientPhone: string;
   doulaId: string;
   doulaName: string;
+  services: string[];
   role: DoulaAssignmentRole | null;
   hospital: string;
   assignedAt: string;
@@ -113,6 +114,15 @@ interface Pager {
 const DEFAULT_PAGER: Pager = { limit: 10, offset: 0, count: 0 };
 const ALL_DOULAS_VALUE = '__all_doulas__';
 const UNASSIGNED_ROLE_VALUE = '__unassigned_role__';
+const ASSIGNMENT_SERVICE_OPTIONS = [
+  'Labor Support',
+  'Postpartum Support',
+  '1st Night Care',
+  'Lactation Support',
+  'Perinatal Education',
+  'Abortion Support',
+  'Other',
+];
 const SORT_OPTIONS = [
   { value: 'updatedAt_desc', label: 'Updated (newest first)' },
   { value: 'assignedAt_desc', label: 'Assigned (newest first)' },
@@ -139,6 +149,28 @@ function getNumber(input: ApiRecord, keys: string[]): number | undefined {
     if (Number.isFinite(value)) return value;
   }
   return undefined;
+}
+
+function getStringArray(input: ApiRecord, keys: string[]): string[] {
+  for (const key of keys) {
+    const value = input[key];
+    if (Array.isArray(value)) {
+      const parsed = value
+        .filter((item): item is string => typeof item === 'string')
+        .map((item) => item.trim())
+        .filter(Boolean);
+      if (parsed.length > 0) return parsed;
+      continue;
+    }
+    if (typeof value === 'string' && value.trim()) {
+      const parsed = value
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+      if (parsed.length > 0) return parsed;
+    }
+  }
+  return [];
 }
 
 function formatDateTime(value: string): string {
@@ -302,6 +334,18 @@ function mapAssignmentRow(raw: ApiRecord): AssignmentRow {
         'doula_role',
       ])
     );
+  const servicesFromAssignment = getStringArray(raw, [
+    'services',
+    'serviceNames',
+    'service_names',
+  ]);
+  const servicesFromClient = getStringArray(client, [
+    'services',
+    'serviceNames',
+    'service_names',
+  ]);
+  const services =
+    servicesFromAssignment.length > 0 ? servicesFromAssignment : servicesFromClient;
 
   return {
     id:
@@ -357,6 +401,7 @@ function mapAssignmentRow(raw: ApiRecord): AssignmentRow {
       [doulaFirst, doulaLast].filter(Boolean).join(' ').trim() ||
       (doulaEmail || '').trim() ||
       '—',
+    services,
     role,
     hospital: getString(raw, ['hospital']) || '—',
     assignedAt:
@@ -509,7 +554,11 @@ export default function DoulaListPage() {
   const [selectedClientId, setSelectedClientId] = useState('');
   const [selectedAssignmentRole, setSelectedAssignmentRole] =
     useState<DoulaAssignmentRole>('primary');
+  const [selectedAssignmentServices, setSelectedAssignmentServices] = useState<
+    string[]
+  >([]);
   const [clientPickerOpen, setClientPickerOpen] = useState(false);
+  const [servicePickerOpen, setServicePickerOpen] = useState(false);
   const [assigningClient, setAssigningClient] = useState(false);
 
   const debouncedDirectoryQ = useDebouncedValue(directoryQ);
@@ -535,9 +584,17 @@ export default function DoulaListPage() {
     const option = ASSIGNMENT_ROLE_OPTIONS.find((item) => item.value === role);
     return option?.label || 'Unspecified';
   }, []);
+  const getAssignmentServicesLabel = useCallback((services: string[]) => {
+    if (!Array.isArray(services) || services.length === 0) return '—';
+    return services.join(', ');
+  }, []);
   const selectedClientOption = clientOptions.find(
     (client) => client.id === selectedClientId
   );
+  const selectedServicesLabel =
+    selectedAssignmentServices.length > 0
+      ? selectedAssignmentServices.join(', ')
+      : 'Select services...';
 
   const resolveClientIdForAssignment = useCallback(
     (assignment: AssignmentRow): string => {
@@ -794,6 +851,7 @@ export default function DoulaListPage() {
       phone: selectedDoula.phone === '—' ? '' : selectedDoula.phone,
     });
     setSelectedAssignmentRole('primary');
+    setSelectedAssignmentServices([]);
   }, [selectedDoula]);
 
   useEffect(() => {
@@ -1298,6 +1356,7 @@ export default function DoulaListPage() {
                           <TableHead>Phone</TableHead>
                           <TableHead>Doula</TableHead>
                           <TableHead>Role</TableHead>
+                          <TableHead>Services</TableHead>
                           <TableHead>Hospital</TableHead>
                           <TableHead>Assigned At</TableHead>
                           <TableHead>Updated At</TableHead>
@@ -1321,6 +1380,9 @@ export default function DoulaListPage() {
                               {resolveDoulaName(row)}
                             </TableCell>
                             <TableCell>{getAssignmentRoleLabel(row.role)}</TableCell>
+                            <TableCell className='max-w-[220px] truncate'>
+                              {getAssignmentServicesLabel(row.services)}
+                            </TableCell>
                             <TableCell className='max-w-[160px] truncate'>
                               {row.hospital}
                             </TableCell>
@@ -1365,6 +1427,8 @@ export default function DoulaListPage() {
             setSidebarEditMode(false);
             setSelectedClientId('');
             setClientPickerOpen(false);
+            setSelectedAssignmentServices([]);
+            setServicePickerOpen(false);
           }
         }}
       >
@@ -1590,11 +1654,68 @@ export default function DoulaListPage() {
                       </SelectContent>
                     </Select>
 
+                    <Popover
+                      open={servicePickerOpen}
+                      onOpenChange={setServicePickerOpen}
+                    >
+                      <PopoverTrigger asChild>
+                        <Button
+                          type='button'
+                          variant='outline'
+                          role='combobox'
+                          aria-expanded={servicePickerOpen}
+                          className='w-full justify-between sm:w-[320px]'
+                        >
+                          <span className='truncate'>{selectedServicesLabel}</span>
+                          <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        className='w-full p-0 sm:w-[360px]'
+                        align='start'
+                      >
+                        <Command>
+                          <CommandInput placeholder='Search services...' />
+                          <CommandList>
+                            <CommandEmpty>No services found.</CommandEmpty>
+                            <CommandGroup>
+                              {ASSIGNMENT_SERVICE_OPTIONS.map((service) => {
+                                const isSelected =
+                                  selectedAssignmentServices.includes(service);
+                                return (
+                                  <CommandItem
+                                    key={service}
+                                    value={service}
+                                    onSelect={() => {
+                                      setSelectedAssignmentServices((prev) =>
+                                        prev.includes(service)
+                                          ? prev.filter((item) => item !== service)
+                                          : [...prev, service]
+                                      );
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        'mr-2 h-4 w-4',
+                                        isSelected ? 'opacity-100' : 'opacity-0'
+                                      )}
+                                    />
+                                    <span className='truncate'>{service}</span>
+                                  </CommandItem>
+                                );
+                              })}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+
                     <Button
                       type='button'
                       disabled={
                         !selectedDoula?.id ||
                         !selectedClientId ||
+                        selectedAssignmentServices.length === 0 ||
                         assigningClient
                       }
                       onClick={async () => {
@@ -1603,10 +1724,12 @@ export default function DoulaListPage() {
                         try {
                           await assignDoula(selectedClientId, selectedDoula.id, {
                             role: selectedAssignmentRole,
+                            services: selectedAssignmentServices,
                           });
                           toast.success('Client assigned to doula.');
                           setSelectedClientId('');
                           setSelectedAssignmentRole('primary');
+                          setSelectedAssignmentServices([]);
                           setAssignmentsReloadKey((value) => value + 1);
                           setDetailReloadKey((value) => value + 1);
                           setDirectoryReloadKey((value) => value + 1);
@@ -1624,6 +1747,11 @@ export default function DoulaListPage() {
                       {assigningClient ? 'Assigning...' : 'Assign Client'}
                     </Button>
                   </div>
+                  {selectedAssignmentServices.length === 0 && (
+                    <p className='mt-2 text-xs text-muted-foreground'>
+                      Select at least one service before assigning this client.
+                    </p>
+                  )}
                 </div>
               </div>
             )}
@@ -1659,6 +1787,7 @@ export default function DoulaListPage() {
                       <TableRow>
                         <TableHead>Client</TableHead>
                         <TableHead>Role</TableHead>
+                        <TableHead>Services</TableHead>
                         <TableHead>Hospital</TableHead>
                         <TableHead>Assigned At</TableHead>
                         <TableHead>Updated At</TableHead>
@@ -1676,6 +1805,9 @@ export default function DoulaListPage() {
                             {row.clientName}
                           </TableCell>
                           <TableCell>{getAssignmentRoleLabel(row.role)}</TableCell>
+                          <TableCell className='max-w-[220px] truncate'>
+                            {getAssignmentServicesLabel(row.services)}
+                          </TableCell>
                           <TableCell>{row.hospital}</TableCell>
                           <TableCell>
                             {formatDateTime(row.assignedAt)}
@@ -2040,6 +2172,12 @@ export default function DoulaListPage() {
                         </p>
                         <p>{getAssignmentRoleLabel(selectedAssignment.role)}</p>
                       </div>
+                    </div>
+                    <div>
+                      <p className='text-xs uppercase text-muted-foreground'>
+                        Services
+                      </p>
+                      <p>{getAssignmentServicesLabel(selectedAssignment.services)}</p>
                     </div>
                     <div className='grid gap-3 sm:grid-cols-2'>
                       <div>

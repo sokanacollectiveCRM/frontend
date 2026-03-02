@@ -39,6 +39,7 @@ export interface FetchClientDoulaAssignmentsParams {
 
 export interface UpdateDoulaAssignmentInput {
   role?: DoulaAssignmentRole | null;
+  services?: string[];
 }
 
 export function patchDoulaAssignmentRoleUrl(

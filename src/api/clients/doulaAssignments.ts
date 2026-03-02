@@ -13,6 +13,7 @@ export interface AssignedDoula {
   doulaId: string;
   assignedAt: string;
   status: string;
+  services?: string[];
   role?: DoulaAssignmentRole;
   category?: string;
   doula: Doula;
@@ -116,11 +117,14 @@ export const fetchAssignedDoulas = async (
 export const assignDoula = async (
   clientId: string,
   doulaId: string,
-  options?: { role?: DoulaAssignmentRole }
+  options?: { role?: DoulaAssignmentRole; services?: string[] }
 ): Promise<void> => {
-  const body: Record<string, string> = { doulaId };
+  const body: Record<string, string | string[]> = { doulaId };
   if (options?.role) {
     body.role = options.role;
+  }
+  if (Array.isArray(options?.services) && options.services.length > 0) {
+    body.services = options.services;
   }
 
   const response = await fetch(
