@@ -9,11 +9,23 @@ export const userStatusSchema = z.enum([
   'contract',
   'active',
   'complete',
+  'not hired',
+  // Legacy value kept for compatibility with existing records.
   'customer',
 ]);
 
 export type UserStatus = z.infer<typeof userStatusSchema>;
-export const USER_STATUSES = userStatusSchema.options;
+export const USER_STATUSES: UserStatus[] = [
+  'lead',
+  'contacted',
+  'matching',
+  'interviewing',
+  'follow up',
+  'contract',
+  'active',
+  'complete',
+  'not hired',
+];
 
 export const STATUS_LABELS: Record<UserStatus, string> = {
   lead: 'Lead',
@@ -24,6 +36,7 @@ export const STATUS_LABELS: Record<UserStatus, string> = {
   contract: 'Contract',
   active: 'Active',
   complete: 'Complete',
+  'not hired': 'Not Hired',
   customer: 'Customer',
 };
 
@@ -93,7 +106,7 @@ const userSchema = z
     serviceNeeded: data.serviceNeeded ?? data.service_needed,
     requestedAt: data.requestedAt || new Date(),
     updatedAt: data.updatedAt || new Date(),
-    status: data.status,
+    status: data.status === 'customer' ? 'not hired' : data.status,
     uuid: data.uuid || '',
     text: data.text || '',
     zip_code: data.zip_code || '',

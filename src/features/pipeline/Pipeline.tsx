@@ -49,6 +49,7 @@ export default function Pipeline() {
       contract: [],
       active: [],
       complete: [],
+      'not hired': [],
     };
     for (const user of userList) {
       if (USER_STATUSES.includes(user.status as UserStatus)) {

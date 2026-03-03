@@ -14,9 +14,47 @@ import {
 import { toast } from 'sonner';
 import UserAvatar from '@/common/components/user/UserAvatar';
 
-export default function ProfileTab() {
-  const [profile, setProfile] = useState<DoulaProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+interface ProfileCompletionStatus {
+  isComplete: boolean;
+  missingFields: string[];
+}
+
+interface ProfileTabProps {
+  onProfileStatusChange?: (status: ProfileCompletionStatus) => void;
+}
+
+let cachedProfile: DoulaProfile | null = null;
+
+const REQUIRED_PROFILE_FIELDS: Array<keyof UpdateProfileData> = [
+  'firstname',
+  'lastname',
+  'address',
+  'city',
+  'state',
+  'country',
+  'zip_code',
+  'bio',
+];
+
+const FIELD_LABELS: Record<keyof UpdateProfileData, string> = {
+  firstname: 'First Name',
+  lastname: 'Last Name',
+  address: 'Address',
+  city: 'City',
+  state: 'State',
+  country: 'Country',
+  zip_code: 'Zip Code',
+  bio: 'Bio',
+};
+
+const getMissingRequiredFields = (data: Partial<UpdateProfileData>): string[] =>
+  REQUIRED_PROFILE_FIELDS.filter((field) => !String(data[field] ?? '').trim()).map(
+    (field) => FIELD_LABELS[field]
+  );
+
+export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
+  const [profile, setProfile] = useState<DoulaProfile | null>(cachedProfile);
+  const [isLoading, setIsLoading] = useState(!cachedProfile);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState<UpdateProfileData>({
     firstname: '',
@@ -26,12 +64,11 @@ export default function ProfileTab() {
     state: '',
     country: '',
     zip_code: '',
-    business: '',
     bio: '',
   });
 
   useEffect(() => {
-    fetchProfile();
+    fetchProfile(!cachedProfile);
   }, []);
 
   // Sync form data when profile changes (but only if formData hasn't been manually updated)
@@ -48,7 +85,6 @@ export default function ProfileTab() {
         zip_code: profile.zip_code !== undefined && profile.zip_code !== null && profile.zip_code !== -1
           ? (typeof profile.zip_code === 'number' ? profile.zip_code.toString() : String(profile.zip_code))
           : '',
-        business: profile.business || '',
         bio: profile.bio || '',
       };
       // Only update if the form data is different (to avoid unnecessary re-renders)
@@ -61,19 +97,24 @@ export default function ProfileTab() {
     }
   }, [profile, isSaving]);
 
-  const fetchProfile = async () => {
-    setIsLoading(true);
+  const fetchProfile = async (showLoading = true) => {
+    if (showLoading) {
+      setIsLoading(true);
+    }
     try {
       const data = await getDoulaProfile();
       
       if (!data) {
         toast.error('No profile data found');
-        setIsLoading(false);
+        if (showLoading) {
+          setIsLoading(false);
+        }
         return;
       }
       
       // Set profile - this will trigger the useEffect to update formData
       setProfile(data);
+      cachedProfile = data;
       
       // Also set formData directly as a backup to ensure it's populated
       const newFormData = {
@@ -86,15 +127,21 @@ export default function ProfileTab() {
         zip_code: data.zip_code !== undefined && data.zip_code !== null && data.zip_code !== -1
           ? (typeof data.zip_code === 'number' ? data.zip_code.toString() : String(data.zip_code))
           : '',
-        business: data.business || '',
         bio: data.bio || '',
       };
       setFormData(newFormData);
+      const missingFields = getMissingRequiredFields(newFormData);
+      onProfileStatusChange?.({
+        isComplete: missingFields.length === 0,
+        missingFields,
+      });
     } catch (error: any) {
       console.error('Failed to fetch profile:', error);
       toast.error(error.message || 'Failed to load profile');
     } finally {
-      setIsLoading(false);
+      if (showLoading) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -107,6 +154,13 @@ export default function ProfileTab() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const missingFields = getMissingRequiredFields(formData);
+    if (missingFields.length > 0) {
+      toast.error(`Complete all required fields: ${missingFields.join(', ')}`);
+      onProfileStatusChange?.({ isComplete: false, missingFields });
+      return;
+    }
+
     setIsSaving(true);
     
     // Log the form data being submitted
@@ -118,6 +172,7 @@ export default function ProfileTab() {
       
       // Update profile state - this will trigger the useEffect to sync formData
       setProfile(updated);
+      cachedProfile = updated;
       
       // Also update form data directly with the response to ensure consistency
       const updatedFormData = {
@@ -130,12 +185,12 @@ export default function ProfileTab() {
         zip_code: updated.zip_code !== undefined && updated.zip_code !== null && updated.zip_code !== -1
           ? (typeof updated.zip_code === 'number' ? updated.zip_code.toString() : String(updated.zip_code))
           : '',
-        business: updated.business || '',
         bio: updated.bio || '',
       };
       
       console.log('ProfileTab - Setting form data to:', JSON.stringify(updatedFormData, null, 2));
       setFormData(updatedFormData);
+      onProfileStatusChange?.({ isComplete: true, missingFields: [] });
       
       toast.success('Profile updated successfully');
     } catch (error: any) {
@@ -214,6 +269,7 @@ export default function ProfileTab() {
                 name='address'
                 value={formData.address || ''}
                 onChange={handleInputChange}
+                required
               />
             </div>
 
@@ -225,6 +281,7 @@ export default function ProfileTab() {
                   name='city'
                   value={formData.city || ''}
                   onChange={handleInputChange}
+                  required
                 />
               </div>
               <div className='space-y-2'>
@@ -234,6 +291,7 @@ export default function ProfileTab() {
                   name='state'
                   value={formData.state || ''}
                   onChange={handleInputChange}
+                  required
                 />
               </div>
               <div className='space-y-2'>
@@ -243,6 +301,7 @@ export default function ProfileTab() {
                   name='zip_code'
                   value={formData.zip_code || ''}
                   onChange={handleInputChange}
+                  required
                 />
               </div>
             </div>
@@ -254,16 +313,7 @@ export default function ProfileTab() {
                 name='country'
                 value={formData.country || ''}
                 onChange={handleInputChange}
-              />
-            </div>
-
-            <div className='space-y-2'>
-              <Label htmlFor='business'>Business Name</Label>
-              <Input
-                id='business'
-                name='business'
-                value={formData.business || ''}
-                onChange={handleInputChange}
+                required
               />
             </div>
 
@@ -276,6 +326,7 @@ export default function ProfileTab() {
                 onChange={handleInputChange}
                 rows={6}
                 placeholder='Tell us about yourself...'
+                required
               />
             </div>
 

@@ -2112,7 +2112,7 @@ export default function DoulaListPage() {
                       </div>
                     </div>
                     <div>
-                      <label className='text-muted-foreground'>Notes</label>
+                      <label className='text-muted-foreground'>Service Details</label>
                       <Textarea
                         className='mt-1 min-h-[110px]'
                         value={assignmentEditForm.notes}
@@ -2195,7 +2195,7 @@ export default function DoulaListPage() {
                     </div>
                     <div>
                       <p className='text-xs uppercase text-muted-foreground'>
-                        Notes
+                        Service Details
                       </p>
                       <p className='mt-1 whitespace-pre-wrap break-words'>
                         {selectedAssignment.notes || '—'}

@@ -10,7 +10,7 @@ import {
 } from '@/common/components/ui/select';
 import UserAvatar from '@/common/components/user/UserAvatar';
 import updateClientStatus from '@/common/utils/updateClientStatus';
-import { STATUS_LABELS, userStatusSchema } from '@/features/clients/data/schema';
+import { STATUS_LABELS, USER_STATUSES } from '@/features/clients/data/schema';
 import { useClientProfileData } from '@/features/profiles/hooks/useClientProfileData';
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -39,7 +39,7 @@ interface Note {
   category: string;
 }
 
-const statusOptions = userStatusSchema.options;
+const statusOptions = USER_STATUSES;
 
 const tabs = [
   { name: 'Overview', icon: <LayoutDashboard className='w-4 h-4' /> },

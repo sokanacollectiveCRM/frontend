@@ -418,11 +418,15 @@ export async function logHours(data: LogHoursData): Promise<HoursEntry> {
 }
 
 export async function getDoulaHours(): Promise<HoursEntry[]> {
-  const response = await fetch(`${API_BASE}/doulas/hours`, {
-    headers: {
-      'Content-Type': 'application/json',
-    },
+  // Bust browser conditional caching to avoid 304 + empty-body parsing issues.
+  const url = `${API_BASE}/doulas/hours?_=${Date.now()}`;
+  const response = await fetch(url, {
+    cache: 'no-store',
   });
+
+  if (response.status === 304) {
+    return [];
+  }
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Failed to fetch hours' }));
@@ -430,8 +434,46 @@ export async function getDoulaHours(): Promise<HoursEntry[]> {
   }
 
   const data = await response.json();
-  // Ensure we always return an array
-  return Array.isArray(data) ? data : [];
+
+  let hoursArray: any[] = [];
+  if (Array.isArray(data)) {
+    hoursArray = data;
+  } else if (data?.success && Array.isArray(data.hours)) {
+    hoursArray = data.hours;
+  } else if (Array.isArray(data?.hours)) {
+    hoursArray = data.hours;
+  } else if (data?.success && Array.isArray(data?.data)) {
+    hoursArray = data.data;
+  } else if (Array.isArray(data?.data)) {
+    hoursArray = data.data;
+  } else {
+    return [];
+  }
+
+  return hoursArray.map((entry) => {
+    const startTime = entry.startTime || entry.start_time || '';
+    const endTime = entry.endTime || entry.end_time || '';
+    const start = startTime ? new Date(startTime) : null;
+    const end = endTime ? new Date(endTime) : null;
+    const computedHours =
+      start && end && !Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime())
+        ? Math.max(0, Math.round(((end.getTime() - start.getTime()) / (1000 * 60 * 60)) * 10) / 10)
+        : 0;
+
+    return {
+      id: entry.id,
+      client: {
+        id: entry.client?.id || entry.client_id || '',
+        firstname: entry.client?.firstname || entry.client?.user?.firstname || '',
+        lastname: entry.client?.lastname || entry.client?.user?.lastname || '',
+      },
+      startTime,
+      endTime,
+      hours: typeof entry.hours === 'number' ? entry.hours : computedHours,
+      note: entry.note || null,
+      createdAt: entry.createdAt || entry.created_at || entry.startTime || entry.start_time || new Date().toISOString(),
+    } as HoursEntry;
+  });
 }
 
 // ============================================
@@ -477,11 +519,15 @@ export async function addClientActivity(
 }
 
 export async function getClientActivities(clientId: string): Promise<ClientActivity[]> {
-  const response = await fetch(`${API_BASE}/doulas/clients/${clientId}/activities`, {
-    headers: {
-      'Content-Type': 'application/json',
-    },
+  // Bust conditional caching so latest notes appear after add/view transitions.
+  const url = `${API_BASE}/doulas/clients/${clientId}/activities?_=${Date.now()}`;
+  const response = await fetch(url, {
+    cache: 'no-store',
   });
+
+  if (response.status === 304) {
+    return [];
+  }
 
   if (!response.ok) {
     // If 404 or empty, return empty array instead of throwing
@@ -502,41 +548,51 @@ export async function getClientActivities(clientId: string): Promise<ClientActiv
   if (Array.isArray(data)) {
     console.log('getClientActivities - Returning array with', data.length, 'activities');
     activitiesArray = data;
-  } else if (data?.success && Array.isArray(data.data)) {
-    console.log('getClientActivities - Using format: {success: true, data: [...]}');
-    activitiesArray = data.data;
   } else if (data?.success && Array.isArray(data.activities)) {
     console.log('getClientActivities - Using format: {success: true, activities: [...]}');
     activitiesArray = data.activities;
+  } else if (data?.success && Array.isArray(data.data)) {
+    console.log('getClientActivities - Using format: {success: true, data: [...]}');
+    activitiesArray = data.data;
+  } else if (data?.data?.activities && Array.isArray(data.data.activities)) {
+    console.log('getClientActivities - Using format: {data: {activities: [...]}}');
+    activitiesArray = data.data.activities;
   } else if (data?.activities && Array.isArray(data.activities)) {
     console.log('getClientActivities - Using format: {activities: [...]}');
     activitiesArray = data.activities;
+  } else if (data?.data && Array.isArray(data.data)) {
+    console.log('getClientActivities - Using format: {data: [...]}');
+    activitiesArray = data.data;
   } else {
     console.warn('getClientActivities - Unexpected response format:', data);
     return [];
   }
   
   // Normalize activity objects to ensure createdAt field exists
-  const normalizedActivities = activitiesArray.map((activity) => {
-    // Handle different date field names (created_at vs createdAt)
-    // Use current date as fallback if no date is provided
-    const createdAt = activity.createdAt || activity.created_at || activity.created_at || new Date().toISOString();
+  const normalizedActivities = activitiesArray.map((activity, index) => {
+    // Handle different backend timestamp variants.
+    const createdAt =
+      activity.createdAt ||
+      activity.created_at ||
+      activity.timestamp ||
+      new Date().toISOString();
     
     console.log('Normalizing activity:', {
       original: activity,
       createdAt: createdAt,
       hasCreatedAt: !!activity.createdAt,
       hasCreated_at: !!activity.created_at,
+      hasTimestamp: !!activity.timestamp,
     });
     
     return {
-      id: activity.id,
-      clientId: activity.clientId || activity.client_id,
+      id: activity.id || `${clientId}-${index}-${createdAt}`,
+      clientId: activity.clientId || activity.client_id || clientId,
       type: activity.type || 'note',
       description: activity.description || activity.content || '',
       metadata: activity.metadata || {},
       createdAt: createdAt,
-      createdBy: activity.createdBy || activity.created_by || '',
+      createdBy: activity.createdBy || activity.created_by || activity.author || '',
     };
   });
   

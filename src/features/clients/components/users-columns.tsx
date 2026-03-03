@@ -17,8 +17,8 @@ import {
 import updateClientStatus from '@/common/utils/updateClientStatus';
 import {
   STATUS_LABELS,
+  USER_STATUSES,
   User,
-  userStatusSchema,
   type PortalStatus,
 } from '@/features/clients/data/schema';
 import { derivePortalStatus, isPortalEligible } from '@/features/clients/utils/portalStatus';
@@ -28,7 +28,7 @@ import { toast } from 'sonner';
 import { DataTableColumnHeader } from './data-table-column-header';
 import { DataTableRowActions } from './data-table-row-actions';
 
-const statusOptions = userStatusSchema.options;
+const statusOptions = USER_STATUSES;
 
 interface PortalHandlers {
   onInviteClick: (lead: User) => void;

@@ -108,7 +108,7 @@ const CLIENT_STATUS_OPTIONS = [
   'contract',
   'active',
   'complete',
-  'customer'
+  'not hired'
 ];
 
 // Pregnancy & Health options (exact from request form)

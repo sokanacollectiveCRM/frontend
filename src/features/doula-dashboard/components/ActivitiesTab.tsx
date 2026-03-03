@@ -39,6 +39,7 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
   const [clientDetails, setClientDetails] = useState<AssignedClientDetailed | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+  const [isActivitiesLoading, setIsActivitiesLoading] = useState(false);
   const [clientModalOpen, setClientModalOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
@@ -88,6 +89,7 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
 
   const fetchActivities = async (id: string) => {
     setIsLoading(true);
+    setIsActivitiesLoading(true);
     try {
       const data = await getClientActivities(id);
       // Ensure data is always an array
@@ -104,6 +106,7 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
       toast.error(error.message || 'Failed to load activities');
     } finally {
       setIsLoading(false);
+      setIsActivitiesLoading(false);
     }
   };
 
@@ -113,12 +116,13 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
       setSelectedClient(client);
       setIsLoadingDetails(true);
       setIsLoading(true); // Also set activities loading
-      setClientModalOpen(true); // Open modal immediately
+      setIsActivitiesLoading(true);
+      setClientModalOpen(false);
       try {
         // Fetch detailed client information and activities in parallel
         const [details, activitiesData] = await Promise.all([
           getAssignedClientDetails(id, true).catch(() => null),
-          getClientActivities(id).catch(() => []),
+          getClientActivities(id),
         ]);
         
         if (details) {
@@ -141,6 +145,7 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
       } finally {
         setIsLoadingDetails(false);
         setIsLoading(false);
+        setIsActivitiesLoading(false);
       }
     }
   };
@@ -164,6 +169,7 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
       // Refresh activities for the selected client
       if (selectedClient) {
         setIsLoading(true);
+        setIsActivitiesLoading(true);
         try {
           const activitiesData = await getClientActivities(selectedClient.id);
           if (Array.isArray(activitiesData)) {
@@ -173,6 +179,7 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
           console.error('Failed to refresh activities:', error);
         } finally {
           setIsLoading(false);
+          setIsActivitiesLoading(false);
         }
       }
     } catch (error: any) {
@@ -379,13 +386,19 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                 <div>
                   <div className='flex justify-between items-center mb-4'>
                     <h3 className='text-lg font-semibold text-gray-900'>Activities</h3>
-                    <Button onClick={() => setAddDialogOpen(true)} size='sm' disabled={isLoading || isLoadingDetails}>
+                    <Button onClick={() => setAddDialogOpen(true)} size='sm' disabled={isLoading || isLoadingDetails || isActivitiesLoading}>
                       <Plus className='h-4 w-4 mr-2' />
                       Add Activity
                     </Button>
                   </div>
 
-                  {activities.length === 0 ? (
+                  {isActivitiesLoading ? (
+                    <Card>
+                      <CardContent className='text-center py-8'>
+                        <p className='text-gray-500'>Loading activities...</p>
+                      </CardContent>
+                    </Card>
+                  ) : activities.length === 0 ? (
                     <Card>
                       <CardContent className='text-center py-8'>
                         <MessageSquare className='h-12 w-12 text-gray-400 mx-auto mb-4' />
@@ -522,7 +535,7 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
         </Card>
       )}
 
-      {(isLoadingDetails || isLoading) && clientId && !clientModalOpen && (
+      {!selectedClient && (isLoadingDetails || isLoading) && clientId && (
         <Card>
           <CardContent className='text-center py-12'>
             <p className='text-gray-500'>Loading client information...</p>
@@ -530,9 +543,15 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
         </Card>
       )}
 
-      {selectedClient && !clientModalOpen && !isLoading && !isLoadingDetails && (
+      {selectedClient && (
         <>
-          {activities.length === 0 ? (
+          {(isLoadingDetails || isActivitiesLoading) ? (
+            <Card>
+              <CardContent className='text-center py-12'>
+                <p className='text-gray-500'>Loading activities...</p>
+              </CardContent>
+            </Card>
+          ) : activities.length === 0 ? (
             <Card>
               <CardContent className='text-center py-12'>
                 <MessageSquare className='h-12 w-12 text-gray-400 mx-auto mb-4' />

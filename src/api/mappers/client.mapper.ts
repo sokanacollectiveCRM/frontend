@@ -72,7 +72,8 @@ export function mapClient(dto: ClientListItemDTO): Client {
     dto.phone_number ||
     '';
 
-  const status = (dto.status || user?.status || 'lead') as ClientStatus;
+  const rawStatus = dto.status || user?.status || 'lead';
+  const status = (rawStatus === 'customer' ? 'not hired' : rawStatus) as ClientStatus;
 
   const serviceNeeded =
     dto.serviceNeeded ||
@@ -123,7 +124,7 @@ export function mapClientDetail(dto: ClientDetailDTO): ClientDetail {
     lastName: dto.last_name,
     email: dto.email,
     phoneNumber: dto.phone_number,
-    status: (dto.status || 'lead') as ClientStatus,
+    status: ((dto.status || 'lead') === 'customer' ? 'not hired' : (dto.status || 'lead')) as ClientStatus,
     serviceNeeded: dto.service_needed,
     portalStatus: dto.portal_status,
     invitedAt: dto.invited_at,

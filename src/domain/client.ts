@@ -12,7 +12,7 @@ export type ClientStatus =
   | 'contract'
   | 'active'
   | 'complete'
-  | 'customer';
+  | 'not hired';
 
 export const CLIENT_STATUSES: ClientStatus[] = [
   'lead',
@@ -23,7 +23,7 @@ export const CLIENT_STATUSES: ClientStatus[] = [
   'contract',
   'active',
   'complete',
-  'customer',
+  'not hired',
 ];
 
 export const CLIENT_STATUS_LABELS: Record<ClientStatus, string> = {
@@ -35,7 +35,7 @@ export const CLIENT_STATUS_LABELS: Record<ClientStatus, string> = {
   contract: 'Contract',
   active: 'Active',
   complete: 'Complete',
-  customer: 'Customer',
+  'not hired': 'Not Hired',
 };
 
 /**
