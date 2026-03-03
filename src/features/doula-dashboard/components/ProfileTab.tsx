@@ -25,7 +25,7 @@ interface ProfileTabProps {
 
 let cachedProfile: DoulaProfile | null = null;
 
-const REQUIRED_PROFILE_FIELDS: Array<keyof UpdateProfileData> = [
+const REQUIRED_PROFILE_FIELDS = [
   'firstname',
   'lastname',
   'address',
@@ -34,9 +34,11 @@ const REQUIRED_PROFILE_FIELDS: Array<keyof UpdateProfileData> = [
   'country',
   'zip_code',
   'bio',
-];
+] as const satisfies ReadonlyArray<keyof UpdateProfileData>;
 
-const FIELD_LABELS: Record<keyof UpdateProfileData, string> = {
+type RequiredProfileField = (typeof REQUIRED_PROFILE_FIELDS)[number];
+
+const FIELD_LABELS: Record<RequiredProfileField, string> = {
   firstname: 'First Name',
   lastname: 'Last Name',
   address: 'Address',
@@ -209,7 +211,7 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
     return (
       <div className='text-center py-12'>
         <p className='text-gray-500'>Failed to load profile</p>
-        <Button onClick={fetchProfile} className='mt-4'>
+        <Button onClick={() => void fetchProfile()} className='mt-4'>
           Retry
         </Button>
       </div>
@@ -331,7 +333,7 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
             </div>
 
             <div className='flex justify-end gap-2'>
-              <Button type='button' variant='outline' onClick={fetchProfile}>
+              <Button type='button' variant='outline' onClick={() => void fetchProfile(false)}>
                 Cancel
               </Button>
               <Button type='submit' disabled={isSaving}>

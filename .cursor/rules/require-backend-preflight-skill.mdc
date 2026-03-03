@@ -1,0 +1,18 @@
+---
+description: Require backend preflight skill before each task
+alwaysApply: true
+---
+
+# Mandatory Backend Preflight Skill
+
+Before starting implementation, first apply:
+- `.cursor/skills/sokana-backend-preflight-sync/SKILL.md`
+
+## Rule
+
+- Preflight is required for every task.
+
+## Required before coding
+
+- Update `.cursor/skills/sokana-backend-preflight-sync/backend-context.md` first.
+- Record files scanned and contract assumptions.
