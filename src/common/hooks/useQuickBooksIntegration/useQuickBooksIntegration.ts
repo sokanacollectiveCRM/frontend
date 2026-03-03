@@ -1,9 +1,10 @@
 // src/hooks/useQuickBooksConnect.ts
 import { useCallback, useState } from 'react';
 import { toast } from 'react-toastify';
+import { getQuickBooksAuthUrl } from '@/api/quickbooks/auth/route';
 
 /**
- * Hook to initiate the QuickBooks OAuth pop‑up flow via the /auth/url endpoint.
+ * Hook to initiate the QuickBooks OAuth pop-up flow.
  */
 export function useQuickBooksConnect() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -14,27 +15,8 @@ export function useQuickBooksConnect() {
     setError(null);
 
     try {
-      // 1️⃣ Fetch the JSON URL from your backend (/quickbooks/auth/url)
-      const base = (
-        import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050'
-      ).replace(/\/$/, '');
-      const response = await fetch(`${base}/quickbooks/auth/url`, {
-        method: 'GET',
-        credentials: 'include', // Include session cookies
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        const errorMsg =
-          errorText || `HTTP ${response.status}: ${response.statusText}`;
-        throw new Error(`Could not fetch QuickBooks auth URL: ${errorMsg}`);
-      }
-
-      // 2️⃣ Extract the Intuit consent URL
-      const { url } = (await response.json()) as { url: string };
+      // 1️⃣ Fetch the Intuit consent URL from backend (supports route variants).
+      const url = await getQuickBooksAuthUrl();
 
       // 3️⃣ Open the OAuth consent screen in a popup
       const popup = window.open(url, '_blank', 'width=600,height=700');
