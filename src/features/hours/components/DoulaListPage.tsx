@@ -81,6 +81,8 @@ interface DirectoryRow {
   email: string;
   phone: string;
   assignmentCount?: number;
+  bio?: string;
+  address?: string;
 }
 
 interface AssignmentRow {
@@ -236,6 +238,14 @@ function mapDirectoryRow(raw: ApiRecord): DirectoryRow {
     [first, last].filter(Boolean).join(' ').trim() ||
     (email ? 'Unknown doula' : 'Unknown doula');
 
+  const addressPart = getString(raw, ['address']) || getString(profile, ['address']);
+  const city = getString(raw, ['city']) || getString(profile, ['city']);
+  const state = getString(raw, ['state']) || getString(profile, ['state']);
+  const zip = getString(raw, ['zip_code', 'zipCode']) || getString(profile, ['zip_code', 'zipCode']);
+  const addressBuilt = [addressPart, city, state, zip].filter(Boolean).join(', ');
+  const bio =
+    getString(raw, ['bio']) || getString(profile, ['bio']) || undefined;
+
   return {
     id:
       getString(raw, ['id', 'doulaId', 'doula_id', 'user_id']) ||
@@ -281,6 +291,8 @@ function mapDirectoryRow(raw: ApiRecord): DirectoryRow {
         'active_assignments',
         'clients',
       ]),
+    bio: bio || undefined,
+    address: addressBuilt || undefined,
   };
 }
 
@@ -1491,6 +1503,22 @@ export default function DoulaListPage() {
                         </span>{' '}
                         <span>{selectedDoula.assignmentCount ?? '—'}</span>
                       </div>
+                      {selectedDoula.address && (
+                        <div>
+                          <span className='text-muted-foreground'>
+                            Address:
+                          </span>{' '}
+                          <span>{selectedDoula.address}</span>
+                        </div>
+                      )}
+                      {selectedDoula.bio && (
+                        <div>
+                          <span className='text-muted-foreground'>Bio:</span>
+                          <p className='mt-1 whitespace-pre-wrap text-sm'>
+                            {selectedDoula.bio}
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     <div className='mt-3 flex items-center gap-2'>
@@ -1560,6 +1588,22 @@ export default function DoulaListPage() {
                         </span>{' '}
                         <span>{selectedDoula.assignmentCount ?? '—'}</span>
                       </div>
+                      {selectedDoula.address && (
+                        <div>
+                          <span className='text-muted-foreground'>
+                            Address:
+                          </span>{' '}
+                          <span>{selectedDoula.address}</span>
+                        </div>
+                      )}
+                      {selectedDoula.bio && (
+                        <div>
+                          <span className='text-muted-foreground'>Bio:</span>
+                          <p className='mt-1 whitespace-pre-wrap text-sm'>
+                            {selectedDoula.bio}
+                          </p>
+                        </div>
+                      )}
                     </div>
                     <Button
                       type='button'

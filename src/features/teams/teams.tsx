@@ -47,6 +47,7 @@ interface TeamMember {
   role: string;
   email: string;
   bio: string;
+  address: string;
 }
 
 const ALLOWED_TEAM_ROLES = new Set(['admin', 'doula']);
@@ -65,6 +66,7 @@ const toTeamMember = (member: any): TeamMember => ({
   email: String(member?.email ?? '').trim().toLowerCase(),
   id: String(member?.id ?? member?.user_id ?? member?.email ?? ''),
   bio: String(member?.bio ?? ''),
+  address: String(member?.address ?? '').trim(),
 });
 
 export default function Teams() {
@@ -89,6 +91,7 @@ export default function Teams() {
     email: '',
     role: 'doula',
     bio: '',
+    address: '',
   });
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [memberToDelete, setMemberToDelete] = useState<string | null>(null);
@@ -169,6 +172,7 @@ export default function Teams() {
       email: member.email,
       role: member.role,
       bio: member.bio || '',
+      address: member.address || '',
     });
     setEditDialogOpen(true);
   };
@@ -221,6 +225,7 @@ export default function Teams() {
             email: editForm.email.trim(),
             role: editForm.role,
             bio: editForm.bio?.trim() || '',
+            address: editForm.address?.trim() || '',
           }),
         }
       );
@@ -1004,6 +1009,18 @@ export default function Teams() {
                 <option value='doula'>Doula</option>
                 <option value='admin'>Admin</option>
               </select>
+            </div>
+            <div className='space-y-2'>
+              <Label htmlFor='edit-address'>Address (Optional)</Label>
+              <Input
+                id='edit-address'
+                type='text'
+                value={editForm.address}
+                onChange={(e) =>
+                  setEditForm((prev) => ({ ...prev, address: e.target.value }))
+                }
+                placeholder='Enter address'
+              />
             </div>
             <div className='space-y-2'>
               <Label htmlFor='edit-bio'>Bio (Optional)</Label>
