@@ -2,6 +2,7 @@ import {
   RequestFormValues,
   fullSchema,
 } from '@/features/request/useRequestForm';
+import { DUMMY_TEST_LEAD } from '@/features/request/dummyTestLead';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ReactNode,
@@ -24,6 +25,7 @@ interface RequestFormContextType {
   submitted: boolean;
   setSubmitted: (submitted: boolean) => void;
   clearFormData: () => void;
+  fillTestData: () => void;
   isStepValid: (stepIndex: number) => boolean;
   showRefreshWarning: boolean;
   setShowRefreshWarning: (show: boolean) => void;
@@ -146,9 +148,13 @@ export function RequestFormProvider({
   // No client-side storage for HIPAA compliance - form starts fresh each time
 
   const clearFormData = () => {
-    // No client-side storage to clear - just reset form state
     form.reset();
     setStep(0);
+    setSubmitted(false);
+  };
+
+  const fillTestData = () => {
+    form.reset(DUMMY_TEST_LEAD as RequestFormValues);
     setSubmitted(false);
   };
 
@@ -303,6 +309,7 @@ export function RequestFormProvider({
     submitted,
     setSubmitted,
     clearFormData,
+    fillTestData,
     isStepValid,
     showRefreshWarning,
     setShowRefreshWarning,

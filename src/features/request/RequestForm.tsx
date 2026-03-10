@@ -90,7 +90,7 @@ function RefreshWarningModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
 
 function RequestFormContent() {
   const [isDesktop, setIsDesktop] = useState(() => window.matchMedia('(min-width: 600px)').matches);
-  const { form, step, totalSteps, handleNextStep, handleBack, isSubmitting, submitted, showRefreshWarning, setShowRefreshWarning } = useRequestFormContext();
+  const { form, step, totalSteps, handleNextStep, handleBack, isSubmitting, submitted, showRefreshWarning, setShowRefreshWarning, fillTestData } = useRequestFormContext();
 
   useEffect(() => {
     const mql = window.matchMedia('(min-width: 600px)');
@@ -251,6 +251,22 @@ function RequestFormContent() {
             Please complete this form as thoroughly as possible so we can match
             you with a doula according to your needs.
           </div>
+          <button
+            type="button"
+            onClick={fillTestData}
+            style={{
+              marginTop: 12,
+              padding: '6px 12px',
+              fontSize: 13,
+              color: '#009688',
+              background: 'transparent',
+              border: '1px dashed #009688',
+              borderRadius: 6,
+              cursor: 'pointer',
+            }}
+          >
+            Fill with test data
+          </button>
         </div>
         <Form {...form}>
           {step === 0 && (

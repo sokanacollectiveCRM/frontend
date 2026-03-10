@@ -93,6 +93,7 @@ export function mapClient(dto: ClientListItemDTO): Client {
 
   return {
     id: dto.id,
+    clientNumber: dto.client_number,
     email,
     firstname,
     lastname,
@@ -120,6 +121,7 @@ export function mapClient(dto: ClientListItemDTO): Client {
 export function mapClientDetail(dto: ClientDetailDTO): ClientDetail {
   return {
     id: dto.id,
+    clientNumber: dto.client_number,
     firstName: dto.first_name,
     lastName: dto.last_name,
     email: dto.email,

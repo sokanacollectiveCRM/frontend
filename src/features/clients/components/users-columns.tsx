@@ -41,6 +41,19 @@ export const columns = (
   portalHandlers?: PortalHandlers
 ): ColumnDef<User>[] => [
   {
+    id: 'client_number',
+    accessorKey: 'clientNumber',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='#' />
+    ),
+    cell: ({ row }) => {
+      const u = row.original as Record<string, unknown>;
+      const clientNumber = (u.clientNumber ?? u.client_number ?? '') as string;
+      return <span className='font-mono text-muted-foreground'>{clientNumber || '—'}</span>;
+    },
+    meta: { className: 'w-24' },
+  },
+  {
     id: 'client',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Client' />

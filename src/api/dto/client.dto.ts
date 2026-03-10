@@ -34,6 +34,7 @@ export interface ClientUserDTO {
  */
 export interface ClientListItemDTO {
   id: string;
+  client_number?: string;
   status?: string;
   serviceNeeded?: string;
   service_needed?: string;
@@ -67,6 +68,7 @@ export interface ClientListItemDTO {
  */
 export interface ClientDetailDTO {
   id: string;
+  client_number?: string;
   first_name: string;
   last_name: string;
   email?: string;

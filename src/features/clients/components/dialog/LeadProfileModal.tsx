@@ -906,6 +906,16 @@ export function LeadProfileModal({
               'contact',
               'Contact Information',
               <>
+                {(getDisplayValue('clientNumber', 'client_number') || getDisplayValue('client_number', 'clientNumber')) && (
+                  <div className="flex items-start gap-2 py-2">
+                    <div className="flex-1 min-w-0">
+                      <Label className="text-sm font-medium text-muted-foreground">Client #</Label>
+                      <div className="mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm font-mono">
+                        {getDisplayValue('clientNumber', 'client_number') || getDisplayValue('client_number', 'clientNumber')}
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {renderEditableField('First Name', 'firstname')}
                 {renderEditableField('Last Name', 'lastname')}
                 {renderEditableField('Email', 'email', <Mail className="h-4 w-4" />, 'email')}

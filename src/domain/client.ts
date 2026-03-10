@@ -44,6 +44,7 @@ export const CLIENT_STATUS_LABELS: Record<ClientStatus, string> = {
  */
 export interface ClientLite {
   id: string;
+  clientNumber?: string;
   firstname: string;
   lastname: string;
   status: ClientStatus;
@@ -74,6 +75,7 @@ export interface Client extends ClientLite {
  */
 export interface ClientDetail {
   id: string;
+  clientNumber?: string;
   firstName: string;
   lastName: string;
   email?: string;
