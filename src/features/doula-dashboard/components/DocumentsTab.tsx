@@ -16,23 +16,43 @@ import {
   getDoulaDocuments,
   uploadDocument,
   deleteDoulaDocument,
+  REQUIRED_DOULA_DOCUMENT_TYPES,
+  DOCUMENT_TYPE_LABELS,
+  DOCUMENT_STATUS_LABELS,
   type DoulaDocument,
   type DocumentType,
+  type DocumentCompleteness,
 } from '@/api/doulas/doulaService';
 import { toast } from 'sonner';
-import { FileText, Upload, Trash2, Download, X } from 'lucide-react';
+import { FileText, Upload, Trash2, Download, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
 
+type RequiredDocType = (typeof REQUIRED_DOULA_DOCUMENT_TYPES)[number];
+
+interface DocItemState {
+  documentType: RequiredDocType;
+  status: string;
+  documentId?: string;
+  fileName?: string;
+  uploadedAt?: string;
+  rejectionReason?: string;
+  fileUrl?: string | null;
+}
+
 export default function DocumentsTab() {
-  const [documents, setDocuments] = useState<DoulaDocument[]>([]);
+  const [items, setItems] = useState<DocItemState[]>([]);
+  const [completeness, setCompleteness] = useState<DocumentCompleteness | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [uploadingForType, setUploadingForType] = useState<RequiredDocType | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [documentToDelete, setDocumentToDelete] = useState<DoulaDocument | null>(null);
-  const [uploadForm, setUploadForm] = useState({
-    file: null as File | null,
-    documentType: 'other' as DocumentType,
-    notes: '',
+  const [documentToDelete, setDocumentToDelete] = useState<DocItemState | null>(null);
+  const [uploadForm, setUploadForm] = useState<{
+    file: File | null;
+    documentType: RequiredDocType;
+  }>({
+    file: null,
+    documentType: 'background_check',
   });
   const [isUploading, setIsUploading] = useState(false);
 
@@ -44,18 +64,49 @@ export default function DocumentsTab() {
     setIsLoading(true);
     try {
       const data = await getDoulaDocuments();
-      // Ensure data is always an array
-      if (Array.isArray(data)) {
-        setDocuments(data);
-      } else {
-        console.error('Invalid response format:', data);
-        setDocuments([]);
-        toast.error('Invalid response format from server');
+      const comp = data.completeness;
+      setCompleteness(comp ?? null);
+
+      const docMap = new Map<string, DoulaDocument>();
+      for (const doc of data.documents) {
+        const type = doc.documentType;
+        if (REQUIRED_DOULA_DOCUMENT_TYPES.includes(type as RequiredDocType)) {
+          docMap.set(type, doc);
+        }
       }
-    } catch (error: any) {
-      console.error('Failed to fetch documents:', error);
-      setDocuments([]); // Set empty array on error
-      toast.error(error.message || 'Failed to load documents');
+
+      const built: DocItemState[] = REQUIRED_DOULA_DOCUMENT_TYPES.map((type) => {
+        const doc = docMap.get(type);
+        const item = comp?.items?.find((i) => i.document_type === type);
+        if (doc) {
+          return {
+            documentType: type,
+            status: doc.status ?? item?.status ?? 'uploaded',
+            documentId: doc.id,
+            fileName: doc.fileName,
+            uploadedAt: doc.uploadedAt,
+            rejectionReason: doc.rejectionReason ?? item?.rejection_reason,
+            fileUrl: doc.fileUrl,
+          };
+        }
+        return {
+          documentType: type,
+          status: item?.status ?? 'missing',
+          documentId: item?.document_id,
+          fileName: item?.file_name,
+          uploadedAt: item?.uploaded_at,
+          rejectionReason: item?.rejection_reason,
+        };
+      });
+      setItems(built);
+    } catch (error: unknown) {
+      setItems(
+        REQUIRED_DOULA_DOCUMENT_TYPES.map((type) => ({
+          documentType: type,
+          status: 'missing',
+        }))
+      );
+      toast.error(error instanceof Error ? error.message : 'Failed to load documents');
     } finally {
       setIsLoading(false);
     }
@@ -63,9 +114,13 @@ export default function DocumentsTab() {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setUploadForm((prev) => ({ ...prev, file }));
-    }
+    if (file) setUploadForm((prev) => ({ ...prev, file }));
+  };
+
+  const openUploadFor = (type: RequiredDocType) => {
+    setUploadForm({ file: null, documentType: type });
+    setUploadingForType(type);
+    setUploadDialogOpen(true);
   };
 
   const handleUpload = async () => {
@@ -76,62 +131,49 @@ export default function DocumentsTab() {
 
     setIsUploading(true);
     try {
-      await uploadDocument(uploadForm.file, uploadForm.documentType, uploadForm.notes || undefined);
+      await uploadDocument(uploadForm.file, uploadForm.documentType as DocumentType);
       toast.success('Document uploaded successfully');
       setUploadDialogOpen(false);
-      setUploadForm({ file: null, documentType: 'other', notes: '' });
+      setUploadingForType(null);
+      setUploadForm({ file: null, documentType: 'background_check' });
       fetchDocuments();
-    } catch (error: any) {
-      console.error('Failed to upload document:', error);
-      toast.error(error.message || 'Failed to upload document');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to upload document');
     } finally {
       setIsUploading(false);
     }
   };
 
-  const handleDeleteClick = (document: DoulaDocument) => {
-    setDocumentToDelete(document);
+  const handleDeleteClick = (item: DocItemState) => {
+    if (!item.documentId) return;
+    setDocumentToDelete(item);
     setDeleteDialogOpen(true);
   };
 
   const handleDeleteConfirm = async () => {
-    if (!documentToDelete) return;
-
+    if (!documentToDelete?.documentId) return;
     try {
-      await deleteDoulaDocument(documentToDelete.id);
+      await deleteDoulaDocument(documentToDelete.documentId);
       toast.success('Document deleted successfully');
       setDeleteDialogOpen(false);
       setDocumentToDelete(null);
       fetchDocuments();
-    } catch (error: any) {
-      console.error('Failed to delete document:', error);
-      toast.error(error.message || 'Failed to delete document');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to delete document');
     }
   };
 
-  const getStatusBadgeColor = (status: string) => {
+  const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case 'approved':
         return 'bg-green-100 text-green-800';
       case 'rejected':
         return 'bg-red-100 text-red-800';
+      case 'uploaded':
       case 'pending':
         return 'bg-amber-100 text-amber-800';
       default:
         return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getDocumentTypeLabel = (type: DocumentType) => {
-    switch (type) {
-      case 'background_check':
-        return 'Background Check';
-      case 'license':
-        return 'License';
-      case 'other':
-        return 'Other';
-      default:
-        return type;
     }
   };
 
@@ -141,200 +183,175 @@ export default function DocumentsTab() {
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
+  const totalComplete = completeness?.total_complete ?? 0;
+  const totalRequired = completeness?.total_required ?? 5;
+  const canBeActive = completeness?.can_be_active ?? false;
+
   return (
-    <div className='space-y-6'>
-      <div className='flex justify-between items-center'>
+    <div className="space-y-6">
+      <div className="flex justify-between items-start">
         <div>
-          <h2 className='text-xl font-semibold text-gray-900'>My Documents</h2>
-          <p className='text-sm text-gray-600 mt-1'>
-            Upload and manage your documents (max 10MB per file)
+          <h2 className="text-xl font-semibold text-gray-900">Required Documents</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Upload all 5 required documents to be eligible for active status. Max 10MB per file (PDF, PNG, JPG).
           </p>
         </div>
-        <Button onClick={() => setUploadDialogOpen(true)}>
-          <Upload className='h-4 w-4 mr-2' />
-          Upload Document
-        </Button>
       </div>
 
-      {isLoading ? (
-        <div className='text-center py-12'>
-          <p className='text-gray-500'>Loading documents...</p>
-        </div>
-      ) : documents.length === 0 ? (
-        <Card>
-          <CardContent className='text-center py-12'>
-            <FileText className='h-12 w-12 text-gray-400 mx-auto mb-4' />
-            <p className='text-gray-500 mb-4'>No documents uploaded yet</p>
-            <Button onClick={() => setUploadDialogOpen(true)}>
-              <Upload className='h-4 w-4 mr-2' />
-              Upload Your First Document
-            </Button>
+      {completeness && (
+        <Card className={canBeActive ? 'border-green-200 bg-green-50/50' : 'border-amber-200 bg-amber-50/50'}>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              {canBeActive ? (
+                <CheckCircle2 className="h-8 w-8 text-green-600" />
+              ) : (
+                <AlertCircle className="h-8 w-8 text-amber-600" />
+              )}
+              <div>
+                <p className="font-medium">
+                  {canBeActive
+                    ? 'All required documents are complete and approved.'
+                    : `${totalComplete} of ${totalRequired} documents approved.`}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {canBeActive
+                    ? 'You are eligible to be active.'
+                    : completeness.missing_types?.length
+                    ? `Missing: ${completeness.missing_types.join(', ')}`
+                    : 'Some documents are pending review.'}
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
-      ) : (
-        <>
-          <div className='mb-4'>
-            <p className='text-sm text-gray-600'>
-              Found {documents.length} document{documents.length !== 1 ? 's' : ''}
-            </p>
-          </div>
-          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-            {documents.map((doc, index) => (
-                <Card key={doc.id || index} className='hover:shadow-md transition-shadow'>
-                  <CardHeader>
-                    <div className='flex items-start justify-between'>
-                      <div className='flex items-center gap-2'>
-                        <FileText className='h-5 w-5 text-blue-600' />
-                        <div>
-                          <CardTitle className='text-sm font-medium'>
-                            {doc.fileName || (doc as any).name || 'Untitled Document'}
-                          </CardTitle>
-                          <Badge
-                            className={`mt-1 text-xs ${getStatusBadgeColor(doc.status || 'pending')}`}
-                          >
-                            {doc.status || 'pending'}
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className='space-y-3'>
-                    <div>
-                      <p className='text-xs text-gray-500'>Type</p>
-                      <p className='text-sm font-medium'>
-                        {getDocumentTypeLabel(doc.documentType || (doc as any).type || 'other')}
-                      </p>
-                    </div>
-                    <div>
-                      <p className='text-xs text-gray-500'>Size</p>
-                      <p className='text-sm'>
-                        {formatFileSize(doc.fileSize || (doc as any).size || 0)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className='text-xs text-gray-500'>Uploaded</p>
-                      <p className='text-sm'>
-                        {doc.uploadedAt || (doc as any).created_at || (doc as any).uploaded_at
-                          ? format(
-                              new Date(doc.uploadedAt || (doc as any).created_at || (doc as any).uploaded_at),
-                              'MMM dd, yyyy'
-                            )
-                          : 'Unknown'}
-                      </p>
-                    </div>
-                    {doc.notes && (
-                      <div>
-                        <p className='text-xs text-gray-500'>Notes</p>
-                        <p className='text-sm text-gray-700'>{doc.notes}</p>
-                      </div>
-                    )}
-                    <div className='flex gap-2 pt-2'>
-                      <Button
-                        variant='outline'
-                        size='sm'
-                        onClick={() => {
-                          // Open the document URL directly
-                          // Backend should provide signed URLs for private buckets
-                          const url = doc.fileUrl || (doc as any).url || (doc as any).file_url;
-                          if (!url) {
-                            console.error('No URL found for document:', doc);
-                            toast.error('Document URL not available');
-                            return;
-                          }
-
-                          // Open the document in a new tab
-                          // If the URL is invalid, the browser will show an error
-                          const newWindow = window.open(url, '_blank');
-                          
-                          // Check if popup was blocked
-                          if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-                            toast.error('Popup blocked. Please allow popups for this site.');
-                          }
-                        }}
-                        className='flex-1'
-                      >
-                        <Download className='h-4 w-4 mr-1' />
-                        View
-                      </Button>
-                      <Button
-                        variant='outline'
-                        size='sm'
-                        onClick={() => handleDeleteClick(doc)}
-                        className='text-red-600 hover:text-red-700'
-                      >
-                        <Trash2 className='h-4 w-4' />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-            ))}
-          </div>
-        </>
       )}
 
-      {/* Upload Dialog */}
+      {isLoading ? (
+        <div className="text-center py-12">
+          <p className="text-gray-500">Loading documents...</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {items.map((item) => (
+            <Card
+              key={item.documentType}
+              className={
+                item.status === 'missing' || item.status === 'rejected'
+                  ? 'border-l-4 border-l-amber-500'
+                  : ''
+              }
+            >
+              <CardHeader className="pb-2">
+                <div className="flex flex-row items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <FileText className="h-5 w-5 text-blue-600" />
+                    <div>
+                      <CardTitle className="text-base">
+                        {DOCUMENT_TYPE_LABELS[item.documentType] ?? item.documentType}
+                      </CardTitle>
+                      <Badge className={`mt-1 text-xs ${getStatusBadgeVariant(item.status)}`}>
+                        {DOCUMENT_STATUS_LABELS[item.status] ?? item.status}
+                      </Badge>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant={item.status === 'missing' ? 'default' : 'outline'}
+                    onClick={() => openUploadFor(item.documentType)}
+                  >
+                    <Upload className="h-4 w-4 mr-1" />
+                    {item.status === 'missing' ? 'Upload' : 'Replace'}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {item.fileName && (
+                  <p className="text-sm text-gray-600">File: {item.fileName}</p>
+                )}
+                {item.uploadedAt && (
+                  <p className="text-xs text-gray-500">
+                    Uploaded: {format(new Date(item.uploadedAt), 'MMM dd, yyyy')}
+                  </p>
+                )}
+                {item.status === 'rejected' && item.rejectionReason && (
+                  <p className="text-sm text-red-600">Reason: {item.rejectionReason}</p>
+                )}
+                {item.documentId && item.fileUrl && (
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(item.fileUrl!, '_blank')}
+                    >
+                      <Download className="h-4 w-4 mr-1" />
+                      View
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700"
+                      onClick={() => handleDeleteClick(item)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
       <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Upload Document</DialogTitle>
+            <DialogTitle>
+              {uploadingForType ? 'Upload' : 'Replace'}{' '}
+              {DOCUMENT_TYPE_LABELS[uploadForm.documentType] ?? uploadForm.documentType}
+            </DialogTitle>
             <DialogDescription>
-              Upload a document (PDF, DOC, DOCX, JPG, PNG - max 10MB)
+              PDF, PNG, or JPG — max 10MB
             </DialogDescription>
           </DialogHeader>
-          <div className='space-y-4 py-4'>
-            <div className='space-y-2'>
-              <Label htmlFor='document-type'>Document Type</Label>
-              <select
-                id='document-type'
-                className='w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
-                value={uploadForm.documentType}
-                onChange={(e) =>
-                  setUploadForm((prev) => ({
-                    ...prev,
-                    documentType: e.target.value as DocumentType,
-                  }))
-                }
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>File</Label>
+              <label
+                htmlFor="file"
+                className="flex flex-col items-center justify-center w-full min-h-[140px] border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 hover:border-primary/40 transition-colors"
               >
-                <option value='background_check'>Background Check</option>
-                <option value='license'>License</option>
-                <option value='other'>Other</option>
-              </select>
-            </div>
-            <div className='space-y-2'>
-              <Label htmlFor='file'>File</Label>
-              <Input
-                id='file'
-                type='file'
-                accept='.pdf,.doc,.docx,.jpg,.jpeg,.png'
-                onChange={handleFileSelect}
-              />
-              {uploadForm.file && (
-                <p className='text-sm text-gray-600'>
-                  Selected: {uploadForm.file.name} (
-                  {formatFileSize(uploadForm.file.size)})
-                </p>
-              )}
-            </div>
-            <div className='space-y-2'>
-              <Label htmlFor='notes'>Notes (Optional)</Label>
-              <Input
-                id='notes'
-                value={uploadForm.notes}
-                onChange={(e) =>
-                  setUploadForm((prev) => ({ ...prev, notes: e.target.value }))
-                }
-                placeholder='Add any notes about this document...'
-              />
+                <input
+                  id="file"
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                {uploadForm.file ? (
+                  <div className="flex flex-col items-center gap-2 p-4">
+                    <FileText className="h-10 w-10 text-primary" />
+                    <span className="text-sm font-medium text-gray-700 truncate max-w-[200px]">
+                      {uploadForm.file.name}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {formatFileSize(uploadForm.file.size)}
+                    </span>
+                    <span className="text-xs text-primary">Click to choose a different file</span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-2 p-4">
+                    <Upload className="h-10 w-10 text-gray-400" />
+                    <span className="text-sm font-medium text-gray-700">
+                      Click to browse or drag and drop
+                    </span>
+                    <span className="text-xs text-gray-500">PDF, PNG, or JPG (max 10MB)</span>
+                  </div>
+                )}
+              </label>
             </div>
           </div>
           <DialogFooter>
-            <Button
-              variant='outline'
-              onClick={() => {
-                setUploadDialogOpen(false);
-                setUploadForm({ file: null, documentType: 'other', notes: '' });
-              }}
-            >
+            <Button variant="outline" onClick={() => setUploadDialogOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleUpload} disabled={isUploading || !uploadForm.file}>
@@ -344,28 +361,27 @@ export default function DocumentsTab() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Document</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this document? This action cannot be undone.
+              Are you sure you want to delete this document? You will need to upload a new one.
             </DialogDescription>
           </DialogHeader>
           {documentToDelete && (
-            <div className='py-4'>
-              <p className='text-sm font-medium'>{documentToDelete.fileName}</p>
-              <p className='text-xs text-gray-500 mt-1'>
-                {getDocumentTypeLabel(documentToDelete.documentType)}
+            <div className="py-4">
+              <p className="text-sm font-medium">{documentToDelete.fileName}</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {DOCUMENT_TYPE_LABELS[documentToDelete.documentType]}
               </p>
             </div>
           )}
           <DialogFooter>
-            <Button variant='outline' onClick={() => setDeleteDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
               Cancel
             </Button>
-            <Button variant='destructive' onClick={handleDeleteConfirm}>
+            <Button variant="destructive" onClick={handleDeleteConfirm}>
               Delete
             </Button>
           </DialogFooter>
@@ -374,4 +390,3 @@ export default function DocumentsTab() {
     </div>
   );
 }
-

@@ -343,3 +343,8 @@ Use this checklist at the top of every new preflight entry:
 ### Action
 - [x] Context updated before coding
 - [x] Implementation started after preflight
+
+## Preflight 2026-03-10 (Mandatory Doula Documents)
+- **Task Intent**: End-to-end Mandatory Doula Documents (5 required docs, Supabase Storage, active-status gating).
+- **Repos Scanned**: both
+- **Contract**: Extend document API; add admin endpoints; enforce doc completeness before account_status=approved.

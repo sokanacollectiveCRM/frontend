@@ -96,21 +96,84 @@ export async function updateDoulaProfile(
 }
 
 // ============================================
-// 2. Document Management
+// 2. Document Management (Mandatory Doula Documents)
 // ============================================
 
-export type DocumentType = 'background_check' | 'license' | 'other';
+export const REQUIRED_DOULA_DOCUMENT_TYPES = [
+  'background_check',
+  'liability_insurance_certificate',
+  'training_certificate',
+  'w9',
+  'direct_deposit_form',
+] as const;
+
+export type RequiredDocumentType = (typeof REQUIRED_DOULA_DOCUMENT_TYPES)[number];
+
+export type DocumentType =
+  | RequiredDocumentType
+  | 'license'
+  | 'other';
+
+export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
+  background_check: 'Background Check',
+  liability_insurance_certificate: 'Liability Insurance Certificate',
+  training_certificate: 'Training Certificate',
+  w9: 'W9',
+  direct_deposit_form: 'Direct Deposit Form',
+  license: 'License',
+  other: 'Other',
+};
+
+export const DOCUMENT_STATUS_LABELS: Record<string, string> = {
+  missing: 'Missing',
+  uploaded: 'Uploaded',
+  approved: 'Approved',
+  rejected: 'Rejected',
+  pending: 'Uploaded',
+};
+
+export const MAX_DOCUMENT_SIZE = 10 * 1024 * 1024; // 10MB
+export const ALLOWED_DOCUMENT_MIME_TYPES = [
+  'application/pdf',
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+];
 
 export interface DoulaDocument {
   id: string;
   documentType: DocumentType;
   fileName: string;
-  fileUrl: string;
+  fileUrl: string | null;
   fileSize: number;
-  mimeType: string;
+  mimeType?: string;
   uploadedAt: string;
-  status: 'pending' | 'approved' | 'rejected';
-  notes: string | null;
+  status: 'missing' | 'uploaded' | 'approved' | 'rejected' | 'pending';
+  notes?: string | null;
+  rejectionReason?: string | null;
+}
+
+export interface DocumentCompletenessItem {
+  document_type: string;
+  status: string;
+  document_id?: string;
+  file_name?: string;
+  uploaded_at?: string;
+  rejection_reason?: string;
+}
+
+export interface DocumentCompleteness {
+  total_required: number;
+  total_complete: number;
+  missing_types: string[];
+  has_all_required_documents: boolean;
+  can_be_active: boolean;
+  items: DocumentCompletenessItem[];
+}
+
+export interface DocumentsResponse {
+  documents: DoulaDocument[];
+  completeness?: DocumentCompleteness;
 }
 
 export interface UploadDocumentResponse {
@@ -123,22 +186,11 @@ export async function uploadDocument(
   documentType: DocumentType,
   notes?: string
 ): Promise<UploadDocumentResponse> {
-
-  // Validate file size (max 10MB)
-  if (file.size > 10 * 1024 * 1024) {
+  if (file.size > MAX_DOCUMENT_SIZE) {
     throw new Error('File size exceeds 10MB limit');
   }
-
-  // Validate file type
-  const allowedTypes = [
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'image/jpeg',
-    'image/png',
-  ];
-  if (!allowedTypes.includes(file.type)) {
-    throw new Error('Invalid file type. Allowed: PDF, DOC, DOCX, JPG, PNG');
+  if (!ALLOWED_DOCUMENT_MIME_TYPES.includes(file.type)) {
+    throw new Error('Invalid file type. Allowed: PDF, PNG, JPG, JPEG');
   }
 
   const formData = new FormData();
@@ -157,8 +209,7 @@ export async function uploadDocument(
 
   const response = await fetch(`${API_BASE}/doulas/documents`, {
     method: 'POST',
-    headers: {
-    },
+    credentials: 'include',
     body: formData,
   });
 
@@ -171,11 +222,10 @@ export async function uploadDocument(
   return response.json();
 }
 
-export async function getDoulaDocuments(): Promise<DoulaDocument[]> {
+export async function getDoulaDocuments(): Promise<DocumentsResponse> {
   const response = await fetch(`${API_BASE}/doulas/documents`, {
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
   });
 
   if (!response.ok) {
@@ -184,40 +234,90 @@ export async function getDoulaDocuments(): Promise<DoulaDocument[]> {
   }
 
   const data = await response.json();
-  
-  // Handle multiple response formats:
-  // 1. {success: true, documents: [...]}
-  if (data?.success && Array.isArray(data.documents)) {
-    return data.documents;
-  }
-  // 2. Direct array
-  if (Array.isArray(data)) {
-    return data;
-  }
-  // 3. {documents: [...]}
-  if (data?.documents && Array.isArray(data.documents)) {
-    return data.documents;
-  }
-  // 4. {data: [...]}
-  if (data?.data && Array.isArray(data.data)) {
-    return data.data;
-  }
-  
-  console.warn('Unexpected response format:', data);
-  return [];
+  const documents: DoulaDocument[] = Array.isArray(data.documents)
+    ? data.documents
+    : Array.isArray(data)
+    ? data
+    : data?.documents ?? data?.data ?? [];
+  const completeness = data?.completeness ?? null;
+
+  return {
+    documents: documents.map((d: any) => ({
+      id: d.id,
+      documentType: d.documentType ?? d.document_type,
+      fileName: d.fileName ?? d.file_name,
+      fileUrl: d.fileUrl ?? d.file_url ?? null,
+      fileSize: d.fileSize ?? d.file_size ?? 0,
+      mimeType: d.mimeType ?? d.mime_type,
+      uploadedAt: d.uploadedAt ?? d.uploaded_at ?? d.created_at,
+      status: d.status === 'pending' ? 'uploaded' : d.status ?? 'missing',
+      notes: d.notes ?? null,
+      rejectionReason: d.rejectionReason ?? d.rejection_reason ?? null,
+    })),
+    completeness: completeness || undefined,
+  };
 }
 
 export async function deleteDoulaDocument(documentId: string): Promise<void> {
   const response = await fetch(`${API_BASE}/doulas/documents/${documentId}`, {
     method: 'DELETE',
-    headers: {
-    },
+    credentials: 'include',
   });
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Failed to delete document' }));
     throw new Error(error.error || 'Failed to delete document');
   }
+}
+
+// Admin document APIs
+export async function getAdminDoulaDocuments(doulaId: string): Promise<DocumentsResponse> {
+  const response = await fetch(`${API_BASE}/admin/doulas/${doulaId}/documents`, {
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to fetch documents' }));
+    throw new Error(error.error || 'Failed to fetch documents');
+  }
+  const data = await response.json();
+  return {
+    documents: data.documents ?? [],
+    completeness: data.completeness,
+  };
+}
+
+export async function reviewDoulaDocument(
+  doulaId: string,
+  documentId: string,
+  status: 'approved' | 'rejected',
+  rejectionReason?: string
+): Promise<void> {
+  const response = await fetch(`${API_BASE}/admin/doulas/${doulaId}/documents/${documentId}/review`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({
+      status,
+      rejection_reason: rejectionReason || undefined,
+    }),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to review document' }));
+    throw new Error(error.error || 'Failed to review document');
+  }
+}
+
+export async function getDoulaDocumentUrl(doulaId: string, documentId: string): Promise<string> {
+  const response = await fetch(`${API_BASE}/admin/doulas/${doulaId}/documents/${documentId}/url`, {
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to get document URL' }));
+    throw new Error(error.error || 'Failed to get document URL');
+  }
+  const data = await response.json();
+  return data.url;
 }
 
 // ============================================

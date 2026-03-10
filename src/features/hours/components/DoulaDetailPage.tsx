@@ -43,6 +43,7 @@ import type {
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { EditDoulaDialog } from './EditDoulaDialog';
+import { AdminDoulaDocumentsSection } from './AdminDoulaDocumentsSection';
 
 export default function DoulaDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -376,6 +377,9 @@ export default function DoulaDetailPage() {
                     )}
                 </CardContent>
               </Card>
+
+              {/* REQUIRED DOCUMENTS (Admin) */}
+              <AdminDoulaDocumentsSection doulaId={doula.id} />
 
               {/* CONTRACT INFORMATION */}
               <Card className='rounded-xl border border-gray-200 bg-white shadow-sm'>
