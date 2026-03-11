@@ -25,9 +25,13 @@ import { format } from 'date-fns';
 
 interface AdminDoulaDocumentsSectionProps {
   doulaId: string;
+  doulaEmail?: string;
 }
 
-export function AdminDoulaDocumentsSection({ doulaId }: AdminDoulaDocumentsSectionProps) {
+export function AdminDoulaDocumentsSection({
+  doulaId,
+  doulaEmail,
+}: AdminDoulaDocumentsSectionProps) {
   const [items, setItems] = useState<DocumentCompletenessItem[]>([]);
   const [canBeActive, setCanBeActive] = useState(false);
   const [totalComplete, setTotalComplete] = useState(0);
@@ -47,7 +51,17 @@ export function AdminDoulaDocumentsSection({ doulaId }: AdminDoulaDocumentsSecti
     setIsLoading(true);
     try {
       const data = await getAdminDoulaDocuments(doulaId);
-      setItems(data.completeness?.items ?? []);
+      const rawItems = data.completeness?.items ?? [];
+      setItems(
+        rawItems.map((item: Record<string, unknown>) => ({
+          document_type: item.document_type ?? item.documentType ?? '',
+          status: item.status ?? 'missing',
+          document_id: item.document_id ?? item.documentId,
+          file_name: item.file_name ?? item.fileName,
+          uploaded_at: item.uploaded_at ?? item.uploadedAt,
+          rejection_reason: item.rejection_reason ?? item.rejectionReason,
+        }))
+      );
       setCanBeActive(data.completeness?.can_be_active ?? false);
       setTotalComplete(data.completeness?.total_complete ?? 0);
       setTotalRequired(data.completeness?.total_required ?? 5);
@@ -154,6 +168,11 @@ export function AdminDoulaDocumentsSection({ doulaId }: AdminDoulaDocumentsSecti
               </span>
             </div>
           </div>
+          {doulaEmail && (
+            <p className="text-xs text-muted-foreground">
+              Documents for: <strong>{doulaEmail}</strong>
+            </p>
+          )}
           <p className="text-sm text-muted-foreground">
             {canBeActive
               ? 'All required documents are approved. Doula is eligible to be active.'
@@ -166,7 +185,7 @@ export function AdminDoulaDocumentsSection({ doulaId }: AdminDoulaDocumentsSecti
           ) : (
             items.map((item) => (
               <div
-                key={item.document_type}
+                key={String(item.document_type)}
                 className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"
               >
                 <div className="flex items-center gap-3">
@@ -238,11 +257,17 @@ export function AdminDoulaDocumentsSection({ doulaId }: AdminDoulaDocumentsSecti
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setReviewDialogOpen(false)} disabled={isReviewing}>
+          <DialogFooter className='flex-row flex-wrap justify-end gap-2 sm:flex-nowrap'>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setReviewDialogOpen(false)}
+              disabled={isReviewing}
+            >
               Cancel
             </Button>
             <Button
+              type="button"
               variant="destructive"
               onClick={handleReject}
               disabled={isReviewing}
@@ -250,7 +275,13 @@ export function AdminDoulaDocumentsSection({ doulaId }: AdminDoulaDocumentsSecti
               <X className="h-4 w-4 mr-1" />
               Reject
             </Button>
-            <Button onClick={handleApprove} disabled={isReviewing}>
+            <Button
+              type="button"
+              variant="default"
+              className="bg-green-600 hover:bg-green-700"
+              onClick={handleApprove}
+              disabled={isReviewing}
+            >
               <Check className="h-4 w-4 mr-1" />
               Approve
             </Button>

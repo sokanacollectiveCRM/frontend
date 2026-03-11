@@ -8,11 +8,13 @@ import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
 import {
   getDoulaProfile,
   updateDoulaProfile,
+  uploadDoulaProfilePicture,
   type DoulaProfile,
   type UpdateProfileData,
 } from '@/api/doulas/doulaService';
 import { toast } from 'sonner';
 import UserAvatar from '@/common/components/user/UserAvatar';
+import { Camera } from 'lucide-react';
 
 interface ProfileCompletionStatus {
   isComplete: boolean;
@@ -58,6 +60,7 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
   const [profile, setProfile] = useState<DoulaProfile | null>(cachedProfile);
   const [isLoading, setIsLoading] = useState(!cachedProfile);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingPicture, setIsUploadingPicture] = useState(false);
   const [formData, setFormData] = useState<UpdateProfileData>({
     firstname: '',
     lastname: '',
@@ -154,6 +157,24 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleProfilePictureChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingPicture(true);
+    e.target.value = '';
+    try {
+      const updated = await uploadDoulaProfilePicture(file);
+      setProfile(updated);
+      cachedProfile = updated;
+      toast.success('Profile picture updated');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to upload picture';
+      toast.error(message);
+    } finally {
+      setIsUploadingPicture(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const missingFields = getMissingRequiredFields(formData);
@@ -223,11 +244,46 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
       <Card>
         <CardHeader>
           <div className='flex items-center gap-4'>
-            <UserAvatar
-              fullName={`${profile.firstname} ${profile.lastname}`}
-              className='h-20 w-20'
-              profile_picture={profile.profile_picture || undefined}
-            />
+            <label
+              htmlFor='profile-picture-upload'
+              className='relative flex flex-col items-center gap-2 cursor-pointer group'
+            >
+              <div className='relative rounded-full ring-2 ring-border group-hover:ring-primary transition-all'>
+                <UserAvatar
+                  fullName={`${profile.firstname} ${profile.lastname}`}
+                  className='h-24 w-24'
+                  profile_picture={profile.profile_picture || undefined}
+                />
+                <div
+                  className={`absolute inset-0 flex items-center justify-center rounded-full transition-colors ${
+                    profile.profile_picture
+                      ? 'bg-transparent group-hover:bg-black/50'
+                      : 'bg-black/30 group-hover:bg-black/40'
+                  }`}
+                >
+                  {isUploadingPicture ? (
+                    <span className='text-white text-xs font-medium'>Uploading...</span>
+                  ) : (
+                    <Camera
+                      className={`h-8 w-8 text-white ${
+                        profile.profile_picture ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'
+                      }`}
+                    />
+                  )}
+                </div>
+              </div>
+              <span className='text-sm font-medium text-primary group-hover:underline'>
+                {profile.profile_picture ? 'Change photo' : 'Click to upload photo'}
+              </span>
+              <input
+                id='profile-picture-upload'
+                type='file'
+                accept='image/jpeg,image/jpg,image/png,image/webp'
+                className='sr-only'
+                onChange={handleProfilePictureChange}
+                disabled={isUploadingPicture}
+              />
+            </label>
             <div>
               <CardTitle className='text-2xl'>
                 {profile.firstname} {profile.lastname}

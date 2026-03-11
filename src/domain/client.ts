@@ -30,7 +30,7 @@ export const CLIENT_STATUS_LABELS: Record<ClientStatus, string> = {
   lead: 'Lead',
   contacted: 'Contacted',
   matching: 'Matching',
-  interviewing: 'Interviewing',
+  interviewing: 'Interviewed',
   'follow up': 'Follow Up',
   contract: 'Contract',
   active: 'Active',

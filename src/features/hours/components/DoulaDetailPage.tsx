@@ -26,13 +26,8 @@ import { Main } from '@/common/layouts/Main';
 import { ProfileDropdown } from '@/common/components/user/ProfileDropdown';
 import UserAvatar from '@/common/components/user/UserAvatar';
 import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
-import {
-  getDoulaById,
-  getAssignedClients,
-  getDoulaVisits,
-  getDoulaNotes,
-  getActivityLog,
-} from '@/api/doulas/doulaApi';
+import { getDoulaById, getDoulaVisits, getDoulaNotes, getActivityLog } from '@/api/doulas/doulaApi';
+import { fetchDoulaAssignments } from '@/api/doulas/doulaDirectoryApi';
 import type {
   Doula,
   AssignedClient,
@@ -110,7 +105,7 @@ export default function DoulaDetailPage() {
         email: doulaMember.email,
         phone: doulaMember.phone || 'No phone listed',
         address: doulaMember.address || '',
-        profile_photo_url: null,
+        profile_photo_url: doulaMember.profile_picture ?? null,
         years_experience: null,
         specialties: null,
         certifications: null,
@@ -122,8 +117,28 @@ export default function DoulaDetailPage() {
       };
 
       setDoula(doulaData);
-      // TODO: Fetch assigned clients, visits, notes, activity log when API endpoints are ready
-      setAssignedClients([]);
+
+      // Fetch assigned clients via doula-assignments API (Cloud SQL doula_assignments)
+      try {
+        const assignmentsRes = await fetchDoulaAssignments({ doulaId: id, limit: 200 });
+        const assignments = assignmentsRes?.data ?? [];
+        const clients: AssignedClient[] = assignments.map((a: Record<string, unknown>) => ({
+          id: String(a.clientId ?? a.client_id ?? ''),
+          doula_id: String(a.doulaId ?? a.doula_id ?? id),
+          client_name: [a.clientFirstName, a.clientLastName].filter(Boolean).join(' ') ||
+            [a.client_first_name, a.client_last_name].filter(Boolean).join(' ') ||
+            '—',
+          due_date: String(a.assignedAt ?? a.assigned_at ?? '') || '—',
+          status: 'active',
+          last_note: undefined,
+          next_visit: undefined,
+        }));
+        setAssignedClients(clients);
+      } catch (err) {
+        console.warn('Could not fetch assigned clients:', err);
+        setAssignedClients([]);
+      }
+
       setVisits([]);
       setNotes([]);
       setActivityLog([]);
@@ -214,10 +229,42 @@ export default function DoulaDetailPage() {
           <Card className='mb-6 rounded-xl border border-gray-200 bg-white shadow-sm'>
             <CardHeader>
               <div className='flex flex-col sm:flex-row items-start sm:items-center gap-6'>
-                <UserAvatar
-                  fullName={`${doula.first_name} ${doula.last_name}`}
-                  className='h-20 w-20 ring-2 ring-gray-100'
-                />
+                <div className='relative flex items-center gap-3'>
+                  <UserAvatar
+                    fullName={`${doula.first_name} ${doula.last_name}`}
+                    className='h-20 w-20 ring-2 ring-gray-100'
+                    profile_picture={doula.profile_photo_url ?? undefined}
+                  />
+                  {doula.profile_photo_url && (
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={async () => {
+                        try {
+                          const res = await fetch(doula.profile_photo_url!, {
+                            credentials: 'omit',
+                            mode: 'cors',
+                          });
+                          if (!res.ok) throw new Error('Failed to fetch image');
+                          const blob = await res.blob();
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `${doula.first_name}-${doula.last_name}-headshot.${blob.type?.split('/')[1] || 'jpg'}`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                          toast.success('Headshot downloaded');
+                        } catch (e) {
+                          toast.error('Could not download headshot');
+                        }
+                      }}
+                      className='shrink-0'
+                    >
+                      <Download className='h-4 w-4 mr-1.5' />
+                      Download
+                    </Button>
+                  )}
+                </div>
                 <div className='flex-1'>
                   <div className='flex items-center gap-3 mb-2'>
                     <CardTitle className='text-3xl font-bold text-gray-900'>
@@ -379,7 +426,10 @@ export default function DoulaDetailPage() {
               </Card>
 
               {/* REQUIRED DOCUMENTS (Admin) */}
-              <AdminDoulaDocumentsSection doulaId={doula.id} />
+              <AdminDoulaDocumentsSection
+                doulaId={doula.id}
+                doulaEmail={doula.email}
+              />
 
               {/* CONTRACT INFORMATION */}
               <Card className='rounded-xl border border-gray-200 bg-white shadow-sm'>
@@ -482,10 +532,9 @@ export default function DoulaDetailPage() {
                                 {client.client_name}
                               </td>
                               <td className='py-3 text-sm text-gray-600'>
-                                {format(
-                                  new Date(client.due_date),
-                                  'MMM dd, yyyy'
-                                )}
+                                {client.due_date && client.due_date !== '—'
+                                  ? format(new Date(client.due_date), 'MMM dd, yyyy')
+                                  : '—'}
                               </td>
                               <td className='py-3'>
                                 {getStatusBadge(client.status)}

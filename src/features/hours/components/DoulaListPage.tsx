@@ -67,6 +67,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsUpDown,
+  FileText,
   Loader2,
 } from 'lucide-react';
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
@@ -1547,7 +1548,18 @@ export default function DoulaListPage() {
 
           <div className='px-4 pb-4'>
             {selectedDoula && (
-              <div className='mb-4 rounded-lg border bg-muted/20 p-3'>
+              <>
+                {user?.role === 'admin' && (
+                  <Button
+                    variant='default'
+                    className='mb-4 w-full'
+                    onClick={() => navigate(`/hours/${selectedDoula.id}`)}
+                  >
+                    <FileText className='mr-2 h-4 w-4' />
+                    View profile & approve documents
+                  </Button>
+                )}
+                <div className='mb-4 rounded-lg border bg-muted/20 p-3'>
                 {sidebarEditMode ? (
                   <>
                     <div className='grid gap-3 text-sm'>
@@ -1891,6 +1903,7 @@ export default function DoulaListPage() {
                   )}
                 </div>
               </div>
+              </>
             )}
 
             {detailError && (

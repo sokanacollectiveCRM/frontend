@@ -349,6 +349,17 @@ Use this checklist at the top of every new preflight entry:
 - **Repos Scanned**: both
 - **Contract**: Extend document API; add admin endpoints; enforce doc completeness before account_status=approved.
 
+## Preflight 2026-03-10 (Doula headshot/profile picture upload)
+
+- **Gate Result**: run_preflight
+- **Task Intent**: Add ability for doulas to upload a headshot/profile picture.
+- **Repos Scanned**: both
+- **Files Scanned**: `src/api/doulas/doulaService.ts`, `src/features/doula-dashboard/components/ProfileTab.tsx`, backend doulaController.ts, cloudSqlTeamService.ts, supabaseUserRepository.ts
+- **Context Updated**: yes
+- **Contract Expectations**: New POST /api/doulas/profile/picture (multipart, profile_picture file); Cloud SQL doulas.profile_picture stores URL; GET /api/doulas/profile returns profile_picture from Cloud SQL when available.
+- **Drift Risks**: None if migration and service layer updated in sync.
+- **Action**: [x] Context updated, [x] Implementation complete
+
 ## Preflight 2026-03-10 (Doula assignments filter by year/quarter)
 - **Gate Result**: run_preflight
 - **Task Intent**: Add filter to view doula assignments by year or quarter in the Doulas Assignments tab.
@@ -358,3 +369,13 @@ Use this checklist at the top of every new preflight entry:
 - **Contract Expectations**: No backend changes. Existing `/api/doula-assignments` supports `dateFrom` and `dateTo`; frontend derives these from year/quarter selection.
 - **Drift Risks**: None.
 - **Action**: [x] Context updated, [x] Implementation complete
+
+## Preflight 2026-03-11 (Doula headshot in admin profile + admin download)
+- **Gate Result**: run_preflight
+- **Task Intent**: Show doula headshot in admin doula profile (DoulaDetailPage) and allow admins to download profile pictures.
+- **Repos Scanned**: both
+- **Files Scanned**: `src/features/hours/components/DoulaDetailPage.tsx`, backend cloudSqlTeamService.ts, userController.ts
+- **Context Updated**: yes
+- **Contract Expectations**: `/clients/team/all` returns `profile_picture` for doulas. Frontend maps to Doula.profile_photo_url, passes to UserAvatar. Download is client-side (fetch blob, trigger download).
+- **Drift Risks**: None. Profile picture URLs must be accessible for download.
+- **Action**: [x] Context updated, [ ] Implementation started

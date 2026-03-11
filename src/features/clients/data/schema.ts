@@ -31,7 +31,7 @@ export const STATUS_LABELS: Record<UserStatus, string> = {
   lead: 'Lead',
   contacted: 'Contacted',
   matching: 'Matching',
-  interviewing: 'Interviewing',
+  interviewing: 'Interviewed',
   'follow up': 'Follow Up',
   contract: 'Contract',
   active: 'Active',

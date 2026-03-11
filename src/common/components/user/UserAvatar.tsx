@@ -32,13 +32,13 @@ export default function UserAvatar({
       <Avatar
         className={cn(
           'rounded-full overflow-hidden transition-transform duration-200 ease-in-out hover:scale-105',
-          large ? 'h-28 w-28' : 'h-10 w-10'
+          className || (large ? 'h-28 w-28' : 'h-10 w-10')
         )}
       >
         <AvatarImage
           src={profile_picture || ''}
           alt={`${fullName}'s profile`}
-          className='object-cover'
+          className='size-full object-cover object-center'
         />
         <AvatarFallback
           className={cn(

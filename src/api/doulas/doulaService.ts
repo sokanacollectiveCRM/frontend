@@ -1,5 +1,6 @@
 // API service functions for Doula Dashboard
 // Base URL: http://localhost:5050/api
+import { buildUrl, fetchWithAuth } from '@/api/http';
 
 const API_BASE =
   (import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050') + '/api';
@@ -55,6 +56,38 @@ export interface UpdateProfileData {
   zip_code?: string;
   business?: string;
   bio?: string;
+}
+
+/**
+ * Upload doula profile picture (headshot)
+ * POST /api/doulas/profile/picture
+ */
+export async function uploadDoulaProfilePicture(file: File): Promise<DoulaProfile> {
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+  if (!allowedTypes.includes(file.type)) {
+    throw new Error('Invalid file type. Allowed: JPEG, PNG, WebP');
+  }
+  const maxSize = 5 * 1024 * 1024; // 5MB
+  if (file.size > maxSize) {
+    throw new Error('File size exceeds 5MB limit');
+  }
+
+  const formData = new FormData();
+  formData.append('profile_picture', file);
+
+  const response = await fetch(`${API_BASE}/doulas/profile/picture`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: 'Failed to upload profile picture' }));
+    throw new Error(errorData.error || 'Failed to upload profile picture');
+  }
+
+  const result = await response.json();
+  return result.profile || result;
 }
 
 export async function updateDoulaProfile(
@@ -272,13 +305,13 @@ export async function deleteDoulaDocument(documentId: string): Promise<void> {
 
 // Admin document APIs
 export async function getAdminDoulaDocuments(doulaId: string): Promise<DocumentsResponse> {
-  const response = await fetch(`${API_BASE}/admin/doulas/${doulaId}/documents`, {
+  const url = buildUrl(`/api/admin/doulas/${encodeURIComponent(doulaId)}/documents`);
+  const response = await fetchWithAuth(url, {
     headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
   });
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Failed to fetch documents' }));
-    throw new Error(error.error || 'Failed to fetch documents');
+    throw new Error((error as { error?: string }).error || 'Failed to fetch documents');
   }
   const data = await response.json();
   return {
@@ -293,10 +326,12 @@ export async function reviewDoulaDocument(
   status: 'approved' | 'rejected',
   rejectionReason?: string
 ): Promise<void> {
-  const response = await fetch(`${API_BASE}/admin/doulas/${doulaId}/documents/${documentId}/review`, {
+  const url = buildUrl(
+    `/api/admin/doulas/${encodeURIComponent(doulaId)}/documents/${encodeURIComponent(documentId)}/review`
+  );
+  const response = await fetchWithAuth(url, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
     body: JSON.stringify({
       status,
       rejection_reason: rejectionReason || undefined,
@@ -304,17 +339,18 @@ export async function reviewDoulaDocument(
   });
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Failed to review document' }));
-    throw new Error(error.error || 'Failed to review document');
+    throw new Error((error as { error?: string }).error || 'Failed to review document');
   }
 }
 
 export async function getDoulaDocumentUrl(doulaId: string, documentId: string): Promise<string> {
-  const response = await fetch(`${API_BASE}/admin/doulas/${doulaId}/documents/${documentId}/url`, {
-    credentials: 'include',
-  });
+  const url = buildUrl(
+    `/api/admin/doulas/${encodeURIComponent(doulaId)}/documents/${encodeURIComponent(documentId)}/url`
+  );
+  const response = await fetchWithAuth(url);
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Failed to get document URL' }));
-    throw new Error(error.error || 'Failed to get document URL');
+    throw new Error((error as { error?: string }).error || 'Failed to get document URL');
   }
   const data = await response.json();
   return data.url;

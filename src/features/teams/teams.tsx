@@ -27,6 +27,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/common/components/ui/popover';
+import { UserContext } from '@/common/contexts/UserContext';
 import UserAvatar from '@/common/components/user/UserAvatar';
 import {
   Download,
@@ -36,7 +37,7 @@ import {
   Search,
   UserPlus,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 interface TeamMember {
@@ -48,6 +49,7 @@ interface TeamMember {
   email: string;
   bio: string;
   address: string;
+  profile_picture?: string | null;
 }
 
 const ALLOWED_TEAM_ROLES = new Set(['admin', 'doula']);
@@ -67,9 +69,11 @@ const toTeamMember = (member: any): TeamMember => ({
   id: String(member?.id ?? member?.user_id ?? member?.email ?? ''),
   bio: String(member?.bio ?? ''),
   address: String(member?.address ?? '').trim(),
+  profile_picture: member?.profile_picture ?? null,
 });
 
 export default function Teams() {
+  const { user } = useContext(UserContext);
   const PAGE_SIZE = 10;
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]); //Team members state
   const [isLoading, setIsLoading] = useState(true); //Loading state
@@ -193,6 +197,25 @@ export default function Teams() {
   const handleDeleteClick = (memberId: string) => {
     setMemberToDelete(memberId);
     setDeleteConfirmOpen(true);
+  };
+
+  const handleDownloadHeadshot = async (member: TeamMember) => {
+    const url = member.profile_picture;
+    if (!url) return;
+    try {
+      const res = await fetch(url, { credentials: 'omit', mode: 'cors' });
+      if (!res.ok) throw new Error('Failed to fetch image');
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objectUrl;
+      a.download = `${member.firstname}-${member.lastname}-headshot.${blob.type?.split('/')[1] || 'jpg'}`;
+      a.click();
+      URL.revokeObjectURL(objectUrl);
+      toast.success('Headshot downloaded');
+    } catch {
+      toast.error('Could not download headshot');
+    }
   };
 
   const updateMember = async () => {
@@ -693,6 +716,7 @@ export default function Teams() {
                           <UserAvatar
                             fullName={`${member?.firstname || ''} ${member?.lastname || ''}`}
                             className='h-14 w-14 ring-2 ring-gray-100 group-hover:ring-green-200 transition-all'
+                            profile_picture={member?.profile_picture ?? undefined}
                           />
                           <div className='absolute -bottom-1 -right-1 h-5 w-5 bg-green-500 rounded-full border-2 border-white'></div>
                         </div>
@@ -726,6 +750,16 @@ export default function Teams() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align='end' className='w-40'>
+                          {user?.role === 'admin' &&
+                            member.profile_picture && (
+                              <DropdownMenuItem
+                                onClick={() => handleDownloadHeadshot(member)}
+                                className='cursor-pointer'
+                              >
+                                <Download className='h-4 w-4 mr-2' />
+                                <span>Download headshot</span>
+                              </DropdownMenuItem>
+                            )}
                           <DropdownMenuItem
                             onClick={() => handleEditClick(member)}
                             className='cursor-pointer'
