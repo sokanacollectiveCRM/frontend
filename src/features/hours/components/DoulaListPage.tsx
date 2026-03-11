@@ -129,6 +129,23 @@ const SORT_OPTIONS = [
   { value: 'updatedAt_desc', label: 'Updated (newest first)' },
   { value: 'assignedAt_desc', label: 'Assigned (newest first)' },
 ];
+const ASSIGNMENT_YEAR_OPTIONS = (() => {
+  const currentYear = new Date().getFullYear();
+  const years: { value: string; label: string }[] = [
+    { value: '', label: 'All years' },
+  ];
+  for (let y = currentYear; y >= 2020; y--) {
+    years.push({ value: String(y), label: String(y) });
+  }
+  return years;
+})();
+const ASSIGNMENT_QUARTER_OPTIONS = [
+  { value: '', label: 'All quarters' },
+  { value: 'Q1', label: 'Q1 (Jan–Mar)' },
+  { value: 'Q2', label: 'Q2 (Apr–Jun)' },
+  { value: 'Q3', label: 'Q3 (Jul–Sep)' },
+  { value: 'Q4', label: 'Q4 (Oct–Dec)' },
+];
 
 function asRecord(input: unknown): ApiRecord {
   return typeof input === 'object' && input !== null
@@ -510,8 +527,8 @@ export default function DoulaListPage() {
   const [assignmentsQ, setAssignmentsQ] = useState('');
   const [assignmentsDoulaId, setAssignmentsDoulaId] = useState('');
   const [assignmentsHospital, setAssignmentsHospital] = useState('');
-  const [assignmentsDateFrom, setAssignmentsDateFrom] = useState('');
-  const [assignmentsDateTo, setAssignmentsDateTo] = useState('');
+  const [assignmentsYear, setAssignmentsYear] = useState('');
+  const [assignmentsQuarter, setAssignmentsQuarter] = useState('');
   const [assignmentsSort, setAssignmentsSort] = useState('updatedAt_desc');
   const [assignmentsPager, setAssignmentsPager] =
     useState<Pager>(DEFAULT_PAGER);
@@ -576,6 +593,26 @@ export default function DoulaListPage() {
   const debouncedDirectoryQ = useDebouncedValue(directoryQ);
   const debouncedAssignmentsQ = useDebouncedValue(assignmentsQ);
   const debouncedAssignmentsHospital = useDebouncedValue(assignmentsHospital);
+
+  const assignmentsDateRange = useMemo(() => {
+    const yearNum = assignmentsYear ? parseInt(assignmentsYear, 10) : 0;
+    if (!yearNum || !Number.isFinite(yearNum)) return { dateFrom: undefined, dateTo: undefined };
+    const quarters: Record<string, { start: [number, number]; end: [number, number] }> = {
+      Q1: { start: [1, 1], end: [3, 31] },
+      Q2: { start: [4, 1], end: [6, 30] },
+      Q3: { start: [7, 1], end: [9, 30] },
+      Q4: { start: [10, 1], end: [12, 31] },
+    };
+    const q = assignmentsQuarter ? quarters[assignmentsQuarter] : null;
+    const [startM, startD] = q ? q.start : [1, 1];
+    const [endM, endD] = q ? q.end : [12, 31];
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return {
+      dateFrom: `${yearNum}-${pad(startM)}-${pad(startD)}`,
+      dateTo: `${yearNum}-${pad(endM)}-${pad(endD)}`,
+    };
+  }, [assignmentsYear, assignmentsQuarter]);
+
   const doulaNameById = useMemo(
     () => new Map(doulaOptions.map((doula) => [doula.id, doula.fullName])),
     [doulaOptions]
@@ -998,8 +1035,8 @@ export default function DoulaListPage() {
           q: debouncedAssignmentsQ,
           doulaId: assignmentsDoulaId || undefined,
           hospital: debouncedAssignmentsHospital,
-          dateFrom: assignmentsDateFrom || undefined,
-          dateTo: assignmentsDateTo || undefined,
+          dateFrom: assignmentsDateRange.dateFrom,
+          dateTo: assignmentsDateRange.dateTo,
           sort: assignmentsSort,
           limit: assignmentsPager.limit,
           offset: assignmentsPager.offset,
@@ -1035,8 +1072,8 @@ export default function DoulaListPage() {
     debouncedAssignmentsQ,
     assignmentsDoulaId,
     debouncedAssignmentsHospital,
-    assignmentsDateFrom,
-    assignmentsDateTo,
+    assignmentsDateRange.dateFrom,
+    assignmentsDateRange.dateTo,
     assignmentsSort,
     assignmentsPager.limit,
     assignmentsPager.offset,
@@ -1273,24 +1310,50 @@ export default function DoulaListPage() {
                   placeholder='Hospital'
                   className='h-9 w-[180px]'
                 />
-                <Input
-                  type='date'
-                  value={assignmentsDateFrom}
-                  onChange={(event) => {
-                    setAssignmentsDateFrom(event.target.value);
+                <Select
+                  value={assignmentsYear || '__all__'}
+                  onValueChange={(value) => {
+                    setAssignmentsYear(value === '__all__' ? '' : value);
+                    setAssignmentsQuarter('');
                     setAssignmentsPager((prev) => ({ ...prev, offset: 0 }));
                   }}
-                  className='h-9 w-[160px]'
-                />
-                <Input
-                  type='date'
-                  value={assignmentsDateTo}
-                  onChange={(event) => {
-                    setAssignmentsDateTo(event.target.value);
+                >
+                  <SelectTrigger className='h-9 w-[120px]'>
+                    <SelectValue placeholder='Year' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ASSIGNMENT_YEAR_OPTIONS.map((opt) => (
+                      <SelectItem
+                        key={opt.value || '__all__'}
+                        value={opt.value || '__all__'}
+                      >
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={assignmentsQuarter || '__all__'}
+                  onValueChange={(value) => {
+                    setAssignmentsQuarter(value === '__all__' ? '' : value);
                     setAssignmentsPager((prev) => ({ ...prev, offset: 0 }));
                   }}
-                  className='h-9 w-[160px]'
-                />
+                  disabled={!assignmentsYear}
+                >
+                  <SelectTrigger className='h-9 w-[140px]'>
+                    <SelectValue placeholder='Quarter' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ASSIGNMENT_QUARTER_OPTIONS.map((opt) => (
+                      <SelectItem
+                        key={opt.value || '__all__'}
+                        value={opt.value || '__all__'}
+                      >
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Select
                   value={assignmentsSort}
                   onValueChange={(value) => {
@@ -1318,8 +1381,8 @@ export default function DoulaListPage() {
                     setAssignmentsQ('');
                     setAssignmentsDoulaId('');
                     setAssignmentsHospital('');
-                    setAssignmentsDateFrom('');
-                    setAssignmentsDateTo('');
+                    setAssignmentsYear('');
+                    setAssignmentsQuarter('');
                     setAssignmentsSort('updatedAt_desc');
                     setAssignmentsPager((prev) => ({ ...prev, offset: 0 }));
                   }}
@@ -1360,7 +1423,19 @@ export default function DoulaListPage() {
                       Click any row to open full assignment details in the
                       sidebar.
                     </p>
-                    <Table className='table-fixed'>
+                    <div className='overflow-x-auto'>
+                    <Table className='w-full min-w-[900px] table-fixed'>
+                      <colgroup>
+                        <col style={{ width: '140px' }} />
+                        <col style={{ width: '180px' }} />
+                        <col style={{ width: '120px' }} />
+                        <col style={{ width: '140px' }} />
+                        <col style={{ width: '90px' }} />
+                        <col style={{ width: '180px' }} />
+                        <col style={{ width: '120px' }} />
+                        <col style={{ width: '100px' }} />
+                        <col style={{ width: '100px' }} />
+                      </colgroup>
                       <TableHeader>
                         <TableRow>
                           <TableHead>Client</TableHead>
@@ -1381,21 +1456,38 @@ export default function DoulaListPage() {
                             className='cursor-pointer'
                             onClick={() => setSelectedAssignment(row)}
                           >
-                            <TableCell className='font-medium'>
+                            <TableCell
+                              className='max-w-[140px] truncate font-medium'
+                              title={row.clientName}
+                            >
                               {row.clientName}
                             </TableCell>
-                            <TableCell className='max-w-[190px] truncate'>
+                            <TableCell
+                              className='max-w-[180px] min-w-0 truncate'
+                              title={row.clientEmail}
+                            >
                               {row.clientEmail}
                             </TableCell>
                             <TableCell>{row.clientPhone}</TableCell>
-                            <TableCell className='max-w-[190px] truncate'>
+                            <TableCell
+                              className='max-w-[160px] min-w-0 truncate'
+                              title={resolveDoulaName(row)}
+                            >
                               {resolveDoulaName(row)}
                             </TableCell>
-                            <TableCell>{getAssignmentRoleLabel(row.role)}</TableCell>
-                            <TableCell className='max-w-[220px] truncate'>
+                            <TableCell className='min-w-[80px]'>
+                              {getAssignmentRoleLabel(row.role)}
+                            </TableCell>
+                            <TableCell
+                              className='max-w-[200px] min-w-0 truncate'
+                              title={getAssignmentServicesLabel(row.services)}
+                            >
                               {getAssignmentServicesLabel(row.services)}
                             </TableCell>
-                            <TableCell className='max-w-[160px] truncate'>
+                            <TableCell
+                              className='max-w-[140px] min-w-0 truncate'
+                              title={row.hospital}
+                            >
                               {row.hospital}
                             </TableCell>
                             <TableCell>
@@ -1408,6 +1500,7 @@ export default function DoulaListPage() {
                         ))}
                       </TableBody>
                     </Table>
+                    </div>
                     <PaginationControls
                       pager={assignmentsPager}
                       onLimitChange={(limit) =>

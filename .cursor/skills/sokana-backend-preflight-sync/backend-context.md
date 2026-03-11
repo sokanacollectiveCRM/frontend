@@ -348,3 +348,13 @@ Use this checklist at the top of every new preflight entry:
 - **Task Intent**: End-to-end Mandatory Doula Documents (5 required docs, Supabase Storage, active-status gating).
 - **Repos Scanned**: both
 - **Contract**: Extend document API; add admin endpoints; enforce doc completeness before account_status=approved.
+
+## Preflight 2026-03-10 (Doula assignments filter by year/quarter)
+- **Gate Result**: run_preflight
+- **Task Intent**: Add filter to view doula assignments by year or quarter in the Doulas Assignments tab.
+- **Repos Scanned**: frontend
+- **Files Scanned**: `src/features/hours/components/DoulaListPage.tsx`, `src/api/doulas/doulaDirectoryApi.ts`
+- **Context Updated**: yes
+- **Contract Expectations**: No backend changes. Existing `/api/doula-assignments` supports `dateFrom` and `dateTo`; frontend derives these from year/quarter selection.
+- **Drift Risks**: None.
+- **Action**: [x] Context updated, [x] Implementation complete
