@@ -29,8 +29,8 @@ describe('deleteClient', () => {
       expect.stringContaining('/clients/delete'),
       expect.objectContaining({
         method: 'DELETE',
+        credentials: 'include',
         headers: expect.objectContaining({
-          Authorization: 'Bearer mock-token',
           'Content-Type': 'application/json',
         }),
         body: JSON.stringify({ id: '123' }),

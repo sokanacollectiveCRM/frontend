@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/common/components/ui/card';
 import { Button } from '@/common/components/ui/button';
+import { Checkbox } from '@/common/components/ui/checkbox';
 import { Input } from '@/common/components/ui/input';
 import { Label } from '@/common/components/ui/label';
 import { Textarea } from '@/common/components/ui/textarea';
@@ -18,11 +19,14 @@ import {
   getAssignedClientDetails,
   getClientActivities,
   addClientActivity,
+  patchClientActivityVisibility,
+  isClientActivityUuid,
   type ClientActivity,
   type ActivityType,
   type AssignedClientLite,
   type AssignedClientDetailed,
 } from '@/api/doulas/doulaService';
+import { buildUrl, fetchWithAuth } from '@/api/http';
 import { toast } from 'sonner';
 import { MessageSquare, Phone, Calendar, Mail, FileText, Plus, ArrowLeft, User, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
@@ -30,6 +34,62 @@ import { format } from 'date-fns';
 interface ActivitiesTabProps {
   clientId: string | null;
   onBack: () => void;
+}
+
+const INTERNAL_METADATA_KEYS = new Set([
+  'visibleToClient',
+  'visible_to_client',
+  'field',
+  'category',
+  'createdByName',
+  'created_by_name',
+  'createdByRole',
+  'created_by_role',
+]);
+
+function displayMetadataEntries(metadata?: Record<string, any>) {
+  if (!metadata) return [];
+  return Object.entries(metadata).filter(([key]) => !INTERNAL_METADATA_KEYS.has(key));
+}
+
+function ActivityPortalToggle({
+  clientId,
+  activity,
+  busy,
+  onToggle,
+}: {
+  clientId: string;
+  activity: ClientActivity;
+  busy: boolean;
+  onToggle: (activityId: string, nextVisible: boolean) => void | Promise<void>;
+}) {
+  const canPatch = isClientActivityUuid(activity.id);
+  return (
+    <div
+      className='flex flex-wrap items-center justify-between gap-2 pt-3 mt-2 border-t border-gray-100 dark:border-gray-800'
+      title={
+        canPatch
+          ? undefined
+          : 'This note has no server id, so it cannot be updated. Refresh the page after deploying the latest API.'
+      }
+    >
+      <span className='text-xs text-gray-600'>Client portal</span>
+      <div className='flex items-center gap-2'>
+        <Checkbox
+          id={`portal-vis-${clientId}-${activity.id}`}
+          checked={activity.visibleToClient === true}
+          disabled={busy || !canPatch}
+          onCheckedChange={(checked) => onToggle(activity.id, checked === true)}
+        />
+        <Label
+          htmlFor={`portal-vis-${clientId}-${activity.id}`}
+          className={`text-xs font-normal dark:text-gray-300 ${canPatch ? 'cursor-pointer text-gray-700' : 'cursor-not-allowed text-gray-400'}`}
+        >
+          {activity.visibleToClient ? 'Visible to client' : 'Staff only'}
+        </Label>
+      </div>
+    </div>
+  );
 }
 
 export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) {
@@ -47,7 +107,70 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
     type: 'note' as ActivityType,
     description: '',
     metadata: {} as Record<string, any>,
+    visibleToClient: false,
   });
+  const [visibilityUpdatingId, setVisibilityUpdatingId] = useState<string | null>(null);
+  const [birthOutcomesDraft, setBirthOutcomesDraft] = useState('');
+  const [isSavingBirthOutcomes, setIsSavingBirthOutcomes] = useState(false);
+  const [authorNamesById, setAuthorNamesById] = useState<Record<string, string>>(
+    {}
+  );
+
+  const isLikelyUuid = (value: string): boolean =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value.trim()
+    );
+
+  const getDisplayNameFromUser = (raw: unknown): string => {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return '';
+    const user = raw as Record<string, unknown>;
+    const first = String(
+      user.firstname ?? user.first_name ?? user.firstName ?? ''
+    ).trim();
+    const last = String(
+      user.lastname ?? user.last_name ?? user.lastName ?? ''
+    ).trim();
+    const fullName = `${first} ${last}`.trim();
+    if (fullName) return fullName;
+    const name = String(user.name ?? '').trim();
+    if (name) return name;
+    const email = String(user.email ?? '').trim();
+    if (email) return email;
+    return '';
+  };
+
+  const getActivityAuthorLabel = (activity: ClientActivity): string => {
+    const raw = String(activity.createdBy || '').trim();
+    if (!raw) return '';
+    if (!isLikelyUuid(raw)) return raw;
+    return authorNamesById[raw] || 'Staff member';
+  };
+
+  const toRoleLabel = (value: string): string => {
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return '';
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  };
+
+  const getActivityAuthorRoleLabel = (activity: ClientActivity): string => {
+    const directRole = toRoleLabel(String(activity.createdByRole || ''));
+    if (directRole) return directRole;
+    const fromMeta = activity.metadata?.createdByRole ?? activity.metadata?.created_by_role;
+    return toRoleLabel(String(fromMeta || ''));
+  };
+
+  const getActivityAuthorDisplay = (activity: ClientActivity): string => {
+    const name = getActivityAuthorLabel(activity);
+    const role = getActivityAuthorRoleLabel(activity);
+    if (!name) return '';
+    return role ? `Added by ${name} (${role})` : `Added by ${name}`;
+  };
+
+  const extractBirthOutcomes = (raw: unknown): string => {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return '';
+    const row = raw as Record<string, unknown>;
+    return String(row.birthOutcomes ?? row.birth_outcomes ?? '').trim();
+  };
 
   useEffect(() => {
     fetchClients();
@@ -61,12 +184,107 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
         // Set client immediately to prevent "not found" flash
         setSelectedClient(client);
         fetchActivities(clientId);
+        void fetchClientDetails(clientId);
       } else if (clients.length > 0) {
         // Only show "not found" if we've already loaded clients
         setIsLoading(false);
       }
     }
   }, [clientId, clients]);
+
+  useEffect(() => {
+    const idsToResolve = Array.from(
+      new Set(
+        activities
+          .map((a) => String(a.createdBy || '').trim())
+          .filter((id) => id && isLikelyUuid(id) && !authorNamesById[id])
+      )
+    );
+
+    if (idsToResolve.length === 0) return;
+
+    let cancelled = false;
+
+    const resolveNames = async () => {
+      const resolvedEntries = await Promise.all(
+        idsToResolve.map(async (id) => {
+          try {
+            const response = await fetchWithAuth(buildUrl(`/users/${id}`), {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            });
+            if (!response.ok) return [id, ''] as const;
+            const payload = await response.json();
+            const userObj =
+              payload?.user ?? payload?.data?.user ?? payload?.data ?? payload;
+            const resolvedName = getDisplayNameFromUser(userObj);
+            return [id, resolvedName] as const;
+          } catch {
+            return [id, ''] as const;
+          }
+        })
+      );
+
+      const unresolvedIds = resolvedEntries
+        .filter(([, name]) => !name)
+        .map(([id]) => id);
+
+      let fallbackNames: Record<string, string> = {};
+      if (unresolvedIds.length > 0) {
+        try {
+          const teamResponse = await fetchWithAuth(buildUrl('/clients/team/all'), {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          if (teamResponse.ok) {
+            const teamPayload = await teamResponse.json();
+            const teamRows = Array.isArray(teamPayload)
+              ? teamPayload
+              : Array.isArray(teamPayload?.data)
+                ? teamPayload.data
+                : [];
+            fallbackNames = teamRows.reduce(
+              (acc: Record<string, string>, row: Record<string, unknown>) => {
+                const id = String(row.id ?? row.user_id ?? '').trim();
+                if (!id) return acc;
+                const name = getDisplayNameFromUser(row);
+                if (name) acc[id] = name;
+                return acc;
+              },
+              {}
+            );
+          }
+        } catch {
+          // Keep unresolved IDs hidden as "Staff member" via UI fallback.
+        }
+      }
+
+      if (cancelled) return;
+      setAuthorNamesById((prev) => {
+        const next = { ...prev };
+        resolvedEntries.forEach(([id, name]) => {
+          if (name) {
+            next[id] = name;
+            return;
+          }
+          const fallback = fallbackNames[id];
+          if (fallback) {
+            next[id] = fallback;
+          }
+        });
+        return next;
+      });
+    };
+
+    void resolveNames();
+    return () => {
+      cancelled = true;
+    };
+  }, [activities, authorNamesById]);
 
   const fetchClients = async () => {
     try {
@@ -84,6 +302,20 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
       console.error('Failed to fetch clients:', error);
       setClients([]);
       toast.error(error.message || 'Failed to load clients');
+    }
+  };
+
+  const fetchClientDetails = async (id: string) => {
+    setIsLoadingDetails(true);
+    try {
+      const details = await getAssignedClientDetails(id, true);
+      const typed = details as AssignedClientDetailed;
+      setClientDetails(typed);
+      setBirthOutcomesDraft(extractBirthOutcomes(typed));
+    } catch {
+      // Keep activities usable even when details fetch fails.
+    } finally {
+      setIsLoadingDetails(false);
     }
   };
 
@@ -126,7 +358,9 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
         ]);
         
         if (details) {
-          setClientDetails(details as AssignedClientDetailed);
+          const typed = details as AssignedClientDetailed;
+          setClientDetails(typed);
+          setBirthOutcomesDraft(extractBirthOutcomes(typed));
         }
         
         // Set activities
@@ -150,6 +384,44 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
     }
   };
 
+  const handleSaveBirthOutcomes = async () => {
+    if (!selectedClient?.id) return;
+    setIsSavingBirthOutcomes(true);
+    try {
+      const response = await fetchWithAuth(
+        buildUrl(`/clients/${encodeURIComponent(selectedClient.id)}`),
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            birth_outcomes: birthOutcomesDraft.trim(),
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '');
+        throw new Error(errorText || `Failed to save birth outcomes (${response.status})`);
+      }
+
+      setClientDetails((prev) =>
+        prev
+          ? {
+              ...prev,
+              birthOutcomes: birthOutcomesDraft.trim(),
+            }
+          : prev
+      );
+      toast.success('Birth outcomes saved');
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to save birth outcomes');
+    } finally {
+      setIsSavingBirthOutcomes(false);
+    }
+  };
+
   const handleAddActivity = async () => {
     if (!selectedClient || !formData.description.trim()) {
       toast.error('Please fill in the description');
@@ -162,10 +434,11 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
         type: formData.type,
         description: formData.description,
         metadata: Object.keys(formData.metadata).length > 0 ? formData.metadata : undefined,
+        visibleToClient: formData.visibleToClient,
       });
       toast.success('Activity added successfully');
       setAddDialogOpen(false);
-      setFormData({ type: 'note', description: '', metadata: {} });
+      setFormData({ type: 'note', description: '', metadata: {}, visibleToClient: false });
       // Refresh activities for the selected client
       if (selectedClient) {
         setIsLoading(true);
@@ -187,6 +460,20 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
       toast.error(error.message || 'Failed to add activity');
     } finally {
       setIsAdding(false);
+    }
+  };
+
+  const handlePortalVisibilityToggle = async (activityId: string, next: boolean) => {
+    if (!selectedClient) return;
+    setVisibilityUpdatingId(activityId);
+    try {
+      const updated = await patchClientActivityVisibility(selectedClient.id, activityId, next);
+      setActivities((prev) => prev.map((a) => (a.id === activityId ? updated : a)));
+      toast.success(next ? 'Shown on client portal' : 'Hidden from client portal');
+    } catch (e: any) {
+      toast.error(e?.message || 'Could not update visibility');
+    } finally {
+      setVisibilityUpdatingId(null);
     }
   };
 
@@ -437,12 +724,21 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                                         {getActivityIcon(activity.type)}
                                       </div>
                                       <div className='flex-1 space-y-1'>
-                                        <div className='flex items-center gap-2'>
+                                        <div className='flex flex-wrap items-center gap-2'>
                                           <Badge
                                             className={`text-xs ${getActivityBadgeColor(activity.type)}`}
                                           >
                                             {activity.type}
                                           </Badge>
+                                          {activity.visibleToClient ? (
+                                            <Badge variant='outline' className='text-xs border-emerald-600 text-emerald-800'>
+                                              Visible to client
+                                            </Badge>
+                                          ) : (
+                                            <Badge variant='secondary' className='text-xs text-muted-foreground'>
+                                              Staff only
+                                            </Badge>
+                                          )}
                                           <span className='text-xs text-gray-500'>
                                             {(() => {
                                               try {
@@ -457,16 +753,28 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                                           </span>
                                         </div>
                                         <p className='text-sm text-gray-900'>{activity.description}</p>
-                                        {activity.metadata &&
-                                          Object.keys(activity.metadata).length > 0 && (
+                                        {getActivityAuthorDisplay(activity) && (
+                                          <p className='text-xs text-muted-foreground'>
+                                            {getActivityAuthorDisplay(activity)}
+                                          </p>
+                                        )}
+                                        {displayMetadataEntries(activity.metadata).length > 0 && (
                                             <div className='text-xs text-gray-600 space-y-1 pt-2 border-t'>
-                                              {Object.entries(activity.metadata).map(([key, value]) => (
+                                              {displayMetadataEntries(activity.metadata).map(([key, value]) => (
                                                 <p key={key}>
                                                   <span className='font-medium'>{key}:</span> {String(value)}
                                                 </p>
                                               ))}
                                             </div>
                                           )}
+                                        {selectedClient ? (
+                                          <ActivityPortalToggle
+                                            clientId={(selectedClient as AssignedClientLite).id}
+                                            activity={activity}
+                                            busy={visibilityUpdatingId === activity.id}
+                                            onToggle={handlePortalVisibilityToggle}
+                                          />
+                                        ) : null}
                                       </div>
                                     </div>
                                   </CardContent>
@@ -512,6 +820,11 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
               {selectedClient.email && (
                 <p className='text-sm text-gray-600'>{selectedClient.email}</p>
               )}
+              <p className='text-sm text-muted-foreground pt-1 max-w-xl'>
+                Click <span className='font-medium text-foreground'>Add Activity</span> to add a note or log. In that form, use{' '}
+                <span className='font-medium text-foreground'>Show to client</span> if this entry should appear on the
+                client&apos;s portal; leave it off to keep it staff-only.
+              </p>
             </div>
           )}
         </div>
@@ -545,6 +858,28 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
 
       {selectedClient && (
         <>
+          <Card>
+            <CardContent className='py-5 space-y-3'>
+              <div className='space-y-1'>
+                <h3 className='text-base font-semibold text-gray-900'>Birth Outcomes</h3>
+                <p className='text-sm text-muted-foreground'>
+                  Narrative summary of delivery type, complications, interventions, birthweight, and related outcomes.
+                </p>
+              </div>
+              <Textarea
+                value={birthOutcomesDraft}
+                onChange={(e) => setBirthOutcomesDraft(e.target.value)}
+                rows={6}
+                placeholder='Add birth outcomes summary...'
+              />
+              <div className='flex justify-end'>
+                <Button onClick={handleSaveBirthOutcomes} disabled={isSavingBirthOutcomes}>
+                  {isSavingBirthOutcomes ? 'Saving...' : 'Save Birth Outcomes'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
           {(isLoadingDetails || isActivitiesLoading) ? (
             <Card>
               <CardContent className='text-center py-12'>
@@ -590,36 +925,57 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                                 {getActivityIcon(activity.type)}
                               </div>
                               <div className='flex-1 space-y-2'>
-                                        <div className='flex items-center gap-2'>
-                                          <Badge
-                                            className={`text-xs ${getActivityBadgeColor(activity.type)}`}
-                                          >
-                                            {activity.type}
-                                          </Badge>
-                                          <span className='text-xs text-gray-500'>
-                                            {(() => {
-                                              try {
-                                                if (!activity.createdAt) return '';
-                                                const dateObj = new Date(activity.createdAt);
-                                                if (isNaN(dateObj.getTime())) return '';
-                                                return format(dateObj, 'h:mm a');
-                                              } catch {
-                                                return '';
-                                              }
-                                            })()}
-                                          </span>
-                                        </div>
-                                <p className='text-sm text-gray-900'>{activity.description}</p>
-                                {activity.metadata &&
-                                  Object.keys(activity.metadata).length > 0 && (
-                                    <div className='text-xs text-gray-600 space-y-1 pt-2 border-t'>
-                                      {Object.entries(activity.metadata).map(([key, value]) => (
-                                        <p key={key}>
-                                          <span className='font-medium'>{key}:</span> {String(value)}
-                                        </p>
-                                      ))}
-                                    </div>
+                                <div className='flex flex-wrap items-center gap-2'>
+                                  <Badge
+                                    className={`text-xs ${getActivityBadgeColor(activity.type)}`}
+                                  >
+                                    {activity.type}
+                                  </Badge>
+                                  {activity.visibleToClient ? (
+                                    <Badge variant='outline' className='text-xs border-emerald-600 text-emerald-800'>
+                                      Visible to client
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant='secondary' className='text-xs text-muted-foreground'>
+                                      Staff only
+                                    </Badge>
                                   )}
+                                  <span className='text-xs text-gray-500'>
+                                    {(() => {
+                                      try {
+                                        if (!activity.createdAt) return '';
+                                        const dateObj = new Date(activity.createdAt);
+                                        if (isNaN(dateObj.getTime())) return '';
+                                        return format(dateObj, 'h:mm a');
+                                      } catch {
+                                        return '';
+                                      }
+                                    })()}
+                                  </span>
+                                </div>
+                                <p className='text-sm text-gray-900'>{activity.description}</p>
+                                {getActivityAuthorDisplay(activity) && (
+                                  <p className='text-xs text-muted-foreground'>
+                                    {getActivityAuthorDisplay(activity)}
+                                  </p>
+                                )}
+                                {displayMetadataEntries(activity.metadata).length > 0 && (
+                                  <div className='text-xs text-gray-600 space-y-1 pt-2 border-t'>
+                                    {displayMetadataEntries(activity.metadata).map(([key, value]) => (
+                                      <p key={key}>
+                                        <span className='font-medium'>{key}:</span> {String(value)}
+                                      </p>
+                                    ))}
+                                  </div>
+                                )}
+                                {selectedClient ? (
+                                  <ActivityPortalToggle
+                                    clientId={(selectedClient as AssignedClientLite).id}
+                                    activity={activity}
+                                    busy={visibilityUpdatingId === activity.id}
+                                    onToggle={handlePortalVisibilityToggle}
+                                  />
+                                ) : null}
                               </div>
                             </div>
                           </CardContent>
@@ -635,11 +991,13 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
 
       {/* Add Activity Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-        <DialogContent>
+        <DialogContent className='max-h-[min(90vh,640px)] overflow-y-auto'>
           <DialogHeader>
             <DialogTitle>Add Activity</DialogTitle>
             <DialogDescription>
-              Record an activity for {selectedClient?.firstname || 'No'} {selectedClient?.lastname || 'Name'}
+              Record an activity for {selectedClient?.firstname || 'No'} {selectedClient?.lastname || 'Name'}. Use{' '}
+              <span className='font-medium text-foreground'>Show to client</span> below only if they should see this on
+              their portal.
             </DialogDescription>
           </DialogHeader>
           <div className='space-y-4 py-4'>
@@ -672,6 +1030,27 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                 placeholder='Describe the activity...'
                 required
               />
+            </div>
+            <div className='flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50/80 dark:border-amber-900/50 dark:bg-amber-950/30 p-3'>
+              <Checkbox
+                id='visible-to-client'
+                checked={formData.visibleToClient}
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    visibleToClient: checked === true,
+                  }))
+                }
+              />
+              <div className='space-y-1'>
+                <Label htmlFor='visible-to-client' className='cursor-pointer font-medium leading-snug'>
+                  Show to client
+                </Label>
+                <p className='text-xs text-muted-foreground leading-snug'>
+                  Off (default): staff only — not shown on the client portal. On: appears under &quot;Updates from your
+                  care team&quot; for this client.
+                </p>
+              </div>
             </div>
             {formData.type === 'call' && (
               <div className='space-y-2'>
@@ -717,4 +1096,3 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
     </div>
   );
 }
-

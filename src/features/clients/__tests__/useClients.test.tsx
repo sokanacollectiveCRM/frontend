@@ -58,7 +58,7 @@ describe('useClients', () => {
 
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockClients,
+        text: async () => JSON.stringify({ success: true, data: mockClients }),
       });
 
       const { result } = renderHook(() => useClients());
@@ -79,7 +79,6 @@ describe('useClients', () => {
         firstname: 'John',
         lastname: 'Doe',
         email: 'john@example.com',
-        role: 'client',
         serviceNeeded: 'Labor Support',
         status: 'lead',
         phoneNumber: '555-123-4567',
@@ -101,7 +100,7 @@ describe('useClients', () => {
       });
 
       await waitFor(() => {
-        expect(result.current.error).toBe('Failed (500): Server error');
+        expect(result.current.error).toBe('Server error');
         expect(result.current.clients).toHaveLength(0);
         expect(result.current.isLoading).toBe(false);
       });
@@ -148,16 +147,19 @@ describe('useClients', () => {
     it('should fetch individual client successfully', async () => {
       const mockClient = {
         id: '1',
-        firstname: 'John',
-        lastname: 'Doe',
+        first_name: 'John',
+        last_name: 'Doe',
         email: 'john@example.com',
-        serviceNeeded: 'Labor Support',
+        phone_number: '555-123-4567',
+        service_needed: 'Labor Support',
         status: 'lead',
+        requested_at: '2025-01-15T00:00:00.000Z',
+        updated_at: '2025-01-15T00:00:00.000Z',
       };
 
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockClient,
+        text: async () => JSON.stringify({ success: true, data: mockClient }),
       });
 
       const { result } = renderHook(() => useClients());
@@ -166,7 +168,14 @@ describe('useClients', () => {
         return await result.current.getClientById('1');
       });
 
-      expect(client).toEqual(mockClient);
+      expect(client).toMatchObject({
+        id: '1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@example.com',
+        serviceNeeded: 'Labor Support',
+        status: 'lead',
+      });
       expect(result.current.isLoading).toBe(false);
     });
 
@@ -184,7 +193,7 @@ describe('useClients', () => {
       });
 
       expect(client).toBeNull();
-      expect(result.current.error).toBe('Could not fetch client');
+      expect(result.current.error).toBe('Client not found');
     });
   });
 
@@ -194,7 +203,7 @@ describe('useClients', () => {
         new Promise(resolve =>
           setTimeout(() => resolve({
             ok: true,
-            json: async () => [],
+            text: async () => JSON.stringify({ success: true, data: [] }),
           }), 100)
         )
       );
@@ -230,12 +239,13 @@ describe('useClients', () => {
         await result.current.getClients();
       });
 
-      expect(result.current.error).toBe('Failed (500): Server error');
+      expect(result.current.error).toBe('Server error');
+      
 
       // Then, make a successful request
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
-        json: async () => [],
+        text: async () => JSON.stringify({ success: true, data: [] }),
       });
 
       await act(async () => {

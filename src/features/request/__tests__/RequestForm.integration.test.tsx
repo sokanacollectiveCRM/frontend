@@ -27,18 +27,23 @@ describe('RequestForm Integration Tests', () => {
 
   describe('Complete Form Submission Flow', () => {
     it('renders form with all required fields', async () => {
-      const user = userEvent.setup();
       render(<RequestForm />);
 
       // Verify form renders correctly
       expect(screen.getByText('Request for Service Form')).toBeInTheDocument();
-      expect(screen.getByText('Client Details')).toBeInTheDocument();
+      expect(
+        screen.getByText('What service(s) are you interested in?')
+      ).toBeInTheDocument();
 
-      // Check for required fields
-      expect(screen.getByLabelText(/first name/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/last name/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/mobile phone/i)).toBeInTheDocument();
+      // Check for required fields on initial step
+      expect(
+        screen.getByLabelText(
+          /What specific service do you need\? Please describe your requirements\*/i
+        )
+      ).toBeInTheDocument();
+      expect(
+        screen.getByLabelText(/What does doula support look like for you\?/i)
+      ).toBeInTheDocument();
     });
 
     it('allows user to fill form fields', async () => {
@@ -46,27 +51,24 @@ describe('RequestForm Integration Tests', () => {
       render(<RequestForm />);
 
       // Fill out the form fields
-      const firstnameInput = screen.getByLabelText(/first name/i);
-      const lastnameInput = screen.getByLabelText(/last name/i);
-      const emailInput = screen.getByLabelText(/email/i);
-      const phoneInput = screen.getByLabelText(/mobile phone/i);
+      const supportDetailsInput = screen.getByLabelText(
+        /What does doula support look like for you\?/i
+      );
+      const serviceNeededInput = screen.getByLabelText(
+        /What specific service do you need\? Please describe your requirements\*/i
+      );
 
-      // Clear existing values first
-      await user.clear(firstnameInput);
-      await user.clear(lastnameInput);
-      await user.clear(emailInput);
-      await user.clear(phoneInput);
-
-      await user.type(firstnameInput, 'John');
-      await user.type(lastnameInput, 'Doe');
-      await user.type(emailInput, 'john.doe@example.com');
-      await user.type(phoneInput, '555-123-4567');
+      await user.type(
+        supportDetailsInput,
+        'I need overnight support for 8 weeks after delivery.'
+      );
+      await user.type(serviceNeededInput, 'Postpartum overnight doula care');
 
       // Verify values are set
-      expect(firstnameInput).toHaveValue('John');
-      expect(lastnameInput).toHaveValue('Doe');
-      expect(emailInput).toHaveValue('john.doe@example.com');
-      expect(phoneInput).toHaveValue('555-123-4567');
+      expect(supportDetailsInput).toHaveValue(
+        'I need overnight support for 8 weeks after delivery.'
+      );
+      expect(serviceNeededInput).toHaveValue('Postpartum overnight doula care');
     });
 
     it('shows Next button on first step', async () => {
@@ -128,14 +130,9 @@ describe('RequestForm Integration Tests', () => {
       expect(screen.getByText('Request for Service Form')).toBeInTheDocument();
     });
 
-    it('validates email format', async () => {
+    it('validates required fields on initial step', async () => {
       const user = userEvent.setup();
       render(<RequestForm />);
-
-      // Fill form with invalid email
-      const emailInput = screen.getByLabelText(/email/i);
-      await user.clear(emailInput);
-      await user.type(emailInput, 'invalid-email');
 
       const nextButton = screen.getByRole('button', { name: /next/i });
       await user.click(nextButton);
@@ -162,20 +159,22 @@ describe('RequestForm Integration Tests', () => {
     });
 
     it('renders form sections correctly', async () => {
-      const user = userEvent.setup();
       render(<RequestForm />);
 
       // Check for form sections
-      expect(screen.getByText('Client Details')).toBeInTheDocument();
+      expect(
+        screen.getByText('What service(s) are you interested in?')
+      ).toBeInTheDocument();
 
-      // Check for form fields
-      expect(screen.getByLabelText(/first name/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/last name/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/mobile phone/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/preferred name/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/preferred contact method/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/pronouns/i)).toBeInTheDocument();
+      // Check for form fields on initial step
+      expect(
+        screen.getByLabelText(
+          /What specific service do you need\? Please describe your requirements\*/i
+        )
+      ).toBeInTheDocument();
+      expect(
+        screen.getByLabelText(/What does doula support look like for you\?/i)
+      ).toBeInTheDocument();
     });
 
     it('handles multiple submission attempts', async () => {
@@ -198,9 +197,10 @@ describe('RequestForm Integration Tests', () => {
       render(<RequestForm />);
 
       // Fill some fields
-      const firstnameInput = screen.getByLabelText(/first name/i);
-      await user.clear(firstnameInput);
-      await user.type(firstnameInput, 'John');
+      const serviceNeededInput = screen.getByLabelText(
+        /What specific service do you need\? Please describe your requirements\*/i
+      );
+      await user.type(serviceNeededInput, 'Postpartum support needed');
 
       // Try to submit
       const nextButton = screen.getByRole('button', { name: /next/i });
@@ -208,7 +208,7 @@ describe('RequestForm Integration Tests', () => {
 
       // Form should still be visible and maintain field values
       expect(screen.getByText('Request for Service Form')).toBeInTheDocument();
-      expect(firstnameInput).toHaveValue('John');
+      expect(serviceNeededInput).toHaveValue('Postpartum support needed');
     });
   });
 

@@ -71,7 +71,9 @@ describe('RequestForm', () => {
 
       // Test that the form renders correctly
       expect(screen.getByText('Request for Service Form')).toBeInTheDocument();
-      expect(screen.getByText('Client Details')).toBeInTheDocument();
+      expect(
+        screen.getByText('What service(s) are you interested in?')
+      ).toBeInTheDocument();
     });
 
     it('handles submission error with error message', async () => {
@@ -120,36 +122,26 @@ describe('RequestForm', () => {
     it('renders all required form fields', () => {
       render(<RequestForm />);
 
-      // Check that all expected fields are present
-      expect(screen.getByLabelText(/first name/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/last name/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/mobile phone/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/preferred name/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/preferred contact method/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/pronouns/i)).toBeInTheDocument();
+      // Initial mobile step is services interested.
+      expect(
+        screen.getByText('What service(s) are you interested in?')
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText(/What specific service do you need\?/i)
+      ).toBeInTheDocument();
     });
 
     it('allows user to fill form fields', async () => {
       const user = userEvent.setup();
       render(<RequestForm />);
 
-      const firstnameInput = screen.getByLabelText(/first name/i);
-      const lastnameInput = screen.getByLabelText(/last name/i);
-      const emailInput = screen.getByLabelText(/email/i);
+      const serviceDetails = screen.getByLabelText(
+        /What specific service do you need\?/i
+      );
 
-      // Clear existing values first
-      await user.clear(firstnameInput);
-      await user.clear(lastnameInput);
-      await user.clear(emailInput);
+      await user.type(serviceDetails, 'Postpartum overnight support');
 
-      await user.type(firstnameInput, 'John');
-      await user.type(lastnameInput, 'Doe');
-      await user.type(emailInput, 'john.doe@example.com');
-
-      expect(firstnameInput).toHaveValue('John');
-      expect(lastnameInput).toHaveValue('Doe');
-      expect(emailInput).toHaveValue('john.doe@example.com');
+      expect(serviceDetails).toHaveValue('Postpartum overnight support');
     });
   });
 
@@ -165,7 +157,9 @@ describe('RequestForm', () => {
 
       // Test that form renders correctly
       expect(screen.getByText('Request for Service Form')).toBeInTheDocument();
-      expect(screen.getByText('Client Details')).toBeInTheDocument();
+      expect(
+        screen.getByText('What service(s) are you interested in?')
+      ).toBeInTheDocument();
     });
   });
 }); 

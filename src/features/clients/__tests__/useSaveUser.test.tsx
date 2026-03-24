@@ -47,7 +47,6 @@ describe('useSaveUser', () => {
           method: 'PUT',
           credentials: 'include',
           headers: {
-            Authorization: 'Bearer mock-token',
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(mockUserData),
@@ -81,7 +80,6 @@ describe('useSaveUser', () => {
           method: 'PUT',
           credentials: 'include',
           headers: {
-            Authorization: 'Bearer mock-token',
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(mockUserData),
@@ -147,7 +145,7 @@ describe('useSaveUser', () => {
   });
 
   describe('Authentication', () => {
-    it('should include auth token in request', async () => {
+    it('should use cookie credentials for auth', async () => {
       const mockUserData: User = {
         id: '1',
         firstname: 'John',
@@ -166,14 +164,12 @@ describe('useSaveUser', () => {
       expect(global.fetch).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
-          headers: expect.objectContaining({
-            Authorization: 'Bearer mock-token',
-          }),
+          credentials: 'include',
         })
       );
     });
 
-    it('should handle missing auth token', async () => {
+    it('should still work when localStorage token is missing', async () => {
       mockLocalStorage.getItem.mockReturnValue(null);
 
       const mockUserData: User = {
@@ -194,9 +190,7 @@ describe('useSaveUser', () => {
       expect(global.fetch).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
-          headers: expect.objectContaining({
-            Authorization: 'Bearer null',
-          }),
+          credentials: 'include',
         })
       );
     });
@@ -225,7 +219,6 @@ describe('useSaveUser', () => {
           method: 'PUT',
           credentials: 'include',
           headers: {
-            Authorization: 'Bearer mock-token',
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(mockUserData),
@@ -255,7 +248,6 @@ describe('useSaveUser', () => {
           method: 'PUT',
           credentials: 'include',
           headers: {
-            Authorization: 'Bearer mock-token',
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(mockUserData),

@@ -867,7 +867,11 @@ export async function addClientActivity(
   });
 
   const raw = await readJsonResponse<Record<string, unknown>>(response, 'Failed to add activity');
-  const act = raw.activity ?? raw.data?.activity ?? raw.data;
+  const rawData =
+    raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data)
+      ? (raw.data as Record<string, unknown>)
+      : undefined;
+  const act = raw.activity ?? rawData?.activity ?? rawData;
   if (!act || typeof act !== 'object') {
     throw new Error('Invalid response from server when adding activity');
   }
@@ -896,7 +900,11 @@ export async function patchClientActivityVisibility(
   });
 
   const raw = await readJsonResponse<Record<string, unknown>>(response, 'Failed to update activity');
-  const act = raw.activity ?? raw.data?.activity ?? raw.data;
+  const rawData =
+    raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data)
+      ? (raw.data as Record<string, unknown>)
+      : undefined;
+  const act = raw.activity ?? rawData?.activity ?? rawData;
   if (!act || typeof act !== 'object') {
     throw new Error('Invalid response when updating activity');
   }

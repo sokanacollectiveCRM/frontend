@@ -1,17 +1,22 @@
-import { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/common/components/ui/tabs';
 import { Header } from '@/common/layouts/Header';
 import { Main } from '@/common/layouts/Main';
 import ClientProfileTab from './components/ClientProfileTab';
-import ClientPaymentHistoryTab from './components/ClientPaymentHistoryTab';
-import ClientContractsTab from './components/ClientContractsTab';
 import { useClientAuth } from '@/common/hooks/auth/useClientAuth';
+import { useIsClientPortalUser } from '@/common/hooks/auth/useIsClientPortalUser';
+import { useUser } from '@/common/hooks/user/useUser';
 import { Alert, AlertDescription } from '@/common/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 
+const serviceOutcomesUrl = (
+  import.meta.env.VITE_CLIENT_PORTAL_SERVICE_OUTCOMES_URL as string | undefined
+)?.trim();
+
+/** Client-facing area: profile only (no org metrics or staff CRM). */
 export default function ClientDashboard() {
-  const { client, isLoading } = useClientAuth();
-  const [activeTab, setActiveTab] = useState('profile');
+  const { client, isLoading: clientAuthLoading } = useClientAuth();
+  const { isClientPortalUser, isLoading: portalLoading } = useIsClientPortalUser();
+  const { user } = useUser();
+  const isLoading = clientAuthLoading || portalLoading;
 
   // Show loading state
   if (isLoading) {
@@ -31,8 +36,7 @@ export default function ClientDashboard() {
     );
   }
 
-  // Show error if no client session
-  if (!client) {
+  if (!isClientPortalUser) {
     return (
       <>
         <Header fixed>
@@ -43,7 +47,11 @@ export default function ClientDashboard() {
             <Alert variant='destructive'>
               <AlertCircle className='h-4 w-4' />
               <AlertDescription>
-                You must be logged in to view the client portal. Please log in again.
+                You must be logged in as a client to view this page. Use{' '}
+                <a href='/auth/client-login' className='underline font-medium'>
+                  client portal login
+                </a>
+                .
               </AlertDescription>
             </Alert>
           </div>
@@ -51,6 +59,13 @@ export default function ClientDashboard() {
       </>
     );
   }
+
+  const welcomeName =
+    client?.firstname ||
+    user?.firstname ||
+    client?.email ||
+    user?.email ||
+    'Client';
 
   return (
     <>
@@ -61,35 +76,28 @@ export default function ClientDashboard() {
       <Main>
         <div className='flex-1 overflow-auto p-6'>
           <div className='mb-6'>
-            <h1 className='text-3xl font-bold text-gray-900'>Client Portal</h1>
+            <h1 className='text-3xl font-bold text-gray-900'>Your profile</h1>
             <p className='text-gray-600 mt-1'>
-              Welcome, {client?.firstname || client?.email || 'Client'}! Manage your profile, view
-              contracts, and track payments.
+              Welcome, {welcomeName}. Update your details below.
             </p>
+            {serviceOutcomesUrl ? (
+              <p className='text-gray-600 mt-2'>
+                <a
+                  href={serviceOutcomesUrl}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className='font-medium text-primary underline underline-offset-2 hover:text-primary/90'
+                >
+                  Service Outcomes
+                </a>
+                <span className='text-gray-500 text-sm ml-2'>(opens in a new tab)</span>
+              </p>
+            ) : null}
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className='w-full'>
-            <TabsList className='grid w-full grid-cols-3 mb-6'>
-              <TabsTrigger value='profile'>Profile</TabsTrigger>
-              <TabsTrigger value='contracts'>Contracts</TabsTrigger>
-              <TabsTrigger value='payments'>Payment History</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value='profile' className='mt-6'>
-              <ClientProfileTab />
-            </TabsContent>
-
-            <TabsContent value='contracts' className='mt-6'>
-              <ClientContractsTab />
-            </TabsContent>
-
-            <TabsContent value='payments' className='mt-6'>
-              <ClientPaymentHistoryTab />
-            </TabsContent>
-          </Tabs>
+          <ClientProfileTab />
         </div>
       </Main>
     </>
   );
 }
-
