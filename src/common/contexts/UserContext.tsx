@@ -188,7 +188,20 @@ export function UserProvider({
   };
 
   useEffect(() => {
-    checkAuth();
+    void checkAuth();
+  }, []);
+
+  // After client portal login (Supabase session only), refresh /auth/me so user.role is available on Home.
+  useEffect(() => {
+    if (API_CONFIG.authMode !== 'supabase') return;
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
+      void checkAuth();
+    });
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Auto-logout on inactivity with warning

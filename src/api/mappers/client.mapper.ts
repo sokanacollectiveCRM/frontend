@@ -139,6 +139,7 @@ export function mapClientDetail(dto: ClientDetailDTO): ClientDetail {
     dueDate: dto.due_date,
     healthHistory: dto.health_history,
     healthNotes: dto.health_notes,
+    birthOutcomes: dto.birth_outcomes,
     allergies: dto.allergies,
     medications: dto.medications,
     dateOfBirth: dto.date_of_birth,

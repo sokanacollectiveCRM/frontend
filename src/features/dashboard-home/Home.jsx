@@ -1,5 +1,5 @@
 import { useUser } from '@/common/hooks/user/useUser';
-import { useClientAuth } from '@/common/hooks/auth/useClientAuth';
+import { useIsClientPortalUser } from '@/common/hooks/auth/useIsClientPortalUser';
 import { CalendarWidget } from './components/CalendarWidget';
 import { StatsOverview } from './components/StatsOverview';
 import ClientDashboard from '@/features/client-dashboard/ClientDashboard';
@@ -11,10 +11,9 @@ const QUICKBOOKS_CONNECTED_KEY = 'quickbooks_just_connected';
 
 export default function Home() {
   const { user, isLoading: isUserLoading } = useUser();
-  const { client, isLoading: isClientLoading } = useClientAuth();
+  const { isClientPortalUser, isLoading: isPortalLoading } = useIsClientPortalUser();
   const [searchParams, setSearchParams] = useSearchParams();
   const isDoula = user?.role === 'doula';
-  const isClient = !!client;
   const displayFirstName =
     user?.firstname ||
     user?.first_name ||
@@ -39,7 +38,7 @@ export default function Home() {
   }, [searchParams, setSearchParams]);
 
   // Show loading state while checking auth
-  if (isClientLoading || isUserLoading) {
+  if (isPortalLoading || isUserLoading) {
     return (
       <div className='h-full p-6 flex items-center justify-center'>
         <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900'></div>
@@ -47,8 +46,8 @@ export default function Home() {
     );
   }
 
-  // Show client dashboard if client is logged in via Supabase
-  if (isClient) {
+  // Client portal: Supabase client session and/or backend role === client (not admin/doula metrics)
+  if (isClientPortalUser) {
     return <ClientDashboard />;
   }
 

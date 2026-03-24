@@ -6,6 +6,11 @@ import type { Activity, CreateActivityInput } from '@/domain/activity';
  * Canonical mode only - no legacy format handling.
  */
 export function mapActivity(dto: ActivityDTO): Activity {
+  const meta = dto.metadata && typeof dto.metadata === 'object' ? dto.metadata : {};
+  const visibleFromMeta =
+    meta.visibleToClient === true ||
+    meta.visible_to_client === true ||
+    dto.visible_to_client === true;
   return {
     id: dto.id,
     clientId: dto.client_id,
@@ -13,6 +18,7 @@ export function mapActivity(dto: ActivityDTO): Activity {
     activityType: dto.activity_type,
     content: dto.content,
     createdAt: dto.created_at,
+    visibleToClient: visibleFromMeta || dto.visible_to_client === true,
   };
 }
 
@@ -21,8 +27,12 @@ export function mapActivity(dto: ActivityDTO): Activity {
  * camelCase → snake_case for backend.
  */
 export function mapCreateActivityInput(input: CreateActivityInput): CreateActivityDTO {
-  return {
+  const body: CreateActivityDTO = {
     activity_type: input.activityType,
     content: input.content,
   };
+  if (input.visibleToClient === true) {
+    body.visible_to_client = true;
+  }
+  return body;
 }

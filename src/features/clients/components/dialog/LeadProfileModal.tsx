@@ -23,6 +23,7 @@ import { UserContext } from '@/common/contexts/UserContext';
 import updateClient from '@/common/utils/updateClient';
 import updateClientStatus from '@/common/utils/updateClientStatus';
 import { updateClientPhi } from '@/api/services/clients.service';
+import { buildUrl, fetchWithAuth } from '@/api/http';
 import { PHI_KEYS } from '@/config/phi';
 import { Client } from '@/features/clients/data/schema';
 import type { ClientDetail } from '@/domain/client';
@@ -144,8 +145,18 @@ export function LeadProfileModal({
   const [isEditing, setIsEditing] = useState(true);
   const [editedData, setEditedData] = useState<Partial<Client>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingBirthOutcomes, setIsSavingBirthOutcomes] = useState(false);
   // Primary source for display: full detail from GET /clients/:id (authorized users get PHI).
   const [fetchedDetail, setFetchedDetail] = useState<ClientDetail | null>(null);
+  const currentUserDisplayName = React.useMemo(() => {
+    const first = String(user?.firstname ?? (user as any)?.first_name ?? '').trim();
+    const last = String(user?.lastname ?? (user as any)?.last_name ?? '').trim();
+    const full = `${first} ${last}`.trim();
+    if (full) return full;
+    const email = String(user?.email ?? '').trim();
+    if (email) return email;
+    return '';
+  }, [user]);
 
   // Use the client data directly when no fetched detail yet
   const detailedClient = client;
@@ -242,7 +253,7 @@ export function LeadProfileModal({
     try {
       setLoadingNotes(true);
       setNotesError(null);
-      const fetchedNotes = await getClientNotes(client.id);
+      const fetchedNotes = await getClientNotes(client.id, user?.role);
 
       // Debug: Comprehensive timezone analysis
       console.log('📝 Fetched notes:', fetchedNotes);
@@ -370,7 +381,11 @@ export function LeadProfileModal({
       const createdNote = await createClientNote(client.id, {
         type: 'note',
         description: newNote,
-        metadata: { category: noteCategory.toLowerCase() }
+        metadata: {
+          category: noteCategory.toLowerCase(),
+          ...(currentUserDisplayName ? { createdByName: currentUserDisplayName } : {}),
+          ...(user?.role ? { createdByRole: user.role } : {}),
+        }
       });
 
       // Add new note to the top of the list
@@ -574,6 +589,105 @@ export function LeadProfileModal({
     }
   };
 
+  const handleSaveBirthOutcomes = async () => {
+    if (!client?.id) {
+      toast.error('No client selected for update');
+      return;
+    }
+
+    const birthOutcomes = String(
+      getDisplayValue('birth_outcomes', 'birthOutcomes') || ''
+    );
+
+    setIsSavingBirthOutcomes(true);
+    try {
+      const response = await fetchWithAuth(
+        buildUrl(`/api/clients/${encodeURIComponent(client.id)}`),
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            birth_outcomes: birthOutcomes,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '');
+        throw new Error(
+          errorText || `Failed to save birth outcomes (${response.status})`
+        );
+      }
+
+      const result = await response.json().catch(() => null);
+      if (result && result.success === false) {
+        throw new Error(result.error || 'Failed to save birth outcomes');
+      }
+
+      setEditedData((prev) => ({
+        ...prev,
+        birth_outcomes: birthOutcomes,
+        birthOutcomes: birthOutcomes,
+      }));
+
+      if (birthOutcomes.trim()) {
+        try {
+          await createClientNote(client.id, {
+            type: 'note',
+            description: birthOutcomes,
+            metadata: {
+              category: 'birth-outcomes',
+              field: 'birth_outcomes',
+              ...(currentUserDisplayName
+                ? { createdByName: currentUserDisplayName }
+                : {}),
+              ...(user?.role ? { createdByRole: user.role } : {}),
+            },
+          });
+        } catch (noteErr) {
+          console.error('Error creating birth outcomes history note:', noteErr);
+          toast.error(
+            'Birth outcomes saved, but failed to create history record'
+          );
+          await fetchNotes();
+          return;
+        }
+      }
+
+      if (refreshClients) {
+        refreshClients();
+      }
+
+      await fetchNotes();
+      toast.success('Birth outcomes saved');
+    } catch (error) {
+      console.error('Error saving birth outcomes:', error);
+      toast.error('Failed to save birth outcomes');
+    } finally {
+      setIsSavingBirthOutcomes(false);
+    }
+  };
+
+  const isBirthOutcomesCategory = (value: unknown): boolean => {
+    const normalized = String(value ?? '')
+      .toLowerCase()
+      .replace(/[_\s]+/g, '-')
+      .trim();
+    return normalized === 'birth-outcomes' || normalized === 'birthoutcomes';
+  };
+
+  const birthOutcomesHistory = React.useMemo(
+    () =>
+      notes.filter((note) => {
+        const category = note.metadata?.category;
+        const field = (note.metadata as Record<string, unknown> | undefined)?.field;
+        return isBirthOutcomesCategory(category) || String(field ?? '') === 'birth_outcomes';
+      }),
+    [notes]
+  );
+
   const handleCancelEdit = () => {
     setEditedData(detailedClient || {});
     setIsEditing(false);
@@ -615,7 +729,8 @@ export function LeadProfileModal({
     fieldKey: string,
     icon?: React.ReactNode,
     type: 'text' | 'email' | 'tel' | 'textarea' | 'select' | 'multiselect' | 'date' = 'text',
-    options?: string[]
+    options?: string[],
+    textareaRows = 3
   ) => {
     const altKey =
       fieldKey === 'phoneNumber' ? 'phone_number'
@@ -624,6 +739,7 @@ export function LeadProfileModal({
       : fieldKey === 'lastname' ? 'last_name'
       : fieldKey === 'first_name' ? 'firstname'
       : fieldKey === 'last_name' ? 'lastname'
+      : fieldKey === 'birth_outcomes' ? 'birthOutcomes'
       : null;
     let value: string | Date = altKey !== null ? getDisplayValue(fieldKey, altKey) : (editedData[fieldKey] ?? '');
 
@@ -653,7 +769,7 @@ export function LeadProfileModal({
                   setEditedData(prev => ({ ...prev, ...updates }));
                 }}
                 className="mt-1"
-                rows={3}
+                rows={textareaRows}
               />
             ) : (
               <div className="mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm min-h-[72px] whitespace-pre-wrap">
@@ -811,7 +927,12 @@ export function LeadProfileModal({
     );
   };
 
-  const renderCollapsibleSection = (sectionId: string, title: string, children: React.ReactNode, icon?: React.ReactNode) => {
+  const renderCollapsibleSection = (
+    sectionId: string,
+    title: React.ReactNode,
+    children: React.ReactNode,
+    icon?: React.ReactNode
+  ) => {
     const isOpen = openSections.has(sectionId);
 
     return (
@@ -1064,6 +1185,77 @@ export function LeadProfileModal({
               <Users className="h-5 w-5" />
             )}
 
+            {/* Birth outcomes — free-text narrative (doula); placed near Admin Notes */}
+            {renderCollapsibleSection(
+              'birth-outcomes',
+              <div className="flex items-center gap-2">
+                <span>Birth Outcomes</span>
+                {birthOutcomesHistory.length > 0 && (
+                  <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                    {birthOutcomesHistory.length}
+                  </span>
+                )}
+              </div>,
+              <>
+                <p className="text-sm text-muted-foreground -mt-1 mb-1">
+                  Written summary of the birth (e.g. delivery type, complications, interventions, birth weight). Free text — not limited to preset options.
+                </p>
+                {renderEditableField('Birth Outcomes', 'birth_outcomes', undefined, 'textarea', undefined, 6)}
+                {isEditing && (
+                  <div className="flex justify-end pt-1">
+                    <Button
+                      onClick={handleSaveBirthOutcomes}
+                      size="sm"
+                      disabled={isSavingBirthOutcomes}
+                    >
+                      {isSavingBirthOutcomes ? 'Saving...' : 'Save Birth Outcomes'}
+                    </Button>
+                  </div>
+                )}
+                <div className="space-y-2 pt-2">
+                  <h4 className="text-sm font-medium text-muted-foreground">
+                    Birth Outcomes History
+                  </h4>
+                  {birthOutcomesHistory.length === 0 ? (
+                    <div className="text-sm text-muted-foreground py-2">
+                      No birth outcomes records yet.
+                    </div>
+                  ) : (
+                    birthOutcomesHistory.map((note) => {
+                      let noteDate = new Date(note.timestamp);
+                      const now = new Date();
+                      if (noteDate > now) {
+                        const offsetMinutes = noteDate.getTimezoneOffset();
+                        noteDate = new Date(
+                          noteDate.getTime() + offsetMinutes * 60 * 1000
+                        );
+                      }
+                      return (
+                        <div
+                          key={`birth-outcomes-${note.id}`}
+                          className="bg-background border rounded-lg p-3 space-y-2"
+                        >
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <span className="font-medium">
+                              {formatDistanceToNow(noteDate, { addSuffix: true })}
+                            </span>
+                            <span className="text-muted-foreground/50">•</span>
+                            <span className="text-muted-foreground/70">
+                              {format(noteDate, 'MMM dd, yyyy h:mm a')}
+                            </span>
+                          </div>
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                            {note.description}
+                          </p>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </>,
+              <Baby className="h-5 w-5" />
+            )}
+
             {/* Notes Section */}
             <Collapsible open={openSections.has('notes')} onOpenChange={() => toggleSection('notes')} className="border rounded-lg mb-3">
               <CollapsibleTrigger asChild>
@@ -1164,6 +1356,9 @@ export function LeadProfileModal({
                               </div>
                             </div>
                             <p className="text-sm leading-relaxed">{note.description}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Added by {note.createdBy || 'Unknown'}
+                            </p>
                           </div>
                         );
                       })
@@ -1174,34 +1369,6 @@ export function LeadProfileModal({
             </Collapsible>
           </div>
         ) : null}
-
-        {/* Debug Section - Shows all data from Supabase and Google Cloud */}
-        <Collapsible className="border-t pt-4 mt-4">
-          <CollapsibleTrigger className="flex items-center gap-2 w-full text-sm font-medium hover:underline">
-            <ChevronRight className="h-4 w-4 transition-transform [[data-state=open]>&]:rotate-90" />
-            Debug: View All Data (Supabase + Google Cloud)
-          </CollapsibleTrigger>
-          <CollapsibleContent className="pt-2">
-            <div className="space-y-4 text-xs font-mono bg-muted p-4 rounded-lg">
-              <div>
-                <div className="font-bold text-sm mb-2">📋 List Data (client prop)</div>
-                <pre className="overflow-auto">{JSON.stringify(client, null, 2)}</pre>
-              </div>
-              <div>
-                <div className="font-bold text-sm mb-2">🔍 Fetched Detail (GET /clients/:id)</div>
-                <pre className="overflow-auto">{JSON.stringify(fetchedDetail, null, 2)}</pre>
-              </div>
-              <div>
-                <div className="font-bold text-sm mb-2">🎯 Detail Source (used for display)</div>
-                <pre className="overflow-auto">{JSON.stringify(detailSource, null, 2)}</pre>
-              </div>
-              <div>
-                <div className="font-bold text-sm mb-2">✏️ Edited Data (current form state)</div>
-                <pre className="overflow-auto">{JSON.stringify(editedData, null, 2)}</pre>
-              </div>
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
 
         <DialogFooter className="pt-4">
           <Button onClick={() => onOpenChange(false)}>Close</Button>

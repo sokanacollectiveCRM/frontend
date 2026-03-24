@@ -13,6 +13,8 @@ export interface ActivityDTO {
   activity_type: string;
   content: string;
   created_at: string;
+  visible_to_client?: boolean;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -21,4 +23,5 @@ export interface ActivityDTO {
 export interface CreateActivityDTO {
   activity_type: string;
   content: string;
+  visible_to_client?: boolean;
 }

@@ -186,6 +186,7 @@ export type Client = User & {
   provider_type?: string;
   pregnancy_number?: number;
   health_notes?: string;
+  birth_outcomes?: string;
   
   // Past Pregnancies
   had_previous_pregnancies?: boolean;

@@ -11,6 +11,10 @@ import HoursTab from './components/HoursTab';
 import ActivitiesTab from './components/ActivitiesTab';
 import { getDoulaProfile } from '@/api/doulas/doulaService';
 import { AlertTriangle } from 'lucide-react';
+import {
+  isDoulaRaceEthnicityComplete,
+  RACE_ETHNICITY_FIELD_LABEL,
+} from './doulaDemographics';
 
 const REQUIRED_PROFILE_FIELDS = [
   'firstname',
@@ -50,6 +54,13 @@ export default function DoulaDashboard() {
       const incompleteFields = REQUIRED_PROFILE_FIELDS.filter(
         (field) => !String(profile?.[field] ?? '').trim()
       ).map((field) => FIELD_LABELS[field]);
+      if (!isDoulaRaceEthnicityComplete(profile?.race_ethnicity, profile?.race_ethnicity_other)) {
+        if (!Array.isArray(profile?.race_ethnicity) || profile.race_ethnicity.length === 0) {
+          incompleteFields.push(RACE_ETHNICITY_FIELD_LABEL);
+        } else {
+          incompleteFields.push('Another race or ethnicity (please specify)');
+        }
+      }
       setMissingFields(incompleteFields);
       setIsProfileComplete(incompleteFields.length === 0);
     } catch {

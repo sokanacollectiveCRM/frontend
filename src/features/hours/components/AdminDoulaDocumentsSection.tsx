@@ -16,6 +16,7 @@ import {
   getAdminDoulaDocuments,
   reviewDoulaDocument,
   getDoulaDocumentUrl,
+  REQUIRED_DOULA_DOCUMENT_TYPES,
   DOCUMENT_TYPE_LABELS,
   type DocumentCompletenessItem,
 } from '@/api/doulas/doulaService';
@@ -51,17 +52,81 @@ export function AdminDoulaDocumentsSection({
     setIsLoading(true);
     try {
       const data = await getAdminDoulaDocuments(doulaId);
-      const rawItems = data.completeness?.items ?? [];
-      setItems(
-        rawItems.map((item: Record<string, unknown>) => ({
-          document_type: item.document_type ?? item.documentType ?? '',
-          status: item.status ?? 'missing',
-          document_id: item.document_id ?? item.documentId,
-          file_name: item.file_name ?? item.fileName,
-          uploaded_at: item.uploaded_at ?? item.uploadedAt,
-          rejection_reason: item.rejection_reason ?? item.rejectionReason,
-        }))
+      const rawItems = (data.completeness?.items ?? []) as unknown[];
+      const completenessItems: DocumentCompletenessItem[] = rawItems.map((raw) => {
+        const item = (raw ?? {}) as Record<string, unknown>;
+        const documentId = item.document_id ?? item.documentId;
+        const fileName = item.file_name ?? item.fileName;
+        const uploadedAt = item.uploaded_at ?? item.uploadedAt;
+        const rejectionReason = item.rejection_reason ?? item.rejectionReason;
+
+        return {
+          document_type: String(item.document_type ?? item.documentType ?? ''),
+          status: String(item.status ?? 'missing'),
+          document_id: typeof documentId === 'string' ? documentId : undefined,
+          file_name: typeof fileName === 'string' ? fileName : undefined,
+          uploaded_at: typeof uploadedAt === 'string' ? uploadedAt : undefined,
+          rejection_reason:
+            typeof rejectionReason === 'string' ? rejectionReason : undefined,
+        };
+      });
+      const completenessByType = new Map<string, DocumentCompletenessItem>(
+        completenessItems.map((item) => [item.document_type, item])
       );
+      const documentsByType = new Map<
+        string,
+        { id?: string; fileName?: string; uploadedAt?: string; status?: string; rejectionReason?: string }
+      >();
+
+      for (const raw of (data.documents ?? []) as unknown[]) {
+        const doc = (raw ?? {}) as Record<string, unknown>;
+        const type = doc.document_type ?? doc.documentType;
+        if (typeof type !== 'string' || !type) continue;
+        documentsByType.set(type, {
+          id:
+            typeof (doc.id ?? doc.document_id ?? doc.documentId) === 'string'
+              ? String(doc.id ?? doc.document_id ?? doc.documentId)
+              : undefined,
+          fileName:
+            typeof (doc.file_name ?? doc.fileName) === 'string'
+              ? String(doc.file_name ?? doc.fileName)
+              : undefined,
+          uploadedAt:
+            typeof (doc.uploaded_at ?? doc.uploadedAt ?? doc.created_at) === 'string'
+              ? String(doc.uploaded_at ?? doc.uploadedAt ?? doc.created_at)
+              : undefined,
+          status: typeof doc.status === 'string' ? doc.status : undefined,
+          rejectionReason:
+            typeof (doc.rejection_reason ?? doc.rejectionReason) === 'string'
+              ? String(doc.rejection_reason ?? doc.rejectionReason)
+              : undefined,
+        });
+      }
+
+      const mergedItems: DocumentCompletenessItem[] =
+        REQUIRED_DOULA_DOCUMENT_TYPES.map((type) => {
+          const completeness = completenessByType.get(type);
+          const document = documentsByType.get(type);
+          if (document) {
+            return {
+              document_type: type,
+              status: document.status ?? completeness?.status ?? 'uploaded',
+              document_id: document.id ?? completeness?.document_id,
+              file_name: document.fileName ?? completeness?.file_name,
+              uploaded_at: document.uploadedAt ?? completeness?.uploaded_at,
+              rejection_reason:
+                document.rejectionReason ?? completeness?.rejection_reason,
+            };
+          }
+          return (
+            completeness ?? {
+              document_type: type,
+              status: 'missing',
+            }
+          );
+        });
+
+      setItems(mergedItems);
       setCanBeActive(data.completeness?.can_be_active ?? false);
       setTotalComplete(data.completeness?.total_complete ?? 0);
       setTotalRequired(data.completeness?.total_required ?? 5);
@@ -118,6 +183,32 @@ export function AdminDoulaDocumentsSection({
       window.open(url, '_blank');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to open document');
+    }
+  };
+
+  const handleDownloadDocument = async (documentId: string, fileName?: string) => {
+    try {
+      const url = await getDoulaDocumentUrl(doulaId, documentId);
+      const response = await fetch(url, {
+        credentials: 'omit',
+        mode: 'cors',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to download document');
+      }
+
+      const blob = await response.blob();
+      const objectUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = fileName?.trim() || 'doula-document';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(objectUrl);
+      toast.success('Document downloaded');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to download document');
     }
   };
 
@@ -214,9 +305,16 @@ export function AdminDoulaDocumentsSection({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleViewDocument(item.document_id!)}
+                        onClick={() => handleDownloadDocument(item.document_id!, item.file_name)}
                       >
                         <Download className="h-4 w-4 mr-1" />
+                        Download
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewDocument(item.document_id!)}
+                      >
                         View
                       </Button>
                       {(item.status === 'uploaded' || item.status === 'pending') && (

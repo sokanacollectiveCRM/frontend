@@ -12,6 +12,7 @@ import { Textarea } from '@/common/components/ui/textarea';
 import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
 import { toast } from 'sonner';
 import { useClientAuth } from '@/common/hooks/auth/useClientAuth';
+import { useUser } from '@/common/hooks/user/useUser';
 import { supabase } from '@/lib/supabase';
 import UserAvatar from '@/common/components/user/UserAvatar';
 import {
@@ -20,17 +21,24 @@ import {
   type AssignedDoula,
 } from '@/api/clients/doulaAssignments';
 import { Badge } from '@/common/components/ui/badge';
-import { Loader2 } from 'lucide-react';
+import { format, isValid, parseISO } from 'date-fns';
+import { Loader2, MessageSquare } from 'lucide-react';
 
 export default function ClientProfileTab() {
   const { client } = useClientAuth();
-  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useUser();
+  const userRecord = user as Record<string, unknown> | null;
+  const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [assignedDoulas, setAssignedDoulas] = useState<AssignedDoula[]>([]);
   const [isLoadingAssignedDoulas, setIsLoadingAssignedDoulas] = useState(false);
   const [assignedDoulasError, setAssignedDoulasError] = useState<string | null>(
     null
   );
+  const [sharedNotes, setSharedNotes] = useState<
+    { id: string; activity_type: string; content: string; created_at: string }[]
+  >([]);
+  const [sharedNotesLoading, setSharedNotesLoading] = useState(false);
   const [formData, setFormData] = useState({
     firstname: '',
     lastname: '',
@@ -46,32 +54,45 @@ export default function ClientProfileTab() {
   const getClientApiBase = () =>
     (import.meta.env.VITE_APP_BACKEND_URL || '').replace(/\/+$/, '');
 
-  const getClientAuthHeaders = (token: string) => ({
+  const getClientAuthHeaders = (token?: string) => ({
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
-    'X-Session-Token': token,
+    ...(token
+      ? {
+          Authorization: `Bearer ${token}`,
+          'X-Session-Token': token,
+        }
+      : {}),
   });
 
+  const effectiveClientId = client?.id || user?.id || null;
+  const effectiveClientFirstName =
+    client?.firstname || user?.firstname || String(userRecord?.first_name || '');
+  const effectiveClientLastName =
+    client?.lastname || user?.lastname || String(userRecord?.last_name || '');
+  const effectiveClientEmail = client?.email || user?.email || '';
+
   const fetchClientAssignedDoulas = useCallback(async () => {
-    if (!client?.id) return;
+    if (!effectiveClientId) return;
 
     setIsLoadingAssignedDoulas(true);
     setAssignedDoulasError(null);
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session?.access_token) {
-        throw new Error('No session token provided');
+      let token: string | undefined;
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        token = session?.access_token;
+      } catch {
+        token = undefined;
       }
 
       const response = await fetch(
-        `${getClientApiBase()}/clients/${client.id}/assigned-doulas`,
+        `${getClientApiBase()}/clients/${effectiveClientId}/assigned-doulas`,
         {
           method: 'GET',
           credentials: 'include',
-          headers: getClientAuthHeaders(session.access_token),
+          headers: getClientAuthHeaders(token),
         }
       );
 
@@ -96,10 +117,7 @@ export default function ClientProfileTab() {
           : 'Failed to load assigned doula information.';
       // In client portal, backend may return 401/no-session for unassigned clients.
       // Treat this as empty state instead of an error banner.
-      if (
-        message.includes('No session token provided') ||
-        message.includes('401')
-      ) {
+      if (message.includes('401')) {
         setAssignedDoulasError(null);
         setAssignedDoulas([]);
       } else {
@@ -109,28 +127,83 @@ export default function ClientProfileTab() {
     } finally {
       setIsLoadingAssignedDoulas(false);
     }
-  }, [client?.id]);
+  }, [effectiveClientId]);
 
-  const fetchProfile = useCallback(async () => {
-    if (!client) return;
+  const fetchSharedNotesFromDoula = useCallback(async () => {
+    if (!effectiveClientId) return;
 
-    setIsLoading(true);
+    setSharedNotesLoading(true);
     try {
-      // Fetch client profile from backend using Supabase token
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session) {
-        throw new Error('No session found');
+      let token: string | undefined;
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        token = session?.access_token;
+      } catch {
+        token = undefined;
       }
 
       const response = await fetch(
-        `${getClientApiBase()}/clients/${client.id}?detailed=true`,
+        `${getClientApiBase()}/clients/${effectiveClientId}/activities`,
         {
           method: 'GET',
           credentials: 'include',
-          headers: getClientAuthHeaders(session.access_token),
+          headers: getClientAuthHeaders(token),
+        }
+      );
+
+      if (!response.ok) {
+        setSharedNotes([]);
+        return;
+      }
+
+      const payload = await response.json();
+      const rows = Array.isArray(payload?.data)
+        ? payload.data
+        : Array.isArray(payload?.activities)
+          ? payload.activities
+          : [];
+
+      setSharedNotes(
+        rows.map((row: any) => ({
+          id: String(row.id),
+          activity_type: String(row.activity_type ?? row.type ?? 'note'),
+          content: String(row.content ?? row.description ?? ''),
+          created_at: String(row.created_at ?? row.timestamp ?? row.createdAt ?? ''),
+        }))
+      );
+    } catch {
+      setSharedNotes([]);
+    } finally {
+      setSharedNotesLoading(false);
+    }
+  }, [effectiveClientId]);
+
+  const fetchProfile = useCallback(async () => {
+    if (!effectiveClientId) {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      let token: string | undefined;
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        token = session?.access_token;
+      } catch {
+        token = undefined;
+      }
+
+      const response = await fetch(
+        `${getClientApiBase()}/clients/${effectiveClientId}?detailed=true`,
+        {
+          method: 'GET',
+          credentials: 'include',
+          headers: getClientAuthHeaders(token),
         }
       );
 
@@ -141,11 +214,9 @@ export default function ClientProfileTab() {
       }
 
       setFormData({
-        firstname:
-          profile?.firstname || profile?.first_name || client.firstname || '',
-        lastname:
-          profile?.lastname || profile?.last_name || client.lastname || '',
-        email: profile?.email || client.email || '',
+        firstname: profile?.firstname || profile?.first_name || effectiveClientFirstName,
+        lastname: profile?.lastname || profile?.last_name || effectiveClientLastName,
+        email: profile?.email || effectiveClientEmail,
         phone: profile?.phone || profile?.phone_number || '',
         address: profile?.address || profile?.address_line1 || '',
         city: profile?.city || '',
@@ -157,9 +228,9 @@ export default function ClientProfileTab() {
       console.error('Error fetching profile:', error);
       // Fallback to session metadata so profile tab still works locally.
       setFormData({
-        firstname: client.firstname || '',
-        lastname: client.lastname || '',
-        email: client.email || '',
+        firstname: effectiveClientFirstName,
+        lastname: effectiveClientLastName,
+        email: effectiveClientEmail,
         phone: '',
         address: '',
         city: '',
@@ -170,35 +241,50 @@ export default function ClientProfileTab() {
     } finally {
       setIsLoading(false);
     }
-  }, [client]);
+  }, [
+    effectiveClientId,
+    effectiveClientFirstName,
+    effectiveClientLastName,
+    effectiveClientEmail,
+  ]);
 
   useEffect(() => {
-    if (client) {
+    if (effectiveClientId) {
       fetchProfile();
       fetchClientAssignedDoulas();
+      fetchSharedNotesFromDoula();
+    } else {
+      setIsLoading(false);
     }
-  }, [client, fetchProfile, fetchClientAssignedDoulas]);
+  }, [
+    effectiveClientId,
+    fetchProfile,
+    fetchClientAssignedDoulas,
+    fetchSharedNotesFromDoula,
+  ]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!client) return;
+    if (!effectiveClientId) return;
 
     setIsSaving(true);
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session) {
-        throw new Error('No session found');
+      let token: string | undefined;
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        token = session?.access_token;
+      } catch {
+        token = undefined;
       }
 
       const response = await fetch(
-        `${getClientApiBase()}/clients/${client.id}`,
+        `${getClientApiBase()}/clients/${effectiveClientId}`,
         {
           method: 'PUT',
           credentials: 'include',
-          headers: getClientAuthHeaders(session.access_token),
+          headers: getClientAuthHeaders(token),
           body: JSON.stringify({
             firstname: formData.firstname,
             lastname: formData.lastname,
@@ -221,13 +307,15 @@ export default function ClientProfileTab() {
       }
 
       // Keep Supabase metadata in sync for greeting and avatar fallbacks.
-      await supabase.auth.updateUser({
-        data: {
-          firstname: formData.firstname,
-          lastname: formData.lastname,
-          phone: formData.phone,
-        },
-      });
+      if (client) {
+        await supabase.auth.updateUser({
+          data: {
+            firstname: formData.firstname,
+            lastname: formData.lastname,
+            phone: formData.phone,
+          },
+        });
+      }
 
       toast.success('Profile updated successfully');
     } catch (error: any) {
@@ -307,6 +395,53 @@ export default function ClientProfileTab() {
                 );
               })}
             </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className='flex items-center gap-2'>
+            <MessageSquare className='h-5 w-5' />
+            Updates from your care team
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {sharedNotesLoading ? (
+            <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+              <Loader2 className='h-4 w-4 animate-spin' />
+              Loading…
+            </div>
+          ) : sharedNotes.length === 0 ? (
+            <p className='text-sm text-muted-foreground'>
+              When your doula shares a note with you, it will appear here.
+            </p>
+          ) : (
+            <ul className='space-y-4'>
+              {sharedNotes.map((note) => {
+                const parsed = note.created_at ? parseISO(note.created_at) : null;
+                const when =
+                  parsed && isValid(parsed)
+                    ? format(parsed, 'MMM d, yyyy · h:mm a')
+                    : note.created_at || '';
+                return (
+                  <li
+                    key={note.id}
+                    className='rounded-lg border border-border p-3 text-sm'
+                  >
+                    <div className='mb-1 flex flex-wrap items-center gap-2'>
+                      <Badge variant='secondary' className='text-xs capitalize'>
+                        {note.activity_type}
+                      </Badge>
+                      {when ? (
+                        <span className='text-xs text-muted-foreground'>{when}</span>
+                      ) : null}
+                    </div>
+                    <p className='whitespace-pre-wrap text-foreground'>{note.content}</p>
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </CardContent>
       </Card>

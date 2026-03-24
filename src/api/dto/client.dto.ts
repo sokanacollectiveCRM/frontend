@@ -86,6 +86,7 @@ export interface ClientDetailDTO {
   due_date?: string;
   health_history?: string;
   health_notes?: string;
+  birth_outcomes?: string;
   allergies?: string;
   medications?: string;
   date_of_birth?: string;

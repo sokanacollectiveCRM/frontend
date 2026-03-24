@@ -28,9 +28,17 @@ import {
   PopoverTrigger,
 } from '@/common/components/ui/popover';
 import { UserContext } from '@/common/contexts/UserContext';
+import {
+  DOCUMENT_TYPE_LABELS,
+  REQUIRED_DOULA_DOCUMENT_TYPES,
+  getAdminDoulaDocuments,
+  getDoulaDocumentUrl,
+  type DocumentCompletenessItem,
+} from '@/api/doulas/doulaService';
 import UserAvatar from '@/common/components/user/UserAvatar';
 import {
   Download,
+  FileText,
   Mail,
   MoreHorizontal,
   Phone,
@@ -103,6 +111,11 @@ export default function Teams() {
   const [isInviting, setIsInviting] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [documentsDialogOpen, setDocumentsDialogOpen] = useState(false);
+  const [documentsMember, setDocumentsMember] = useState<TeamMember | null>(null);
+  const [documentsItems, setDocumentsItems] = useState<DocumentCompletenessItem[]>([]);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [downloadingDocumentId, setDownloadingDocumentId] = useState<string | null>(null);
 
   const fetchTeam = async () => {
     //function to fetch all team members
@@ -215,6 +228,128 @@ export default function Teams() {
       toast.success('Headshot downloaded');
     } catch {
       toast.error('Could not download headshot');
+    }
+  };
+
+  const handleOpenDocuments = async (member: TeamMember) => {
+    if (member.role !== 'doula') return;
+    setDocumentsMember(member);
+    setDocumentsDialogOpen(true);
+    setDocumentsLoading(true);
+    setDocumentsItems([]);
+    try {
+      const data = await getAdminDoulaDocuments(member.id);
+      const rawItems = (data.completeness?.items ?? []) as unknown[];
+      const completenessItems: DocumentCompletenessItem[] = rawItems.map((raw) => {
+        const item = (raw ?? {}) as Record<string, unknown>;
+        const documentId = item.document_id ?? item.documentId;
+        const fileName = item.file_name ?? item.fileName;
+        const uploadedAt = item.uploaded_at ?? item.uploadedAt;
+        const rejectionReason = item.rejection_reason ?? item.rejectionReason;
+        return {
+          document_type: String(item.document_type ?? item.documentType ?? ''),
+          status: String(item.status ?? 'missing'),
+          document_id: typeof documentId === 'string' ? documentId : undefined,
+          file_name: typeof fileName === 'string' ? fileName : undefined,
+          uploaded_at: typeof uploadedAt === 'string' ? uploadedAt : undefined,
+          rejection_reason:
+            typeof rejectionReason === 'string' ? rejectionReason : undefined,
+        };
+      });
+      const completenessByType = new Map<string, DocumentCompletenessItem>(
+        completenessItems.map((item) => [item.document_type, item])
+      );
+      const documentsByType = new Map<
+        string,
+        { id?: string; fileName?: string; uploadedAt?: string; status?: string; rejectionReason?: string }
+      >();
+
+      for (const raw of (data.documents ?? []) as unknown[]) {
+        const doc = (raw ?? {}) as Record<string, unknown>;
+        const type = doc.document_type ?? doc.documentType;
+        if (typeof type !== 'string' || !type) continue;
+        documentsByType.set(type, {
+          id:
+            typeof (doc.id ?? doc.document_id ?? doc.documentId) === 'string'
+              ? String(doc.id ?? doc.document_id ?? doc.documentId)
+              : undefined,
+          fileName:
+            typeof (doc.file_name ?? doc.fileName) === 'string'
+              ? String(doc.file_name ?? doc.fileName)
+              : undefined,
+          uploadedAt:
+            typeof (doc.uploaded_at ?? doc.uploadedAt ?? doc.created_at) === 'string'
+              ? String(doc.uploaded_at ?? doc.uploadedAt ?? doc.created_at)
+              : undefined,
+          status: typeof doc.status === 'string' ? doc.status : undefined,
+          rejectionReason:
+            typeof (doc.rejection_reason ?? doc.rejectionReason) === 'string'
+              ? String(doc.rejection_reason ?? doc.rejectionReason)
+              : undefined,
+        });
+      }
+
+      const mergedItems: DocumentCompletenessItem[] =
+        REQUIRED_DOULA_DOCUMENT_TYPES.map((type) => {
+          const completeness = completenessByType.get(type);
+          const document = documentsByType.get(type);
+          if (document) {
+            return {
+              document_type: type,
+              status: document.status ?? completeness?.status ?? 'uploaded',
+              document_id: document.id ?? completeness?.document_id,
+              file_name: document.fileName ?? completeness?.file_name,
+              uploaded_at: document.uploadedAt ?? completeness?.uploaded_at,
+              rejection_reason:
+                document.rejectionReason ?? completeness?.rejection_reason,
+            };
+          }
+          return (
+            completeness ?? {
+              document_type: type,
+              status: 'missing',
+            }
+          );
+        });
+      setDocumentsItems(mergedItems);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to load doula documents'
+      );
+    } finally {
+      setDocumentsLoading(false);
+    }
+  };
+
+  const handleDownloadDocument = async (
+    doulaId: string,
+    documentId: string,
+    fileName?: string
+  ) => {
+    setDownloadingDocumentId(documentId);
+    try {
+      const url = await getDoulaDocumentUrl(doulaId, documentId);
+      const response = await fetch(url, {
+        credentials: 'omit',
+        mode: 'cors',
+      });
+      if (!response.ok) throw new Error('Failed to download document');
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = fileName?.trim() || 'doula-document';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(objectUrl);
+      toast.success('Document downloaded');
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to download document'
+      );
+    } finally {
+      setDownloadingDocumentId(null);
     }
   };
 
@@ -750,6 +885,15 @@ export default function Teams() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align='end' className='w-40'>
+                          {user?.role === 'admin' && member.role === 'doula' && (
+                            <DropdownMenuItem
+                              onClick={() => void handleOpenDocuments(member)}
+                              className='cursor-pointer'
+                            >
+                              <FileText className='h-4 w-4 mr-2' />
+                              <span>Documents</span>
+                            </DropdownMenuItem>
+                          )}
                           {user?.role === 'admin' &&
                             member.profile_picture && (
                               <DropdownMenuItem
@@ -1114,6 +1258,102 @@ export default function Teams() {
               disabled={isDeleting}
             >
               {isDeleting ? 'Removing...' : 'Remove'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={documentsDialogOpen} onOpenChange={setDocumentsDialogOpen}>
+        <DialogContent className='max-w-2xl'>
+          <DialogHeader>
+            <DialogTitle>Doula Documents</DialogTitle>
+            <DialogDescription>
+              {documentsMember
+                ? `${documentsMember.firstname} ${documentsMember.lastname}`
+                : 'Uploaded doula documents'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className='space-y-3 py-2 max-h-[60vh] overflow-auto'>
+            {documentsLoading ? (
+              <p className='text-sm text-gray-500'>Loading documents...</p>
+            ) : documentsItems.length === 0 ? (
+              <p className='text-sm text-gray-500'>No document status available.</p>
+            ) : (
+              documentsItems.map((item) => {
+                const label =
+                  (DOCUMENT_TYPE_LABELS as Record<string, string>)[
+                    item.document_type
+                  ] ?? item.document_type;
+                const uploadedAt = item.uploaded_at
+                  ? new Date(item.uploaded_at)
+                  : null;
+                const uploadedAtLabel =
+                  uploadedAt && !Number.isNaN(uploadedAt.getTime())
+                    ? uploadedAt.toLocaleDateString()
+                    : null;
+
+                return (
+                  <div
+                    key={`${item.document_type}-${item.document_id ?? 'missing'}`}
+                    className='rounded-md border border-gray-200 p-3'
+                  >
+                    <div className='flex items-start justify-between gap-3'>
+                      <div className='min-w-0'>
+                        <p className='text-sm font-medium text-gray-900'>{label}</p>
+                        <p className='text-xs text-gray-500 capitalize'>
+                          Status: {item.status}
+                        </p>
+                        {item.file_name && (
+                          <p className='text-xs text-gray-500 truncate'>
+                            File: {item.file_name}
+                          </p>
+                        )}
+                        {uploadedAtLabel && (
+                          <p className='text-xs text-gray-500'>
+                            Uploaded: {uploadedAtLabel}
+                          </p>
+                        )}
+                        {item.rejection_reason && (
+                          <p className='text-xs text-red-600'>
+                            Reason: {item.rejection_reason}
+                          </p>
+                        )}
+                      </div>
+                      {documentsMember?.id && item.document_id && (
+                        <Button
+                          size='sm'
+                          variant='outline'
+                          disabled={downloadingDocumentId === item.document_id}
+                          onClick={() =>
+                            void handleDownloadDocument(
+                              documentsMember.id,
+                              item.document_id!,
+                              item.file_name
+                            )
+                          }
+                        >
+                          <Download className='h-4 w-4 mr-1' />
+                          {downloadingDocumentId === item.document_id
+                            ? 'Downloading...'
+                            : 'Download'}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant='outline'
+              onClick={() => {
+                setDocumentsDialogOpen(false);
+                setDocumentsMember(null);
+                setDocumentsItems([]);
+              }}
+            >
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

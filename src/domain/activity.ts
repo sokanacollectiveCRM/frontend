@@ -13,6 +13,7 @@ export interface Activity {
   activityType: string;
   content: string;
   createdAt: string;
+  visibleToClient?: boolean;
 }
 
 /**
@@ -21,4 +22,5 @@ export interface Activity {
 export interface CreateActivityInput {
   activityType: string;
   content: string;
+  visibleToClient?: boolean;
 }

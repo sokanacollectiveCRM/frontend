@@ -2,6 +2,8 @@
 
 _2025 Discover Program Project Templates_
 
+**Sokana CRM local dev:** [docs/LOCAL_DEV.md](./docs/LOCAL_DEV.md) — backend `npm run dev` + this repo `npm run dev`, with `VITE_APP_BACKEND_URL` set to your API origin.
+
 This template was created by the DISC tech leads of 2024-2025:
 
 - [Amy Liao](https://www.linkedin.com/in/amyzliao/)
@@ -68,6 +70,8 @@ npm run build
 # Frontend Template
 
 _2025 Discover Program Project Templates_
+
+**Sokana CRM local dev:** [docs/LOCAL_DEV.md](./docs/LOCAL_DEV.md) — backend `npm run dev` + this repo `npm run dev`, with `VITE_APP_BACKEND_URL` set to your API origin.
 
 This template was created by the DISC tech leads of 2024-2025:
 

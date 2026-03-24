@@ -93,6 +93,8 @@ export interface ClientDetail {
   dueDate?: string;
   healthHistory?: string;
   healthNotes?: string;
+  /** Doula narrative: delivery type, complications, interventions, birth weight, etc. */
+  birthOutcomes?: string;
   allergies?: string;
   medications?: string;
   dateOfBirth?: string;

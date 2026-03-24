@@ -10,21 +10,21 @@ import {
 } from '@/common/components/ui/sidebar';
 import { UserContext } from '@/common/contexts/UserContext';
 import { sidebarSections, type SidebarItem } from '@/common/data/sidebar-data';
-import { useClientAuth } from '@/common/hooks/auth/useClientAuth';
+import { useIsClientPortalUser } from '@/common/hooks/auth/useIsClientPortalUser';
 import { useContext } from 'react';
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { user, isLoading } = useContext(UserContext);
-  const { client, isLoading: isClientLoading } = useClientAuth();
+  const { isClientPortalUser, isLoading: isPortalLoading } = useIsClientPortalUser();
 
   // while we're still loading auth, render nothing or a spinner
-  if (isLoading || isClientLoading) {
+  if (isLoading || isPortalLoading) {
     return null;
   }
 
   const isAdmin = user?.role === 'admin';
   const isDoula = user?.role === 'doula';
-  const isClient = !!client;
+  const isClient = isClientPortalUser;
 
   // Filter sections and items based on role
   const visible = sidebarSections

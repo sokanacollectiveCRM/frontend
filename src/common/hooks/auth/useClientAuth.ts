@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 
 interface ClientUser {
@@ -7,6 +8,14 @@ interface ClientUser {
   firstname?: string;
   lastname?: string;
   role: 'client';
+}
+
+/** Staff roles must not use the client dashboard session. */
+function isStaffRole(user: User): boolean {
+  const r =
+    (user.user_metadata?.role as string | undefined) ||
+    (user.app_metadata?.role as string | undefined);
+  return r === 'admin' || r === 'doula';
 }
 
 /**
@@ -25,10 +34,9 @@ export function useClientAuth() {
         } = await supabase.auth.getSession();
 
         if (session?.user) {
-          const userRole = session.user.user_metadata?.role;
-          // If role is 'client' OR role is not set (undefined/null), treat as client
-          // This allows clients who logged in via Supabase even if role metadata isn't set
-          if (!userRole || userRole === 'client') {
+          if (isStaffRole(session.user)) {
+            setClient(null);
+          } else {
             setClient({
               id: session.user.id,
               email: session.user.email || '',
@@ -36,9 +44,6 @@ export function useClientAuth() {
               lastname: session.user.user_metadata?.lastname,
               role: 'client',
             });
-          } else {
-            // Only set to null if role is explicitly set to something other than 'client'
-            setClient(null);
           }
         } else {
           setClient(null);
@@ -58,9 +63,9 @@ export function useClientAuth() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        const userRole = session.user.user_metadata?.role;
-        // If role is 'client' OR role is not set (undefined/null), treat as client
-        if (!userRole || userRole === 'client') {
+        if (isStaffRole(session.user)) {
+          setClient(null);
+        } else {
           setClient({
             id: session.user.id,
             email: session.user.email || '',
@@ -68,9 +73,6 @@ export function useClientAuth() {
             lastname: session.user.user_metadata?.lastname,
             role: 'client',
           });
-        } else {
-          // Only set to null if role is explicitly set to something other than 'client'
-          setClient(null);
         }
       } else {
         setClient(null);

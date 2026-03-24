@@ -4,6 +4,7 @@ import { Button } from '@/common/components/ui/button';
 import { Input } from '@/common/components/ui/input';
 import { Label } from '@/common/components/ui/label';
 import { Textarea } from '@/common/components/ui/textarea';
+import { Checkbox } from '@/common/components/ui/checkbox';
 import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
 import {
   getDoulaProfile,
@@ -15,6 +16,14 @@ import {
 import { toast } from 'sonner';
 import UserAvatar from '@/common/components/user/UserAvatar';
 import { Camera } from 'lucide-react';
+import {
+  ANOTHER_RACE_ETHNICITY,
+  DOULA_RACE_ETHNICITY_OPTIONS,
+  isDoulaRaceEthnicityComplete,
+  normalizeRaceEthnicityFromApi,
+  RACE_ETHNICITY_FIELD_LABEL,
+  toggleRaceEthnicitySelection,
+} from '../doulaDemographics';
 
 interface ProfileCompletionStatus {
   isComplete: boolean;
@@ -27,7 +36,7 @@ interface ProfileTabProps {
 
 let cachedProfile: DoulaProfile | null = null;
 
-const REQUIRED_PROFILE_FIELDS = [
+const REQUIRED_TEXT_FIELDS = [
   'firstname',
   'lastname',
   'address',
@@ -38,9 +47,9 @@ const REQUIRED_PROFILE_FIELDS = [
   'bio',
 ] as const satisfies ReadonlyArray<keyof UpdateProfileData>;
 
-type RequiredProfileField = (typeof REQUIRED_PROFILE_FIELDS)[number];
+type RequiredTextField = (typeof REQUIRED_TEXT_FIELDS)[number];
 
-const FIELD_LABELS: Record<RequiredProfileField, string> = {
+const FIELD_LABELS: Record<RequiredTextField, string> = {
   firstname: 'First Name',
   lastname: 'Last Name',
   address: 'Address',
@@ -51,10 +60,42 @@ const FIELD_LABELS: Record<RequiredProfileField, string> = {
   bio: 'Bio',
 };
 
-const getMissingRequiredFields = (data: Partial<UpdateProfileData>): string[] =>
-  REQUIRED_PROFILE_FIELDS.filter((field) => !String(data[field] ?? '').trim()).map(
+function profileToFormData(profile: DoulaProfile): UpdateProfileData {
+  return {
+    firstname: profile.firstname || '',
+    lastname: profile.lastname || '',
+    address: profile.address || '',
+    city: profile.city || '',
+    state: profile.state || '',
+    country: profile.country || '',
+    zip_code:
+      profile.zip_code !== undefined && profile.zip_code !== null && profile.zip_code !== -1
+        ? typeof profile.zip_code === 'number'
+          ? profile.zip_code.toString()
+          : String(profile.zip_code)
+        : '',
+    bio: profile.bio || '',
+    gender: profile.gender || '',
+    pronouns: profile.pronouns || '',
+    race_ethnicity: normalizeRaceEthnicityFromApi(profile.race_ethnicity),
+    race_ethnicity_other: profile.race_ethnicity_other || '',
+    other_demographic_details: profile.other_demographic_details || '',
+  };
+}
+
+const getMissingRequiredFields = (data: UpdateProfileData): string[] => {
+  const missing = REQUIRED_TEXT_FIELDS.filter((field) => !String(data[field] ?? '').trim()).map(
     (field) => FIELD_LABELS[field]
   );
+  if (!isDoulaRaceEthnicityComplete(data.race_ethnicity, data.race_ethnicity_other)) {
+    if (!Array.isArray(data.race_ethnicity) || data.race_ethnicity.length === 0) {
+      missing.push(RACE_ETHNICITY_FIELD_LABEL);
+    } else {
+      missing.push('Another race or ethnicity (please specify)');
+    }
+  }
+  return missing;
+};
 
 export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
   const [profile, setProfile] = useState<DoulaProfile | null>(cachedProfile);
@@ -70,6 +111,11 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
     country: '',
     zip_code: '',
     bio: '',
+    gender: '',
+    pronouns: '',
+    race_ethnicity: [],
+    race_ethnicity_other: '',
+    other_demographic_details: '',
   });
 
   useEffect(() => {
@@ -80,23 +126,19 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
   // This prevents resetting form data immediately after a successful update
   useEffect(() => {
     if (profile && !isSaving) {
-      const newFormData = {
-        firstname: profile.firstname || '',
-        lastname: profile.lastname || '',
-        address: profile.address || '',
-        city: profile.city || '',
-        state: profile.state || '',
-        country: profile.country || '',
-        zip_code: profile.zip_code !== undefined && profile.zip_code !== null && profile.zip_code !== -1
-          ? (typeof profile.zip_code === 'number' ? profile.zip_code.toString() : String(profile.zip_code))
-          : '',
-        bio: profile.bio || '',
-      };
-      // Only update if the form data is different (to avoid unnecessary re-renders)
+      const newFormData = profileToFormData(profile);
       setFormData((prev) => {
-        const hasChanges = Object.keys(newFormData).some(
-          (key) => prev[key as keyof UpdateProfileData] !== newFormData[key as keyof typeof newFormData]
-        );
+        const keys = Object.keys(newFormData) as (keyof UpdateProfileData)[];
+        const hasChanges = keys.some((key) => {
+          const next = newFormData[key];
+          const cur = prev[key];
+          if (key === 'race_ethnicity') {
+            const a = Array.isArray(next) ? next : [];
+            const b = Array.isArray(cur) ? cur : [];
+            return a.length !== b.length || a.some((v, i) => v !== b[i]);
+          }
+          return next !== cur;
+        });
         return hasChanges ? newFormData : prev;
       });
     }
@@ -122,18 +164,7 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
       cachedProfile = data;
       
       // Also set formData directly as a backup to ensure it's populated
-      const newFormData = {
-        firstname: data.firstname || '',
-        lastname: data.lastname || '',
-        address: data.address || '',
-        city: data.city || '',
-        state: data.state || '',
-        country: data.country || '',
-        zip_code: data.zip_code !== undefined && data.zip_code !== null && data.zip_code !== -1
-          ? (typeof data.zip_code === 'number' ? data.zip_code.toString() : String(data.zip_code))
-          : '',
-        bio: data.bio || '',
-      };
+      const newFormData = profileToFormData(data);
       setFormData(newFormData);
       const missingFields = getMissingRequiredFields(newFormData);
       onProfileStatusChange?.({
@@ -198,22 +229,15 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
       cachedProfile = updated;
       
       // Also update form data directly with the response to ensure consistency
-      const updatedFormData = {
-        firstname: updated.firstname || '',
-        lastname: updated.lastname || '',
-        address: updated.address || '',
-        city: updated.city || '',
-        state: updated.state || '',
-        country: updated.country || '',
-        zip_code: updated.zip_code !== undefined && updated.zip_code !== null && updated.zip_code !== -1
-          ? (typeof updated.zip_code === 'number' ? updated.zip_code.toString() : String(updated.zip_code))
-          : '',
-        bio: updated.bio || '',
-      };
+      const updatedFormData = profileToFormData(updated);
       
       console.log('ProfileTab - Setting form data to:', JSON.stringify(updatedFormData, null, 2));
       setFormData(updatedFormData);
-      onProfileStatusChange?.({ isComplete: true, missingFields: [] });
+      const stillMissing = getMissingRequiredFields(updatedFormData);
+      onProfileStatusChange?.({
+        isComplete: stillMissing.length === 0,
+        missingFields: stillMissing,
+      });
       
       toast.success('Profile updated successfully');
     } catch (error: any) {
@@ -373,6 +397,96 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
                 onChange={handleInputChange}
                 required
               />
+            </div>
+
+            <div className='space-y-4 rounded-lg border border-border bg-muted/30 p-4'>
+              <div>
+                <h3 className='text-sm font-semibold text-foreground'>Demographics</h3>
+                <p className='text-xs text-muted-foreground mt-1'>
+                  Optional unless noted. Race / ethnicity is required (select all that apply).
+                </p>
+              </div>
+
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                <div className='space-y-2'>
+                  <Label htmlFor='gender'>Gender</Label>
+                  <Input
+                    id='gender'
+                    name='gender'
+                    value={formData.gender || ''}
+                    onChange={handleInputChange}
+                    placeholder='e.g. Woman, Man, Non-binary'
+                  />
+                </div>
+                <div className='space-y-2'>
+                  <Label htmlFor='pronouns'>Pronouns</Label>
+                  <Input
+                    id='pronouns'
+                    name='pronouns'
+                    value={formData.pronouns || ''}
+                    onChange={handleInputChange}
+                    placeholder='e.g. she/her, he/him, they/them'
+                  />
+                </div>
+              </div>
+
+              <div className='space-y-3'>
+                <Label className='text-base'>
+                  {RACE_ETHNICITY_FIELD_LABEL}
+                  <span className='text-destructive'> *</span>
+                </Label>
+                <p className='text-xs text-muted-foreground'>Select all that apply.</p>
+                <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+                  {DOULA_RACE_ETHNICITY_OPTIONS.map((opt) => {
+                    const checked = (formData.race_ethnicity ?? []).includes(opt.value);
+                    return (
+                      <label
+                        key={opt.value}
+                        className='flex items-start gap-2 rounded-md border border-transparent px-1 py-1 hover:bg-background/80 cursor-pointer'
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={() => {
+                            setFormData((prev) => ({
+                              ...prev,
+                              race_ethnicity: toggleRaceEthnicitySelection(
+                                prev.race_ethnicity ?? [],
+                                opt.value
+                              ),
+                            }));
+                          }}
+                          className='mt-0.5'
+                        />
+                        <span className='text-sm leading-tight'>{opt.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+                {(formData.race_ethnicity ?? []).includes(ANOTHER_RACE_ETHNICITY) && (
+                  <div className='space-y-2 pt-1'>
+                    <Label htmlFor='race_ethnicity_other'>Please specify</Label>
+                    <Input
+                      id='race_ethnicity_other'
+                      name='race_ethnicity_other'
+                      value={formData.race_ethnicity_other || ''}
+                      onChange={handleInputChange}
+                      placeholder='Your race or ethnicity'
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className='space-y-2'>
+                <Label htmlFor='other_demographic_details'>Other demographic details</Label>
+                <Textarea
+                  id='other_demographic_details'
+                  name='other_demographic_details'
+                  value={formData.other_demographic_details || ''}
+                  onChange={handleInputChange}
+                  rows={3}
+                  placeholder='Anything else you would like to share (optional)'
+                />
+              </div>
             </div>
 
             <div className='space-y-2'>
