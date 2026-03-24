@@ -5,6 +5,13 @@ import { Input } from '@/common/components/ui/input';
 import { Label } from '@/common/components/ui/label';
 import { Badge } from '@/common/components/ui/badge';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/common/components/ui/select';
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -16,6 +23,7 @@ import {
   getDoulaDocuments,
   uploadDocument,
   deleteDoulaDocument,
+  updateDoulaDocumentMetadata,
   REQUIRED_DOULA_DOCUMENT_TYPES,
   DOCUMENT_TYPE_LABELS,
   DOCUMENT_STATUS_LABELS,
@@ -24,7 +32,7 @@ import {
   type DocumentCompleteness,
 } from '@/api/doulas/doulaService';
 import { toast } from 'sonner';
-import { FileText, Upload, Trash2, Download, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { FileText, Upload, Trash2, Download, AlertCircle, CheckCircle2, Pencil } from 'lucide-react';
 import { format } from 'date-fns';
 
 type RequiredDocType = (typeof REQUIRED_DOULA_DOCUMENT_TYPES)[number];
@@ -45,6 +53,16 @@ export default function DocumentsTab() {
   const [isLoading, setIsLoading] = useState(true);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [uploadingForType, setUploadingForType] = useState<RequiredDocType | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [documentToEdit, setDocumentToEdit] = useState<DocItemState | null>(null);
+  const [editForm, setEditForm] = useState<{
+    fileName: string;
+    documentType: RequiredDocType;
+  }>({
+    fileName: '',
+    documentType: 'background_check',
+  });
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<DocItemState | null>(null);
   const [uploadForm, setUploadForm] = useState<{
@@ -148,6 +166,85 @@ export default function DocumentsTab() {
     if (!item.documentId) return;
     setDocumentToDelete(item);
     setDeleteDialogOpen(true);
+  };
+
+  const handleEditClick = (item: DocItemState) => {
+    if (!item.documentId) return;
+    setDocumentToEdit(item);
+    setEditForm({
+      fileName: item.fileName ?? '',
+      documentType: item.documentType,
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleEditConfirm = async () => {
+    if (!documentToEdit?.documentId) return;
+    const trimmedName = editForm.fileName.trim();
+    if (!trimmedName) {
+      toast.error('Please enter a file name');
+      return;
+    }
+
+    const updateData: { fileName?: string; documentType?: DocumentType } = {};
+    if (trimmedName !== (documentToEdit.fileName ?? '').trim()) {
+      updateData.fileName = trimmedName;
+    }
+    if (editForm.documentType !== documentToEdit.documentType) {
+      updateData.documentType = editForm.documentType;
+    }
+    if (!updateData.fileName && !updateData.documentType) {
+      toast.error('No changes to save');
+      return;
+    }
+
+    setIsSavingEdit(true);
+    try {
+      const updated = await updateDoulaDocumentMetadata(documentToEdit.documentId, updateData);
+      const updatedType = updated.documentType as RequiredDocType;
+      const originalType = documentToEdit.documentType;
+
+      setItems((prev) =>
+        prev.map((entry) => {
+          if (entry.documentType === updatedType) {
+            return {
+              ...entry,
+              status: updated.status,
+              documentId: updated.id,
+              fileName: updated.fileName,
+              uploadedAt: updated.uploadedAt,
+              rejectionReason: updated.rejectionReason ?? undefined,
+              fileUrl: updated.fileUrl,
+            };
+          }
+          if (originalType !== updatedType && entry.documentType === originalType) {
+            return {
+              ...entry,
+              status: 'missing',
+              documentId: undefined,
+              fileName: undefined,
+              uploadedAt: undefined,
+              rejectionReason: undefined,
+              fileUrl: undefined,
+            };
+          }
+          return entry;
+        })
+      );
+
+      toast.success('Document updated successfully');
+      setEditDialogOpen(false);
+      setDocumentToEdit(null);
+      setEditForm({
+        fileName: '',
+        documentType: 'background_check',
+      });
+      void fetchDocuments();
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update document');
+    } finally {
+      setIsSavingEdit(false);
+    }
   };
 
   const handleDeleteConfirm = async () => {
@@ -276,15 +373,25 @@ export default function DocumentsTab() {
                 {item.status === 'rejected' && item.rejectionReason && (
                   <p className="text-sm text-red-600">Reason: {item.rejectionReason}</p>
                 )}
-                {item.documentId && item.fileUrl && (
+                {item.documentId && (
                   <div className="flex gap-2 pt-2">
+                    {item.fileUrl && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(item.fileUrl ?? undefined, '_blank')}
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        View
+                      </Button>
+                    )}
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => window.open(item.fileUrl!, '_blank')}
+                      onClick={() => handleEditClick(item)}
                     >
-                      <Download className="h-4 w-4 mr-1" />
-                      View
+                      <Pencil className="h-4 w-4 mr-1" />
+                      Edit
                     </Button>
                     <Button
                       variant="outline"
@@ -356,6 +463,66 @@ export default function DocumentsTab() {
             </Button>
             <Button onClick={handleUpload} disabled={isUploading || !uploadForm.file}>
               {isUploading ? 'Uploading...' : 'Upload'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={editDialogOpen}
+        onOpenChange={(open) => {
+          setEditDialogOpen(open);
+          if (!open) {
+            setDocumentToEdit(null);
+            setEditForm({
+              fileName: '',
+              documentType: 'background_check',
+            });
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Document</DialogTitle>
+            <DialogDescription>
+              Update the file name and document type.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-4">
+            <Label htmlFor="edit-file-name">File name</Label>
+            <Input
+              id="edit-file-name"
+              value={editForm.fileName}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, fileName: e.target.value }))}
+              placeholder="Enter file name"
+            />
+            <div className="pt-2 space-y-2">
+              <Label htmlFor="edit-document-type">Document type</Label>
+              <Select
+                value={editForm.documentType}
+                onValueChange={(value) =>
+                  setEditForm((prev) => ({ ...prev, documentType: value as RequiredDocType }))
+                }
+              >
+                <SelectTrigger id="edit-document-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {REQUIRED_DOULA_DOCUMENT_TYPES.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {DOCUMENT_TYPE_LABELS[type]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditConfirm} disabled={isSavingEdit || !editForm.fileName.trim()}>
+              {isSavingEdit ? 'Saving...' : 'Save'}
             </Button>
           </DialogFooter>
         </DialogContent>

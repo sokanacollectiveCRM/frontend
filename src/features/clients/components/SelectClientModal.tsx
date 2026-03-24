@@ -12,7 +12,6 @@ import { Client } from '@/features/clients/data/schema';
 import { signNowService, type SignNowClient } from '@/services/signNowService';
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
 
 interface Props {
   open: boolean;
@@ -27,7 +26,6 @@ export const SelectClientModal: React.FC<Props> = ({
   onSuccess,
   clients,
 }) => {
-  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -55,7 +53,6 @@ export const SelectClientModal: React.FC<Props> = ({
 
     try {
       setLoading(true);
-      const selectedTemplateData = contractTemplates.find(t => t.id === selectedTemplate);
       const client: SignNowClient = {
         email: selectedClient.email || '',
         name: `${selectedClient.firstname} ${selectedClient.lastname}`,
@@ -67,16 +64,6 @@ export const SelectClientModal: React.FC<Props> = ({
         toast.success('Contract sent successfully!');
         onSuccess?.();
         onOpenChange(false);
-        
-        // Navigate to payment page with contract details
-        const selectedTemplateData = contractTemplates.find(t => t.id === selectedTemplate);
-        const queryParams = new URLSearchParams({
-          contractId: `CON-${Date.now()}`,
-          clientName: `${selectedClient.firstname} ${selectedClient.lastname}`,
-          serviceType: selectedTemplateData?.name || 'Doula Services',
-          amount: '120000', // $1,200.00 in cents to match contract terms
-        });
-        navigate(`/payment?${queryParams.toString()}`);
       } else {
         toast.error(result.error || 'Failed to send contract');
       }

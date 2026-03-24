@@ -25,6 +25,11 @@ export interface DoulaProfile {
   account_status: string;
   business: string;
   bio: string;
+  gender?: string;
+  pronouns?: string;
+  race_ethnicity?: string[];
+  race_ethnicity_other?: string;
+  other_demographic_details?: string;
   created_at: string;
   updatedAt: string;
 }
@@ -56,6 +61,11 @@ export interface UpdateProfileData {
   zip_code?: string;
   business?: string;
   bio?: string;
+  gender?: string;
+  pronouns?: string;
+  race_ethnicity?: string[];
+  race_ethnicity_other?: string;
+  other_demographic_details?: string;
 }
 
 /**
@@ -214,6 +224,11 @@ export interface UploadDocumentResponse {
   document: DoulaDocument;
 }
 
+export interface UpdateDoulaDocumentMetadataData {
+  fileName?: string;
+  documentType?: DocumentType;
+}
+
 export async function uploadDocument(
   file: File,
   documentType: DocumentType,
@@ -303,6 +318,52 @@ export async function deleteDoulaDocument(documentId: string): Promise<void> {
   }
 }
 
+export async function updateDoulaDocumentMetadata(
+  documentId: string,
+  data: UpdateDoulaDocumentMetadataData
+): Promise<DoulaDocument> {
+  const payload: Record<string, string> = {};
+  if (typeof data.fileName === 'string') {
+    const trimmedName = data.fileName.trim();
+    if (!trimmedName) {
+      throw new Error('File name is required');
+    }
+    payload.file_name = trimmedName;
+  }
+  if (typeof data.documentType === 'string') {
+    payload.document_type = data.documentType;
+  }
+  if (Object.keys(payload).length === 0) {
+    throw new Error('No document metadata changes provided');
+  }
+  const response = await fetch(`${API_BASE}/doulas/documents/${documentId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to update document' }));
+    throw new Error(error.error || 'Failed to update document');
+  }
+
+  const dataJson = await response.json();
+  const document = dataJson?.document ?? dataJson;
+  return {
+    id: document.id,
+    documentType: document.documentType ?? document.document_type,
+    fileName: document.fileName ?? document.file_name,
+    fileUrl: document.fileUrl ?? document.file_url ?? null,
+    fileSize: document.fileSize ?? document.file_size ?? 0,
+    mimeType: document.mimeType ?? document.mime_type,
+    uploadedAt: document.uploadedAt ?? document.uploaded_at ?? document.created_at,
+    status: document.status === 'pending' ? 'uploaded' : document.status ?? 'missing',
+    notes: document.notes ?? null,
+    rejectionReason: document.rejectionReason ?? document.rejection_reason ?? null,
+  };
+}
+
 // Admin document APIs
 export async function getAdminDoulaDocuments(doulaId: string): Promise<DocumentsResponse> {
   const url = buildUrl(`/api/admin/doulas/${encodeURIComponent(doulaId)}/documents`);
@@ -378,6 +439,7 @@ export interface AssignedClientDetailed extends AssignedClientLite {
   healthHistory?: string;
   allergies?: string;
   hospital?: string;
+  birthOutcomes?: string;
   // ... more fields as needed
 }
 
@@ -463,6 +525,12 @@ export async function getAssignedClients(
         healthHistory: client.user.health_history || client.healthHistory || '',
         allergies: client.user.allergies || client.allergies || '',
         hospital: client.user.hospital || client.hospital || '',
+        birthOutcomes:
+          client.user.birth_outcomes ||
+          client.user.birthOutcomes ||
+          client.birth_outcomes ||
+          client.birthOutcomes ||
+          '',
         serviceNeeded: client.serviceNeeded || client.user.service_needed || '',
       };
     }
@@ -482,6 +550,7 @@ export async function getAssignedClients(
       healthHistory: client.healthHistory || client.health_history || '',
       allergies: client.allergies || '',
       hospital: client.hospital || '',
+      birthOutcomes: client.birthOutcomes || client.birth_outcomes || '',
       serviceNeeded: client.serviceNeeded || client.service_needed || '',
     };
   });
@@ -508,7 +577,31 @@ export async function getAssignedClientDetails(
     throw new Error(error.error || 'Failed to fetch client details');
   }
 
-  return response.json();
+  const payload = await response.json();
+  const raw = payload?.data ?? payload;
+  const source = raw?.user && typeof raw.user === 'object' ? raw.user : raw;
+
+  return {
+    id: String(raw?.id ?? source?.id ?? clientId),
+    firstname: String(source?.firstname ?? source?.first_name ?? ''),
+    lastname: String(source?.lastname ?? source?.last_name ?? ''),
+    email: String(source?.email ?? ''),
+    phone: String(
+      source?.phone ?? source?.phoneNumber ?? source?.phone_number ?? ''
+    ),
+    dueDate: String(source?.dueDate ?? source?.due_date ?? ''),
+    status: String(raw?.status ?? source?.status ?? 'matching'),
+    address: String(source?.address ?? source?.address_line1 ?? ''),
+    city: String(source?.city ?? ''),
+    state: String(source?.state ?? ''),
+    zipCode: String(source?.zipCode ?? source?.zip_code ?? ''),
+    healthHistory: String(source?.healthHistory ?? source?.health_history ?? ''),
+    allergies: String(source?.allergies ?? ''),
+    hospital: String(source?.hospital ?? ''),
+    birthOutcomes: String(
+      source?.birthOutcomes ?? source?.birth_outcomes ?? ''
+    ),
+  };
 }
 
 // ============================================
@@ -626,38 +719,195 @@ export interface ClientActivity {
   metadata?: Record<string, any>;
   createdAt: string;
   createdBy: string;
+  createdByRole?: string;
+  /** When true, the client can see this entry in their portal. */
+  visibleToClient?: boolean;
 }
 
 export interface AddActivityData {
   type: ActivityType;
   description: string;
   metadata?: Record<string, any>;
+  /** When true, share this activity with the client in their portal. Default false. */
+  visibleToClient?: boolean;
+}
+
+/** True if string is a UUID the backend can use in Cloud SQL `id = $1::uuid`. */
+export function isClientActivityUuid(id: string | undefined | null): boolean {
+  if (!id || typeof id !== 'string') return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    id.trim()
+  );
+}
+
+function messageFromBackendErrorBody(text: string, status: number, fallback: string): string {
+  if (!text.trim()) {
+    return `${fallback} (HTTP ${status})`;
+  }
+  try {
+    const parsed = JSON.parse(text) as { error?: string; message?: string };
+    return parsed.error || parsed.message || `${fallback} (HTTP ${status})`;
+  } catch {
+    const snippet = text.slice(0, 120).trim();
+    return snippet ? `${fallback} (HTTP ${status}): ${snippet}` : `${fallback} (HTTP ${status})`;
+  }
+}
+
+async function readJsonResponse<T>(response: Response, errorFallback: string): Promise<T> {
+  const text = await response.text();
+  if (!response.ok) {
+    throw new Error(messageFromBackendErrorBody(text, response.status, errorFallback));
+  }
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new Error(`${errorFallback}: invalid response from server`);
+  }
+}
+
+function normalizeClientActivity(activity: any, clientId: string, index: number): ClientActivity {
+  const meta =
+    activity.metadata && typeof activity.metadata === 'object' && !Array.isArray(activity.metadata)
+      ? activity.metadata
+      : {};
+  const formatName = (raw: unknown): string => {
+    if (!raw) return '';
+    if (typeof raw === 'string') return raw.trim();
+    if (typeof raw === 'object' && !Array.isArray(raw)) {
+      const obj = raw as Record<string, unknown>;
+      const first = String(obj.first_name ?? obj.firstName ?? obj.firstname ?? '').trim();
+      const last = String(obj.last_name ?? obj.lastName ?? obj.lastname ?? '').trim();
+      const full = `${first} ${last}`.trim();
+      if (full) return full;
+      const name = String(obj.name ?? '').trim();
+      if (name) return name;
+      const email = String(obj.email ?? '').trim();
+      if (email) return email;
+    }
+    return '';
+  };
+
+  const createdByDisplay =
+    formatName(activity.display_name) ||
+    formatName(activity.created_by_display_name) ||
+    formatName(activity.createdByDisplayName) ||
+    formatName(activity.createdByName) ||
+    formatName(activity.created_by_name) ||
+    formatName(activity.created_by_email) ||
+    formatName(activity.createdByEmail) ||
+    formatName(activity.authorName) ||
+    formatName(activity.author_name) ||
+    formatName(meta.display_name) ||
+    formatName(meta.created_by_display_name) ||
+    formatName(meta.createdByDisplayName) ||
+    formatName(meta.createdByName) ||
+    formatName(meta.created_by_name) ||
+    formatName(meta.created_by_email) ||
+    formatName(meta.createdByEmail) ||
+    formatName(meta.authorName) ||
+    formatName(meta.author_name) ||
+    formatName(activity.createdBy) ||
+    formatName(activity.created_by) ||
+    formatName(activity.author);
+  const createdByRole = String(
+    activity.createdByRole ??
+      activity.created_by_role ??
+      activity.authorRole ??
+      activity.author_role ??
+      meta.createdByRole ??
+      meta.created_by_role ??
+      ''
+  ).trim();
+
+  const createdAt =
+    activity.createdAt ||
+    activity.created_at ||
+    activity.timestamp ||
+    new Date().toISOString();
+  const visibleFromMeta =
+    meta.visibleToClient === true ||
+    meta.visible_to_client === true ||
+    activity.visible_to_client === true ||
+    activity.visibleToClient === true;
+  const rawId = activity.id ?? activity.activity_id;
+  const id =
+    rawId != null && String(rawId).trim() !== ''
+      ? String(rawId)
+      : `${clientId}-${index}-${createdAt}`;
+  return {
+    id,
+    clientId: activity.clientId || activity.client_id || clientId,
+    type: (activity.type || 'note') as ActivityType,
+    description: activity.description || activity.content || '',
+    metadata: meta,
+    createdAt,
+    createdBy: createdByDisplay,
+    ...(createdByRole ? { createdByRole } : {}),
+    visibleToClient: visibleFromMeta,
+  };
 }
 
 export async function addClientActivity(
   clientId: string,
   data: AddActivityData
 ): Promise<ClientActivity> {
-  const response = await fetch(`${API_BASE}/doulas/clients/${clientId}/activities`, {
+  const { visibleToClient, ...rest } = data;
+  const url = buildUrl(
+    `/api/doulas/clients/${encodeURIComponent(clientId)}/activities`
+  );
+  const response = await fetchWithAuth(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      ...rest,
+      ...(visibleToClient !== undefined ? { visibleToClient } : {}),
+    }),
   });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to add activity' }));
-    throw new Error(error.error || 'Failed to add activity');
+  const raw = await readJsonResponse<Record<string, unknown>>(response, 'Failed to add activity');
+  const act = raw.activity ?? raw.data?.activity ?? raw.data;
+  if (!act || typeof act !== 'object') {
+    throw new Error('Invalid response from server when adding activity');
   }
+  return normalizeClientActivity(act, clientId, 0);
+}
 
-  return response.json();
+export async function patchClientActivityVisibility(
+  clientId: string,
+  activityId: string,
+  visibleToClient: boolean
+): Promise<ClientActivity> {
+  if (!isClientActivityUuid(activityId)) {
+    throw new Error(
+      'This entry has no valid activity id (cannot update). Refresh the page or redeploy the latest API.'
+    );
+  }
+  const url = buildUrl(
+    `/api/doulas/clients/${encodeURIComponent(clientId)}/activities/${encodeURIComponent(activityId)}`
+  );
+  const response = await fetchWithAuth(url, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ visibleToClient }),
+  });
+
+  const raw = await readJsonResponse<Record<string, unknown>>(response, 'Failed to update activity');
+  const act = raw.activity ?? raw.data?.activity ?? raw.data;
+  if (!act || typeof act !== 'object') {
+    throw new Error('Invalid response when updating activity');
+  }
+  return normalizeClientActivity(act, clientId, 0);
 }
 
 export async function getClientActivities(clientId: string): Promise<ClientActivity[]> {
-  // Bust conditional caching so latest notes appear after add/view transitions.
-  const url = `${API_BASE}/doulas/clients/${clientId}/activities?_=${Date.now()}`;
-  const response = await fetch(url, {
+  const url = buildUrl(`/api/doulas/clients/${encodeURIComponent(clientId)}/activities`, {
+    _: Date.now(),
+  });
+  const response = await fetchWithAuth(url, {
     cache: 'no-store',
   });
 
@@ -704,33 +954,9 @@ export async function getClientActivities(clientId: string): Promise<ClientActiv
     return [];
   }
   
-  // Normalize activity objects to ensure createdAt field exists
-  const normalizedActivities = activitiesArray.map((activity, index) => {
-    // Handle different backend timestamp variants.
-    const createdAt =
-      activity.createdAt ||
-      activity.created_at ||
-      activity.timestamp ||
-      new Date().toISOString();
-    
-    console.log('Normalizing activity:', {
-      original: activity,
-      createdAt: createdAt,
-      hasCreatedAt: !!activity.createdAt,
-      hasCreated_at: !!activity.created_at,
-      hasTimestamp: !!activity.timestamp,
-    });
-    
-    return {
-      id: activity.id || `${clientId}-${index}-${createdAt}`,
-      clientId: activity.clientId || activity.client_id || clientId,
-      type: activity.type || 'note',
-      description: activity.description || activity.content || '',
-      metadata: activity.metadata || {},
-      createdAt: createdAt,
-      createdBy: activity.createdBy || activity.created_by || activity.author || '',
-    };
-  });
+  const normalizedActivities = activitiesArray.map((activity, index) =>
+    normalizeClientActivity(activity, clientId, index)
+  );
   
   console.log('getClientActivities - Normalized activities:', normalizedActivities);
   return normalizedActivities;

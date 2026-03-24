@@ -1073,9 +1073,7 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                             • Payments are scheduled as per your selected
                             cadence
                           </p>
-                          <p>
-                            • All payments are processed securely through Stripe
-                          </p>
+                          <p>• All payments are processed securely</p>
                         </div>
                       </div>
                     </div>

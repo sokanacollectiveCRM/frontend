@@ -40,7 +40,7 @@ export const sidebarSections = [
   {
     label: 'Client Portal',
     items: [
-      { title: 'Dashboard', url: '/', icon: Home, clientOnly: true },
+      { title: 'My profile', url: '/', icon: Home, clientOnly: true },
     ],
   },
   {
@@ -64,12 +64,6 @@ export const sidebarSections = [
         title: 'Reconciliation',
         url: '/payments/reconciliation',
         icon: Scale,
-        adminOnly: true,
-      },
-      {
-        title: 'Billing',
-        url: '/billing',
-        icon: LucideCreditCard,
         adminOnly: true,
       },
       { title: 'Invoices', url: '/invoices', icon: FileText, adminOnly: true },

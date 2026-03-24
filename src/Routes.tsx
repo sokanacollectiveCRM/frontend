@@ -13,7 +13,6 @@ import {
   PublicOnlyRoute,
 } from './common/components/routes/ProtectedRoutes';
 import DashboardLayout from './common/layouts/DashboardLayout';
-import BillingRoute from './features/billing/BillingRoute';
 import { DemographicsRoute } from './features/demographics/DemographicsRoute';
 import { FinancialRoute } from './features/financial/FinancialRoute';
 import CreateCustomerRoutes from './features/clients/create-customer/createCustomerRoute';
@@ -24,12 +23,10 @@ import QuickBooksRoutes from './features/integrations/QuickBooksRoutes';
 import InvoiceRoute from './features/InvoicesPage/InvoiceRoute';
 import MyAccountRoutes from './features/my-account/MyAccountRoutes';
 import PaymentsRoute from './features/payments/PaymentsRoute';
-import StandalonePaymentDemoRoute from './features/payments/StandalonePaymentDemoRoute';
 import ProfileRoutes from './features/profiles/ProfileRoutes';
 import TeamRoutes from './features/teams/teamRoutes';
 import DoulaDashboardRoutes from './features/doula-dashboard/DoulaDashboardRoutes';
 import ContractSignedPage from './pages/ContractSignedPage';
-import StandalonePaymentPage from './pages/StandalonePaymentPage';
 
 const AppRoutes = () => (
   <Routes>
@@ -37,12 +34,6 @@ const AppRoutes = () => (
     {/* These routes are completely standalone, outside all wrappers */}
     <Route path="/auth/set-password" element={<SetPassword />} />
     <Route path="/auth/client-login" element={<ClientLogin />} />
-
-    {/* Standalone Payment Routes - No Sidebar */}
-    {StandalonePaymentDemoRoute()}
-
-    {/* Contract Payment Page - No Sidebar, No Auth */}
-    <Route path="/payment" element={<StandalonePaymentPage />} />
 
     {/* Contract Signed Success Page - No Sidebar, No Auth */}
     <Route path="/contract-signed" element={<ContractSignedPage />} />
@@ -56,12 +47,6 @@ const AppRoutes = () => (
         </Route>
       </Route>
     </Route>
-
-    {/* Standalone Payment Routes - No Sidebar */}
-    {StandalonePaymentDemoRoute()}
-
-    {/* Contract Payment Page - No Sidebar, No Auth */}
-    <Route path="/payment" element={<StandalonePaymentPage />} />
 
     {/* Contract Signed Success Page - No Sidebar, No Auth */}
     <Route path="/contract-signed" element={<ContractSignedPage />} />
@@ -83,7 +68,6 @@ const AppRoutes = () => (
           {QuickBooksRoutes()}
           {CreateCustomerRoutes()}
           {InvoiceRoute()}
-          {BillingRoute()}
           {FinancialRoute()}
           {DemographicsRoute()}
           {DoulaDashboardRoutes()}
