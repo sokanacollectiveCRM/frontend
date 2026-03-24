@@ -111,4 +111,9 @@ export interface ClientDetail {
   clientAgeRange?: string;
   annualIncome?: string;
   insurance?: string;
+  paymentMethod?: string;
+  insuranceProvider?: string;
+  insuranceMemberId?: string;
+  policyNumber?: string;
+  selfPayCardInfo?: string;
 }

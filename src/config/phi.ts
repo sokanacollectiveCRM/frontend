@@ -65,6 +65,16 @@ export const PHI_KEYS = [
   'annual_income',
   'annualIncome',
   'insurance',
+  'insurance_provider',
+  'insuranceProvider',
+  'insurance_member_id',
+  'insuranceMemberId',
+  'policy_number',
+  'policyNumber',
+  'payment_method',
+  'paymentMethod',
+  'self_pay_card_info',
+  'selfPayCardInfo',
 ] as const;
 
 const PHI_SET = new Set<string>(PHI_KEYS);

@@ -110,6 +110,14 @@ export interface PhiUpdatePayload {
   health_notes?: string;
   allergies?: string;
   medications?: string;
+
+  // Billing
+  payment_method?: string;
+  insurance?: string;
+  insurance_provider?: string;
+  insurance_member_id?: string;
+  policy_number?: string;
+  self_pay_card_info?: string;
 }
 
 /**

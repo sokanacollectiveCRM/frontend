@@ -55,10 +55,6 @@ export default function Profile() {
   const { client, loading, error } = useClientProfileData(clientId || '');
 
   const [tab, setTab] = useState('Overview');
-  const [formFiles, setFormFiles] = useState<File[]>([]);
-  const [invoiceFiles, setInvoiceFiles] = useState<File[]>([]);
-  const [contractFiles, setContractFiles] = useState<File[]>([]);
-  const [paymentFiles, setPaymentFiles] = useState<File[]>([]);
 
   const [notes, setNotes] = useState<Note[]>([
     {
@@ -211,18 +207,7 @@ export default function Profile() {
       case 'Time':
         return <TimeTab />;
       case 'Paperwork':
-        return (
-          <Documents
-            formFiles={formFiles}
-            setFormFiles={setFormFiles}
-            invoiceFiles={invoiceFiles}
-            setInvoiceFiles={setInvoiceFiles}
-            contractFiles={contractFiles}
-            setContractFiles={setContractFiles}
-            paymentFiles={paymentFiles}
-            setPaymentFiles={setPaymentFiles}
-          />
-        );
+        return <Documents clientId={clientId || ''} />;
       case 'Activity':
         return (
           <div className='space-y-6'>

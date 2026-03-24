@@ -73,7 +73,8 @@ const ANNUAL_INCOME_OPTIONS = [
   '$85,000-$99,999',
   '100k and above'
 ];
-const PAYMENT_METHOD_OPTIONS = ['Self-Pay', 'Private Insurance', 'Medicaid', 'Other'];
+const PAYMENT_METHOD_OPTIONS = ['Self-Pay', 'Commercial Insurance', 'Private Insurance', 'Medicaid', 'Other'];
+const INSURANCE_PROVIDER_OPTIONS = ['Private', 'Medicaid', 'Medicare', 'Other'];
 const RACE_OPTIONS = ['African American/Black', 'Asian/Pacific Islander', 'Caucasian/White', 'Hispanic', 'Two or more races', 'Other'];
 const LANGUAGE_OPTIONS = ['English', 'Spanish', 'French', 'Mandarin', 'Arabic', 'Other'];
 const AGE_OPTIONS = ['Under 20', '20-25', '26-35', '36 and older'];
@@ -125,6 +126,15 @@ const NUMBER_OF_BABIES_OPTIONS = [
   'Octuplets'
 ];
 const PROVIDER_TYPE_OPTIONS = ['Midwife', 'OB', 'Family Doctor', 'Other'];
+
+function isSelfPayMethod(method: string): boolean {
+  const normalized = method.trim().toLowerCase();
+  return normalized === 'self-pay' || normalized === 'self pay' || normalized === 'selfpay';
+}
+
+function isEndpointUnavailableStatus(status: number): boolean {
+  return status === 404 || status === 405 || status === 501;
+}
 
 export function LeadProfileModal({
   open,
@@ -465,6 +475,40 @@ export function LeadProfileModal({
         }
       });
 
+      const effectivePaymentMethod = String(
+        updateData.payment_method ??
+          getDisplayValue('payment_method', 'paymentMethod') ??
+          ''
+      ).trim();
+      const normalizeForSave = (value: unknown) => String(value ?? '').trim();
+      const markChanged = (field: string, value: string) => {
+        updateData[field] = value;
+        if (!changedFields.includes(field)) changedFields.push(field);
+      };
+
+      // Tie billing fields to payment method:
+      // - Self-pay keeps credit card info and clears insurance fields
+      // - Insurance methods keep insurance fields and clear self-pay card info
+      if (effectivePaymentMethod) {
+        if (isSelfPayMethod(effectivePaymentMethod)) {
+          markChanged('insurance_provider', '');
+          markChanged('insurance_member_id', '');
+          markChanged('policy_number', '');
+          markChanged('insurance', '');
+        } else {
+          const insuranceProvider = normalizeForSave(
+            updateData.insurance_provider ??
+              getDisplayValue('insurance_provider', 'insuranceProvider') ??
+              getDisplayValue('insurance', null)
+          );
+          if (insuranceProvider) {
+            markChanged('insurance_provider', insuranceProvider);
+            markChanged('insurance', insuranceProvider);
+          }
+          markChanged('self_pay_card_info', '');
+        }
+      }
+
       // Only update if there are changes
       if (changedFields.length === 0) {
         toast('No changes detected');
@@ -526,9 +570,26 @@ export function LeadProfileModal({
       console.log('PHI fields to update:', Object.keys(phiData));
       console.log('Operational fields to update:', Object.keys(operationalData));
 
+      const billingFieldKeys = new Set([
+        'payment_method',
+        'insurance',
+        'insurance_provider',
+        'insurance_member_id',
+        'policy_number',
+        'self_pay_card_info',
+      ]);
+      const billingData: Record<string, unknown> = {};
+      Object.keys(phiData).forEach((key) => {
+        if (billingFieldKeys.has(key)) {
+          billingData[key] = phiData[key];
+          delete phiData[key];
+        }
+      });
+
       // Track update results
       let operationalSuccess = true;
       let phiSuccess = true;
+      let billingSuccess = true;
       const errors: string[] = [];
 
       // Update operational fields (Supabase client_info)
@@ -565,21 +626,65 @@ export function LeadProfileModal({
         }
       }
 
+      // Update billing fields via dedicated endpoint when available;
+      // fallback to PHI endpoint for backwards compatibility.
+      if (Object.keys(billingData).length > 0) {
+        const billingResponse = await fetchWithAuth(
+          buildUrl(`/api/clients/${encodeURIComponent(client.id)}/billing`),
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(billingData),
+          }
+        );
+
+        if (!billingResponse.ok) {
+          if (isEndpointUnavailableStatus(billingResponse.status)) {
+            const fallbackResult = await updateClientPhi(client.id, billingData);
+            if (!fallbackResult.success) {
+              billingSuccess = false;
+              errors.push(fallbackResult.error || 'Failed to update billing fields');
+            } else {
+              setEditedData((prev) => ({ ...prev, ...billingData }));
+            }
+          } else {
+            billingSuccess = false;
+            const billingError = await billingResponse.text().catch(() => '');
+            errors.push(
+              billingError || `Failed to update billing fields (${billingResponse.status})`
+            );
+          }
+        } else {
+          setEditedData((prev) => ({ ...prev, ...billingData }));
+        }
+      }
+
       // Show appropriate success/error message
-      if (operationalSuccess && phiSuccess) {
+      if (operationalSuccess && phiSuccess && billingSuccess) {
         toast.success('Client profile updated successfully!');
         setIsEditing(false);
         if (refreshClients) {
           refreshClients();
         }
-      } else if (!operationalSuccess && !phiSuccess) {
+      } else if (!operationalSuccess && !phiSuccess && !billingSuccess) {
         toast.error(`Update failed: ${errors.join('; ')}`);
       } else if (!operationalSuccess) {
         toast.error(`Operational fields update failed: ${errors.join('; ')}`);
-        toast.success('PHI fields updated successfully');
+        if (phiSuccess || billingSuccess) {
+          toast.success('Some fields updated successfully');
+        }
       } else if (!phiSuccess) {
         toast.error(`PHI fields update failed: ${errors.join('; ')}`);
-        toast.success('Operational fields updated successfully');
+        if (operationalSuccess || billingSuccess) {
+          toast.success('Some fields updated successfully');
+        }
+      } else if (!billingSuccess) {
+        toast.error(`Billing fields update failed: ${errors.join('; ')}`);
+        if (operationalSuccess || phiSuccess) {
+          toast.success('Other profile fields updated successfully');
+        }
       }
     } catch (error) {
       console.error('Error saving changes:', error);
@@ -1066,7 +1171,30 @@ export function LeadProfileModal({
                 {renderEditableField('Service Needed', 'service_needed', undefined, 'textarea')}
                 {renderEditableField('Service Specifics', 'service_specifics', undefined, 'textarea')}
                 {renderEditableField('Annual Income', 'annual_income', undefined, 'select', ANNUAL_INCOME_OPTIONS)}
+              </>,
+              <FileText className="h-5 w-5" />
+            )}
+
+            {/* Billing */}
+            {renderCollapsibleSection(
+              'billing',
+              'Billing Information',
+              <>
                 {renderEditableField('Payment Method', 'payment_method', undefined, 'select', PAYMENT_METHOD_OPTIONS)}
+                {isSelfPayMethod(String(getDisplayValue('payment_method', 'paymentMethod') || '')) ? (
+                  renderEditableField(
+                    'Credit Card Information (Self-Pay)',
+                    'self_pay_card_info',
+                    undefined,
+                    'textarea'
+                  )
+                ) : (
+                  <>
+                    {renderEditableField('Insurance Provider', 'insurance_provider', undefined, 'select', INSURANCE_PROVIDER_OPTIONS)}
+                    {renderEditableField('Insurance Member ID', 'insurance_member_id')}
+                    {renderEditableField('Policy Number', 'policy_number')}
+                  </>
+                )}
               </>,
               <FileText className="h-5 w-5" />
             )}

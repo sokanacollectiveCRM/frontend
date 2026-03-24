@@ -21,7 +21,6 @@ const UNSUPPORTED_CLIENT_INFO_COLUMNS = new Set([
   // Additional form fields not yet in schema
   'pronouns',
   'family_pronouns',
-  'payment_method',
 ]);
 
 function stripUnsupportedColumns(payload: Record<string, unknown>): Record<string, unknown> {

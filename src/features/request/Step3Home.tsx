@@ -1429,6 +1429,7 @@ export function Step9Payment({
 
   const paymentMethodOptions = [
     'Self-Pay',
+    'Commercial Insurance',
     'Private Insurance',
     'Medicaid',
     'Other',

@@ -156,5 +156,10 @@ export function mapClientDetail(dto: ClientDetailDTO): ClientDetail {
     clientAgeRange: dto.client_age_range,
     annualIncome: dto.annual_income,
     insurance: dto.insurance,
+    paymentMethod: dto.payment_method,
+    insuranceProvider: dto.insurance_provider,
+    insuranceMemberId: dto.insurance_member_id,
+    policyNumber: dto.policy_number,
+    selfPayCardInfo: dto.self_pay_card_info,
   };
 }

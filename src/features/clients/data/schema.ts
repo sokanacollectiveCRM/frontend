@@ -161,6 +161,10 @@ export type Client = User & {
   service_specifics?: string;
   annual_income?: string;
   payment_method?: string;
+  insurance_provider?: string;
+  insurance_member_id?: string;
+  policy_number?: string;
+  self_pay_card_info?: string;
   
   // Family
   relationship_status?: string;

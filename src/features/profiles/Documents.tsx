@@ -1,305 +1,190 @@
-import React from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  FileUploader,
-  FileUploaderContent,
-  FileUploaderItem,
-  FileInput,
-} from '@/common/components/file-input';
-import { Label } from '@radix-ui/react-label';
-import { Paperclip } from 'lucide-react';
+  getClientDocumentLabel,
+  getClientDocumentUrl,
+  isInsuranceCardDocument,
+  listClientDocuments,
+  type ClientDocument,
+} from '@/api/clients/clientDocuments';
 import { Button } from '@/common/components/ui/button';
-import {
-  FileText,
-  Receipt,
-  FileText as FileContract,
-  CreditCard,
-  Upload,
-  Trash2,
-} from 'lucide-react';
-
-const FileSvgDraw = () => {
-  return (
-    <>
-      <svg
-        className='w-8 h-8 mb-3 text-gray-500 dark:text-gray-400'
-        aria-hidden='true'
-        xmlns='http://www.w3.org/2000/svg'
-        fill='none'
-        viewBox='0 0 20 16'
-      >
-        <path
-          stroke='currentColor'
-          strokeLinecap='round'
-          strokeLinejoin='round'
-          strokeWidth='2'
-          d='M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2'
-        />
-      </svg>
-      <p className='mb-1 text-sm text-gray-500 dark:text-gray-400'>
-        <span className='font-semibold'>Click to upload</span>
-        &nbsp; or drag and drop
-      </p>
-      <p className='text-xs text-gray-500 dark:text-gray-400'>
-        SVG, PNG, JPG or GIF
-      </p>
-    </>
-  );
-};
+import { Badge } from '@/common/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/common/components/ui/card';
+import { toast } from 'sonner';
+import { Download, ExternalLink, FileImage, Loader2 } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface DocumentsProps {
-  formFiles: File[];
-  setFormFiles: (files: File[]) => void;
-  invoiceFiles: File[];
-  setInvoiceFiles: (files: File[]) => void;
-  contractFiles: File[];
-  setContractFiles: (files: File[]) => void;
-  paymentFiles: File[];
-  setPaymentFiles: (files: File[]) => void;
+  clientId: string;
 }
 
-function Documents({
-  formFiles,
-  setFormFiles,
-  invoiceFiles,
-  setInvoiceFiles,
-  contractFiles,
-  setContractFiles,
-  paymentFiles,
-  setPaymentFiles,
-}: DocumentsProps) {
-  const dropZoneConfig = {
-    maxFiles: 5,
-    maxSize: 1024 * 1024 * 4,
-    multiple: true,
+function formatUploadedAt(value?: string): string | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return format(parsed, 'MMM dd, yyyy');
+}
+
+export default function Documents({ clientId }: DocumentsProps) {
+  const [documents, setDocuments] = useState<ClientDocument[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
+
+  const insuranceCards = useMemo(
+    () => documents.filter(isInsuranceCardDocument),
+    [documents]
+  );
+
+  const loadDocuments = useCallback(async () => {
+    if (!clientId) {
+      setDocuments([]);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await listClientDocuments('staff', clientId);
+      setDocuments(result);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to load client documents'
+      );
+      setDocuments([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [clientId]);
+
+  useEffect(() => {
+    void loadDocuments();
+  }, [loadDocuments]);
+
+  const handleView = async (documentItem: ClientDocument) => {
+    setActiveDocumentId(documentItem.id);
+    try {
+      const url =
+        documentItem.url ||
+        (await getClientDocumentUrl('staff', documentItem.id, clientId));
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to open document');
+    } finally {
+      setActiveDocumentId(null);
+    }
+  };
+
+  const handleDownload = async (documentItem: ClientDocument) => {
+    setActiveDocumentId(documentItem.id);
+    try {
+      const url =
+        documentItem.url ||
+        (await getClientDocumentUrl('staff', documentItem.id, clientId));
+      const response = await fetch(url, {
+        credentials: 'omit',
+        mode: 'cors',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to download document');
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = documentItem.fileName || 'client-document';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(objectUrl);
+      toast.success('Document downloaded');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to download document');
+    } finally {
+      setActiveDocumentId(null);
+    }
   };
 
   return (
-    <div className='space-y-6'>
-      <div className='bg-white p-6 rounded-xl border shadow-sm'>
-        <h3 className='text-lg font-semibold mb-4'>Forms</h3>
-        <div className='space-y-4'>
-          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-            {formFiles.map((file, index) => (
-              <div
-                key={index}
-                className='p-4 border border-input rounded-lg hover:bg-accent/50 transition-colors'
-              >
-                <div className='flex items-center gap-3'>
-                  <FileText className='w-5 h-5 text-primary' />
-                  <div className='flex-1 min-w-0'>
-                    <p className='text-sm font-medium truncate'>{file.name}</p>
-                    <p className='text-xs text-muted-foreground'>
-                      {(file.size / 1024).toFixed(1)} KB
-                    </p>
-                  </div>
-                  <Button
-                    variant='ghost'
-                    size='sm'
-                    onClick={() =>
-                      setFormFiles(formFiles.filter((_, i) => i !== index))
-                    }
-                    className='text-destructive hover:text-destructive/80'
-                  >
-                    <Trash2 size={14} />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className='flex justify-center'>
-            <Button
-              variant='outline'
-              onClick={() => document.getElementById('form-upload')?.click()}
-              className='text-primary border-primary/20 hover:bg-primary/10'
-            >
-              <Upload size={16} className='mr-2' />
-              Upload Form
-            </Button>
-            <input
-              id='form-upload'
-              type='file'
-              className='hidden'
-              onChange={(e) => {
-                const files = Array.from(e.target.files || []);
-                setFormFiles([...formFiles, ...files]);
-              }}
-              multiple
-            />
-          </div>
+    <Card className='border shadow-sm'>
+      <CardHeader className='flex flex-row items-start justify-between gap-4'>
+        <div>
+          <CardTitle>Client Documents</CardTitle>
+          <p className='mt-1 text-sm text-muted-foreground'>
+            Insurance cards uploaded from billing appear here for staff review.
+          </p>
         </div>
-      </div>
+        <Button variant='outline' size='sm' onClick={() => void loadDocuments()} disabled={isLoading}>
+          {isLoading ? 'Refreshing...' : 'Refresh'}
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+            <Loader2 className='h-4 w-4 animate-spin' />
+            Loading client documents...
+          </div>
+        ) : insuranceCards.length === 0 ? (
+          <div className='rounded-lg border border-dashed p-6 text-sm text-muted-foreground'>
+            No insurance card has been uploaded yet.
+          </div>
+        ) : (
+          <div className='space-y-3'>
+            {insuranceCards.map((documentItem) => {
+              const uploadedAt = formatUploadedAt(documentItem.uploadedAt);
+              const isActive = activeDocumentId === documentItem.id;
 
-      <div className='bg-white p-6 rounded-xl border shadow-sm'>
-        <h3 className='text-lg font-semibold mb-4'>Invoices</h3>
-        <div className='space-y-4'>
-          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-            {invoiceFiles.map((file, index) => (
-              <div
-                key={index}
-                className='p-4 border border-input rounded-lg hover:bg-accent/50 transition-colors'
-              >
-                <div className='flex items-center gap-3'>
-                  <Receipt className='w-5 h-5 text-primary' />
-                  <div className='flex-1 min-w-0'>
-                    <p className='text-sm font-medium truncate'>{file.name}</p>
-                    <p className='text-xs text-muted-foreground'>
-                      {(file.size / 1024).toFixed(1)} KB
-                    </p>
+              return (
+                <div
+                  key={documentItem.id}
+                  className='flex flex-col gap-3 rounded-lg border p-4 md:flex-row md:items-center md:justify-between'
+                >
+                  <div className='min-w-0 space-y-1'>
+                    <div className='flex items-center gap-2'>
+                      <FileImage className='h-4 w-4 text-primary' />
+                      <p className='truncate text-sm font-medium'>
+                        {documentItem.fileName}
+                      </p>
+                      <Badge variant='secondary'>
+                        {getClientDocumentLabel(documentItem.documentType)}
+                      </Badge>
+                    </div>
+                    <div className='text-xs text-muted-foreground'>
+                      {uploadedAt ? `Uploaded ${uploadedAt}` : 'Upload date unavailable'}
+                    </div>
+                    {documentItem.status ? (
+                      <div className='text-xs text-muted-foreground capitalize'>
+                        Status: {documentItem.status}
+                      </div>
+                    ) : null}
                   </div>
-                  <Button
-                    variant='ghost'
-                    size='sm'
-                    onClick={() =>
-                      setInvoiceFiles(
-                        invoiceFiles.filter((_, i) => i !== index)
-                      )
-                    }
-                    className='text-destructive hover:text-destructive/80'
-                  >
-                    <Trash2 size={14} />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className='flex justify-center'>
-            <Button
-              variant='outline'
-              onClick={() => document.getElementById('invoice-upload')?.click()}
-              className='text-primary border-primary/20 hover:bg-primary/10'
-            >
-              <Upload size={16} className='mr-2' />
-              Upload Invoice
-            </Button>
-            <input
-              id='invoice-upload'
-              type='file'
-              className='hidden'
-              onChange={(e) => {
-                const files = Array.from(e.target.files || []);
-                setInvoiceFiles([...invoiceFiles, ...files]);
-              }}
-              multiple
-            />
-          </div>
-        </div>
-      </div>
 
-      <div className='bg-white p-6 rounded-xl border shadow-sm'>
-        <h3 className='text-lg font-semibold mb-4'>Contracts</h3>
-        <div className='space-y-4'>
-          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-            {contractFiles.map((file, index) => (
-              <div
-                key={index}
-                className='p-4 border border-input rounded-lg hover:bg-accent/50 transition-colors'
-              >
-                <div className='flex items-center gap-3'>
-                  <FileContract className='w-5 h-5 text-primary' />
-                  <div className='flex-1 min-w-0'>
-                    <p className='text-sm font-medium truncate'>{file.name}</p>
-                    <p className='text-xs text-muted-foreground'>
-                      {(file.size / 1024).toFixed(1)} KB
-                    </p>
+                  <div className='flex items-center gap-2'>
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={() => void handleView(documentItem)}
+                      disabled={isActive}
+                    >
+                      <ExternalLink className='mr-1 h-4 w-4' />
+                      {isActive ? 'Opening...' : 'View'}
+                    </Button>
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={() => void handleDownload(documentItem)}
+                      disabled={isActive}
+                    >
+                      <Download className='mr-1 h-4 w-4' />
+                      {isActive ? 'Working...' : 'Download'}
+                    </Button>
                   </div>
-                  <Button
-                    variant='ghost'
-                    size='sm'
-                    onClick={() =>
-                      setContractFiles(
-                        contractFiles.filter((_, i) => i !== index)
-                      )
-                    }
-                    className='text-destructive hover:text-destructive/80'
-                  >
-                    <Trash2 size={14} />
-                  </Button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
-          <div className='flex justify-center'>
-            <Button
-              variant='outline'
-              onClick={() =>
-                document.getElementById('contract-upload')?.click()
-              }
-              className='text-primary border-primary/20 hover:bg-primary/10'
-            >
-              <Upload size={16} className='mr-2' />
-              Upload Contract
-            </Button>
-            <input
-              id='contract-upload'
-              type='file'
-              className='hidden'
-              onChange={(e) => {
-                const files = Array.from(e.target.files || []);
-                setContractFiles([...contractFiles, ...files]);
-              }}
-              multiple
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className='bg-white p-6 rounded-xl border shadow-sm'>
-        <h3 className='text-lg font-semibold mb-4'>Payment Records</h3>
-        <div className='space-y-4'>
-          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-            {paymentFiles.map((file, index) => (
-              <div
-                key={index}
-                className='p-4 border border-input rounded-lg hover:bg-accent/50 transition-colors'
-              >
-                <div className='flex items-center gap-3'>
-                  <CreditCard className='w-5 h-5 text-primary' />
-                  <div className='flex-1 min-w-0'>
-                    <p className='text-sm font-medium truncate'>{file.name}</p>
-                    <p className='text-xs text-muted-foreground'>
-                      {(file.size / 1024).toFixed(1)} KB
-                    </p>
-                  </div>
-                  <Button
-                    variant='ghost'
-                    size='sm'
-                    onClick={() =>
-                      setPaymentFiles(
-                        paymentFiles.filter((_, i) => i !== index)
-                      )
-                    }
-                    className='text-destructive hover:text-destructive/80'
-                  >
-                    <Trash2 size={14} />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className='flex justify-center'>
-            <Button
-              variant='outline'
-              onClick={() => document.getElementById('payment-upload')?.click()}
-              className='text-primary border-primary/20 hover:bg-primary/10'
-            >
-              <Upload size={16} className='mr-2' />
-              Upload Payment Record
-            </Button>
-            <input
-              id='payment-upload'
-              type='file'
-              className='hidden'
-              onChange={(e) => {
-                const files = Array.from(e.target.files || []);
-                setPaymentFiles([...paymentFiles, ...files]);
-              }}
-              multiple
-            />
-          </div>
-        </div>
-      </div>
-    </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
-
-export default Documents;

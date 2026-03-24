@@ -103,4 +103,9 @@ export interface ClientDetailDTO {
   client_age_range?: string;
   annual_income?: string;
   insurance?: string;
+  payment_method?: string;
+  insurance_provider?: string;
+  insurance_member_id?: string;
+  policy_number?: string;
+  self_pay_card_info?: string;
 }
