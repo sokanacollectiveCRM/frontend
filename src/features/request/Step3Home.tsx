@@ -8,6 +8,10 @@ import { useEffect, useState } from 'react';
 import { useWatch } from 'react-hook-form';
 import styles from './RequestForm.module.scss';
 import FloatingLabelDatePicker from './components/FloatingLabelDatePicker';
+import {
+  PAYMENT_METHOD_OPTIONS,
+  isSelfPayMethod,
+} from './useRequestForm';
 
 function ArrowSVG({ color = '#757575' }: { color?: string }) {
   return (
@@ -1420,6 +1424,15 @@ export function Step9Payment({
 }: any) {
   const values = form.getValues();
   const errors = form.formState.errors;
+  const paymentMethod = useWatch({
+    control: form.control,
+    name: 'payment_method',
+  });
+  const hasSecondaryInsurance = useWatch({
+    control: form.control,
+    name: 'has_secondary_insurance',
+  });
+  const isSelfPay = isSelfPayMethod(paymentMethod || '');
   const [focus, setFocus] = useState({ payment_method: false });
   const [open, setOpen] = useState({ payment_method: false });
   const handleFocus = (field: keyof typeof focus) =>
@@ -1427,12 +1440,12 @@ export function Step9Payment({
   const handleBlur = (field: keyof typeof focus) =>
     setFocus((f) => ({ ...f, [field]: false }));
 
-  const paymentMethodOptions = [
-    'Self-Pay',
-    'Commercial Insurance',
-    'Private Insurance',
-    'Medicaid',
-  ];
+  const insuranceFieldError = (field: keyof typeof errors, fallback: string) => {
+    const error = errors[field];
+    if (!error) return null;
+    if (error.message === 'Required.' || error.message === 'Required') return fallback;
+    return error.message as string;
+  };
 
   return (
     <div>
@@ -1518,7 +1531,7 @@ export function Step9Payment({
                 }
                 aria-invalid={!!errors.payment_method}
                 id='payment_method'
-              >
+                >
                 {values.payment_method || 'How do you plan to pay for services?'}
                 <span
                   style={{
@@ -1548,8 +1561,8 @@ export function Step9Payment({
                 padding: 0,
                 zIndex: 10,
               }}
-            >
-              {paymentMethodOptions.map((opt) => (
+                >
+              {PAYMENT_METHOD_OPTIONS.map((opt) => (
                 <div
                   key={opt}
                   style={{
@@ -1565,6 +1578,16 @@ export function Step9Payment({
                   }}
                   onClick={() => {
                     form.setValue('payment_method', opt);
+                    if (isSelfPayMethod(opt)) {
+                      form.setValue('insurance_provider', '');
+                      form.setValue('insurance_member_id', '');
+                      form.setValue('policy_number', '');
+                      form.setValue('insurance_phone_number', '');
+                      form.setValue('has_secondary_insurance', false);
+                      form.setValue('secondary_insurance_provider', '');
+                      form.setValue('secondary_insurance_member_id', '');
+                      form.setValue('secondary_policy_number', '');
+                    }
                     setOpen((o) => ({ ...o, payment_method: false }));
                   }}
                 >
@@ -1574,7 +1597,261 @@ export function Step9Payment({
             </PopoverContent>
           </Popover>
         </div>
+
+        {isSelfPay ? (
+          <div
+            className={styles['form-field']}
+            style={{ gridColumn: '1 / span 4', marginTop: 8 }}
+          >
+            <div
+              style={{
+                background: '#f7fbfb',
+                border: '1px solid #d6ecea',
+                borderRadius: 8,
+                padding: '14px 16px',
+                color: '#355',
+                fontSize: 15,
+                lineHeight: 1.5,
+              }}
+            >
+              We&apos;ll send payment instructions after we review your request.
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className={styles['form-field']} style={{ gridColumn: '1 / span 4' }}>
+              <input
+                className={styles['form-input']}
+                {...form.register('insurance_provider')}
+                id='insurance_provider'
+                autoComplete='organization'
+                onFocus={() => handleFocus('payment_method')}
+                onBlur={() => handleBlur('payment_method')}
+              />
+              <label
+                htmlFor='insurance_provider'
+                className={
+                  styles['form-floating-label'] +
+                  (values.insurance_provider ? ' ' + styles['form-label--active'] : '')
+                }
+              >
+                Insurance Provider *
+              </label>
+              {insuranceFieldError('insurance_provider', 'Please enter your insurance provider.') && (
+                <div className={styles['form-error']}>
+                  {insuranceFieldError('insurance_provider', 'Please enter your insurance provider.')}
+                </div>
+              )}
+            </div>
+
+            <div className={styles['form-field']} style={{ gridColumn: '1 / span 2' }}>
+              <input
+                className={styles['form-input']}
+                {...form.register('insurance_member_id')}
+                id='insurance_member_id'
+                autoComplete='off'
+              />
+              <label
+                htmlFor='insurance_member_id'
+                className={
+                  styles['form-floating-label'] +
+                  (values.insurance_member_id ? ' ' + styles['form-label--active'] : '')
+                }
+              >
+                Member ID *
+              </label>
+              {insuranceFieldError('insurance_member_id', 'Please enter your insurance member ID.') && (
+                <div className={styles['form-error']}>
+                  {insuranceFieldError('insurance_member_id', 'Please enter your insurance member ID.')}
+                </div>
+              )}
+            </div>
+
+            <div className={styles['form-field']} style={{ gridColumn: '3 / span 2' }}>
+              <input
+                className={styles['form-input']}
+                {...form.register('policy_number')}
+                id='policy_number'
+                autoComplete='off'
+              />
+              <label
+                htmlFor='policy_number'
+                className={
+                  styles['form-floating-label'] +
+                  (values.policy_number ? ' ' + styles['form-label--active'] : '')
+                }
+              >
+                Policy Number *
+              </label>
+              {insuranceFieldError('policy_number', 'Please enter your policy number.') && (
+                <div className={styles['form-error']}>
+                  {insuranceFieldError('policy_number', 'Please enter your policy number.')}
+                </div>
+              )}
+            </div>
+
+            <div className={styles['form-field']} style={{ gridColumn: '1 / span 4' }}>
+              <input
+                className={styles['form-input']}
+                {...form.register('insurance_phone_number')}
+                id='insurance_phone_number'
+                autoComplete='tel'
+              />
+              <label
+                htmlFor='insurance_phone_number'
+                className={
+                  styles['form-floating-label'] +
+                  (values.insurance_phone_number ? ' ' + styles['form-label--active'] : '')
+                }
+              >
+                Insurance Phone Number (optional)
+              </label>
+            </div>
+
+            <div
+              className={styles['form-field']}
+              style={{ gridColumn: '1 / span 4', marginTop: 4 }}
+            >
+              <label
+                htmlFor='has_secondary_insurance'
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  cursor: 'pointer',
+                  fontSize: 16,
+                  color: '#222',
+                }}
+              >
+                <input
+                  id='has_secondary_insurance'
+                  type='checkbox'
+                  checked={!!hasSecondaryInsurance}
+                  onChange={(event) => {
+                    const checked = event.target.checked;
+                    form.setValue('has_secondary_insurance', checked);
+                    if (!checked) {
+                      form.setValue('secondary_insurance_provider', '');
+                      form.setValue('secondary_insurance_member_id', '');
+                      form.setValue('secondary_policy_number', '');
+                    }
+                  }}
+                />
+                Secondary Insurance?
+              </label>
+            </div>
+
+            {hasSecondaryInsurance ? (
+              <>
+                <div className={styles['form-field']} style={{ gridColumn: '1 / span 4' }}>
+                  <input
+                    className={styles['form-input']}
+                    {...form.register('secondary_insurance_provider')}
+                    id='secondary_insurance_provider'
+                    autoComplete='organization'
+                  />
+                  <label
+                    htmlFor='secondary_insurance_provider'
+                    className={
+                      styles['form-floating-label'] +
+                      (values.secondary_insurance_provider
+                        ? ' ' + styles['form-label--active']
+                        : '')
+                    }
+                  >
+                    Secondary Provider *
+                  </label>
+                  {insuranceFieldError(
+                    'secondary_insurance_provider',
+                    'Please enter the secondary insurance provider.'
+                  ) && (
+                    <div className={styles['form-error']}>
+                      {insuranceFieldError(
+                        'secondary_insurance_provider',
+                        'Please enter the secondary insurance provider.'
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className={styles['form-field']} style={{ gridColumn: '1 / span 2' }}>
+                  <input
+                    className={styles['form-input']}
+                    {...form.register('secondary_insurance_member_id')}
+                    id='secondary_insurance_member_id'
+                    autoComplete='off'
+                  />
+                  <label
+                    htmlFor='secondary_insurance_member_id'
+                    className={
+                      styles['form-floating-label'] +
+                      (values.secondary_insurance_member_id
+                        ? ' ' + styles['form-label--active']
+                        : '')
+                    }
+                  >
+                    Secondary Member ID *
+                  </label>
+                  {insuranceFieldError(
+                    'secondary_insurance_member_id',
+                    'Please enter the secondary insurance member ID.'
+                  ) && (
+                    <div className={styles['form-error']}>
+                      {insuranceFieldError(
+                        'secondary_insurance_member_id',
+                        'Please enter the secondary insurance member ID.'
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className={styles['form-field']} style={{ gridColumn: '3 / span 2' }}>
+                  <input
+                    className={styles['form-input']}
+                    {...form.register('secondary_policy_number')}
+                    id='secondary_policy_number'
+                    autoComplete='off'
+                  />
+                  <label
+                    htmlFor='secondary_policy_number'
+                    className={
+                      styles['form-floating-label'] +
+                      (values.secondary_policy_number
+                        ? ' ' + styles['form-label--active']
+                        : '')
+                    }
+                  >
+                    Secondary Policy Number *
+                  </label>
+                  {insuranceFieldError(
+                    'secondary_policy_number',
+                    'Please enter the secondary policy number.'
+                  ) && (
+                    <div className={styles['form-error']}>
+                      {insuranceFieldError(
+                        'secondary_policy_number',
+                        'Please enter the secondary policy number.'
+                      )}
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : null}
+          </>
+        )}
       </div>
+      {isSelfPay ? null : (
+        <div
+          style={{
+            color: '#666',
+            fontSize: '0.95rem',
+            marginTop: '-1rem',
+            marginBottom: '1.5rem',
+          }}
+        >
+          Please provide the insurance details exactly as they appear on the card.
+        </div>
+      )}
       <div className={styles['step-buttons-row']}>
         <Button type='button' onClick={handleBack} disabled={step === 0}>
           Back

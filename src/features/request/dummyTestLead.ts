@@ -67,7 +67,15 @@ export const DUMMY_TEST_LEAD: Partial<RequestFormValues> = {
   past_pregnancy_experience: '',
 
   // Payment (Step 9)
-  payment_method: 'Credit Card',
+  payment_method: 'Commercial Insurance',
+  insurance_provider: 'Blue Cross Blue Shield',
+  insurance_member_id: 'BCBS-123456',
+  policy_number: 'POL-987654',
+  insurance_phone_number: '800-555-1212',
+  has_secondary_insurance: false,
+  secondary_insurance_provider: '',
+  secondary_insurance_member_id: '',
+  secondary_policy_number: '',
   annual_income: '$45,000-$64,999',
   service_specifics: 'Labor support for hospital birth',
 

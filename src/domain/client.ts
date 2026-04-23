@@ -115,5 +115,10 @@ export interface ClientDetail {
   insuranceProvider?: string;
   insuranceMemberId?: string;
   policyNumber?: string;
+  insurancePhoneNumber?: string;
+  hasSecondaryInsurance?: boolean;
+  secondaryInsuranceProvider?: string;
+  secondaryInsuranceMemberId?: string;
+  secondaryPolicyNumber?: string;
   selfPayCardInfo?: string;
 }

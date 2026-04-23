@@ -8,7 +8,6 @@ import {
 import { Button } from '@/common/components/ui/button';
 import { Input } from '@/common/components/ui/input';
 import { Label } from '@/common/components/ui/label';
-import { Textarea } from '@/common/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -193,6 +192,11 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
     insurance_provider: '',
     insurance_member_id: '',
     policy_number: '',
+    insurance_phone_number: '',
+    has_secondary_insurance: false,
+    secondary_insurance_provider: '',
+    secondary_insurance_member_id: '',
+    secondary_policy_number: '',
   });
   const [formData, setFormData] = useState({
     firstname: '',
@@ -208,6 +212,11 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
     insurance_provider: '',
     insurance_member_id: '',
     policy_number: '',
+    insurance_phone_number: '',
+    has_secondary_insurance: false,
+    secondary_insurance_provider: '',
+    secondary_insurance_member_id: '',
+    secondary_policy_number: '',
   });
 
   const getClientApiBase = () =>
@@ -387,6 +396,20 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
         insurance_member_id:
           profile?.insurance_member_id || profile?.insuranceMemberId || '',
         policy_number: profile?.policy_number || profile?.policyNumber || '',
+        insurance_phone_number:
+          profile?.insurance_phone_number || profile?.insurancePhoneNumber || '',
+        has_secondary_insurance:
+          profile?.has_secondary_insurance ?? profile?.hasSecondaryInsurance ?? false,
+        secondary_insurance_provider:
+          profile?.secondary_insurance_provider ||
+          profile?.secondaryInsuranceProvider ||
+          '',
+        secondary_insurance_member_id:
+          profile?.secondary_insurance_member_id ||
+          profile?.secondaryInsuranceMemberId ||
+          '',
+        secondary_policy_number:
+          profile?.secondary_policy_number || profile?.secondaryPolicyNumber || '',
       };
 
       setFormData({
@@ -456,6 +479,39 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
                   profileBillingState.policy_number ??
                   ''
               ) || '',
+            insurance_phone_number:
+              String(
+                billing.insurance_phone_number ??
+                  billing.insurancePhoneNumber ??
+                  profileBillingState.insurance_phone_number ??
+                  ''
+              ) || '',
+            has_secondary_insurance:
+              billing.has_secondary_insurance ??
+              billing.hasSecondaryInsurance ??
+              profileBillingState.has_secondary_insurance ??
+              false,
+            secondary_insurance_provider:
+              String(
+                billing.secondary_insurance_provider ??
+                  billing.secondaryInsuranceProvider ??
+                  profileBillingState.secondary_insurance_provider ??
+                  ''
+              ) || '',
+            secondary_insurance_member_id:
+              String(
+                billing.secondary_insurance_member_id ??
+                  billing.secondaryInsuranceMemberId ??
+                  profileBillingState.secondary_insurance_member_id ??
+                  ''
+              ) || '',
+            secondary_policy_number:
+              String(
+                billing.secondary_policy_number ??
+                  billing.secondaryPolicyNumber ??
+                  profileBillingState.secondary_policy_number ??
+                  ''
+              ) || '',
           };
           setFormData((prev) => ({
             ...prev,
@@ -496,6 +552,11 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
         insurance_provider: '',
         insurance_member_id: '',
         policy_number: '',
+        insurance_phone_number: '',
+        has_secondary_insurance: false,
+        secondary_insurance_provider: '',
+        secondary_insurance_member_id: '',
+        secondary_policy_number: '',
       });
       setBillingPaymentMethodDisplay('');
     } finally {
@@ -676,6 +737,23 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
           setIsSaving(false);
           return;
         }
+        if (formData.has_secondary_insurance) {
+          if (!formData.secondary_insurance_provider.trim()) {
+            toast.error('Please enter a secondary insurance provider.');
+            setIsSaving(false);
+            return;
+          }
+          if (!formData.secondary_insurance_member_id.trim()) {
+            toast.error('Please enter a secondary insurance member ID.');
+            setIsSaving(false);
+            return;
+          }
+          if (!formData.secondary_policy_number.trim()) {
+            toast.error('Please enter a secondary policy number.');
+            setIsSaving(false);
+            return;
+          }
+        }
         if (!isSelfPay && (!frontInsuranceCard || !backInsuranceCard)) {
           toast.error('Please upload both the front and back insurance cards before saving insurance billing.');
           setIsSaving(false);
@@ -687,6 +765,11 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
           insurance_provider: isSelfPay ? '' : formData.insurance_provider,
           insurance_member_id: isSelfPay ? '' : formData.insurance_member_id,
           policy_number: isSelfPay ? '' : formData.policy_number,
+          insurance_phone_number: isSelfPay ? '' : formData.insurance_phone_number,
+          has_secondary_insurance: isSelfPay ? false : formData.has_secondary_insurance,
+          secondary_insurance_provider: isSelfPay ? '' : formData.secondary_insurance_provider,
+          secondary_insurance_member_id: isSelfPay ? '' : formData.secondary_insurance_member_id,
+          secondary_policy_number: isSelfPay ? '' : formData.secondary_policy_number,
           insurance: isSelfPay ? '' : formData.insurance_provider,
         };
 
@@ -730,6 +813,11 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
           insurance_provider: isSelfPay ? '' : formData.insurance_provider,
           insurance_member_id: isSelfPay ? '' : formData.insurance_member_id,
           policy_number: isSelfPay ? '' : formData.policy_number,
+          insurance_phone_number: isSelfPay ? '' : formData.insurance_phone_number,
+          has_secondary_insurance: isSelfPay ? false : formData.has_secondary_insurance,
+          secondary_insurance_provider: isSelfPay ? '' : formData.secondary_insurance_provider,
+          secondary_insurance_member_id: isSelfPay ? '' : formData.secondary_insurance_member_id,
+          secondary_policy_number: isSelfPay ? '' : formData.secondary_policy_number,
         });
         setIsBillingEditing(false);
         return;
@@ -757,6 +845,23 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
         toast.error('Please enter a policy number for insurance billing.');
         setIsSaving(false);
         return;
+      }
+      if (formData.has_secondary_insurance) {
+        if (!formData.secondary_insurance_provider.trim()) {
+          toast.error('Please enter a secondary insurance provider.');
+          setIsSaving(false);
+          return;
+        }
+        if (!formData.secondary_insurance_member_id.trim()) {
+          toast.error('Please enter a secondary insurance member ID.');
+          setIsSaving(false);
+          return;
+        }
+        if (!formData.secondary_policy_number.trim()) {
+          toast.error('Please enter a secondary policy number.');
+          setIsSaving(false);
+          return;
+        }
       }
       if (!isSelfPay && (!frontInsuranceCard || !backInsuranceCard)) {
         toast.error('Please upload both the front and back insurance cards before saving insurance billing.');
@@ -844,6 +949,11 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
         insurance_provider: isSelfPay ? '' : formData.insurance_provider,
         insurance_member_id: isSelfPay ? '' : formData.insurance_member_id,
         policy_number: isSelfPay ? '' : formData.policy_number,
+        insurance_phone_number: isSelfPay ? '' : formData.insurance_phone_number,
+        has_secondary_insurance: isSelfPay ? false : formData.has_secondary_insurance,
+        secondary_insurance_provider: isSelfPay ? '' : formData.secondary_insurance_provider,
+        secondary_insurance_member_id: isSelfPay ? '' : formData.secondary_insurance_member_id,
+        secondary_policy_number: isSelfPay ? '' : formData.secondary_policy_number,
       });
       setIsBillingEditing(false);
     } catch (error: any) {
@@ -895,12 +1005,17 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
   };
 
   const handleStartBillingEdit = () => {
-    setBillingSnapshot({
-      payment_method: formData.payment_method,
-      insurance_provider: formData.insurance_provider,
-      insurance_member_id: formData.insurance_member_id,
-      policy_number: formData.policy_number,
-    });
+      setBillingSnapshot({
+        payment_method: formData.payment_method,
+        insurance_provider: formData.insurance_provider,
+        insurance_member_id: formData.insurance_member_id,
+        policy_number: formData.policy_number,
+        insurance_phone_number: formData.insurance_phone_number,
+        has_secondary_insurance: formData.has_secondary_insurance,
+        secondary_insurance_provider: formData.secondary_insurance_provider,
+        secondary_insurance_member_id: formData.secondary_insurance_member_id,
+        secondary_policy_number: formData.secondary_policy_number,
+      });
     setIsBillingEditing(true);
   };
 
@@ -911,6 +1026,11 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
       insurance_provider: billingSnapshot.insurance_provider,
       insurance_member_id: billingSnapshot.insurance_member_id,
       policy_number: billingSnapshot.policy_number,
+      insurance_phone_number: billingSnapshot.insurance_phone_number,
+      has_secondary_insurance: billingSnapshot.has_secondary_insurance,
+      secondary_insurance_provider: billingSnapshot.secondary_insurance_provider,
+      secondary_insurance_member_id: billingSnapshot.secondary_insurance_member_id,
+      secondary_policy_number: billingSnapshot.secondary_policy_number,
     }));
     setBillingPaymentMethodDisplay(billingSnapshot.payment_method);
     setIsBillingEditing(false);
@@ -1370,19 +1490,6 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
               </div>
             </div>
 
-            <div className='space-y-2'>
-              <Label htmlFor='bio'>Bio</Label>
-              <Textarea
-                id='bio'
-                value={formData.bio}
-                onChange={(e) =>
-                  setFormData({ ...formData, bio: e.target.value })
-                }
-                disabled={isProfileFormDisabled}
-                rows={4}
-                placeholder='Tell us about yourself...'
-              />
-            </div>
             <div className='flex justify-end'>
               <Button type='submit' disabled={isProfileFormDisabled}>
                 {isSaving ? 'Saving...' : 'Save Profile Changes'}
@@ -1517,6 +1624,11 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
                         insurance_provider: selfPaySelected ? '' : prev.insurance_provider,
                         insurance_member_id: selfPaySelected ? '' : prev.insurance_member_id,
                         policy_number: selfPaySelected ? '' : prev.policy_number,
+                        insurance_phone_number: selfPaySelected ? '' : prev.insurance_phone_number,
+                        has_secondary_insurance: selfPaySelected ? false : prev.has_secondary_insurance,
+                        secondary_insurance_provider: selfPaySelected ? '' : prev.secondary_insurance_provider,
+                        secondary_insurance_member_id: selfPaySelected ? '' : prev.secondary_insurance_member_id,
+                        secondary_policy_number: selfPaySelected ? '' : prev.secondary_policy_number,
                       }));
                       setBillingPaymentMethodDisplay(value);
                     }}
@@ -1577,6 +1689,93 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
                           disabled={isBillingFormDisabled}
                         />
                       </div>
+                    </div>
+
+                    <div className='space-y-1.5'>
+                      <Label htmlFor='insurance_phone_number'>Insurance Phone Number</Label>
+                      <Input
+                        id='insurance_phone_number'
+                        value={formData.insurance_phone_number}
+                        onChange={(e) =>
+                          setFormData({ ...formData, insurance_phone_number: e.target.value })
+                        }
+                        disabled={isBillingFormDisabled}
+                      />
+                    </div>
+
+                    <div className='space-y-2 rounded-lg border p-3'>
+                      <label className='flex items-center gap-2 text-sm font-medium'>
+                        <input
+                          type='checkbox'
+                          checked={formData.has_secondary_insurance}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              has_secondary_insurance: e.target.checked,
+                              secondary_insurance_provider: e.target.checked
+                                ? formData.secondary_insurance_provider
+                                : '',
+                              secondary_insurance_member_id: e.target.checked
+                                ? formData.secondary_insurance_member_id
+                                : '',
+                              secondary_policy_number: e.target.checked
+                                ? formData.secondary_policy_number
+                                : '',
+                            })
+                          }
+                          disabled={isBillingFormDisabled}
+                        />
+                        Secondary Insurance?
+                      </label>
+
+                      {formData.has_secondary_insurance ? (
+                        <>
+                          <div className='space-y-1.5'>
+                            <Label htmlFor='secondary_insurance_provider'>Secondary Provider *</Label>
+                            <Input
+                              id='secondary_insurance_provider'
+                              value={formData.secondary_insurance_provider}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  secondary_insurance_provider: e.target.value,
+                                })
+                              }
+                              disabled={isBillingFormDisabled}
+                            />
+                          </div>
+                          <div className='grid grid-cols-2 gap-3'>
+                            <div className='space-y-1.5'>
+                              <Label htmlFor='secondary_insurance_member_id'>Secondary Member ID *</Label>
+                              <Input
+                                id='secondary_insurance_member_id'
+                                value={formData.secondary_insurance_member_id}
+                                onChange={(e) =>
+                                  setFormData({
+                                    ...formData,
+                                    secondary_insurance_member_id: e.target.value,
+                                  })
+                                }
+                                disabled={isBillingFormDisabled}
+                              />
+                            </div>
+                            <div className='space-y-1.5'>
+                              <Label htmlFor='secondary_policy_number'>Secondary Policy Number *</Label>
+                              <Input
+                                id='secondary_policy_number'
+                                value={formData.secondary_policy_number}
+                                onChange={(e) =>
+                                  setFormData({
+                                    ...formData,
+                                    secondary_policy_number: e.target.value,
+                                  })
+                                }
+                                disabled={isBillingFormDisabled}
+                              />
+                            </div>
+                          </div>
+                        </>
+                      ) : null}
                     </div>
                   </>
                 )}

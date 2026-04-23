@@ -11,10 +11,10 @@ import {
   useEffect,
   useState,
 } from 'react';
-import { useForm } from 'react-hook-form';
+import { type UseFormReturn, useForm } from 'react-hook-form';
 
 interface RequestFormContextType {
-  form: ReturnType<typeof useForm<RequestFormValues>>;
+  form: UseFormReturn<RequestFormValues>;
   step: number;
   setStep: (step: number) => void;
   totalSteps: number;
@@ -108,6 +108,14 @@ export function RequestFormProvider({
       service_support_details: '',
       service_needed: '',
       payment_method: '',
+      insurance_provider: '',
+      insurance_member_id: '',
+      policy_number: '',
+      insurance_phone_number: '',
+      has_secondary_insurance: false,
+      secondary_insurance_provider: '',
+      secondary_insurance_member_id: '',
+      secondary_policy_number: '',
       annual_income: '',
       service_specifics: '',
       race_ethnicity: '',
@@ -234,7 +242,19 @@ export function RequestFormProvider({
       'past_pregnancy_experience',
     ],
     // 9. Payment (stays near the end)
-    ['payment_method', 'annual_income', 'service_specifics'],
+    [
+      'payment_method',
+      'insurance_provider',
+      'insurance_member_id',
+      'policy_number',
+      'insurance_phone_number',
+      'has_secondary_insurance',
+      'secondary_insurance_provider',
+      'secondary_insurance_member_id',
+      'secondary_policy_number',
+      'annual_income',
+      'service_specifics',
+    ],
     // 10. Client Demographics
     [
       'race_ethnicity',

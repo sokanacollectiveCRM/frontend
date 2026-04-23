@@ -151,6 +151,31 @@ function hasInsuranceBilling(method: string): boolean {
   return normalized.length > 0 && !isSelfPayMethod(normalized);
 }
 
+function hasAnyInsuranceDetails(source: Record<string, unknown> | null | undefined): boolean {
+  if (!source) return false;
+  const fields = [
+    'insurance_provider',
+    'insuranceProvider',
+    'insurance_member_id',
+    'insuranceMemberId',
+    'policy_number',
+    'policyNumber',
+    'insurance_phone_number',
+    'insurancePhoneNumber',
+    'secondary_insurance_provider',
+    'secondaryInsuranceProvider',
+    'secondary_insurance_member_id',
+    'secondaryInsuranceMemberId',
+    'secondary_policy_number',
+    'secondaryPolicyNumber',
+  ] as const;
+
+  return fields.some((field) => {
+    const value = source[field];
+    return typeof value === 'string' ? value.trim().length > 0 : Boolean(value);
+  });
+}
+
 function isImageDocument(document: ClientDocument): boolean {
   const contentType = document.contentType?.toLowerCase() || '';
   if (contentType.startsWith('image/')) return true;
@@ -432,6 +457,8 @@ export function LeadProfileModal({
     return `${clientId}|${phone}|${service}|${dueDate}`;
   }, [detailSource, client?.id]);
 
+  const hasInsuranceDetails = hasAnyInsuranceDetails(detailSource as Record<string, unknown> | null);
+
   const lastInitFingerprintRef = React.useRef<string | null>(null);
   React.useEffect(() => {
     if (!client || !detailSource) {
@@ -484,6 +511,18 @@ export function LeadProfileModal({
       insurance_provider: (get('insurance_provider', 'insuranceProvider') ?? get('insurance', 'insurance')) as string | undefined,
       insurance_member_id: (get('insurance_member_id', 'insuranceMemberId') ?? '') as string | undefined,
       policy_number: (get('policy_number', 'policyNumber') ?? '') as string | undefined,
+      insurance_phone_number: get('insurance_phone_number', 'insurancePhoneNumber'),
+      has_secondary_insurance:
+        (d.has_secondary_insurance ?? d.hasSecondaryInsurance) as boolean | undefined,
+      secondary_insurance_provider: get(
+        'secondary_insurance_provider',
+        'secondaryInsuranceProvider'
+      ),
+      secondary_insurance_member_id: get(
+        'secondary_insurance_member_id',
+        'secondaryInsuranceMemberId'
+      ),
+      secondary_policy_number: get('secondary_policy_number', 'secondaryPolicyNumber'),
     };
     delete (initializedData as Record<string, unknown>).self_pay_card_info;
     delete (initializedData as Record<string, unknown>).selfPayCardInfo;
@@ -712,6 +751,11 @@ export function LeadProfileModal({
         'insurance_provider',
         'insurance_member_id',
         'policy_number',
+        'insurance_phone_number',
+        'has_secondary_insurance',
+        'secondary_insurance_provider',
+        'secondary_insurance_member_id',
+        'secondary_policy_number',
       ]);
       const billingData: Record<string, unknown> = {};
       Object.keys(phiData).forEach((key) => {
@@ -1457,7 +1501,8 @@ export function LeadProfileModal({
               'Billing Information',
               <>
                 {renderEditableField('Payment Method', 'payment_method', undefined, 'select', PAYMENT_METHOD_OPTIONS)}
-                {hasInsuranceBilling(String(getDisplayValue('payment_method', 'paymentMethod') || '')) ? (
+                {hasInsuranceBilling(String(getDisplayValue('payment_method', 'paymentMethod') || '')) ||
+                hasInsuranceDetails ? (
                   <>
                     <div className="rounded-lg border p-3 space-y-3">
                       <div className="grid gap-3 lg:grid-cols-2">
@@ -1498,6 +1543,33 @@ export function LeadProfileModal({
                     {renderEditableField('Insurance Provider', 'insurance_provider')}
                     {renderEditableField('Insurance Member ID', 'insurance_member_id')}
                     {renderEditableField('Policy Number', 'policy_number')}
+                    {renderEditableField('Insurance Phone Number', 'insurance_phone_number')}
+                    <div className="py-2">
+                      <Label className="text-sm font-medium text-muted-foreground">Secondary Insurance</Label>
+                      <div className="text-sm text-foreground mt-1">
+                        {String(getDisplayValue('has_secondary_insurance', 'hasSecondaryInsurance') || '')
+                          .toLowerCase() === 'true'
+                          ? 'Yes'
+                          : 'No'}
+                      </div>
+                    </div>
+                    {String(getDisplayValue('has_secondary_insurance', 'hasSecondaryInsurance') || '')
+                      .toLowerCase() === 'true' ? (
+                      <>
+                        {renderEditableField(
+                          'Secondary Insurance Provider',
+                          'secondary_insurance_provider'
+                        )}
+                        {renderEditableField(
+                          'Secondary Insurance Member ID',
+                          'secondary_insurance_member_id'
+                        )}
+                        {renderEditableField(
+                          'Secondary Policy Number',
+                          'secondary_policy_number'
+                        )}
+                      </>
+                    ) : null}
                   </>
                 ) : (
                   <div className="text-sm text-muted-foreground">

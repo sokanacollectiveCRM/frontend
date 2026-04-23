@@ -3,6 +3,18 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+export const PAYMENT_METHOD_OPTIONS = [
+  'Commercial Insurance',
+  'Private Insurance',
+  'Medicaid',
+  'Self-Pay',
+] as const;
+
+export type PaymentMethod = (typeof PAYMENT_METHOD_OPTIONS)[number];
+
+export const isSelfPayMethod = (value: string) =>
+  value.trim().toLowerCase().replace(/\s+/g, ' ') === 'self-pay';
+
 export const fullSchema = z
   .object({
     // 1. Client Details
@@ -106,7 +118,15 @@ export const fullSchema = z
     service_needed: z.string().min(1, 'Please tell us what service you need.'),
 
     // 9. Payment
-    payment_method: z.string().min(1, 'Please select how you plan to pay for services.'),
+    payment_method: z.union([z.literal(''), z.enum(PAYMENT_METHOD_OPTIONS)]),
+    insurance_provider: z.string().optional(),
+    insurance_member_id: z.string().optional(),
+    policy_number: z.string().optional(),
+    insurance_phone_number: z.string().optional(),
+    has_secondary_insurance: z.boolean().optional(),
+    secondary_insurance_provider: z.string().optional(),
+    secondary_insurance_member_id: z.string().optional(),
+    secondary_policy_number: z.string().optional(),
     annual_income: z.string().optional(),
     service_specifics: z.string().optional(),
 
@@ -126,7 +146,64 @@ export const fullSchema = z
       message: 'Please specify your pronouns',
       path: ['pronouns_other'],
     }
-  );
+  )
+  .superRefine((data, ctx) => {
+    if (!data.payment_method) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Please select how you plan to pay for services.',
+        path: ['payment_method'],
+      });
+    }
+
+    if (!isSelfPayMethod(data.payment_method)) {
+      if (!data.insurance_provider?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Please enter your insurance provider.',
+          path: ['insurance_provider'],
+        });
+      }
+      if (!data.insurance_member_id?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Please enter your insurance member ID.',
+          path: ['insurance_member_id'],
+        });
+      }
+      if (!data.policy_number?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Please enter your policy number.',
+          path: ['policy_number'],
+        });
+      }
+    }
+
+    if (data.has_secondary_insurance) {
+      if (!data.secondary_insurance_provider?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Please enter the secondary insurance provider.',
+          path: ['secondary_insurance_provider'],
+        });
+      }
+      if (!data.secondary_insurance_member_id?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Please enter the secondary insurance member ID.',
+          path: ['secondary_insurance_member_id'],
+        });
+      }
+      if (!data.secondary_policy_number?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Please enter the secondary policy number.',
+          path: ['secondary_policy_number'],
+        });
+      }
+    }
+  });
 
 export type RequestFormValues = z.infer<typeof fullSchema>;
 
@@ -188,7 +265,19 @@ export const stepFields: (keyof RequestFormValues)[][] = [
     'past_pregnancy_experience',
   ],
   // 9. Payment (stays near the end)
-  ['payment_method', 'annual_income', 'service_specifics'],
+  [
+    'payment_method',
+    'insurance_provider',
+    'insurance_member_id',
+    'policy_number',
+    'insurance_phone_number',
+    'has_secondary_insurance',
+    'secondary_insurance_provider',
+    'secondary_insurance_member_id',
+    'secondary_policy_number',
+    'annual_income',
+    'service_specifics',
+  ],
   // 10. Client Demographics
   [
     'race_ethnicity',
@@ -255,6 +344,14 @@ export function useRequestForm(
       service_support_details: '',
       service_needed: '',
       payment_method: '',
+      insurance_provider: '',
+      insurance_member_id: '',
+      policy_number: '',
+      insurance_phone_number: '',
+      has_secondary_insurance: false,
+      secondary_insurance_provider: '',
+      secondary_insurance_member_id: '',
+      secondary_policy_number: '',
       annual_income: '',
       service_specifics: '',
       race_ethnicity: '',

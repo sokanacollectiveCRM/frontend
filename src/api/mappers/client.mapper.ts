@@ -160,6 +160,11 @@ export function mapClientDetail(dto: ClientDetailDTO): ClientDetail {
     insuranceProvider: dto.insurance_provider,
     insuranceMemberId: dto.insurance_member_id,
     policyNumber: dto.policy_number,
+    insurancePhoneNumber: dto.insurance_phone_number,
+    hasSecondaryInsurance: dto.has_secondary_insurance,
+    secondaryInsuranceProvider: dto.secondary_insurance_provider,
+    secondaryInsuranceMemberId: dto.secondary_insurance_member_id,
+    secondaryPolicyNumber: dto.secondary_policy_number,
     selfPayCardInfo: dto.self_pay_card_info,
   };
 }

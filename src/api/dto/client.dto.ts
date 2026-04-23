@@ -107,5 +107,10 @@ export interface ClientDetailDTO {
   insurance_provider?: string;
   insurance_member_id?: string;
   policy_number?: string;
+  insurance_phone_number?: string;
+  has_secondary_insurance?: boolean;
+  secondary_insurance_provider?: string;
+  secondary_insurance_member_id?: string;
+  secondary_policy_number?: string;
   self_pay_card_info?: string;
 }
