@@ -101,7 +101,7 @@ function isEndpointUnavailableStatus(status: number): boolean {
   return status === 404 || status === 405 || status === 501;
 }
 
-function getInsuranceCardDocumentForSide(
+export function getInsuranceCardDocumentForSide(
   documents: ClientDocument[],
   side: InsuranceCardSide
 ): ClientDocument | null {
@@ -109,9 +109,11 @@ function getInsuranceCardDocumentForSide(
     (document) => getInsuranceCardSide(document.documentType, document.fileName) === side
   );
   if (explicit) return explicit;
-  if (side === 'front') {
-    return documents.find((document) => document.documentType === 'insurance_card') ?? null;
-  }
+  const hasSideTaggedDocument = documents.some(
+    (document) => getInsuranceCardSide(document.documentType, document.fileName) !== null
+  );
+  if (hasSideTaggedDocument) return null;
+  if (side === 'front') return documents.find((document) => document.documentType === 'insurance_card') ?? null;
   return null;
 }
 
