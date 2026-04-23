@@ -4,6 +4,7 @@ import { ApiError } from '../errors';
 import { extractClientList, mapClient, mapClientDetail } from '../mappers/client.mapper';
 import type { ClientListItemDTO, ClientDetailDTO } from '../dto/client.dto';
 import type { Client, ClientDetail } from '@/domain/client';
+import { normalizeZipCode } from '@/common/utils/zipCode';
 
 /**
  * Normalize API response to an array of client list DTOs.
@@ -152,7 +153,11 @@ export async function updateClientPhi(
   }
 
   try {
-    const response = await put<PhiUpdateResponse>(`/clients/${clientId}/phi`, phiData);
+    const normalizedPhiData =
+      Object.prototype.hasOwnProperty.call(phiData, 'zip_code')
+        ? { ...phiData, zip_code: normalizeZipCode(phiData.zip_code) }
+        : phiData;
+    const response = await put<PhiUpdateResponse>(`/clients/${clientId}/phi`, normalizedPhiData);
     return response;
   } catch (error: unknown) {
     let message = 'Failed to update PHI fields';

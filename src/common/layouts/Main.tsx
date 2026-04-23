@@ -12,7 +12,7 @@ export const Main = ({ fixed, ...props }: MainProps) => {
       className={cn(
         'peer-[.header-fixed]/header:mt-16',
         'w-full max-w-screen h-full max-h-screen overflow-x-hidden px-4 py-6',
-        fixed && 'fixed-main flex flex-grow flex-col'
+        fixed && 'fixed-main flex h-full flex-grow min-h-0 flex-col overflow-hidden'
       )}
       {...props}
     />

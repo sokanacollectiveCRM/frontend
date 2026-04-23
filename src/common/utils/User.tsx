@@ -13,7 +13,7 @@ export interface User {
   city?: string;
   state?: (typeof STATES)[0];
   country?: string;
-  zip_code?: number;
+  zip_code?: string | number;
   profile_picture?: string;
   account_status?: ACCOUNT_STATUS;
   business?: string;
