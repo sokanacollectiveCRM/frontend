@@ -8,6 +8,7 @@ import {
   LucideLink,
   LucideUsers,
   Search,
+  User,
   UserPlus,
   Scale,
 } from 'lucide-react';
@@ -40,7 +41,13 @@ export const sidebarSections = [
   {
     label: 'Client Portal',
     items: [
-      { title: 'My profile', url: '/', icon: Home, clientOnly: true },
+      { title: 'Profile Information', url: '/profile', icon: User, clientOnly: true },
+      {
+        title: 'Billing Information',
+        url: '/billing',
+        icon: LucideCreditCard,
+        clientOnly: true,
+      },
     ],
   },
   {

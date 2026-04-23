@@ -4,6 +4,7 @@ import ClientLogin from '@/features/auth/ClientLogin';
 import SetPassword from '@/features/auth/SetPassword';
 import ClientRoutes from '@/features/clients/ClientRoutes';
 import Home from '@/features/dashboard-home/Home';
+import ClientDashboard from '@/features/client-dashboard/ClientDashboard';
 import NotFound from '@/features/not-found/NotFound';
 import PipelineRoutes from '@/features/pipeline/PipelineRoutes';
 import RequestRoutes from '@/features/request/RequestRoutes';
@@ -55,6 +56,8 @@ const AppRoutes = () => (
       <Route element={<DashboardLayout />}>
         <Route element={<PrivateRoute />}>
           <Route index element={<Home />} />
+          <Route path='/profile' element={<ClientDashboard view='profile' />} />
+          <Route path='/billing' element={<ClientDashboard view='billing' />} />
           {ContractRoutes()}
           {PipelineRoutes()}
           {ClientRoutes()}

@@ -1432,7 +1432,6 @@ export function Step9Payment({
     'Commercial Insurance',
     'Private Insurance',
     'Medicaid',
-    'Other',
   ];
 
   return (
