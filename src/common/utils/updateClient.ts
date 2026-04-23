@@ -3,6 +3,7 @@ import {
   isSessionExpiredError,
 } from './sessionUtils';
 import { PHI_KEYS } from '@/config/phi';
+import { normalizeZipCode } from './zipCode';
 
 /**
  * Columns that cannot be updated via PUT /clients/:id to Supabase client_info table.
@@ -41,6 +42,10 @@ export default async function updateClient(
   const payload = stripUnsupportedColumns(
     typeof updateData === 'object' && updateData !== null ? updateData : {}
   );
+
+  if (Object.prototype.hasOwnProperty.call(payload, 'zip_code')) {
+    payload.zip_code = normalizeZipCode(payload.zip_code);
+  }
 
   // Debug logging
   console.log('🚨 DEBUG START - Client Update');

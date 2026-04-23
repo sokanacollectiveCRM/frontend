@@ -146,7 +146,10 @@ export default function Documents({ clientId }: DocumentsProps) {
                         {documentItem.fileName}
                       </p>
                       <Badge variant='secondary'>
-                        {getClientDocumentLabel(documentItem.documentType)}
+                        {getClientDocumentLabel(
+                          documentItem.documentType,
+                          documentItem.fileName
+                        )}
                       </Badge>
                     </div>
                     <div className='text-xs text-muted-foreground'>

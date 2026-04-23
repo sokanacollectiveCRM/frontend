@@ -11,6 +11,7 @@ import {
 } from '@/common/components/ui/dialog';
 import { Input } from '@/common/components/ui/input';
 import { Label } from '@/common/components/ui/label';
+import { Badge } from '@/common/components/ui/badge';
 import {
   Popover,
   PopoverContent,
@@ -28,13 +29,18 @@ import { PHI_KEYS } from '@/config/phi';
 import { Client } from '@/features/clients/data/schema';
 import type { ClientDetail } from '@/domain/client';
 import { cn } from '@/lib/utils';
+import { normalizeZipCode } from '@/common/utils/zipCode';
 import { format, formatDistanceToNow } from 'date-fns';
 import {
   Baby,
   Calendar as CalendarIcon,
+  Download,
   ChevronDown,
   ChevronRight,
+  ExternalLink,
   FileText,
+  FileImage,
+  Loader2,
   Mail,
   MapPin,
   MessageSquare,
@@ -46,6 +52,15 @@ import {
 import React, { useContext, useState } from 'react';
 import { toast } from 'sonner';
 import { DoulaAssignment } from '../DoulaAssignment';
+import {
+  compareClientDocumentsByUploadedAtDesc,
+  getClientDocumentLabel,
+  getClientDocumentUrl,
+  getInsuranceCardSide,
+  isInsuranceCardDocument,
+  listClientDocuments,
+  type ClientDocument,
+} from '@/api/clients/clientDocuments';
 
 interface LeadProfileModalProps {
   open: boolean;
@@ -74,7 +89,6 @@ const ANNUAL_INCOME_OPTIONS = [
   '100k and above'
 ];
 const PAYMENT_METHOD_OPTIONS = ['Self-Pay', 'Commercial Insurance', 'Private Insurance', 'Medicaid', 'Other'];
-const INSURANCE_PROVIDER_OPTIONS = ['Private', 'Medicaid', 'Medicare', 'Other'];
 const RACE_OPTIONS = ['African American/Black', 'Asian/Pacific Islander', 'Caucasian/White', 'Hispanic', 'Two or more races', 'Other'];
 const LANGUAGE_OPTIONS = ['English', 'Spanish', 'French', 'Mandarin', 'Arabic', 'Other'];
 const AGE_OPTIONS = ['Under 20', '20-25', '26-35', '36 and older'];
@@ -132,6 +146,42 @@ function isSelfPayMethod(method: string): boolean {
   return normalized === 'self-pay' || normalized === 'self pay' || normalized === 'selfpay';
 }
 
+function hasInsuranceBilling(method: string): boolean {
+  const normalized = method.trim();
+  return normalized.length > 0 && !isSelfPayMethod(normalized);
+}
+
+function isImageDocument(document: ClientDocument): boolean {
+  const contentType = document.contentType?.toLowerCase() || '';
+  if (contentType.startsWith('image/')) return true;
+  return /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(document.fileName);
+}
+
+function normalizeBillingPaymentMethod(method: unknown): string {
+  const raw = String(method ?? '').trim();
+  if (!raw) return '';
+
+  const normalized = raw.toLowerCase().replace(/_/g, ' ').replace(/\s+/g, ' ');
+
+  if (normalized === 'self-pay' || normalized === 'self pay' || normalized === 'selfpay') {
+    return 'Self-Pay';
+  }
+  if (normalized === 'commercial insurance') {
+    return 'Commercial Insurance';
+  }
+  if (normalized === 'private insurance') {
+    return 'Private Insurance';
+  }
+  if (normalized === 'medicaid') {
+    return 'Medicaid';
+  }
+  if (normalized === 'other') {
+    return 'Other';
+  }
+
+  return raw;
+}
+
 function isEndpointUnavailableStatus(status: number): boolean {
   return status === 404 || status === 405 || status === 501;
 }
@@ -158,6 +208,10 @@ export function LeadProfileModal({
   const [isSavingBirthOutcomes, setIsSavingBirthOutcomes] = useState(false);
   // Primary source for display: full detail from GET /clients/:id (authorized users get PHI).
   const [fetchedDetail, setFetchedDetail] = useState<ClientDetail | null>(null);
+  const [clientDocuments, setClientDocuments] = useState<ClientDocument[]>([]);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
+  const [documentPreviewUrls, setDocumentPreviewUrls] = useState<Record<string, string>>({});
   const currentUserDisplayName = React.useMemo(() => {
     const first = String(user?.firstname ?? (user as any)?.first_name ?? '').trim();
     const last = String(user?.lastname ?? (user as any)?.last_name ?? '').trim();
@@ -257,6 +311,75 @@ export function LeadProfileModal({
     };
   }, [open, client?.id, getClientById]);
 
+  React.useEffect(() => {
+    let cancelled = false;
+
+    const loadDocuments = async () => {
+      if (!open || !client?.id) {
+        setClientDocuments([]);
+        setDocumentsLoading(false);
+        return;
+      }
+
+      setDocumentsLoading(true);
+      try {
+        const documents = await listClientDocuments('staff', client.id);
+        if (cancelled) return;
+        setClientDocuments(documents);
+      } catch (error) {
+        if (!cancelled) {
+          console.error('❌ [Docs] Failed to load client documents:', error);
+          setClientDocuments([]);
+        }
+      } finally {
+        if (!cancelled) setDocumentsLoading(false);
+      }
+    };
+
+    void loadDocuments();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, client?.id]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    const populatePreviewUrls = async () => {
+      const imageDocs = clientDocuments.filter(isInsuranceCardDocument).filter(isImageDocument);
+      const missingDocs = imageDocs.filter((doc) => !documentPreviewUrls[doc.id]);
+      if (missingDocs.length === 0) return;
+
+      const entries = await Promise.all(
+        missingDocs.map(async (doc) => {
+          try {
+            const url = doc.url || (await getClientDocumentUrl('staff', doc.id, client?.id || undefined));
+            return [doc.id, url] as const;
+          } catch {
+            return null;
+          }
+        })
+      );
+
+      if (cancelled) return;
+
+      setDocumentPreviewUrls((prev) => {
+        const next = { ...prev };
+        entries.forEach((entry) => {
+          if (entry) {
+            next[entry[0]] = entry[1];
+          }
+        });
+        return next;
+      });
+    };
+
+    void populatePreviewUrls();
+    return () => {
+      cancelled = true;
+    };
+  }, [client?.id, clientDocuments, documentPreviewUrls]);
+
   const fetchNotes = async () => {
     if (!client?.id) return;
 
@@ -322,7 +445,7 @@ export function LeadProfileModal({
     const d = detailSource as Record<string, unknown>;
     const get = (key: string, alt: string) => (d[key] ?? d[alt]) as string | undefined;
     const stripRedacted = (v: unknown): string | undefined => {
-      if (v === '[redacted]' || v === null || v === undefined) return undefined;
+      if (v === '[redacted]' || v === null || v === undefined || v === -1 || v === '-1') return undefined;
       const str = String(v).trim();
       return str === '' ? undefined : str;
     };
@@ -330,8 +453,11 @@ export function LeadProfileModal({
       obj && typeof obj === 'object' && !Array.isArray(obj) ? (obj as Record<string, unknown>)[key] : undefined;
     const rawPhone =
       get('phone_number', 'phoneNumber') ?? nested(d.phi, 'phone_number') ?? nested(d.data, 'phone_number') ?? d.mobile_phone;
-    const phoneNumber = (stripRedacted(rawPhone) ?? '') as string;
-    const phone_number = stripRedacted(rawPhone) ?? undefined;
+      const phoneNumber = (stripRedacted(rawPhone) ?? '') as string;
+      const phone_number = stripRedacted(rawPhone) ?? undefined;
+    const paymentMethod = normalizeBillingPaymentMethod(
+      get('payment_method', 'paymentMethod') ?? d.payment_method ?? d.paymentMethod
+    );
     console.log('🔍 [Init] Phone extraction:', {
       'detailSource.phoneNumber': d.phoneNumber,
       'detailSource.phone_number': d.phone_number,
@@ -347,13 +473,20 @@ export function LeadProfileModal({
       email: stripRedacted(d.email) as string | undefined,
       phoneNumber,
       phone_number,
+      zip_code: normalizeZipCode(stripRedacted(get('zip_code', 'zipCode'))),
       due_date: get('due_date', 'dueDate'),
       address: (get('address_line1', 'address') ?? get('addressLine1', 'address') ?? '') as string | undefined,
       address_line1: get('address_line1', 'addressLine1'),
       date_of_birth: get('date_of_birth', 'dateOfBirth'),
       serviceNeeded: (get('service_needed', 'serviceNeeded') ?? '') as string,
       service_needed: (get('service_needed', 'serviceNeeded') ?? '') as string,
+      payment_method: paymentMethod,
+      insurance_provider: (get('insurance_provider', 'insuranceProvider') ?? get('insurance', 'insurance')) as string | undefined,
+      insurance_member_id: (get('insurance_member_id', 'insuranceMemberId') ?? '') as string | undefined,
+      policy_number: (get('policy_number', 'policyNumber') ?? '') as string | undefined,
     };
+    delete (initializedData as Record<string, unknown>).self_pay_card_info;
+    delete (initializedData as Record<string, unknown>).selfPayCardInfo;
     console.log('🔍 [Init] Final initializedData:', {
       phoneNumber: initializedData.phoneNumber,
       phone_number: (initializedData as any).phone_number,
@@ -487,8 +620,8 @@ export function LeadProfileModal({
       };
 
       // Tie billing fields to payment method:
-      // - Self-pay keeps credit card info and clears insurance fields
-      // - Insurance methods keep insurance fields and clear self-pay card info
+      // - Self-pay clears insurance fields
+      // - Insurance methods keep insurance fields
       if (effectivePaymentMethod) {
         if (isSelfPayMethod(effectivePaymentMethod)) {
           markChanged('insurance_provider', '');
@@ -505,7 +638,6 @@ export function LeadProfileModal({
             markChanged('insurance_provider', insuranceProvider);
             markChanged('insurance', insuranceProvider);
           }
-          markChanged('self_pay_card_info', '');
         }
       }
 
@@ -514,6 +646,10 @@ export function LeadProfileModal({
         toast('No changes detected');
         setIsEditing(false);
         return;
+      }
+
+      if (updateData.zip_code !== undefined && updateData.zip_code !== null) {
+        updateData.zip_code = normalizeZipCode(updateData.zip_code);
       }
 
       // Map demographics_annual_income to annual_income for backend
@@ -576,7 +712,6 @@ export function LeadProfileModal({
         'insurance_provider',
         'insurance_member_id',
         'policy_number',
-        'self_pay_card_info',
       ]);
       const billingData: Record<string, unknown> = {};
       Object.keys(phiData).forEach((key) => {
@@ -629,6 +764,10 @@ export function LeadProfileModal({
       // Update billing fields via dedicated endpoint when available;
       // fallback to PHI endpoint for backwards compatibility.
       if (Object.keys(billingData).length > 0) {
+        const normalizedBillingData = {
+          ...billingData,
+          payment_method: normalizeBillingPaymentMethod(billingData.payment_method),
+        };
         const billingResponse = await fetchWithAuth(
           buildUrl(`/api/clients/${encodeURIComponent(client.id)}/billing`),
           {
@@ -636,18 +775,24 @@ export function LeadProfileModal({
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify(billingData),
+            body: JSON.stringify(normalizedBillingData),
           }
         );
 
         if (!billingResponse.ok) {
           if (isEndpointUnavailableStatus(billingResponse.status)) {
-            const fallbackResult = await updateClientPhi(client.id, billingData);
+            const fallbackResult = await updateClientPhi(client.id, normalizedBillingData);
             if (!fallbackResult.success) {
               billingSuccess = false;
               errors.push(fallbackResult.error || 'Failed to update billing fields');
             } else {
-              setEditedData((prev) => ({ ...prev, ...billingData }));
+              setEditedData((prev) => ({
+                ...prev,
+                ...normalizedBillingData,
+                payment_method: normalizeBillingPaymentMethod(
+                  normalizedBillingData.payment_method ?? prev.payment_method ?? ''
+                ),
+              }));
             }
           } else {
             billingSuccess = false;
@@ -657,7 +802,13 @@ export function LeadProfileModal({
             );
           }
         } else {
-          setEditedData((prev) => ({ ...prev, ...billingData }));
+          setEditedData((prev) => ({
+            ...prev,
+            ...normalizedBillingData,
+            payment_method: normalizeBillingPaymentMethod(
+              normalizedBillingData.payment_method ?? prev.payment_method ?? ''
+            ),
+          }));
         }
       }
 
@@ -793,8 +944,127 @@ export function LeadProfileModal({
     [notes]
   );
 
+  const insuranceCardDocuments = clientDocuments
+    .filter(isInsuranceCardDocument)
+    .sort(compareClientDocumentsByUploadedAtDesc);
+  const frontInsuranceCard =
+    insuranceCardDocuments.find(
+      (document) => getInsuranceCardSide(document.documentType, document.fileName) === 'front'
+    ) ??
+    insuranceCardDocuments.find((document) => document.documentType === 'insurance_card') ??
+    null;
+  const backInsuranceCard =
+    insuranceCardDocuments.find(
+      (document) => getInsuranceCardSide(document.documentType, document.fileName) === 'back'
+    ) ?? null;
+
+  const renderInsuranceCardDocument = (documentItem: ClientDocument) => {
+    const parsed = documentItem.uploadedAt ? new Date(documentItem.uploadedAt) : null;
+    const uploadedAt =
+      parsed && !Number.isNaN(parsed.getTime())
+        ? format(parsed, 'MMM d, yyyy')
+        : documentItem.uploadedAt || '';
+    const isBusy = activeDocumentId === documentItem.id;
+    const previewUrl = documentPreviewUrls[documentItem.id] || documentItem.url || '';
+    const showPreview = isImageDocument(documentItem) && previewUrl;
+
+    return (
+      <div
+        key={documentItem.id}
+        className="flex flex-col gap-3 rounded-lg border p-3 md:flex-row md:items-start md:justify-between"
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <FileImage className="h-4 w-4 text-primary" />
+            <p className="truncate text-sm font-medium">{documentItem.fileName}</p>
+            <Badge variant="secondary">
+              {getClientDocumentLabel(documentItem.documentType, documentItem.fileName)}
+            </Badge>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {uploadedAt ? `Uploaded ${uploadedAt}` : 'Upload date unavailable'}
+          </p>
+          {showPreview ? (
+            <img
+              src={previewUrl}
+              alt={documentItem.fileName}
+              className="mt-3 max-h-56 rounded-md border object-contain"
+            />
+          ) : null}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => void handleOpenDocument(documentItem)}
+            disabled={isBusy}
+          >
+            <ExternalLink className="mr-1 h-4 w-4" />
+            {activeDocumentId === documentItem.id ? 'Opening...' : 'View'}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => void handleDownloadDocument(documentItem)}
+            disabled={isBusy}
+          >
+            <Download className="mr-1 h-4 w-4" />
+            {activeDocumentId === documentItem.id ? 'Working...' : 'Download'}
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  const handleOpenDocument = async (documentItem: ClientDocument) => {
+    setActiveDocumentId(documentItem.id);
+    try {
+      const url =
+        documentItem.url ||
+        (await getClientDocumentUrl('staff', documentItem.id, client?.id || undefined));
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to open insurance card');
+    } finally {
+      setActiveDocumentId(null);
+    }
+  };
+
+  const handleDownloadDocument = async (documentItem: ClientDocument) => {
+    setActiveDocumentId(documentItem.id);
+    try {
+      const url =
+        documentItem.url ||
+        (await getClientDocumentUrl('staff', documentItem.id, client?.id || undefined));
+      const response = await fetch(url, {
+        credentials: 'omit',
+        mode: 'cors',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to download insurance card');
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = documentItem.fileName || 'insurance-card';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(objectUrl);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to download insurance card');
+    } finally {
+      setActiveDocumentId(null);
+    }
+  };
+
   const handleCancelEdit = () => {
-    setEditedData(detailedClient || {});
+    setEditedData((detailSource ?? detailedClient ?? {}) as Partial<Client>);
     setIsEditing(false);
   };
 
@@ -824,6 +1094,9 @@ export function LeadProfileModal({
     // Use isEmpty to treat empty string as "no value" and fallback to next source
     const v = isEmpty(fromEdited) ? (isEmpty(fromDetail) ? fromClient : fromDetail) : fromEdited;
     if (v === null || v === undefined) return '';
+    if (fieldKey === 'payment_method') {
+      return normalizeBillingPaymentMethod(v);
+    }
     const s = String(v);
     if (s === '[redacted]' || s === '') return '';
     return s;
@@ -847,6 +1120,9 @@ export function LeadProfileModal({
       : fieldKey === 'birth_outcomes' ? 'birthOutcomes'
       : null;
     let value: string | Date = altKey !== null ? getDisplayValue(fieldKey, altKey) : (editedData[fieldKey] ?? '');
+    if (fieldKey === 'payment_method') {
+      value = normalizeBillingPaymentMethod(value);
+    }
 
     // Never show [redacted] in the detail modal (authorized view; backend gates PHI on GET /clients/:id)
     if (value === '[redacted]') value = '';
@@ -1181,19 +1457,52 @@ export function LeadProfileModal({
               'Billing Information',
               <>
                 {renderEditableField('Payment Method', 'payment_method', undefined, 'select', PAYMENT_METHOD_OPTIONS)}
-                {isSelfPayMethod(String(getDisplayValue('payment_method', 'paymentMethod') || '')) ? (
-                  renderEditableField(
-                    'Credit Card Information (Self-Pay)',
-                    'self_pay_card_info',
-                    undefined,
-                    'textarea'
-                  )
-                ) : (
+                {hasInsuranceBilling(String(getDisplayValue('payment_method', 'paymentMethod') || '')) ? (
                   <>
-                    {renderEditableField('Insurance Provider', 'insurance_provider', undefined, 'select', INSURANCE_PROVIDER_OPTIONS)}
+                    <div className="rounded-lg border p-3 space-y-3">
+                      <div className="grid gap-3 lg:grid-cols-2">
+                        {[
+                          {
+                            side: 'front' as const,
+                            label: 'Front of Card',
+                            document: frontInsuranceCard,
+                          },
+                          {
+                            side: 'back' as const,
+                            label: 'Back of Card',
+                            document: backInsuranceCard,
+                          },
+                        ].map((slot) => (
+                          <div key={slot.side} className="rounded-lg border border-dashed p-3 space-y-3">
+                            <div>
+                              <p className="font-medium">Insurance {slot.label.toLowerCase()}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {slot.document
+                                  ? 'Uploaded files are shown below. Image files are previewed inline.'
+                                  : `No ${slot.label.toLowerCase()} uploaded yet.`}
+                              </p>
+                            </div>
+
+                            {documentsLoading ? (
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Loading uploaded documents...
+                              </div>
+                            ) : slot.document ? (
+                              renderInsuranceCardDocument(slot.document)
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {renderEditableField('Insurance Provider', 'insurance_provider')}
                     {renderEditableField('Insurance Member ID', 'insurance_member_id')}
                     {renderEditableField('Policy Number', 'policy_number')}
                   </>
+                ) : (
+                  <div className="text-sm text-muted-foreground">
+                    Self-pay billing is supported without storing credit card details.
+                  </div>
                 )}
               </>,
               <FileText className="h-5 w-5" />

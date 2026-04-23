@@ -11,6 +11,7 @@ export type ClientDocument = {
 };
 
 type RequestMode = 'client-self' | 'staff';
+export type InsuranceCardSide = 'front' | 'back';
 
 export const CLIENT_DOCUMENT_ENDPOINTS = {
   clientList: '/api/clients/me/documents',
@@ -27,9 +28,28 @@ export const CLIENT_DOCUMENT_ENDPOINTS = {
 
 const INSURANCE_CARD_DOCUMENT_TYPES = new Set([
   'insurance_card',
+  'insurance_card_front',
+  'insurance_card_back',
   'insurance-card',
   'insuranceCard',
+  'insuranceCardFront',
+  'insuranceCardBack',
 ]);
+
+export function getInsuranceCardSide(
+  documentType: string,
+  fileName?: string
+): InsuranceCardSide | null {
+  const normalized = documentType.trim().toLowerCase().replace(/[-\s]+/g, '_');
+  if (normalized === 'insurance_card_front') return 'front';
+  if (normalized === 'insurance_card_back') return 'back';
+  const normalizedFileName = String(fileName ?? '').trim().toLowerCase();
+  if (normalizedFileName) {
+    if (/(?:^|[-_.\s])front(?:$|[-_.\s])/.test(normalizedFileName)) return 'front';
+    if (/(?:^|[-_.\s])back(?:$|[-_.\s])/.test(normalizedFileName)) return 'back';
+  }
+  return null;
+}
 
 function parseErrorMessage(parsed: unknown, fallback: string): string {
   if (typeof parsed === 'string' && parsed.trim()) {
@@ -119,7 +139,10 @@ export function isInsuranceCardDocument(document: ClientDocument): boolean {
   return INSURANCE_CARD_DOCUMENT_TYPES.has(document.documentType);
 }
 
-export function getClientDocumentLabel(documentType: string): string {
+export function getClientDocumentLabel(documentType: string, fileName?: string): string {
+  const side = getInsuranceCardSide(documentType, fileName);
+  if (side === 'front') return 'Insurance Card Front';
+  if (side === 'back') return 'Insurance Card Back';
   if (INSURANCE_CARD_DOCUMENT_TYPES.has(documentType)) return 'Insurance Card';
   return documentType
     .replace(/[_-]+/g, ' ')
@@ -159,11 +182,23 @@ export async function listClientDocuments(
   }
 }
 
-export async function uploadInsuranceCard(file: File): Promise<ClientDocument> {
+export async function uploadInsuranceCard(
+  file: File,
+  side: InsuranceCardSide = 'front'
+): Promise<ClientDocument> {
   const formData = new FormData();
-  formData.append('file', file);
-  formData.append('documentType', 'insurance_card');
-  formData.append('document_type', 'insurance_card');
+  const documentType = 'insurance_card';
+  const extensionMatch = file.name.match(/\.[^.]+$/);
+  const extension = extensionMatch?.[0] || '';
+  const prefixedName =
+    side === 'back' ? `insurance-card-back${extension}` : `insurance-card-front${extension}`;
+  const uploadFile =
+    typeof File !== 'undefined'
+      ? new File([file], prefixedName, { type: file.type, lastModified: file.lastModified })
+      : file;
+  formData.append('file', uploadFile);
+  formData.append('documentType', documentType);
+  formData.append('document_type', documentType);
   formData.append('category', 'billing');
 
   const response = await requestClientDocuments(CLIENT_DOCUMENT_ENDPOINTS.clientUpload, {
@@ -187,8 +222,8 @@ export async function uploadInsuranceCard(file: File): Promise<ClientDocument> {
   if (!document) {
     return {
       id: crypto.randomUUID(),
-      documentType: 'insurance_card',
-      fileName: file.name,
+      documentType,
+      fileName: uploadFile.name,
       uploadedAt: new Date().toISOString(),
       status: 'uploaded',
       contentType: file.type,
