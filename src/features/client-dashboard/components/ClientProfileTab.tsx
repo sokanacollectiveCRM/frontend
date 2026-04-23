@@ -958,6 +958,12 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
     try {
       await deleteClientDocument(documentItem.id);
       setClientDocuments((prev) => prev.filter((item) => item.id !== documentItem.id));
+      setDocumentPreviewUrls((prev) => {
+        const next = { ...prev };
+        delete next[documentItem.id];
+        return next;
+      });
+      await fetchClientDocuments();
       toast.success('Insurance card deleted successfully');
     } catch (error) {
       toast.error(
