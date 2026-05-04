@@ -104,22 +104,4 @@ describe('QuickBooksCardOnFileForm', () => {
     expect(screen.getByText(/card saved/i)).toBeInTheDocument();
     expect(screen.getByText(/visa ending in 1111/i)).toBeInTheDocument();
   });
-
-  it('prefills a disposable test card for QA', async () => {
-    const user = userEvent.setup();
-
-    render(<QuickBooksCardOnFileForm clientId='client_123' />);
-
-    await user.click(screen.getByRole('button', { name: /prefill test card/i }));
-
-    expect(screen.getByLabelText(/name on card/i)).toHaveValue('Test Cardholder');
-    expect(screen.getByLabelText(/card number/i)).toHaveValue('4111111111111111');
-    expect(screen.getByLabelText(/expiration/i)).toHaveValue('07/25');
-    expect(screen.getByLabelText(/security code/i)).toHaveValue('123');
-    expect(screen.getByLabelText(/^billing address$/i)).toHaveValue('123 Main St');
-    expect(screen.getByLabelText(/apartment, suite, or unit/i)).toHaveValue('Apt 4B');
-    expect(screen.getByLabelText(/^city$/i)).toHaveValue('Boston');
-    expect(screen.getByLabelText(/^state$/i)).toHaveValue('MA');
-    expect(screen.getByLabelText(/postal code/i)).toHaveValue('02118');
-  });
 });

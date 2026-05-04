@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const userStatusSchema = z.enum([
   'lead',
   'contacted',
-  'matching',
+  'matched',
   'interviewing',
   'follow up',
   'contract',
@@ -12,25 +12,28 @@ export const userStatusSchema = z.enum([
   'not hired',
   // Legacy value kept for compatibility with existing records.
   'customer',
+  // Legacy alias from prior UI wording.
+  'matching',
 ]);
 
 export type UserStatus = z.infer<typeof userStatusSchema>;
 export const USER_STATUSES: UserStatus[] = [
   'lead',
   'contacted',
-  'matching',
+  'matched',
   'interviewing',
   'follow up',
   'contract',
   'active',
   'complete',
   'not hired',
+  'customer',
 ];
 
 export const STATUS_LABELS: Record<UserStatus, string> = {
   lead: 'Lead',
   contacted: 'Contacted',
-  matching: 'Matching',
+  matched: 'Matched',
   interviewing: 'Interviewed',
   'follow up': 'Follow Up',
   contract: 'Contract',
@@ -38,6 +41,7 @@ export const STATUS_LABELS: Record<UserStatus, string> = {
   complete: 'Complete',
   'not hired': 'Not Hired',
   customer: 'Customer',
+  matching: 'Matched',
 };
 
 const serviceSchema = z.union([
@@ -68,7 +72,12 @@ export const clientSchema = z.object({
   user: userDetailsSchema,
 }).transform((data) => ({
   ...data,
-  status: data.status === 'customer' ? 'not hired' : data.status,
+  status:
+    data.status === 'matching'
+      ? 'matched'
+      : data.status === 'customer'
+        ? 'customer'
+        : data.status,
 }));
 
 export type Client = z.infer<typeof clientSchema>;

@@ -15,6 +15,14 @@ import { DateTimePicker } from './time-date-pick';
 import { ClientsPicker } from './clients-picker';
 import addWorkSession from '@/common/utils/addWorkSession';
 import { useUser } from '@/common/hooks/user/useUser';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/common/components/ui/select';
+import { hourTypeOptions } from '@/features/hours/data/hour-types';
 
 export function UsersPrimaryButtons() {
   const [startDate, setStartDate] = React.useState<Date>(new Date());
@@ -24,6 +32,7 @@ export function UsersPrimaryButtons() {
   const [error, setError] = React.useState<string | null>(null);
   const [open, setOpen] = React.useState(false);
   const [note, setNote] = React.useState<string>('');
+  const [type, setType] = React.useState<'prenatal' | 'postpartum' | ''>('');
   const { user } = useUser();
 
   async function handleSave() {
@@ -44,13 +53,26 @@ export function UsersPrimaryButtons() {
       return;
     }
 
+    if (!type) {
+      setError('Please select an hour type');
+      return;
+    }
+
     if (endDate.getTime() - startDate.getTime() <= 0) {
       setError('End time must be after start time');
       return;
     }
     try {
-      await addWorkSession(user?.id, client.user.id, startDate, endDate, note);
+      await addWorkSession(
+        user?.id,
+        client.user.id,
+        startDate,
+        endDate,
+        note,
+        type
+      );
       setOpen(false);
+      setType('');
     } catch (error) {
       console.error(error);
     }
@@ -70,7 +92,15 @@ export function UsersPrimaryButtons() {
 
   return (
     <div className='flex gap-2'>
-      <Sheet open={open} onOpenChange={setOpen}>
+      <Sheet
+        open={open}
+        onOpenChange={(nextOpen) => {
+          setOpen(nextOpen);
+          if (!nextOpen) {
+            setType('');
+          }
+        }}
+      >
         <SheetTrigger asChild>
           <Button className='space-x-1'>
             <span>Add Hours</span> <SquarePlus size={18} />
@@ -105,6 +135,28 @@ export function UsersPrimaryButtons() {
                     Hours worked:{' '}
                     <span className='font-bold'>{hoursWorked}</span> hours
                   </h1>
+                </div>
+                <div className='flex flex-col items-center'>
+                  <h1 className='text-lg'>
+                    Hour type <span className='font-bold text-red-600'>*</span>
+                  </h1>
+                  <Select
+                    value={type || undefined}
+                    onValueChange={(value) =>
+                      setType(value as 'prenatal' | 'postpartum')
+                    }
+                  >
+                    <SelectTrigger className='w-full min-w-56'>
+                      <SelectValue placeholder='Select hour type' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {hourTypeOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className='flex flex-col items-center'>
                   <h1 className='text-lg'>

@@ -24,6 +24,7 @@ import UsersProvider from './context/users-context';
 import { TemplatesProvider } from './contexts/TemplatesContext';
 import { userListSchema, UserSummary, type UserWithPortal } from './data/schema';
 import { derivePortalStatus } from './utils/portalStatus';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/common/components/ui/tabs';
 
 type RouteParams = {
   clientId?: string;
@@ -135,6 +136,17 @@ export default function Users() {
       return userWithPortal;
     });
   }, [userList]);
+
+  // Leads: all records that are NOT yet matched.
+  // Customers: only records with status === 'matched'.
+  const leadsData = useMemo(
+    () => userListWithPortal.filter((u) => u.status !== 'matched'),
+    [userListWithPortal]
+  );
+  const customersData = useMemo(
+    () => userListWithPortal.filter((u) => u.status === 'matched'),
+    [userListWithPortal]
+  );
 
   // Portal action handlers
   const handleInviteToPortal = useCallback((lead: UserSummary) => {
@@ -350,11 +362,11 @@ export default function Users() {
         <Main>
           <div className='flex-1 space-y-4 p-8 pt-6'>
             <div className='flex items-center justify-between space-y-2'>
-              <h2 className='text-3xl font-bold tracking-tight'>Leads</h2>
+              <h2 className='text-3xl font-bold tracking-tight'>Clients</h2>
             </div>
             {clientsError && (
               <div className='p-4 mb-4 bg-red-50 border border-red-200 rounded-md'>
-                <p className='text-red-800 font-semibold'>Error loading leads:</p>
+                <p className='text-red-800 font-semibold'>Error loading clients:</p>
                 <p className='text-red-600 text-sm'>{clientsError}</p>
                 <button
                   onClick={() => getClients()}
@@ -367,14 +379,45 @@ export default function Users() {
             {isLoading ? (
               <div className='flex justify-center items-center p-12'>
                 <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900'></div>
-                <span className='ml-3 text-gray-600'>Loading leads...</span>
+                <span className='ml-3 text-gray-600'>Loading clients...</span>
               </div>
             ) : (
-              <UsersTable
-                columns={columns(getClients, portalHandlers)}
-                data={userListWithPortal}
-                clients={clients}
-              />
+              <Tabs defaultValue='leads' className='space-y-4'>
+                <TabsList>
+                  <TabsTrigger value='leads'>
+                    Leads
+                    {leadsData.length > 0 && (
+                      <span className='ml-2 rounded-full bg-muted px-2 py-0.5 text-xs font-medium'>
+                        {leadsData.length}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value='customers'>
+                    Customers
+                    {customersData.length > 0 && (
+                      <span className='ml-2 rounded-full bg-muted px-2 py-0.5 text-xs font-medium'>
+                        {customersData.length}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value='leads'>
+                  <UsersTable
+                    columns={columns(getClients, portalHandlers)}
+                    data={leadsData}
+                    clients={clients}
+                    viewMode='leads'
+                  />
+                </TabsContent>
+                <TabsContent value='customers'>
+                  <UsersTable
+                    columns={columns(getClients, portalHandlers)}
+                    data={customersData}
+                    clients={clients}
+                    viewMode='customers'
+                  />
+                </TabsContent>
+              </Tabs>
             )}
           </div>
         </Main>
@@ -435,12 +478,9 @@ function RouteAwareLeadProfileLoader({
     const normalizedId = String(requestedClientId);
 
     // Always fetch full detail when URL has a client id so modal gets phone_number, service_needed, etc.
-    // (Avoid using list row or currentRow to skip fetch; list data may not include PHI.)
-    if (attemptedRouteIdsRef.current.has(normalizedId)) {
-      return;
-    }
-
-    attemptedRouteIdsRef.current.add(normalizedId);
+    // Do not use attemptedRouteIdsRef to skip fetches: React Strict Mode cancels the first run; skipping
+    // on the second run left the deep-linked modal empty. Effect deps are narrowed so benign list updates
+    // do not re-trigger this (see dependency comment below).
     let isCancelled = false;
 
     const fetchClient = async () => {
@@ -498,14 +538,14 @@ function RouteAwareLeadProfileLoader({
     return () => {
       isCancelled = true;
     };
+    // Intentionally omit knownClients, currentRow?.id, open: including them re-ran this effect
+    // after the client list loaded, cancelled the in-flight fetch, then bailed out because
+    // attemptedRouteIdsRef already had the id — leaving the deep-linked profile modal empty.
   }, [
     requestedClientId,
-    currentRow?.id,
-    knownClients,
     getClientById,
     setCurrentRow,
     setOpen,
-    open,
     attemptedRouteIdsRef,
     setMissingClientId,
     manualCloseRef,
@@ -624,6 +664,7 @@ const ensureClientIdentifiers = (
  */
 function mergeDetailFieldsIntoResult(result: UserSummary & Record<string, any>, raw: any): UserSummary & Record<string, any> {
   if (!raw || typeof raw !== 'object') return result;
+  const nested = raw.user && typeof raw.user === 'object' ? raw.user : {};
   return {
     ...result,
     // Name and email: support both conventions so modal title and fields work (API returns snake_case)
@@ -657,7 +698,21 @@ function mergeDetailFieldsIntoResult(result: UserSummary & Record<string, any>, 
     client_age_range: raw.client_age_range,
     annual_income: raw.annual_income,
     insurance: raw.insurance,
-    payment_method: raw.payment_method,
+    payment_method:
+      raw.payment_method ??
+      raw.paymentMethod ??
+      nested.payment_method ??
+      nested.paymentMethod,
+    payment_authorization_status:
+      raw.payment_authorization_status ??
+      raw.paymentAuthorizationStatus ??
+      nested.payment_authorization_status ??
+      nested.paymentAuthorizationStatus,
+    authorized_at:
+      raw.authorized_at ??
+      raw.authorizedAt ??
+      nested.authorized_at ??
+      nested.authorizedAt,
     insurance_provider: raw.insurance_provider ?? raw.insurance,
     insurance_member_id: raw.insurance_member_id,
     policy_number: raw.policy_number,

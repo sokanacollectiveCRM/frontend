@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from '@/common/components/ui/dialog';
 import { Input } from '@/common/components/ui/input';
-import { Client } from '@/features/clients/data/schema';
+import { Client, STATUS_LABELS } from '@/features/clients/data/schema';
 import { signNowService, type SignNowClient } from '@/services/signNowService';
 import React, { useState } from 'react';
 import { toast } from 'sonner';
@@ -128,7 +128,7 @@ export const SelectClientModal: React.FC<Props> = ({
                 </div>
                 <div className='text-sm text-gray-600'>{client.email}</div>
                 <div className='text-xs text-gray-500 mt-1'>
-                  Service: {client.serviceNeeded} • Status: {client.status}
+                  Service: {client.serviceNeeded} • Status: {STATUS_LABELS[client.status] || client.status}
                 </div>
               </div>
             ))}

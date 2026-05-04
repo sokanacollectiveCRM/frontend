@@ -2,16 +2,24 @@ import {
   getSessionExpirationMessage,
   isSessionExpiredError,
 } from './sessionUtils';
+import { syncQuickBooksCustomerFromClient } from './syncQuickBooksCustomer';
+
+type QuickBooksSyncSource = {
+  id?: string;
+  firstName?: string;
+  first_name?: string;
+  firstname?: string;
+  lastName?: string;
+  last_name?: string;
+  lastname?: string;
+  email?: string;
+};
 
 export default async function updateClientStatus(
   clientId: string,
-  status: string
+  status: string,
+  quickBooksSource?: QuickBooksSyncSource
 ): Promise<{ success: boolean; client?: any; error?: string }> {
-
-  // Debug logging - FORCE VISIBLE
-  console.log('🚨 DEBUG START - Status Update');
-  console.log('🚨 Client ID:', clientId);
-  console.log('🚨 New Status:', status);
 
   try {
     const response = await fetch(
@@ -33,7 +41,6 @@ export default async function updateClientStatus(
       const errorText = await response.text();
       console.error('❌ Status update failed:', response.status, errorText);
 
-      // Check for authentication/session expiration errors
       if (isSessionExpiredError(response.status, errorText)) {
         throw new Error(getSessionExpirationMessage());
       }
@@ -44,8 +51,26 @@ export default async function updateClientStatus(
     }
 
     const result = await response.json();
-    console.log('✅ Status updated successfully:', result);
-    return { success: true, client: result.client };
+
+    if (status === 'matched') {
+      const syncSource =
+        quickBooksSource ||
+        (result?.data && typeof result.data === 'object'
+          ? (result.data as QuickBooksSyncSource)
+          : undefined);
+
+      const syncResult = await syncQuickBooksCustomerFromClient({
+        ...syncSource,
+        id: syncSource?.id ?? clientId,
+        status: 'matched',
+      });
+
+      if (!syncResult.success && syncResult.error) {
+        console.warn('QuickBooks customer sync skipped or failed:', syncResult.error);
+      }
+    }
+
+    return { success: true, client: result.client ?? result.data };
   } catch (err) {
     console.error("❌ Couldn't save client status: ", err);
     return {

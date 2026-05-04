@@ -1,6 +1,7 @@
 // src/integrations/quickbooks/QuickBooksConnectPage.tsx
 import { getQuickBooksStatus } from '@/api/quickbooks/auth/qbo';
 import { withTokenRefresh } from '@/api/quickbooks/auth/utils';
+import { API_CONFIG } from '@/api/config';
 import SubmitButton from '@/common/components/form/SubmitButton';
 import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
 import { UserContext } from '@/common/contexts/UserContext';
@@ -17,8 +18,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-const API_BASE =
-  import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050';
+const API_BASE = API_CONFIG.baseUrl.replace(/\/$/, '');
 
 export default function QuickBooksConnectPage() {
   const { connectQuickBooks, isLoading, error } = useQuickBooksConnect();

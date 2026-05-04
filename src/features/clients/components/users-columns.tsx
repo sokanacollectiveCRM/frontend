@@ -22,6 +22,7 @@ import {
   type PortalStatus,
 } from '@/features/clients/data/schema';
 import { derivePortalStatus, isPortalEligible } from '@/features/clients/utils/portalStatus';
+import { getAdminPaymentCardColumn } from '@/lib/paymentRules';
 import { cn } from '@/lib/utils';
 import { ColumnDef } from '@tanstack/react-table';
 import { toast } from 'sonner';
@@ -163,6 +164,45 @@ export const columns = (
     enableSorting: true,
   },
   {
+    id: 'payment_card',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Card' />
+    ),
+    cell: ({ row }) => {
+      const u = row.original as Record<string, unknown>;
+      const paymentMethod = (u.payment_method ?? u.paymentMethod) as string | undefined;
+      const authStatus = (u.payment_authorization_status ??
+        u.paymentAuthorizationStatus) as string | undefined;
+      const summary = getAdminPaymentCardColumn(paymentMethod, authStatus);
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className='flex max-w-[140px] flex-col gap-0.5'>
+                <Badge
+                  variant='outline'
+                  className={cn('justify-start truncate px-2 py-0.5 text-xs font-medium', summary.badgeClass)}
+                >
+                  {summary.label}
+                </Badge>
+                {summary.sublabel ? (
+                  <span className='truncate text-[11px] text-muted-foreground leading-tight'>
+                    {summary.sublabel}
+                  </span>
+                ) : null}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side='top' className='max-w-xs'>
+              <p className='text-sm'>{summary.tooltip}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    },
+    meta: { className: 'w-[148px]' },
+    enableHiding: true,
+  },
+  {
     accessorKey: 'status',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Status' />
@@ -173,9 +213,16 @@ export const columns = (
         console.log('🚨 STATUS CHANGE TRIGGERED!');
         console.log('🚨 Client ID:', id);
         console.log('🚨 New Status:', newStatus);
+        const u = row.original as Record<string, unknown>;
+        const email = u.email as string | undefined;
 
         try {
-          const result = await updateClientStatus(id, newStatus);
+          const result = await updateClientStatus(id, newStatus, {
+            id,
+            firstName: u.firstname as string | undefined,
+            lastName: u.lastname as string | undefined,
+            email: email,
+          });
           if (result.success) {
             toast.success('Successfully updated client status');
             // Refresh the client list to show updated timestamp
@@ -189,18 +236,23 @@ export const columns = (
         }
       };
       return (
-        <Select defaultValue={status} onValueChange={handleStatusChange}>
-          <SelectTrigger className={cn('w-[120px]')}>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {statusOptions.map((option) => (
-              <SelectItem key={option} value={option}>
-                {STATUS_LABELS[option]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="relative">
+          <span className="text-sm font-medium" data-testid="status-display">
+            {STATUS_LABELS[status as keyof typeof STATUS_LABELS] || status}
+          </span>
+          <Select value={status} onValueChange={handleStatusChange}>
+            <SelectTrigger className={cn('w-[120px] absolute inset-0 opacity-0')}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {statusOptions.map((option) => (
+                <SelectItem key={option} value={option}>
+                  {STATUS_LABELS[option]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       );
     },
     filterFn: (row, id, value) => {

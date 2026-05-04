@@ -12,6 +12,11 @@ export interface Doula {
   specialties: string[] | null;
   certifications: string[] | null;
   bio: string | null;
+  /** Optional demographics returned by admin/team endpoints. */
+  pronouns?: string | null;
+  race_ethnicity?: string[] | null;
+  race_ethnicity_other?: string | null;
+  languages_other_than_english?: string[] | null;
   contract_status: 'pending' | 'signed' | 'not_sent';
   contract_signed_at?: string | null;
   certifications_files?: string[] | null;
@@ -26,6 +31,9 @@ export interface AssignedClient {
   status: string; // active, delivered, postpartum
   last_note?: string;
   next_visit?: string;
+  birth_outcomes_induction?: boolean;
+  birth_outcomes_delivery_type?: string;
+  birth_outcomes_medications_used?: string[];
 }
 
 export interface Visit {

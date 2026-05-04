@@ -2,18 +2,18 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import {
+  PAYMENT_METHOD_OPTIONS as SHARED_PAYMENT_METHOD_OPTIONS,
+  isMedicaidMethod,
+  isSelfPayMethod as sharedIsSelfPayMethod,
+} from '@/lib/paymentRules';
 
-export const PAYMENT_METHOD_OPTIONS = [
-  'Commercial Insurance',
-  'Private Insurance',
-  'Medicaid',
-  'Self-Pay',
-] as const;
+export const PAYMENT_METHOD_OPTIONS = SHARED_PAYMENT_METHOD_OPTIONS;
 
 export type PaymentMethod = (typeof PAYMENT_METHOD_OPTIONS)[number];
 
-export const isSelfPayMethod = (value: string) =>
-  value.trim().toLowerCase().replace(/\s+/g, ' ') === 'self-pay';
+export const isSelfPayMethod = (value: string) => sharedIsSelfPayMethod(value);
+export { isMedicaidMethod };
 
 export const fullSchema = z
   .object({
@@ -67,7 +67,7 @@ export const fullSchema = z
     // 6. Pregnancy & Baby
     due_date: z.string().min(1, 'Please enter your due date.'),
     birth_location: z.string().min(1, 'Please enter your birth location.'),
-    birth_hospital: z.string().min(1, 'Please enter your hospital or birth center.'),
+    birth_hospital: z.string().optional(),
     number_of_babies: z
       .string()
       .min(1, 'Please select the number of babies you are expecting'),
@@ -156,7 +156,14 @@ export const fullSchema = z
       });
     }
 
-    if (!isSelfPayMethod(data.payment_method)) {
+    // Insurance details are only required for Commercial / Private Insurance.
+    // Medicaid uses its own billing workflow; Self-Pay has no insurance.
+    const needsInsuranceDetails =
+      data.payment_method &&
+      !isMedicaidMethod(data.payment_method) &&
+      !isSelfPayMethod(data.payment_method);
+
+    if (needsInsuranceDetails) {
       if (!data.insurance_provider?.trim()) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,

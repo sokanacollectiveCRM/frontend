@@ -121,6 +121,18 @@ The staff list and URL endpoints should return the same document fields and URL 
 - Staff can open and download the insurance card
 - Client can view/download their own uploaded insurance card
 
+## Troubleshooting: `new row violates row-level security policy` (bucket setup)
+
+If the API returns an error like **`Failed to ensure client documents bucket exists: new row violates row-level security policy`**, the backend is almost certainly trying to **create or register a Storage bucket** while authenticated as the **end user** (JWT / anon role). In Supabase, inserts into `storage.buckets` (and related metadata) are protected by RLS and are **not** allowed for normal users.
+
+**Fix (pick one):**
+
+1. **Pre-create the bucket** in Supabase Dashboard → Storage → New bucket (private). Name it whatever the backend expects (e.g. `client-documents`). Do not rely on lazy creation from the client-scoped Supabase client.
+2. **Lazy creation only with service role**: run bucket / metadata setup using the **service role** key **only on the server**, never in the browser. The user’s session must not perform `INSERT` into bucket tables.
+3. **Migrations**: create the bucket via SQL or CLI using elevated privileges, then keep upload paths using **storage policies** that allow authenticated clients to `INSERT` **objects** into that bucket’s prefix—not bucket rows.
+
+After the bucket exists and policies allow the client to upload **files** to that bucket, the portal upload flow should stop failing with this RLS error.
+
 ## Frontend Files Already Wired
 
 - `src/api/clients/clientDocuments.ts`

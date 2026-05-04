@@ -15,6 +15,8 @@ interface ImportMetaEnv {
   readonly VITE_SMOKE_CLIENT_ID?: string
   /** Optional: external URL for client portal "Service Outcomes" link */
   readonly VITE_CLIENT_PORTAL_SERVICE_OUTCOMES_URL?: string
+  /** Optional: URL to payment authorization form PDF (same-origin path or absolute URL) */
+  readonly VITE_PAYMENT_AUTHORIZATION_FORM_URL?: string
 }
 
 interface ImportMeta {

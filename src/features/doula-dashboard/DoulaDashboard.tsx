@@ -1,20 +1,17 @@
-import { useEffect, useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/common/components/ui/tabs';
 import { Header } from '@/common/layouts/Header';
 import { Main } from '@/common/layouts/Main';
 import { ProfileDropdown } from '@/common/components/user/ProfileDropdown';
 import { Button } from '@/common/components/ui/button';
-import ProfileTab from './components/ProfileTab';
-import DocumentsTab from './components/DocumentsTab';
-import ClientsTab from './components/ClientsTab';
-import HoursTab from './components/HoursTab';
-import ActivitiesTab from './components/ActivitiesTab';
 import { getDoulaProfile } from '@/api/doulas/doulaService';
 import { AlertTriangle } from 'lucide-react';
+import { Link, Outlet } from 'react-router-dom';
 import {
   isDoulaRaceEthnicityComplete,
   RACE_ETHNICITY_FIELD_LABEL,
 } from './doulaDemographics';
+import { DoulaDashboardSidebar } from './DoulaDashboardSidebar';
+import { useEffect, useState } from 'react';
+import { DoulaDashboardOutletContext } from './doulaDashboardTypes';
 
 const REQUIRED_PROFILE_FIELDS = [
   'firstname',
@@ -39,8 +36,6 @@ const FIELD_LABELS: Record<(typeof REQUIRED_PROFILE_FIELDS)[number], string> = {
 };
 
 export default function DoulaDashboard() {
-  const [activeTab, setActiveTab] = useState('profile');
-  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [isProfileComplete, setIsProfileComplete] = useState(true);
   const [missingFields, setMissingFields] = useState<string[]>([]);
 
@@ -70,96 +65,63 @@ export default function DoulaDashboard() {
     }
   };
 
+  const outletContext: DoulaDashboardOutletContext = {
+    onProfileStatusChange: ({ isComplete, missingFields: updatedMissingFields }) => {
+      setIsProfileComplete(isComplete);
+      setMissingFields(updatedMissingFields);
+    },
+  };
+
   return (
     <>
       <Header fixed>
-        <div className='ml-auto flex items-center space-x-4'>
-          <ProfileDropdown />
+        <div className='flex w-full items-center gap-4'>
+          <div className='min-w-0'>
+            <h1 className='text-lg font-semibold text-slate-900'>Doula Dashboard</h1>
+            <p className='text-sm text-slate-500'>
+              Manage your profile, documents, clients, hours, and activities
+            </p>
+          </div>
+          <div className='ml-auto flex items-center gap-4'>
+            <ProfileDropdown />
+          </div>
         </div>
       </Header>
 
-      <Main>
-        <div className='flex-1 overflow-auto p-6'>
-          <div className='mb-6'>
-            <h1 className='text-3xl font-bold text-gray-900'>Doula Dashboard</h1>
-            <p className='text-gray-600 mt-1'>
-              Manage your profile, documents, clients, and hours
-            </p>
-          </div>
+      <Main fixed>
+        <div className='flex h-full min-h-0 gap-6 p-6'>
+          <DoulaDashboardSidebar />
 
-          {!isProfileComplete && (
-            <div className='mb-6 rounded-lg border border-amber-300 bg-amber-50 p-4'>
-              <div className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
-                <div className='flex items-start gap-3'>
-                  <AlertTriangle className='mt-0.5 h-5 w-5 text-amber-700' />
-                  <div>
-                    <p className='font-medium text-amber-900'>
-                      Complete your profile to finish account setup.
-                    </p>
-                    <p className='text-sm text-amber-800'>
-                      Missing required fields: {missingFields.join(', ')}
-                    </p>
+          <section className='min-w-0 flex-1 overflow-y-auto'>
+            {!isProfileComplete && (
+              <div className='mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-4'>
+                <div className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
+                  <div className='flex items-start gap-3'>
+                    <AlertTriangle className='mt-0.5 h-5 w-5 text-amber-700' />
+                    <div>
+                      <p className='font-medium text-amber-900'>
+                        Complete your profile to finish account setup.
+                      </p>
+                      <p className='text-sm text-amber-800'>
+                        Missing required fields: {missingFields.join(', ')}
+                      </p>
+                    </div>
                   </div>
+                  <Button
+                    asChild
+                    size='sm'
+                    className='bg-amber-600 hover:bg-amber-700'
+                  >
+                    <Link to='/doula-dashboard/profile'>Complete Profile</Link>
+                  </Button>
                 </div>
-                <Button
-                  size='sm'
-                  className='bg-amber-600 hover:bg-amber-700'
-                  onClick={() => setActiveTab('profile')}
-                >
-                  Complete Profile
-                </Button>
               </div>
-            </div>
-          )}
+            )}
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className='w-full'>
-            <TabsList className='grid w-full grid-cols-5 mb-6'>
-              <TabsTrigger value='profile'>Profile</TabsTrigger>
-              <TabsTrigger value='documents'>Documents</TabsTrigger>
-              <TabsTrigger value='clients'>Clients</TabsTrigger>
-              <TabsTrigger value='hours'>Hours</TabsTrigger>
-              <TabsTrigger value='activities'>Activities</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value='profile' className='mt-6'>
-              <ProfileTab
-                onProfileStatusChange={({ isComplete, missingFields: updatedMissingFields }) => {
-                  setIsProfileComplete(isComplete);
-                  setMissingFields(updatedMissingFields);
-                }}
-              />
-            </TabsContent>
-
-            <TabsContent value='documents' className='mt-6'>
-              <DocumentsTab />
-            </TabsContent>
-
-            <TabsContent value='clients' className='mt-6'>
-              <ClientsTab
-                onClientSelect={(clientId) => {
-                  setSelectedClientId(clientId);
-                  setActiveTab('activities');
-                }}
-              />
-            </TabsContent>
-
-            <TabsContent value='hours' className='mt-6'>
-              <HoursTab />
-            </TabsContent>
-
-            <TabsContent value='activities' className='mt-6'>
-              <ActivitiesTab
-                clientId={selectedClientId}
-                onBack={() => {
-                  setSelectedClientId(null);
-                  setActiveTab('clients');
-                }}
-              />
-            </TabsContent>
-          </Tabs>
+            <Outlet context={outletContext} />
+          </section>
         </div>
       </Main>
     </>
   );
 }
-

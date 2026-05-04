@@ -11,6 +11,7 @@ import FloatingLabelDatePicker from './components/FloatingLabelDatePicker';
 import {
   PAYMENT_METHOD_OPTIONS,
   isSelfPayMethod,
+  isMedicaidMethod,
 } from './useRequestForm';
 
 function ArrowSVG({ color = '#757575' }: { color?: string }) {
@@ -89,7 +90,6 @@ export function Step3FamilyMembers({
 
   return (
     <div>
-      <div className={styles['form-section-title']}>Family members</div>
       <div className={styles['form-grid']}>
         {/* Relationship status */}
         <div className={styles['form-field']}>
@@ -404,7 +404,6 @@ export function Step4Referral({
 
   return (
     <div>
-      <div className={styles['form-section-title']}>Referral</div>
       <div className={styles['form-grid']}>
         {/* Referral Source */}
         <div className={styles['form-field']}>
@@ -573,7 +572,6 @@ export function Step5HealthHistory({
 
   return (
     <div>
-      <div className={styles['form-section-title']}>Health history</div>
       <div className={styles['form-grid']}>
         {/* Health History */}
         <div
@@ -734,14 +732,17 @@ export function Step6PregnancyBaby({
   ];
   const providerTypeOptions = ['Midwife', 'OB', 'Family Doctor', 'Other'];
 
-  const isStepValid = [
+  const watchedBirthLocation = useWatch({ control: form.control, name: 'birth_location' });
+  const isHomeBirth = watchedBirthLocation === 'Home';
+
+  const requiredFields = [
     'due_date',
     'birth_location',
-    'birth_hospital',
     'number_of_babies',
     'pregnancy_number',
-  ].every((field) => {
-    // Check if there's no error AND the field has a value
+  ];
+
+  const isStepValid = requiredFields.every((field) => {
     const hasValue = values[field];
     const hasError = errors[field];
     console.log(`Field ${field}: hasValue=${hasValue}, hasError=${hasError}, value=${values[field]}`);
@@ -755,8 +756,7 @@ export function Step6PregnancyBaby({
 
   return (
     <div>
-      <div className={styles['form-section-title']}>Pregnancy/Baby</div>
-      <div className={styles['form-grid']}>
+      <div className={`${styles['form-grid']} ${styles['step-pregnancy-grid']}`}>
         {/* Due Date */}
         <FloatingLabelDatePicker
           label="Due Date or Date of Birth*"
@@ -818,7 +818,7 @@ export function Step6PregnancyBaby({
           )}
         </div>
         {/* Hospital or Birth Center */}
-        <div className={styles['form-field']}>
+        <div className={`${styles['form-field']} ${styles['hospital-label']}`}>
           <input
             className={styles['form-input']}
             {...form.register('birth_hospital')}
@@ -836,7 +836,7 @@ export function Step6PregnancyBaby({
                 : '')
             }
           >
-            Name of hospital or birth center*
+            Name of hospital or birth center (optional)
           </label>
           {errors.birth_hospital && (
             <div className={styles['form-error']}>
@@ -863,7 +863,7 @@ export function Step6PregnancyBaby({
                 : '')
             }
           >
-            Baby's name
+            Baby's name (optional)
           </label>
           {errors.baby_name && (
             <div className={styles['form-error']}>
@@ -1044,7 +1044,6 @@ export function Step7PastPregnancies({
 
   return (
     <div>
-      <div className={styles['form-section-title']}>Past Pregnancie(s)</div>
       <div className={styles['form-grid']} style={{ alignItems: 'center' }}>
         <div
           className={styles['form-field']}
@@ -1242,9 +1241,6 @@ export function Step8ServicesInterested({
 
   return (
     <div>
-      <div className={styles['form-section-title']}>
-        What service(s) are you interested in?
-      </div>
       <div className={styles['form-grid']} style={{ alignItems: 'flex-start' }}>
         {/* Multi-select dropdown */}
         <div
@@ -1433,6 +1429,7 @@ export function Step9Payment({
     name: 'has_secondary_insurance',
   });
   const isSelfPay = isSelfPayMethod(paymentMethod || '');
+  const isMedicaid = isMedicaidMethod(paymentMethod || '');
   const [focus, setFocus] = useState({ payment_method: false });
   const [open, setOpen] = useState({ payment_method: false });
   const handleFocus = (field: keyof typeof focus) =>
@@ -1449,7 +1446,6 @@ export function Step9Payment({
 
   return (
     <div>
-      <div className={styles['form-section-title']}>Payment</div>
       <div
         style={{
           color: '#666',
@@ -1577,8 +1573,8 @@ export function Step9Payment({
                     lineHeight: 1.5,
                   }}
                   onClick={() => {
-                    form.setValue('payment_method', opt);
-                    if (isSelfPayMethod(opt)) {
+                    form.setValue('payment_method', opt, { shouldValidate: true });
+                    if (isSelfPayMethod(opt) || isMedicaidMethod(opt)) {
                       form.setValue('insurance_provider', '');
                       form.setValue('insurance_member_id', '');
                       form.setValue('policy_number', '');
@@ -1598,26 +1594,69 @@ export function Step9Payment({
           </Popover>
         </div>
 
-        {isSelfPay ? (
+        {isMedicaid ? (
           <div
             className={styles['form-field']}
             style={{ gridColumn: '1 / span 4', marginTop: 8 }}
           >
             <div
               style={{
-                background: '#f7fbfb',
-                border: '1px solid #d6ecea',
+                background: '#f0fdf4',
+                border: '1px solid #bbf7d0',
                 borderRadius: 8,
                 padding: '14px 16px',
-                color: '#355',
+                color: '#166534',
                 fontSize: 15,
                 lineHeight: 1.5,
               }}
             >
-              We&apos;ll send payment instructions after we review your request.
+              ✓ No payment method required. Your services will be billed through Medicaid.
             </div>
           </div>
-        ) : (
+        ) : isSelfPay ? (
+          <div
+            className={styles['form-field']}
+            style={{ gridColumn: '1 / span 4', marginTop: 8 }}
+          >
+            <div
+              style={{
+                background: '#eff6ff',
+                border: '1px solid #bfdbfe',
+                borderRadius: 8,
+                padding: '14px 16px',
+                color: '#1e40af',
+                fontSize: 15,
+                lineHeight: 1.5,
+              }}
+            >
+              Payment authorization is required. We&apos;ll send you a payment authorization form to
+              complete and return—card numbers are not collected in this form.
+            </div>
+          </div>
+        ) : paymentMethod && !isMedicaid && !isSelfPay ? (
+          <div
+            className={styles['form-field']}
+            style={{ gridColumn: '1 / span 4', marginTop: 8 }}
+          >
+            <div
+              style={{
+                background: '#eff6ff',
+                border: '1px solid #bfdbfe',
+                borderRadius: 8,
+                padding: '14px 16px',
+                color: '#1e40af',
+                fontSize: 15,
+                lineHeight: 1.5,
+                marginBottom: 8,
+              }}
+            >
+              Payment authorization may be required for copays, deductibles, or self-pay balances.
+              Our team will send a payment authorization form when applicable—not collected here.
+            </div>
+          </div>
+        ) : null}
+
+        {!isMedicaid && !isSelfPay && paymentMethod ? (
           <>
             <div className={styles['form-field']} style={{ gridColumn: '1 / span 4' }}>
               <input
@@ -1838,9 +1877,9 @@ export function Step9Payment({
               </>
             ) : null}
           </>
-        )}
+        ) : null}
       </div>
-      {isSelfPay ? null : (
+      {!isSelfPay && !isMedicaid && paymentMethod ? (
         <div
           style={{
             color: '#666',
@@ -1851,7 +1890,7 @@ export function Step9Payment({
         >
           Please provide the insurance details exactly as they appear on the card.
         </div>
-      )}
+      ) : null}
       <div className={styles['step-buttons-row']}>
         <Button type='button' onClick={handleBack} disabled={step === 0}>
           Back
@@ -1989,7 +2028,6 @@ export function Step10ClientDemographics({
 
   return (
     <div>
-      <div className={styles['form-section-title']}>Client Demographics</div>
       <div
         style={{
           color: '#757575',

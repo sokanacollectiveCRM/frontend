@@ -25,6 +25,9 @@ export interface ClientUserDTO {
   has_signed_contract?: boolean;
   payment_status?: string;
   has_completed_payment?: boolean;
+  payment_method?: string;
+  payment_authorization_status?: string;
+  authorized_at?: string;
 }
 
 /**
@@ -60,6 +63,10 @@ export interface ClientListItemDTO {
   payments?: unknown[];
   payment_status?: string;
   has_completed_payment?: boolean;
+  /** Non-PHI billing hints for staff list — optional until backend exposes them */
+  payment_method?: string;
+  payment_authorization_status?: string;
+  authorized_at?: string;
 }
 
 /**
@@ -87,6 +94,9 @@ export interface ClientDetailDTO {
   health_history?: string;
   health_notes?: string;
   birth_outcomes?: string;
+  birth_outcomes_induction?: boolean;
+  birth_outcomes_delivery_type?: string;
+  birth_outcomes_medications_used?: string[];
   allergies?: string;
   medications?: string;
   date_of_birth?: string;
@@ -104,6 +114,8 @@ export interface ClientDetailDTO {
   annual_income?: string;
   insurance?: string;
   payment_method?: string;
+  payment_authorization_status?: string;
+  authorized_at?: string;
   insurance_provider?: string;
   insurance_member_id?: string;
   policy_number?: string;

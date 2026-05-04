@@ -73,7 +73,7 @@ export function mapClient(dto: ClientListItemDTO): Client {
     '';
 
   const rawStatus = dto.status || user?.status || 'lead';
-  const status = (rawStatus === 'customer' ? 'not hired' : rawStatus) as ClientStatus;
+  const status = (rawStatus === 'matching' ? 'matched' : rawStatus) as ClientStatus;
 
   const serviceNeeded =
     dto.serviceNeeded ||
@@ -126,7 +126,7 @@ export function mapClientDetail(dto: ClientDetailDTO): ClientDetail {
     lastName: dto.last_name,
     email: dto.email,
     phoneNumber: dto.phone_number,
-    status: ((dto.status || 'lead') === 'customer' ? 'not hired' : (dto.status || 'lead')) as ClientStatus,
+    status: ((dto.status || 'lead') === 'matching' ? 'matched' : (dto.status || 'lead')) as ClientStatus,
     serviceNeeded: dto.service_needed,
     portalStatus: dto.portal_status,
     invitedAt: dto.invited_at,
@@ -140,6 +140,9 @@ export function mapClientDetail(dto: ClientDetailDTO): ClientDetail {
     healthHistory: dto.health_history,
     healthNotes: dto.health_notes,
     birthOutcomes: dto.birth_outcomes,
+    birthOutcomesInduction: dto.birth_outcomes_induction,
+    birthOutcomesDeliveryType: dto.birth_outcomes_delivery_type,
+    birthOutcomesMedicationsUsed: dto.birth_outcomes_medications_used,
     allergies: dto.allergies,
     medications: dto.medications,
     dateOfBirth: dto.date_of_birth,
@@ -157,6 +160,8 @@ export function mapClientDetail(dto: ClientDetailDTO): ClientDetail {
     annualIncome: dto.annual_income,
     insurance: dto.insurance,
     paymentMethod: dto.payment_method,
+    paymentAuthorizationStatus: dto.payment_authorization_status,
+    authorizedAt: dto.authorized_at,
     insuranceProvider: dto.insurance_provider,
     insuranceMemberId: dto.insurance_member_id,
     policyNumber: dto.policy_number,

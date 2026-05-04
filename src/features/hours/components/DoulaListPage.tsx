@@ -13,6 +13,7 @@ import {
 import { fetchClients } from '@/api/services/clients.service';
 import { Search } from '@/common/components/header/Search';
 import { ProfileDropdown } from '@/common/components/user/ProfileDropdown';
+import { Badge } from '@/common/components/ui/badge';
 import { Button } from '@/common/components/ui/button';
 import {
   Command,
@@ -63,7 +64,9 @@ import { cn } from '@/lib/utils';
 import { Header } from '@/common/layouts/Header';
 import { Main } from '@/common/layouts/Main';
 import {
+  AlertTriangle,
   Check,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   ChevronsUpDown,
@@ -100,6 +103,20 @@ interface AssignmentRow {
   assignedAt: string;
   updatedAt: string;
   notes: string;
+  birthOutcomesInduction?: boolean;
+  birthOutcomesDeliveryType?: string;
+  birthOutcomesMedicationsUsed?: string[];
+}
+
+type BirthOutcomesFilterValue = 'all' | 'complete' | 'incomplete' | 'not-recorded';
+
+function getBirthOutcomesStatus(row: AssignmentRow): 'complete' | 'incomplete' | 'not-recorded' {
+  const hasInduction = typeof row.birthOutcomesInduction === 'boolean';
+  const hasDelivery = !!row.birthOutcomesDeliveryType?.trim();
+  const hasMeds = Array.isArray(row.birthOutcomesMedicationsUsed) && row.birthOutcomesMedicationsUsed.length > 0;
+  if (!hasInduction && !hasDelivery && !hasMeds) return 'not-recorded';
+  if (hasInduction && hasDelivery && hasMeds) return 'complete';
+  return 'incomplete';
 }
 
 interface ClientOption {
@@ -443,6 +460,26 @@ function mapAssignmentRow(raw: ApiRecord): AssignmentRow {
       ]) || '',
     updatedAt: getString(raw, ['updatedAt', 'updated_at']) || '',
     notes: getString(raw, ['notes', 'note']) || '',
+    birthOutcomesInduction: (() => {
+      const v =
+        raw.birthOutcomesInduction ?? raw.birth_outcomes_induction ??
+        client.birthOutcomesInduction ?? client.birth_outcomes_induction;
+      if (typeof v === 'boolean') return v;
+      if (v === 'true') return true;
+      if (v === 'false') return false;
+      return undefined;
+    })(),
+    birthOutcomesDeliveryType:
+      getString(raw, ['birthOutcomesDeliveryType', 'birth_outcomes_delivery_type']) ||
+      getString(client, ['birthOutcomesDeliveryType', 'birth_outcomes_delivery_type']) ||
+      undefined,
+    birthOutcomesMedicationsUsed: (() => {
+      const v =
+        raw.birthOutcomesMedicationsUsed ?? raw.birth_outcomes_medications_used ??
+        client.birthOutcomesMedicationsUsed ?? client.birth_outcomes_medications_used;
+      if (Array.isArray(v)) return (v as unknown[]).map(String).filter(Boolean);
+      return undefined;
+    })(),
   };
 }
 
@@ -531,6 +568,8 @@ export default function DoulaListPage() {
   const [assignmentsYear, setAssignmentsYear] = useState('');
   const [assignmentsQuarter, setAssignmentsQuarter] = useState('');
   const [assignmentsSort, setAssignmentsSort] = useState('updatedAt_desc');
+  const [assignmentsBirthOutcomesFilter, setAssignmentsBirthOutcomesFilter] =
+    useState<BirthOutcomesFilterValue>('all');
   const [assignmentsPager, setAssignmentsPager] =
     useState<Pager>(DEFAULT_PAGER);
   const [assignmentRows, setAssignmentRows] = useState<AssignmentRow[]>([]);
@@ -638,6 +677,38 @@ export default function DoulaListPage() {
     if (!Array.isArray(services) || services.length === 0) return '—';
     return services.join(', ');
   }, []);
+
+  const getBirthOutcomesBadge = useCallback((row: AssignmentRow) => {
+    const status = getBirthOutcomesStatus(row);
+    if (status === 'complete') {
+      return (
+        <Badge className='bg-green-100 text-green-700 border-green-200 flex items-center gap-1 w-fit'>
+          <CheckCircle2 className='h-3 w-3' />
+          Complete
+        </Badge>
+      );
+    }
+    if (status === 'incomplete') {
+      return (
+        <Badge className='bg-amber-100 text-amber-700 border-amber-200 flex items-center gap-1 w-fit'>
+          <AlertTriangle className='h-3 w-3' />
+          Incomplete
+        </Badge>
+      );
+    }
+    return (
+      <Badge className='bg-gray-100 text-gray-500 border-gray-200 w-fit'>
+        Not recorded
+      </Badge>
+    );
+  }, []);
+
+  const filteredAssignmentRows = useMemo(() => {
+    if (assignmentsBirthOutcomesFilter === 'all') return assignmentRows;
+    return assignmentRows.filter(
+      (row) => getBirthOutcomesStatus(row) === assignmentsBirthOutcomesFilter
+    );
+  }, [assignmentRows, assignmentsBirthOutcomesFilter]);
   const selectedClientOption = clientOptions.find(
     (client) => client.id === selectedClientId
   );
@@ -1373,6 +1444,22 @@ export default function DoulaListPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                <Select
+                  value={assignmentsBirthOutcomesFilter}
+                  onValueChange={(value) =>
+                    setAssignmentsBirthOutcomesFilter(value as BirthOutcomesFilterValue)
+                  }
+                >
+                  <SelectTrigger className='h-9 w-[180px]'>
+                    <SelectValue placeholder='Birth outcomes' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='all'>All birth outcomes</SelectItem>
+                    <SelectItem value='complete'>Complete</SelectItem>
+                    <SelectItem value='incomplete'>Incomplete</SelectItem>
+                    <SelectItem value='not-recorded'>Not recorded</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Button
                   type='button'
                   variant='outline'
@@ -1385,6 +1472,7 @@ export default function DoulaListPage() {
                     setAssignmentsYear('');
                     setAssignmentsQuarter('');
                     setAssignmentsSort('updatedAt_desc');
+                    setAssignmentsBirthOutcomesFilter('all');
                     setAssignmentsPager((prev) => ({ ...prev, offset: 0 }));
                   }}
                 >
@@ -1446,12 +1534,13 @@ export default function DoulaListPage() {
                           <TableHead>Role</TableHead>
                           <TableHead>Services</TableHead>
                           <TableHead>Hospital</TableHead>
+                          <TableHead>Birth Outcomes</TableHead>
                           <TableHead>Assigned At</TableHead>
                           <TableHead>Updated At</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {assignmentRows.map((row) => (
+                        {filteredAssignmentRows.map((row) => (
                           <TableRow
                             key={row.id}
                             className='cursor-pointer'
@@ -1491,6 +1580,7 @@ export default function DoulaListPage() {
                             >
                               {row.hospital}
                             </TableCell>
+                            <TableCell>{getBirthOutcomesBadge(row)}</TableCell>
                             <TableCell>
                               {formatDateCompact(row.assignedAt)}
                             </TableCell>
@@ -1920,6 +2010,29 @@ export default function DoulaListPage() {
               </div>
             )}
 
+            {detailRows.length > 0 && (() => {
+              const incomplete = detailRows.filter(
+                (r) => getBirthOutcomesStatus(r) !== 'complete'
+              ).length;
+              const total = detailRows.length;
+              if (incomplete === 0) {
+                return (
+                  <div className='mb-3 flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800'>
+                    <CheckCircle2 className='h-4 w-4 shrink-0 text-green-600' />
+                    All {total} client{total === 1 ? '' : 's'} have birth outcomes recorded.
+                  </div>
+                );
+              }
+              return (
+                <div className='mb-3 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800'>
+                  <AlertTriangle className='h-4 w-4 shrink-0 mt-0.5 text-amber-600' />
+                  <span>
+                    <span className='font-medium'>{incomplete} of {total}</span> client{incomplete === 1 ? '' : 's'} still need{incomplete === 1 ? 's' : ''} birth outcomes recorded.
+                  </span>
+                </div>
+              );
+            })()}
+
             <div className='overflow-hidden rounded-lg border'>
               {detailLoading ? (
                 <div className='flex items-center justify-center gap-2 p-6 text-sm text-muted-foreground'>
@@ -1936,6 +2049,7 @@ export default function DoulaListPage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Client</TableHead>
+                        <TableHead>Birth Outcomes</TableHead>
                         <TableHead>Role</TableHead>
                         <TableHead>Services</TableHead>
                         <TableHead>Hospital</TableHead>
@@ -1954,6 +2068,7 @@ export default function DoulaListPage() {
                           <TableCell className='font-medium'>
                             {row.clientName}
                           </TableCell>
+                          <TableCell>{getBirthOutcomesBadge(row)}</TableCell>
                           <TableCell>{getAssignmentRoleLabel(row.role)}</TableCell>
                           <TableCell className='max-w-[220px] truncate'>
                             {getAssignmentServicesLabel(row.services)}
@@ -2290,9 +2405,24 @@ export default function DoulaListPage() {
                         <p className='text-xs uppercase text-muted-foreground'>
                           Doula
                         </p>
-                        <p className='font-medium'>
-                          {resolveDoulaName(selectedAssignment)}
-                        </p>
+                        {(() => {
+                          const match = doulaOptions.find(
+                            (d) => d.id === selectedAssignment.doulaId
+                          );
+                          const name = match?.fullName || resolveDoulaName(selectedAssignment);
+                          const email = match?.email || selectedAssignment.doulaName;
+                          const nameIsEmail = !name || name === '—' || name === email;
+                          return (
+                            <>
+                              {!nameIsEmail && (
+                                <p className='font-medium'>{name}</p>
+                              )}
+                              <p className={nameIsEmail ? 'font-medium' : 'text-xs text-muted-foreground mt-0.5'}>
+                                {email || '—'}
+                              </p>
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
                     <div className='grid gap-3 sm:grid-cols-2'>

@@ -11,20 +11,23 @@ interface DataTableToolbarProps<TData> {
   table: Table<TData>;
   draggedTemplate?: Template | null;
   clients?: any[];
+  viewMode?: 'leads' | 'customers';
 }
 
 export function DataTableToolbar<TData>({
   table,
   draggedTemplate,
   clients,
+  viewMode = 'leads',
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0;
+  const isCustomers = viewMode === 'customers';
 
   return (
     <div className='flex items-center justify-between'>
       <div className='flex flex-1 flex-row items-center gap-x-2'>
         <Input
-          placeholder='Filter leads...'
+          placeholder={isCustomers ? 'Filter customers...' : 'Filter leads...'}
           value={(table.getColumn('client')?.getFilterValue() as string) ?? ''}
           onChange={(event) =>
             table.getColumn('client')?.setFilterValue(event.target.value)

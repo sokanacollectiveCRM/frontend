@@ -1,4 +1,5 @@
 import useDialogState from '@/common/hooks/ui/use-dialog-state';
+import { type HourType } from '@/features/hours/data/hour-types';
 import React, { useState } from 'react';
 
 type UsersDialogType = 'invite' | 'add' | 'edit' | 'delete';
@@ -24,6 +25,7 @@ export type HoursRows = {
   // Time fields
   start_time: string;
   end_time: string;
+  type: HourType;
   note: any;
 };
 

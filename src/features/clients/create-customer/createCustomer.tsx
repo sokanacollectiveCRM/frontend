@@ -3,7 +3,9 @@
 
 import { UserContext } from '@/common/contexts/UserContext';
 import {
+  getInvoiceableCustomers,
   getQuickBooksCustomers,
+  type InvoiceableCustomer,
   type QuickBooksCustomer,
 } from '@/api/quickbooks/auth/customer';
 import { Button } from '@/common/components/ui/button';
@@ -29,11 +31,71 @@ const STATUS_FILTER_OPTIONS = [
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
+type CustomerSource = 'quickbooks' | 'crm' | 'both';
+
+type CombinedCustomer = {
+  key: string;
+  displayName: string;
+  email?: string;
+  phone?: string;
+  balance?: number;
+  active?: boolean;
+  source: CustomerSource;
+};
+
+function makeCustomerKey(name?: string, email?: string): string {
+  return `${(name || '').trim().toLowerCase()}|${(email || '').trim().toLowerCase()}`;
+}
+
+function mergeCustomers(
+  quickbooksCustomers: QuickBooksCustomer[],
+  crmCustomers: InvoiceableCustomer[]
+): CombinedCustomer[] {
+  const merged = new Map<string, CombinedCustomer>();
+
+  for (const customer of quickbooksCustomers) {
+    const key = makeCustomerKey(
+      customer.DisplayName,
+      customer.PrimaryEmailAddr?.Address
+    );
+    merged.set(key || customer.Id, {
+      key: key || customer.Id,
+      displayName: customer.DisplayName,
+      email: customer.PrimaryEmailAddr?.Address,
+      phone: customer.PrimaryPhone?.FreeFormNumber,
+      balance: customer.Balance,
+      active: customer.Active,
+      source: 'quickbooks',
+    });
+  }
+
+  for (const customer of crmCustomers) {
+    const key = makeCustomerKey(customer.name, customer.email);
+    const existing = merged.get(key);
+
+    if (existing) {
+      existing.source = existing.source === 'quickbooks' ? 'both' : existing.source;
+      if (!existing.email) existing.email = customer.email;
+      continue;
+    }
+
+    merged.set(key || customer.id, {
+      key: key || customer.id,
+      displayName: customer.name,
+      email: customer.email,
+      source: 'crm',
+    });
+  }
+
+  return Array.from(merged.values());
+}
+
 export default function CreateCustomerPage() {
   const { user, isLoading: authLoading } = useContext(UserContext);
   const navigate = useNavigate();
 
-  const [customers, setCustomers] = useState<QuickBooksCustomer[]>([]);
+  const [quickbooksCustomers, setQuickbooksCustomers] = useState<QuickBooksCustomer[]>([]);
+  const [crmCustomers, setCrmCustomers] = useState<InvoiceableCustomer[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -54,11 +116,15 @@ export default function CreateCustomerPage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await getQuickBooksCustomers();
-      setCustomers(data);
+      const [quickbooks, crm] = await Promise.all([
+        getQuickBooksCustomers(),
+        getInvoiceableCustomers(),
+      ]);
+      setQuickbooksCustomers(quickbooks);
+      setCrmCustomers(crm);
     } catch (err: any) {
       const errorMessage =
-        err.message || 'Failed to load customers from QuickBooks';
+        err.message || 'Failed to load customers from QuickBooks and CRM';
       setError(errorMessage);
       console.error('Error fetching customers:', err);
     } finally {
@@ -72,16 +138,19 @@ export default function CreateCustomerPage() {
     }
   }, [authLoading, user]);
 
+  const customers = useMemo(
+    () => mergeCustomers(quickbooksCustomers, crmCustomers),
+    [quickbooksCustomers, crmCustomers]
+  );
+
   const filteredCustomers = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return customers.filter((c) => {
-      const nameMatch = !q || (c.DisplayName?.toLowerCase() ?? '').includes(q);
-      const emailMatch =
-        !q ||
-        (c.PrimaryEmailAddr?.Address?.toLowerCase() ?? '').includes(q);
+      const nameMatch = !q || (c.displayName?.toLowerCase() ?? '').includes(q);
+      const emailMatch = !q || (c.email?.toLowerCase() ?? '').includes(q);
       if (!nameMatch && !emailMatch) return false;
-      if (statusFilter === 'active' && !c.Active) return false;
-      if (statusFilter === 'inactive' && c.Active !== false) return false;
+      if (statusFilter === 'active' && c.source !== 'crm' && !c.active) return false;
+      if (statusFilter === 'inactive' && c.source !== 'crm' && c.active !== false) return false;
       return true;
     });
   }, [customers, searchQuery, statusFilter]);
@@ -107,6 +176,19 @@ export default function CreateCustomerPage() {
   };
 
   const hasActiveFilters = searchQuery.trim() !== '' || statusFilter !== 'all';
+
+  const renderSourceLabel = (source: CustomerSource) => {
+    switch (source) {
+      case 'quickbooks':
+        return 'QuickBooks';
+      case 'crm':
+        return 'CRM only';
+      case 'both':
+        return 'CRM + QuickBooks';
+      default:
+        return '—';
+    }
+  };
 
   return (
     <div className='flex flex-col h-full min-h-0 overflow-hidden p-4'>
@@ -279,33 +361,53 @@ export default function CreateCustomerPage() {
                     <th className='px-4 py-3 text-left font-semibold'>Phone</th>
                     <th className='px-4 py-3 text-right font-semibold'>Balance</th>
                     <th className='px-4 py-3 text-left font-semibold'>Status</th>
+                    <th className='px-4 py-3 text-left font-semibold'>Source</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {paginatedCustomers.map((customer) => (
+              <tbody>
+                {paginatedCustomers.map((customer) => (
                   <tr
-                    key={customer.Id}
+                    key={customer.key}
                     className='border-b border-border/50 last:border-0 hover:bg-muted/30'
                   >
-                    <td className='px-4 py-3'>{customer.DisplayName}</td>
+                    <td className='px-4 py-3'>{customer.displayName}</td>
                     <td className='px-4 py-3 text-muted-foreground'>
-                      {customer.PrimaryEmailAddr?.Address || '—'}
+                      {customer.email || '—'}
                     </td>
                     <td className='px-4 py-3 text-muted-foreground'>
-                      {customer.PrimaryPhone?.FreeFormNumber || '—'}
+                      {customer.phone || '—'}
                     </td>
                     <td className='px-4 py-3 text-right'>
-                      {formatCurrency(customer.Balance)}
+                      {formatCurrency(customer.balance)}
+                    </td>
+                    <td className='px-4 py-3'>
+                      {customer.source === 'crm' ? (
+                        <span className='inline-flex rounded-md px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'>
+                          CRM only
+                        </span>
+                      ) : (
+                        <span
+                          className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${
+                            customer.active
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                              : 'bg-muted text-muted-foreground'
+                          }`}
+                        >
+                          {customer.active ? 'Active' : 'Inactive'}
+                        </span>
+                      )}
                     </td>
                     <td className='px-4 py-3'>
                       <span
                         className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${
-                          customer.Active
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                            : 'bg-muted text-muted-foreground'
+                          customer.source === 'both'
+                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
+                            : customer.source === 'quickbooks'
+                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
+                              : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
                         }`}
                       >
-                        {customer.Active ? 'Active' : 'Inactive'}
+                        {renderSourceLabel(customer.source)}
                       </span>
                     </td>
                   </tr>

@@ -39,9 +39,10 @@ interface DataTableProps {
   columns: ColumnDef<User>[];
   data: User[];
   clients?: any[];
+  viewMode?: 'leads' | 'customers';
 }
 
-export function UsersTable({ columns, data, clients }: DataTableProps) {
+export function UsersTable({ columns, data, clients, viewMode = 'leads' }: DataTableProps) {
   const { setCurrentRow, setOpen } = useUsers();
   const [rowSelection, setRowSelection] = useState({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -82,7 +83,7 @@ export function UsersTable({ columns, data, clients }: DataTableProps) {
 
   return (
     <div className='space-y-4'>
-      <DataTableToolbar table={table} clients={clients} />
+      <DataTableToolbar table={table} clients={clients} viewMode={viewMode} />
       <div className='rounded-md border'>
         <Table className='table-fixed w-full'>
           <TableHeader>

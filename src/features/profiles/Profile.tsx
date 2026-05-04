@@ -125,7 +125,12 @@ export default function Profile() {
     if (!clientId) return;
 
     try {
-      const result = await updateClientStatus(clientId, newStatus);
+      const result = await updateClientStatus(clientId, newStatus, {
+        id: clientId,
+        firstName: client?.firstName,
+        lastName: client?.lastName,
+        email: client?.email,
+      });
       if (result.success) {
         toast.success('Successfully updated client status');
       } else {

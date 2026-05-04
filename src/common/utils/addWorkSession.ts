@@ -3,9 +3,10 @@ export default async function addWorkSession(
   client_id: string | undefined,
   start_time: Date | undefined,
   end_time: Date | undefined,
-  note: string
+  note: string,
+  type: 'prenatal' | 'postpartum' | undefined
 ) {
-  if (!doula_id || !client_id || !start_time || !end_time) {
+  if (!doula_id || !client_id || !start_time || !end_time || !type) {
     return;
   }
 
@@ -25,6 +26,7 @@ export default async function addWorkSession(
             start_time: start_time,
             end_time: end_time,
             note: note,
+            type,
           }),
         }
       );

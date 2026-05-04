@@ -2,10 +2,11 @@ import {
   FileText,
   Home,
   Inbox,
+  Clock3,
   LucideChartColumnIncreasing,
-  LucideCircleDollarSign,
   LucideCreditCard,
   LucideLink,
+  MessagesSquare,
   LucideUsers,
   Search,
   User,
@@ -56,12 +57,6 @@ export const sidebarSections = [
       { title: 'Team', url: '/team', icon: LucideUsers, adminOnly: true },
       { title: 'Doulas', url: '/hours', icon: LucideUsers, adminOnly: true },
       {
-        title: 'My Dashboard',
-        url: '/doula-dashboard',
-        icon: LucideUsers,
-        doulaOnly: true,
-      },
-      {
         title: 'Payments',
         url: '/payments',
         icon: LucideCreditCard,
@@ -74,6 +69,41 @@ export const sidebarSections = [
         adminOnly: true,
       },
       { title: 'Invoices', url: '/invoices', icon: FileText, adminOnly: true },
+    ],
+  },
+  {
+    label: 'Doula Dashboard',
+    items: [
+      {
+        title: 'Profile',
+        url: '/doula-dashboard/profile',
+        icon: User,
+        doulaOnly: true,
+      },
+      {
+        title: 'Documents',
+        url: '/doula-dashboard/documents',
+        icon: FileText,
+        doulaOnly: true,
+      },
+      {
+        title: 'Clients',
+        url: '/doula-dashboard/clients',
+        icon: LucideUsers,
+        doulaOnly: true,
+      },
+      {
+        title: 'Hours',
+        url: '/doula-dashboard/hours',
+        icon: Clock3,
+        doulaOnly: true,
+      },
+      {
+        title: 'Activities',
+        url: '/doula-dashboard/activities',
+        icon: MessagesSquare,
+        doulaOnly: true,
+      },
     ],
   },
   {

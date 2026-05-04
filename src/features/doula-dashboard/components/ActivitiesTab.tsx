@@ -6,6 +6,7 @@ import { Input } from '@/common/components/ui/input';
 import { Label } from '@/common/components/ui/label';
 import { Textarea } from '@/common/components/ui/textarea';
 import { Badge } from '@/common/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/common/components/ui/alert';
 import {
   Dialog,
   DialogContent,
@@ -27,14 +28,32 @@ import {
   type AssignedClientDetailed,
 } from '@/api/doulas/doulaService';
 import { buildUrl, fetchWithAuth } from '@/api/http';
+import updateClient from '@/common/utils/updateClient';
 import { toast } from 'sonner';
-import { MessageSquare, Phone, Calendar, Mail, FileText, Plus, ArrowLeft, User, MapPin } from 'lucide-react';
+import { MessageSquare, Phone, Calendar, Mail, FileText, Plus, ArrowLeft, User, MapPin, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import React from 'react';
 
 interface ActivitiesTabProps {
   clientId: string | null;
   onBack: () => void;
 }
+
+const BIRTH_OUTCOMES_DELIVERY_TYPE_OPTIONS = [
+  'Vaginal (unmedicated)',
+  'Vaginal with pain medication/epidural',
+  'Assisted vaginal (vacuum/forceps)',
+  'Emergency Cesarean',
+  'Scheduled Cesarean',
+] as const;
+
+const BIRTH_OUTCOMES_MEDICATION_OPTIONS = [
+  'Pitocin',
+  'Narcotic IV',
+  'Epidural',
+  'Nitrous Oxide',
+  'Cytotec',
+] as const;
 
 const INTERNAL_METADATA_KEYS = new Set([
   'visibleToClient',
@@ -50,6 +69,14 @@ const INTERNAL_METADATA_KEYS = new Set([
 function displayMetadataEntries(metadata?: Record<string, any>) {
   if (!metadata) return [];
   return Object.entries(metadata).filter(([key]) => !INTERNAL_METADATA_KEYS.has(key));
+}
+
+function isBirthOutcomesStructuredActivity(activity: ClientActivity): boolean {
+  const meta = activity.metadata;
+  if (!meta || typeof meta !== 'object') return false;
+  const category = String((meta as any).category ?? '').toLowerCase().replace(/[_\s]+/g, '-').trim();
+  const field = String((meta as any).field ?? '');
+  return category === 'birth-outcomes' && field === 'birth_outcomes_structured';
 }
 
 function ActivityPortalToggle({
@@ -103,6 +130,17 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
   const [clientModalOpen, setClientModalOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [activitySearch, setActivitySearch] = useState('');
+  const [activityVisibilityFilter, setActivityVisibilityFilter] = useState<
+    'all' | 'staff' | 'client'
+  >('all');
+  const [activityTypeFilter, setActivityTypeFilter] = useState<
+    'all' | ActivityType
+  >('all');
+  const [collapsedActivityDates, setCollapsedActivityDates] = useState<Set<string>>(
+    new Set()
+  );
+  const [visibleActivityCount, setVisibleActivityCount] = useState(30);
   const [formData, setFormData] = useState({
     type: 'note' as ActivityType,
     description: '',
@@ -110,8 +148,16 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
     visibleToClient: false,
   });
   const [visibilityUpdatingId, setVisibilityUpdatingId] = useState<string | null>(null);
-  const [birthOutcomesDraft, setBirthOutcomesDraft] = useState('');
+  const [birthOutcomesInductionDraft, setBirthOutcomesInductionDraft] = useState<
+    boolean | undefined
+  >(undefined);
+  const [birthOutcomesDeliveryTypeDraft, setBirthOutcomesDeliveryTypeDraft] =
+    useState('');
+  const [birthOutcomesMedicationsUsedDraft, setBirthOutcomesMedicationsUsedDraft] =
+    useState<string[]>([]);
   const [isSavingBirthOutcomes, setIsSavingBirthOutcomes] = useState(false);
+  const [birthOutcomesLastSavedAt, setBirthOutcomesLastSavedAt] = useState<Date | null>(null);
+  const birthOutcomesSectionRef = React.useRef<HTMLDivElement | null>(null);
   const [authorNamesById, setAuthorNamesById] = useState<Record<string, string>>(
     {}
   );
@@ -166,10 +212,40 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
     return role ? `Added by ${name} (${role})` : `Added by ${name}`;
   };
 
-  const extractBirthOutcomes = (raw: unknown): string => {
+  const extractLegacyBirthOutcomes = (raw: unknown): string => {
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return '';
     const row = raw as Record<string, unknown>;
     return String(row.birthOutcomes ?? row.birth_outcomes ?? '').trim();
+  };
+
+  const extractBirthOutcomesInduction = (raw: unknown): boolean | undefined => {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+    const row = raw as Record<string, unknown>;
+    const v = row.birthOutcomesInduction ?? row.birth_outcomes_induction;
+    if (typeof v === 'boolean') return v;
+    if (typeof v === 'string') {
+      const n = v.trim().toLowerCase();
+      if (n === 'true') return true;
+      if (n === 'false') return false;
+    }
+    return undefined;
+  };
+
+  const extractBirthOutcomesDeliveryType = (raw: unknown): string => {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return '';
+    const row = raw as Record<string, unknown>;
+    return String(
+      row.birthOutcomesDeliveryType ?? row.birth_outcomes_delivery_type ?? ''
+    ).trim();
+  };
+
+  const extractBirthOutcomesMedicationsUsed = (raw: unknown): string[] => {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return [];
+    const row = raw as Record<string, unknown>;
+    const v =
+      row.birthOutcomesMedicationsUsed ?? row.birth_outcomes_medications_used;
+    if (!Array.isArray(v)) return [];
+    return v.map((item) => String(item)).filter(Boolean);
   };
 
   useEffect(() => {
@@ -311,7 +387,9 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
       const details = await getAssignedClientDetails(id, true);
       const typed = details as AssignedClientDetailed;
       setClientDetails(typed);
-      setBirthOutcomesDraft(extractBirthOutcomes(typed));
+      setBirthOutcomesInductionDraft(extractBirthOutcomesInduction(typed));
+      setBirthOutcomesDeliveryTypeDraft(extractBirthOutcomesDeliveryType(typed));
+      setBirthOutcomesMedicationsUsedDraft(extractBirthOutcomesMedicationsUsed(typed));
     } catch {
       // Keep activities usable even when details fetch fails.
     } finally {
@@ -360,7 +438,13 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
         if (details) {
           const typed = details as AssignedClientDetailed;
           setClientDetails(typed);
-          setBirthOutcomesDraft(extractBirthOutcomes(typed));
+          setBirthOutcomesInductionDraft(extractBirthOutcomesInduction(typed));
+          setBirthOutcomesDeliveryTypeDraft(
+            extractBirthOutcomesDeliveryType(typed)
+          );
+          setBirthOutcomesMedicationsUsedDraft(
+            extractBirthOutcomesMedicationsUsed(typed)
+          );
         }
         
         // Set activities
@@ -386,34 +470,69 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
 
   const handleSaveBirthOutcomes = async () => {
     if (!selectedClient?.id) return;
+
+    const missing: string[] = [];
+    if (birthOutcomesInductionDraft === undefined) missing.push('Induction (Yes/No)');
+    if (!birthOutcomesDeliveryTypeDraft.trim()) missing.push('Delivery type');
+    if (birthOutcomesMedicationsUsedDraft.length === 0) missing.push('Medications used');
+    if (missing.length > 0) {
+      toast.error(`Complete required fields: ${missing.join(', ')}`);
+      return;
+    }
+
     setIsSavingBirthOutcomes(true);
     try {
-      const response = await fetchWithAuth(
-        buildUrl(`/clients/${encodeURIComponent(selectedClient.id)}`),
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            birth_outcomes: birthOutcomesDraft.trim(),
-          }),
-        }
-      );
+      const result = await updateClient(selectedClient.id, {
+        birth_outcomes_induction: birthOutcomesInductionDraft,
+        birth_outcomes_delivery_type: birthOutcomesDeliveryTypeDraft.trim(),
+        birth_outcomes_medications_used: birthOutcomesMedicationsUsedDraft,
+      });
 
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => '');
-        throw new Error(errorText || `Failed to save birth outcomes (${response.status})`);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to save birth outcomes');
       }
 
       setClientDetails((prev) =>
         prev
           ? {
               ...prev,
-              birthOutcomes: birthOutcomesDraft.trim(),
+              birthOutcomesInduction: birthOutcomesInductionDraft,
+              birthOutcomesDeliveryType: birthOutcomesDeliveryTypeDraft.trim(),
+              birthOutcomesMedicationsUsed: birthOutcomesMedicationsUsedDraft,
             }
           : prev
       );
+
+      // Add a timestamped activity entry so saves are visible in the feed (staff-only).
+      try {
+        const description = [
+          `Induction: ${birthOutcomesInductionDraft ? 'Yes' : 'No'}`,
+          `Delivery type: ${birthOutcomesDeliveryTypeDraft.trim()}`,
+          `Medications used: ${birthOutcomesMedicationsUsedDraft.join(', ')}`,
+        ].join('\n');
+        await addClientActivity(selectedClient.id, {
+          type: 'note',
+          description,
+          metadata: {
+            category: 'birth-outcomes',
+            field: 'birth_outcomes_structured',
+          },
+          visibleToClient: false,
+        });
+      } catch (e: any) {
+        // Non-blocking: birth outcomes are saved even if activity creation fails.
+        console.warn('Birth outcomes saved but failed to create activity entry:', e?.message || e);
+      }
+
+      // Refresh activities so the new entry shows with date/time in the feed.
+      try {
+        const refreshed = await getClientActivities(selectedClient.id);
+        setActivities(Array.isArray(refreshed) ? refreshed : []);
+      } catch {
+        // Non-blocking.
+      }
+
+      setBirthOutcomesLastSavedAt(new Date());
       toast.success('Birth outcomes saved');
     } catch (error: any) {
       toast.error(error?.message || 'Failed to save birth outcomes');
@@ -535,6 +654,110 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
     }
     return acc;
   }, {} as Record<string, ClientActivity[]>);
+
+  const normalizedActivitiesSorted = activities
+    .slice()
+    .sort((a, b) => {
+      const ta = new Date(a.createdAt || 0).getTime();
+      const tb = new Date(b.createdAt || 0).getTime();
+      return (Number.isNaN(tb) ? 0 : tb) - (Number.isNaN(ta) ? 0 : ta);
+    });
+
+  const filteredActivities = normalizedActivitiesSorted.filter((a) => {
+    if (activityVisibilityFilter === 'client' && a.visibleToClient !== true) {
+      return false;
+    }
+    if (activityVisibilityFilter === 'staff' && a.visibleToClient === true) {
+      return false;
+    }
+    if (activityTypeFilter !== 'all' && a.type !== activityTypeFilter) {
+      return false;
+    }
+    const q = activitySearch.trim().toLowerCase();
+    if (!q) return true;
+    const hay = [
+      a.description,
+      a.type,
+      a.createdBy,
+      a.createdByRole,
+      ...(displayMetadataEntries(a.metadata).map(([k, v]) => `${k} ${String(v)}`)),
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+    return hay.includes(q);
+  });
+
+  const visibleActivities = filteredActivities.slice(0, visibleActivityCount);
+
+  const visibleActivitiesGrouped = visibleActivities.reduce((acc, activity) => {
+    let dateStr = 'Unknown Date';
+    try {
+      if (activity.createdAt) {
+        const dateObj = new Date(activity.createdAt);
+        if (!Number.isNaN(dateObj.getTime())) {
+          dateStr = format(dateObj, 'yyyy-MM-dd');
+        }
+      }
+    } catch {
+      // ignore
+    }
+    if (!acc[dateStr]) acc[dateStr] = [];
+    acc[dateStr].push(activity);
+    return acc;
+  }, {} as Record<string, ClientActivity[]>);
+
+  const visibleDateKeys = Object.keys(visibleActivitiesGrouped).sort((a, b) =>
+    b.localeCompare(a)
+  );
+
+  useEffect(() => {
+    // When switching clients or filters, expand the most recent date group by default.
+    if (visibleDateKeys.length === 0) return;
+    setCollapsedActivityDates((prev) => {
+      // If already configured, keep as-is.
+      if (prev.size > 0) return prev;
+      const next = new Set<string>();
+      visibleDateKeys.slice(1).forEach((k) => next.add(k));
+      return next;
+    });
+    // Reset pagination when filters change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedClient?.id]);
+
+  const birthOutcomesRecords = activities
+    .filter(isBirthOutcomesStructuredActivity)
+    .slice()
+    .sort((a, b) => {
+      const ta = new Date(a.createdAt || 0).getTime();
+      const tb = new Date(b.createdAt || 0).getTime();
+      return (Number.isNaN(tb) ? 0 : tb) - (Number.isNaN(ta) ? 0 : ta);
+    });
+
+  const birthOutcomesCompletion = React.useMemo(() => {
+    const induction =
+      clientDetails?.birthOutcomesInduction ?? birthOutcomesInductionDraft;
+    const deliveryType =
+      String(clientDetails?.birthOutcomesDeliveryType ?? birthOutcomesDeliveryTypeDraft ?? '').trim();
+    const meds =
+      Array.isArray(clientDetails?.birthOutcomesMedicationsUsed)
+        ? clientDetails?.birthOutcomesMedicationsUsed ?? []
+        : birthOutcomesMedicationsUsedDraft;
+
+    const missing: string[] = [];
+    if (induction === undefined) missing.push('Induction');
+    if (!deliveryType) missing.push('Delivery type');
+    if (!Array.isArray(meds) || meds.length === 0) missing.push('Medications used');
+
+    return { isComplete: missing.length === 0, missing };
+  }, [
+    clientDetails?.birthOutcomesInduction,
+    clientDetails?.birthOutcomesDeliveryType,
+    clientDetails?.birthOutcomesMedicationsUsed,
+    birthOutcomesInductionDraft,
+    birthOutcomesDeliveryTypeDraft,
+    birthOutcomesMedicationsUsedDraft,
+  ]);
 
   if (!selectedClient && !clientId) {
     return (
@@ -858,24 +1081,197 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
 
       {selectedClient && (
         <>
+          {!birthOutcomesCompletion.isComplete ? (
+            <Alert variant='destructive'>
+              <AlertCircle className='h-4 w-4' />
+              <div className='flex flex-col gap-2 md:flex-row md:items-center md:justify-between'>
+                <div>
+                  <AlertTitle>Birth Outcomes required</AlertTitle>
+                  <AlertDescription>
+                    This is mandatory for reporting. Please complete:{' '}
+                    <span className='font-medium'>
+                      {birthOutcomesCompletion.missing.join(', ')}
+                    </span>
+                    .
+                  </AlertDescription>
+                </div>
+                <div className='flex gap-2'>
+                  <Button
+                    type='button'
+                    variant='outline'
+                    size='sm'
+                    onClick={() => {
+                      birthOutcomesSectionRef.current?.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start',
+                      });
+                    }}
+                  >
+                    Complete now
+                  </Button>
+                </div>
+              </div>
+            </Alert>
+          ) : null}
+
           <Card>
             <CardContent className='py-5 space-y-3'>
+              <div ref={birthOutcomesSectionRef} />
               <div className='space-y-1'>
                 <h3 className='text-base font-semibold text-gray-900'>Birth Outcomes</h3>
                 <p className='text-sm text-muted-foreground'>
-                  Narrative summary of delivery type, complications, interventions, birthweight, and related outcomes.
+                  Structured birth outcomes for reporting. All fields are required.
                 </p>
               </div>
-              <Textarea
-                value={birthOutcomesDraft}
-                onChange={(e) => setBirthOutcomesDraft(e.target.value)}
-                rows={6}
-                placeholder='Add birth outcomes summary...'
-              />
+              <div className='rounded-lg border p-3 space-y-4'>
+                <div className='space-y-2'>
+                  <Label className='text-sm font-medium text-muted-foreground'>
+                    Induction <span className='text-destructive'>*</span>
+                  </Label>
+                  <div className='flex flex-wrap items-center gap-3'>
+                    <div className='flex items-center gap-2'>
+                      <input
+                        type='radio'
+                        id='bo-induction-yes'
+                        name='bo-induction'
+                        checked={birthOutcomesInductionDraft === true}
+                        onChange={() => setBirthOutcomesInductionDraft(true)}
+                      />
+                      <Label htmlFor='bo-induction-yes' className='text-sm font-normal'>
+                        Yes
+                      </Label>
+                    </div>
+                    <div className='flex items-center gap-2'>
+                      <input
+                        type='radio'
+                        id='bo-induction-no'
+                        name='bo-induction'
+                        checked={birthOutcomesInductionDraft === false}
+                        onChange={() => setBirthOutcomesInductionDraft(false)}
+                      />
+                      <Label htmlFor='bo-induction-no' className='text-sm font-normal'>
+                        No
+                      </Label>
+                    </div>
+                  </div>
+                </div>
+
+                <div className='space-y-2'>
+                  <Label className='text-sm font-medium text-muted-foreground'>
+                    Delivery type <span className='text-destructive'>*</span>
+                  </Label>
+                  <select
+                    className='w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
+                    value={birthOutcomesDeliveryTypeDraft}
+                    onChange={(e) => setBirthOutcomesDeliveryTypeDraft(e.target.value)}
+                  >
+                    <option value=''>Select...</option>
+                    {BIRTH_OUTCOMES_DELIVERY_TYPE_OPTIONS.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className='space-y-2'>
+                  <Label className='text-sm font-medium text-muted-foreground'>
+                    Medications used <span className='text-destructive'>*</span>
+                  </Label>
+                  <div className='grid gap-2 sm:grid-cols-2'>
+                    {BIRTH_OUTCOMES_MEDICATION_OPTIONS.map((opt) => {
+                      const checked = birthOutcomesMedicationsUsedDraft.includes(opt);
+                      return (
+                        <div key={opt} className='flex items-center gap-2'>
+                          <Checkbox
+                            id={`bo-med-${opt}`}
+                            checked={checked}
+                            onCheckedChange={() => {
+                              setBirthOutcomesMedicationsUsedDraft((prev) =>
+                                prev.includes(opt)
+                                  ? prev.filter((v) => v !== opt)
+                                  : [...prev, opt]
+                              );
+                            }}
+                          />
+                          <Label htmlFor={`bo-med-${opt}`} className='text-sm font-normal'>
+                            {opt}
+                          </Label>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {extractLegacyBirthOutcomes(clientDetails).trim() ? (
+                  <div className='space-y-2 pt-2 border-t'>
+                    <Label className='text-sm font-medium text-muted-foreground'>
+                      Legacy Birth Outcomes (read-only)
+                    </Label>
+                    <Textarea
+                      value={extractLegacyBirthOutcomes(clientDetails)}
+                      rows={4}
+                      readOnly
+                    />
+                  </div>
+                ) : null}
+              </div>
               <div className='flex justify-end'>
-                <Button onClick={handleSaveBirthOutcomes} disabled={isSavingBirthOutcomes}>
+                <div className='flex flex-col items-end gap-1'>
+                  {birthOutcomesLastSavedAt ? (
+                    <span className='text-xs text-muted-foreground'>
+                      Saved {format(birthOutcomesLastSavedAt, 'MMM dd, yyyy h:mm a')}
+                    </span>
+                  ) : null}
+                  <Button onClick={handleSaveBirthOutcomes} disabled={isSavingBirthOutcomes}>
                   {isSavingBirthOutcomes ? 'Saving...' : 'Save Birth Outcomes'}
-                </Button>
+                  </Button>
+                </div>
+              </div>
+
+              <div className='pt-3 border-t'>
+                <div className='flex items-center justify-between gap-2'>
+                  <h4 className='text-sm font-semibold text-gray-900'>Birth Outcomes Records</h4>
+                  <span className='text-xs text-muted-foreground'>
+                    {birthOutcomesRecords.length} record{birthOutcomesRecords.length === 1 ? '' : 's'}
+                  </span>
+                </div>
+                {birthOutcomesRecords.length === 0 ? (
+                  <p className='text-sm text-muted-foreground mt-2'>No saved birth outcomes records yet.</p>
+                ) : (
+                  <div className='mt-3 space-y-2'>
+                    {birthOutcomesRecords.slice(0, 3).map((record) => (
+                      <div key={record.id} className='rounded-lg border bg-background p-3 space-y-1'>
+                        <div className='flex flex-wrap items-center gap-2 text-xs text-muted-foreground'>
+                          <Badge variant='secondary' className='text-xs'>Staff only</Badge>
+                          <span>
+                            {(() => {
+                              try {
+                                const d = new Date(record.createdAt);
+                                return Number.isNaN(d.getTime())
+                                  ? ''
+                                  : format(d, 'MMM dd, yyyy h:mm a');
+                              } catch {
+                                return '';
+                              }
+                            })()}
+                          </span>
+                        </div>
+                        <p className='text-sm whitespace-pre-wrap text-gray-900'>{record.description}</p>
+                        {getActivityAuthorDisplay(record) ? (
+                          <p className='text-xs text-muted-foreground'>
+                            {getActivityAuthorDisplay(record)}
+                          </p>
+                        ) : null}
+                      </div>
+                    ))}
+                    {birthOutcomesRecords.length > 3 ? (
+                      <p className='text-xs text-muted-foreground'>
+                        Showing the latest 3 records. See the Activities list below for the full history.
+                      </p>
+                    ) : null}
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -898,93 +1294,213 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
               </CardContent>
             </Card>
           ) : (
-            <div className='space-y-6'>
-              {Object.entries(groupedActivities)
-                .sort(([a], [b]) => b.localeCompare(a))
-                .map(([date, dateActivities]) => (
-                  <div key={date}>
-                    <h3 className='text-sm font-semibold text-gray-700 mb-3'>
-                      {(() => {
-                        try {
-                          const dateObj = new Date(date);
-                          if (isNaN(dateObj.getTime())) return date;
-                          return format(dateObj, 'MMMM dd, yyyy');
-                        } catch {
-                          return date;
-                        }
-                      })()}
-                    </h3>
-                    <div className='space-y-3'>
-                      {dateActivities.map((activity) => (
-                        <Card key={activity.id}>
-                          <CardContent className='py-4'>
-                            <div className='flex items-start gap-3'>
-                              <div
-                                className={`p-2 rounded-lg ${getActivityBadgeColor(activity.type)}`}
-                              >
-                                {getActivityIcon(activity.type)}
-                              </div>
-                              <div className='flex-1 space-y-2'>
-                                <div className='flex flex-wrap items-center gap-2'>
-                                  <Badge
-                                    className={`text-xs ${getActivityBadgeColor(activity.type)}`}
-                                  >
-                                    {activity.type}
-                                  </Badge>
-                                  {activity.visibleToClient ? (
-                                    <Badge variant='outline' className='text-xs border-emerald-600 text-emerald-800'>
-                                      Visible to client
-                                    </Badge>
-                                  ) : (
-                                    <Badge variant='secondary' className='text-xs text-muted-foreground'>
-                                      Staff only
-                                    </Badge>
-                                  )}
-                                  <span className='text-xs text-gray-500'>
-                                    {(() => {
-                                      try {
-                                        if (!activity.createdAt) return '';
-                                        const dateObj = new Date(activity.createdAt);
-                                        if (isNaN(dateObj.getTime())) return '';
-                                        return format(dateObj, 'h:mm a');
-                                      } catch {
-                                        return '';
-                                      }
-                                    })()}
-                                  </span>
-                                </div>
-                                <p className='text-sm text-gray-900'>{activity.description}</p>
-                                {getActivityAuthorDisplay(activity) && (
-                                  <p className='text-xs text-muted-foreground'>
-                                    {getActivityAuthorDisplay(activity)}
-                                  </p>
-                                )}
-                                {displayMetadataEntries(activity.metadata).length > 0 && (
-                                  <div className='text-xs text-gray-600 space-y-1 pt-2 border-t'>
-                                    {displayMetadataEntries(activity.metadata).map(([key, value]) => (
-                                      <p key={key}>
-                                        <span className='font-medium'>{key}:</span> {String(value)}
-                                      </p>
-                                    ))}
-                                  </div>
-                                )}
-                                {selectedClient ? (
-                                  <ActivityPortalToggle
-                                    clientId={(selectedClient as AssignedClientLite).id}
-                                    activity={activity}
-                                    busy={visibilityUpdatingId === activity.id}
-                                    onToggle={handlePortalVisibilityToggle}
-                                  />
-                                ) : null}
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+            <Card>
+              <CardHeader className='pb-3'>
+                <div className='flex flex-col gap-3'>
+                  <div className='flex flex-wrap items-center justify-between gap-2'>
+                    <CardTitle className='text-base'>Activities</CardTitle>
+                    <div className='text-xs text-muted-foreground'>
+                      Showing {Math.min(visibleActivities.length, filteredActivities.length)} of{' '}
+                      {filteredActivities.length}
                     </div>
                   </div>
-                ))}
-            </div>
+
+                  <div className='grid gap-2 md:grid-cols-3'>
+                    <Input
+                      placeholder='Search notes, author, metadata...'
+                      value={activitySearch}
+                      onChange={(e) => {
+                        setActivitySearch(e.target.value);
+                        setVisibleActivityCount(30);
+                        setCollapsedActivityDates(new Set());
+                      }}
+                    />
+                    <select
+                      className='w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
+                      value={activityVisibilityFilter}
+                      onChange={(e) => {
+                        setActivityVisibilityFilter(e.target.value as any);
+                        setVisibleActivityCount(30);
+                        setCollapsedActivityDates(new Set());
+                      }}
+                    >
+                      <option value='all'>All visibility</option>
+                      <option value='staff'>Staff only</option>
+                      <option value='client'>Visible to client</option>
+                    </select>
+                    <select
+                      className='w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
+                      value={activityTypeFilter}
+                      onChange={(e) => {
+                        setActivityTypeFilter(e.target.value as any);
+                        setVisibleActivityCount(30);
+                        setCollapsedActivityDates(new Set());
+                      }}
+                    >
+                      <option value='all'>All types</option>
+                      <option value='note'>Note</option>
+                      <option value='call'>Call</option>
+                      <option value='visit'>Visit</option>
+                      <option value='email'>Email</option>
+                      <option value='other'>Other</option>
+                    </select>
+                  </div>
+
+                  <div className='flex flex-wrap items-center justify-between gap-2'>
+                    <div className='flex flex-wrap gap-2'>
+                      <Button
+                        type='button'
+                        variant='outline'
+                        size='sm'
+                        onClick={() => {
+                          if (visibleDateKeys.length === 0) return;
+                          setCollapsedActivityDates(new Set(visibleDateKeys));
+                        }}
+                      >
+                        Collapse all
+                      </Button>
+                      <Button
+                        type='button'
+                        variant='outline'
+                        size='sm'
+                        onClick={() => setCollapsedActivityDates(new Set())}
+                      >
+                        Expand all
+                      </Button>
+                    </div>
+                    {filteredActivities.length > visibleActivities.length ? (
+                      <Button
+                        type='button'
+                        variant='outline'
+                        size='sm'
+                        onClick={() => setVisibleActivityCount((n) => n + 30)}
+                      >
+                        Load more
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className='pt-0'>
+                {filteredActivities.length === 0 ? (
+                  <div className='py-8 text-center text-sm text-muted-foreground'>
+                    No activities match your filters.
+                  </div>
+                ) : (
+                  <div className='max-h-[70vh] overflow-y-auto pr-1 space-y-4'>
+                    {visibleDateKeys.map((date) => {
+                      const dateActivities = visibleActivitiesGrouped[date] ?? [];
+                      const isCollapsed = collapsedActivityDates.has(date);
+                      return (
+                        <div key={date}>
+                          <button
+                            type='button'
+                            className='sticky top-0 z-10 flex w-full items-center justify-between gap-2 rounded-md border bg-background px-3 py-2 text-left'
+                            onClick={() => {
+                              setCollapsedActivityDates((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(date)) next.delete(date);
+                                else next.add(date);
+                                return next;
+                              });
+                            }}
+                          >
+                            <span className='text-sm font-semibold text-gray-700'>
+                              {(() => {
+                                try {
+                                  const dateObj = new Date(date);
+                                  if (Number.isNaN(dateObj.getTime())) return date;
+                                  return format(dateObj, 'MMMM dd, yyyy');
+                                } catch {
+                                  return date;
+                                }
+                              })()}
+                            </span>
+                            <span className='text-xs text-muted-foreground'>
+                              {dateActivities.length} item{dateActivities.length === 1 ? '' : 's'}{' '}
+                              • {isCollapsed ? 'Show' : 'Hide'}
+                            </span>
+                          </button>
+
+                          {!isCollapsed ? (
+                            <div className='mt-3 space-y-3'>
+                              {dateActivities.map((activity) => (
+                                <Card key={activity.id}>
+                                  <CardContent className='py-4'>
+                                    <div className='flex items-start gap-3'>
+                                      <div
+                                        className={`p-2 rounded-lg ${getActivityBadgeColor(activity.type)}`}
+                                      >
+                                        {getActivityIcon(activity.type)}
+                                      </div>
+                                      <div className='flex-1 space-y-2'>
+                                        <div className='flex flex-wrap items-center gap-2'>
+                                          <Badge
+                                            className={`text-xs ${getActivityBadgeColor(activity.type)}`}
+                                          >
+                                            {activity.type}
+                                          </Badge>
+                                          {activity.visibleToClient ? (
+                                            <Badge variant='outline' className='text-xs border-emerald-600 text-emerald-800'>
+                                              Visible to client
+                                            </Badge>
+                                          ) : (
+                                            <Badge variant='secondary' className='text-xs text-muted-foreground'>
+                                              Staff only
+                                            </Badge>
+                                          )}
+                                          <span className='text-xs text-gray-500'>
+                                            {(() => {
+                                              try {
+                                                if (!activity.createdAt) return '';
+                                                const dateObj = new Date(activity.createdAt);
+                                                if (Number.isNaN(dateObj.getTime())) return '';
+                                                return format(dateObj, 'h:mm a');
+                                              } catch {
+                                                return '';
+                                              }
+                                            })()}
+                                          </span>
+                                        </div>
+                                        <p className='text-sm text-gray-900 whitespace-pre-wrap'>
+                                          {activity.description}
+                                        </p>
+                                        {getActivityAuthorDisplay(activity) && (
+                                          <p className='text-xs text-muted-foreground'>
+                                            {getActivityAuthorDisplay(activity)}
+                                          </p>
+                                        )}
+                                        {displayMetadataEntries(activity.metadata).length > 0 && (
+                                          <div className='text-xs text-gray-600 space-y-1 pt-2 border-t'>
+                                            {displayMetadataEntries(activity.metadata).map(([key, value]) => (
+                                              <p key={key}>
+                                                <span className='font-medium'>{key}:</span> {String(value)}
+                                              </p>
+                                            ))}
+                                          </div>
+                                        )}
+                                        {selectedClient ? (
+                                          <ActivityPortalToggle
+                                            clientId={(selectedClient as AssignedClientLite).id}
+                                            activity={activity}
+                                            busy={visibilityUpdatingId === activity.id}
+                                            onToggle={handlePortalVisibilityToggle}
+                                          />
+                                        ) : null}
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           )}
         </>
       )}

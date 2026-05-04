@@ -1,0 +1,51 @@
+.stepHeader {
+  width: 100%;
+  margin: 1rem 0 2rem 0;
+}
+
+.stepTitleContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.4rem;
+}
+
+.stepTitle {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #495057;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.stepProgress {
+  font-size: 0.875rem;
+  color: #666;
+  font-weight: 500;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .stepTitle {
+    font-size: 1.4rem;
+  }
+  
+  .stepProgress {
+    font-size: 0.8rem;
+  }
+  
+  .stepHeader {
+    margin-bottom: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .stepTitle {
+    font-size: 1.2rem;
+  }
+  
+  .stepHeader {
+    margin-bottom: 1.2rem;
+  }
+}

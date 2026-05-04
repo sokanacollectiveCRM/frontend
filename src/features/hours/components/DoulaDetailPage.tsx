@@ -17,6 +17,8 @@ import {
   ChevronLeft,
   Award,
   Briefcase,
+  AlertTriangle,
+  CheckCircle2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/common/components/ui/card';
 import { Button } from '@/common/components/ui/button';
@@ -36,6 +38,7 @@ import type {
   ActivityLog,
 } from '@/features/hours/types/doula';
 import { toast } from 'sonner';
+import { STATUS_LABELS } from '@/features/clients/data/schema';
 import { format } from 'date-fns';
 import { EditDoulaDialog } from './EditDoulaDialog';
 import { AdminDoulaDocumentsSection } from './AdminDoulaDocumentsSection';
@@ -110,6 +113,12 @@ export default function DoulaDetailPage() {
         specialties: null,
         certifications: null,
         bio: doulaMember.bio || null,
+        pronouns: doulaMember.pronouns ?? null,
+        race_ethnicity: Array.isArray(doulaMember.race_ethnicity) ? doulaMember.race_ethnicity : null,
+        race_ethnicity_other: doulaMember.race_ethnicity_other ?? null,
+        languages_other_than_english: Array.isArray(doulaMember.languages_other_than_english)
+          ? doulaMember.languages_other_than_english
+          : null,
         contract_status: 'not_sent',
         contract_signed_at: null,
         certifications_files: null,
@@ -122,17 +131,36 @@ export default function DoulaDetailPage() {
       try {
         const assignmentsRes = await fetchDoulaAssignments({ doulaId: id, limit: 200 });
         const assignments = assignmentsRes?.data ?? [];
-        const clients: AssignedClient[] = assignments.map((a: Record<string, unknown>) => ({
-          id: String(a.clientId ?? a.client_id ?? ''),
-          doula_id: String(a.doulaId ?? a.doula_id ?? id),
-          client_name: [a.clientFirstName, a.clientLastName].filter(Boolean).join(' ') ||
-            [a.client_first_name, a.client_last_name].filter(Boolean).join(' ') ||
-            '—',
-          due_date: String(a.assignedAt ?? a.assigned_at ?? '') || '—',
-          status: 'active',
-          last_note: undefined,
-          next_visit: undefined,
-        }));
+        const clients: AssignedClient[] = assignments.map((a: Record<string, unknown>) => {
+          const induction =
+            a.birthOutcomesInduction ?? a.birth_outcomes_induction ??
+            (a.client as any)?.birthOutcomesInduction ?? (a.client as any)?.birth_outcomes_induction;
+          const deliveryType = String(
+            a.birthOutcomesDeliveryType ?? a.birth_outcomes_delivery_type ??
+            (a.client as any)?.birthOutcomesDeliveryType ?? (a.client as any)?.birth_outcomes_delivery_type ?? ''
+          ).trim();
+          const medsRaw =
+            a.birthOutcomesMedicationsUsed ?? a.birth_outcomes_medications_used ??
+            (a.client as any)?.birthOutcomesMedicationsUsed ?? (a.client as any)?.birth_outcomes_medications_used;
+          const medicationsUsed = Array.isArray(medsRaw)
+            ? (medsRaw as unknown[]).map(String).filter(Boolean)
+            : undefined;
+
+          return {
+            id: String(a.clientId ?? a.client_id ?? ''),
+            doula_id: String(a.doulaId ?? a.doula_id ?? id),
+            client_name: [a.clientFirstName, a.clientLastName].filter(Boolean).join(' ') ||
+              [a.client_first_name, a.client_last_name].filter(Boolean).join(' ') ||
+              '—',
+            due_date: String(a.assignedAt ?? a.assigned_at ?? '') || '—',
+            status: 'active',
+            last_note: undefined,
+            next_visit: undefined,
+            birth_outcomes_induction: typeof induction === 'boolean' ? induction : undefined,
+            birth_outcomes_delivery_type: deliveryType || undefined,
+            birth_outcomes_medications_used: medicationsUsed,
+          };
+        });
         setAssignedClients(clients);
       } catch (err) {
         console.warn('Could not fetch assigned clients:', err);
@@ -150,8 +178,47 @@ export default function DoulaDetailPage() {
     }
   };
 
+  const getBirthOutcomesStatus = (
+    client: AssignedClient
+  ): 'complete' | 'incomplete' | 'not-recorded' => {
+    const hasInduction = typeof client.birth_outcomes_induction === 'boolean';
+    const hasDelivery = !!client.birth_outcomes_delivery_type?.trim();
+    const hasMeds =
+      Array.isArray(client.birth_outcomes_medications_used) &&
+      client.birth_outcomes_medications_used.length > 0;
+    if (!hasInduction && !hasDelivery && !hasMeds) return 'not-recorded';
+    if (hasInduction && hasDelivery && hasMeds) return 'complete';
+    return 'incomplete';
+  };
+
+  const getBirthOutcomesBadge = (client: AssignedClient) => {
+    const status = getBirthOutcomesStatus(client);
+    if (status === 'complete') {
+      return (
+        <Badge className='bg-green-100 text-green-700 border-green-200 flex items-center gap-1 w-fit'>
+          <CheckCircle2 className='h-3 w-3' />
+          Complete
+        </Badge>
+      );
+    }
+    if (status === 'incomplete') {
+      return (
+        <Badge className='bg-amber-100 text-amber-700 border-amber-200 flex items-center gap-1 w-fit'>
+          <AlertTriangle className='h-3 w-3' />
+          Incomplete
+        </Badge>
+      );
+    }
+    return (
+      <Badge className='bg-gray-100 text-gray-500 border-gray-200 w-fit'>
+        Not recorded
+      </Badge>
+    );
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
+      // Contract statuses
       case 'signed':
       case 'active':
         return (
@@ -177,6 +244,21 @@ export default function DoulaDetailPage() {
             Completed
           </Badge>
         );
+      
+      // Client statuses - use proper labels
+      case 'lead':
+      case 'contacted':
+      case 'matched':
+      case 'interviewing':
+      case 'follow up':
+      case 'contract':
+      case 'not hired':
+        return (
+          <Badge className='bg-gray-100 text-gray-700 border-gray-200'>
+            {STATUS_LABELS[status as keyof typeof STATUS_LABELS] || status}
+          </Badge>
+        );
+        
       default:
         return (
           <Badge className='bg-gray-100 text-gray-700 border-gray-200'>
@@ -425,6 +507,52 @@ export default function DoulaDetailPage() {
                 </CardContent>
               </Card>
 
+              {/* DEMOGRAPHICS (read-only) */}
+              {(doula.pronouns ||
+                (doula.race_ethnicity && doula.race_ethnicity.length > 0) ||
+                (doula.languages_other_than_english &&
+                  doula.languages_other_than_english.length > 0)) && (
+                <Card className='rounded-xl border border-gray-200 bg-white shadow-sm'>
+                  <CardHeader>
+                    <CardTitle className='text-lg font-semibold text-gray-800'>
+                      Demographics
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className='space-y-4'>
+                    {doula.pronouns && (
+                      <div>
+                        <p className='text-sm text-gray-500 mb-1'>Pronouns</p>
+                        <p className='text-gray-900'>{doula.pronouns}</p>
+                      </div>
+                    )}
+
+                    {doula.languages_other_than_english &&
+                      doula.languages_other_than_english.length > 0 && (
+                        <div>
+                          <p className='text-sm text-gray-500 mb-2'>
+                            Languages (other than English)
+                          </p>
+                          <p className='text-gray-900'>
+                            {doula.languages_other_than_english.join(', ')}
+                          </p>
+                        </div>
+                      )}
+
+                    {doula.race_ethnicity && doula.race_ethnicity.length > 0 && (
+                      <div>
+                        <p className='text-sm text-gray-500 mb-2'>Race / Ethnicity</p>
+                        <p className='text-gray-900'>
+                          {doula.race_ethnicity.join(', ')}
+                          {doula.race_ethnicity_other
+                            ? ` — ${doula.race_ethnicity_other}`
+                            : ''}
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
               {/* REQUIRED DOCUMENTS (Admin) */}
               <AdminDoulaDocumentsSection
                 doulaId={doula.id}
@@ -499,7 +627,29 @@ export default function DoulaDetailPage() {
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className='space-y-4'>
+                  {(() => {
+                    const needsAttention = assignedClients.filter(
+                      (c) => getBirthOutcomesStatus(c) !== 'complete'
+                    );
+                    if (assignedClients.length === 0 || needsAttention.length === 0) return null;
+                    return (
+                      <div className='flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3'>
+                        <AlertTriangle className='h-4 w-4 text-amber-600 mt-0.5 shrink-0' />
+                        <div>
+                          <p className='text-sm font-medium text-amber-800'>
+                            Birth Outcomes incomplete
+                          </p>
+                          <p className='text-xs text-amber-700 mt-0.5'>
+                            {needsAttention.length} of {assignedClients.length}{' '}
+                            client{needsAttention.length === 1 ? '' : 's'} still need{needsAttention.length === 1 ? 's' : ''} birth outcomes recorded.
+                            Ask this doula to complete them from their Activities tab.
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   {assignedClients.length > 0 ? (
                     <div className='overflow-x-auto'>
                       <table className='w-full'>
@@ -513,6 +663,9 @@ export default function DoulaDetailPage() {
                             </th>
                             <th className='text-left py-2 text-sm font-medium text-gray-700'>
                               Status
+                            </th>
+                            <th className='text-left py-2 text-sm font-medium text-gray-700'>
+                              Birth Outcomes
                             </th>
                             <th className='text-left py-2 text-sm font-medium text-gray-700'>
                               Last Note
@@ -538,6 +691,9 @@ export default function DoulaDetailPage() {
                               </td>
                               <td className='py-3'>
                                 {getStatusBadge(client.status)}
+                              </td>
+                              <td className='py-3'>
+                                {getBirthOutcomesBadge(client)}
                               </td>
                               <td className='py-3 text-sm text-gray-600 max-w-xs truncate'>
                                 {client.last_note || '—'}

@@ -158,6 +158,19 @@ export function compareClientDocumentsByUploadedAtDesc(
   return bTime - aTime;
 }
 
+/** Client-facing toast copy when the API returns infra / Supabase RLS errors from document uploads. */
+export function formatClientDocumentErrorMessage(raw: string): string {
+  const m = raw.toLowerCase();
+  if (
+    m.includes('row-level security') ||
+    m.includes('violates row-level security') ||
+    m.includes('ensure client documents bucket')
+  ) {
+    return 'Document upload is not available yet—file storage is still being set up. Please contact your care team for help.';
+  }
+  return raw;
+}
+
 export async function listClientDocuments(
   mode: RequestMode,
   clientId?: string

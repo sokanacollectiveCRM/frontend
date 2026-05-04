@@ -82,7 +82,6 @@ export function Step1Personal({
 
   return (
     <div>
-      <div className={styles['form-section-title']}>Client Details</div>
       <div className={styles['form-grid']}>
         {/* First Row */}
         <div className={styles['form-field']}>

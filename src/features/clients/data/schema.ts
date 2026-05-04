@@ -3,22 +3,24 @@ import { z } from 'zod';
 export const userStatusSchema = z.enum([
   'lead',
   'contacted',
-  'matching',
+  'matched',
   'interviewing',
   'follow up',
   'contract',
   'active',
   'complete',
   'not hired',
-  // Legacy value kept for compatibility with existing records.
+  // Legacy value kept for compatibility with existing records and converted leads.
   'customer',
+  // Legacy alias from prior UI wording.
+  'matching',
 ]);
 
 export type UserStatus = z.infer<typeof userStatusSchema>;
 export const USER_STATUSES: UserStatus[] = [
   'lead',
   'contacted',
-  'matching',
+  'matched',
   'interviewing',
   'follow up',
   'contract',
@@ -30,14 +32,15 @@ export const USER_STATUSES: UserStatus[] = [
 export const STATUS_LABELS: Record<UserStatus, string> = {
   lead: 'Lead',
   contacted: 'Contacted',
-  matching: 'Matching',
+  matched: 'Matched',
   interviewing: 'Interviewed',
   'follow up': 'Follow Up',
   contract: 'Contract',
   active: 'Active',
   complete: 'Complete',
   'not hired': 'Not Hired',
-  customer: 'Customer',
+  customer: 'Matched',
+  matching: 'Matched',
 };
 
 const serviceSchema = z.union([
@@ -95,6 +98,8 @@ const userSchema = z
       .optional(),
     health_history: z.string().optional(),
     allergies: z.string().optional(),
+    qbo_customer_id: z.string().optional().nullable(),
+    matched_at: z.string().optional().nullable(),
   })
   .transform((data) => ({
     id: data.id,
@@ -106,12 +111,19 @@ const userSchema = z
     serviceNeeded: data.serviceNeeded ?? data.service_needed,
     requestedAt: data.requestedAt || new Date(),
     updatedAt: data.updatedAt || new Date(),
-    status: data.status === 'customer' ? 'not hired' : data.status,
+    status:
+      data.status === 'matching'
+        ? 'matched'
+        : data.status === 'customer'
+          ? 'matched'
+          : data.status,
     uuid: data.uuid || '',
     text: data.text || '',
     zip_code: data.zip_code || '',
     health_history: data.health_history || '',
     allergies: data.allergies || '',
+    qbo_customer_id: data.qbo_customer_id ?? null,
+    matched_at: data.matched_at ?? null,
   }));
 
 export type User = z.infer<typeof userSchema>;
@@ -164,6 +176,11 @@ export type Client = User & {
   insurance_provider?: string;
   insurance_member_id?: string;
   policy_number?: string;
+  insurance_phone_number?: string;
+  has_secondary_insurance?: boolean;
+  secondary_insurance_provider?: string;
+  secondary_insurance_member_id?: string;
+  secondary_policy_number?: string;
   self_pay_card_info?: string;
   
   // Family
@@ -191,6 +208,9 @@ export type Client = User & {
   pregnancy_number?: number;
   health_notes?: string;
   birth_outcomes?: string;
+  birth_outcomes_induction?: boolean;
+  birth_outcomes_delivery_type?: string;
+  birth_outcomes_medications_used?: string[];
   
   // Past Pregnancies
   had_previous_pregnancies?: boolean;

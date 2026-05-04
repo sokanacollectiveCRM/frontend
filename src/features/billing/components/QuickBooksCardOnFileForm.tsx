@@ -46,7 +46,6 @@ export interface QuickBooksCardOnFileFormProps {
   className?: string;
   tokenEndpoint?: string;
   saveEndpoint?: string;
-  showTestCardButton?: boolean;
 }
 
 const DEFAULT_VALUES: FormValues = {
@@ -59,19 +58,6 @@ const DEFAULT_VALUES: FormValues = {
   billingCity: '',
   billingState: '',
   billingPostalCode: '',
-  billingCountry: 'US',
-};
-
-const TEST_CARD_VALUES: FormValues = {
-  cardholderName: 'Test Cardholder',
-  cardNumber: '4111111111111111',
-  expiration: '07/25',
-  cvc: '123',
-  billingAddress1: '123 Main St',
-  billingAddress2: 'Apt 4B',
-  billingCity: 'Boston',
-  billingState: 'MA',
-  billingPostalCode: '02118',
   billingCountry: 'US',
 };
 
@@ -194,7 +180,6 @@ export default function QuickBooksCardOnFileForm({
   className,
   tokenEndpoint = import.meta.env.VITE_QUICKBOOKS_PAYMENTS_TOKEN_ENDPOINT || '',
   saveEndpoint = import.meta.env.VITE_QUICKBOOKS_PAYMENTS_SAVE_ENDPOINT || '/api/quickbooks/payments/cards',
-  showTestCardButton = import.meta.env.DEV,
 }: QuickBooksCardOnFileFormProps) {
   const [values, setValues] = useState<FormValues>(() => makeInitialValues(initialDisplayMode));
   const [errors, setErrors] = useState<FormErrors>({});
@@ -257,13 +242,6 @@ export default function QuickBooksCardOnFileForm({
       setStatus('idle');
       setStatusMessage('Your card is securely stored for future billing use.');
     }
-  }
-
-  function applyTestCard() {
-    setValues({ ...TEST_CARD_VALUES });
-    setErrors({});
-    setStatus('idle');
-    setStatusMessage('Test card details are prefilled. Review them before saving.');
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -671,11 +649,6 @@ export default function QuickBooksCardOnFileForm({
               <div className='text-xs text-muted-foreground'>
                 Card values are cleared after each submit attempt. No raw payment data is stored in app state.
               </div>
-              {showTestCardButton ? (
-                <Button type='button' variant='outline' onClick={applyTestCard} disabled={isBusy}>
-                  Prefill test card
-                </Button>
-              ) : null}
             </div>
             <div className='flex gap-2 sm:justify-end'>
               {onCancel ? (

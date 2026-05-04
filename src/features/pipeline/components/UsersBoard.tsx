@@ -20,7 +20,7 @@ import { useMemo, useState } from 'react';
 
 type Props = {
   usersByStatus: Record<UserStatus, Client[]>;
-  onStatusChange: (userId: string, newStatus: UserStatus) => void;
+  onStatusChange: (userId: string, newStatus: UserStatus, user: Client) => void;
 };
 
 const dropAnimationConfig: DropAnimation = {
@@ -103,7 +103,7 @@ export function UsersBoard({ usersByStatus, onStatusChange }: Props) {
         if (active && over) {
           const userId = active.id.toString();
           const newStatus = over.id.toString() as UserStatus;
-          onStatusChange(userId, newStatus);
+          onStatusChange(userId, newStatus, activeUser as Client);
         }
 
         setActiveId(null);

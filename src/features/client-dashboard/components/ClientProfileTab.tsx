@@ -30,7 +30,6 @@ import { Badge } from '@/common/components/ui/badge';
 import { format, isValid, parseISO } from 'date-fns';
 import { Download, ExternalLink, FileImage, Loader2, MessageSquare, Trash2, Upload } from 'lucide-react';
 import { buildUrl, fetchWithAuth } from '@/api/http';
-import QuickBooksCardOnFileForm from '@/features/billing/components/QuickBooksCardOnFileForm';
 import {
   compareClientDocumentsByUploadedAtDesc,
   deleteClientDocument,
@@ -40,10 +39,19 @@ import {
   isInsuranceCardDocument,
   listClientDocuments,
   uploadInsuranceCard,
+  formatClientDocumentErrorMessage,
   type InsuranceCardSide,
   type ClientDocument,
 } from '@/api/clients/clientDocuments';
 import { normalizeZipCode } from '@/common/utils/zipCode';
+import {
+  isMedicaidMethod,
+  isSelfPayMethod as sharedIsSelfPayMethod,
+  requiresInsuranceDetails,
+  getPaymentMethodMessage,
+  derivePaymentAuthorizationStatus,
+} from '@/lib/paymentRules';
+import { getPaymentAuthorizationFormHref } from '@/lib/paymentAuthorizationForm';
 
 type ClientDashboardView = 'all' | 'profile' | 'billing';
 
@@ -81,13 +89,13 @@ function isBillingPaymentMethodOption(value: string): boolean {
 }
 
 function isSelfPayMethod(method: string): boolean {
-  const normalized = method.trim().toLowerCase();
-  return normalized === 'self-pay' || normalized === 'self pay' || normalized === 'selfpay';
+  return sharedIsSelfPayMethod(method);
 }
 
+/** Returns true when insurance-specific fields should be shown (not Medicaid, not Self-Pay). */
 function hasInsuranceBilling(method: string): boolean {
-  const normalized = method.trim();
-  return normalized.length > 0 && !isSelfPayMethod(normalized);
+  const trimmed = method.trim();
+  return trimmed.length > 0 && !isSelfPayMethod(trimmed) && !isMedicaidMethod(trimmed);
 }
 
 function isImageDocument(document: ClientDocument): boolean {
@@ -124,7 +132,6 @@ export function buildClientProfileUpdatePayload(formData: {
   city: string;
   state: string;
   zip_code: string | number | null | undefined;
-  bio: string;
 }) {
   return {
     firstname: formData.firstname,
@@ -135,7 +142,6 @@ export function buildClientProfileUpdatePayload(formData: {
     city: formData.city,
     state: formData.state,
     zip_code: normalizeZipCode(formData.zip_code),
-    bio: formData.bio,
   };
 }
 
@@ -183,7 +189,6 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
     city: '',
     state: '',
     zip_code: '',
-    bio: '',
   });
   const [billingPaymentMethodDisplay, setBillingPaymentMethodDisplay] = useState('');
   const [isBillingEditing, setIsBillingEditing] = useState(false);
@@ -207,7 +212,6 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
     city: '',
     state: '',
     zip_code: '',
-    bio: '',
     payment_method: '',
     insurance_provider: '',
     insurance_member_id: '',
@@ -421,7 +425,6 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
         city: profile?.city || '',
         state: profile?.state || '',
         zip_code: normalizeZipCode(profile?.zip_code ?? profile?.zipCode),
-        bio: profile?.bio || '',
         ...profileBillingState,
       });
       setProfileSnapshot({
@@ -432,7 +435,6 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
         city: profile?.city || '',
         state: profile?.state || '',
         zip_code: normalizeZipCode(profile?.zip_code ?? profile?.zipCode),
-        bio: profile?.bio || '',
       });
       setIsProfileEditing(false);
       setBillingPaymentMethodDisplay(profilePaymentMethod);
@@ -526,7 +528,6 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
             city: profile?.city || '',
             state: profile?.state || '',
             zip_code: normalizeZipCode(profile?.zip_code ?? profile?.zipCode),
-            bio: profile?.bio || '',
           }));
           setBillingPaymentMethodDisplay(loadedPaymentMethod);
           setBillingSnapshot(loadedBillingState);
@@ -547,7 +548,6 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
         city: '',
         state: '',
         zip_code: '',
-        bio: '',
         payment_method: '',
         insurance_provider: '',
         insurance_member_id: '',
@@ -575,7 +575,11 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
       const documents = await listClientDocuments('client-self');
       setClientDocuments(documents);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to load billing documents');
+      const message =
+        error instanceof Error
+          ? formatClientDocumentErrorMessage(error.message)
+          : 'Failed to load billing documents';
+      toast.error(message);
       setClientDocuments([]);
     } finally {
       setDocumentsLoading(false);
@@ -675,7 +679,6 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
                 city: formData.city,
                 state: formData.state,
                 zip_code: formData.zip_code,
-                bio: formData.bio,
               })
             ),
           }
@@ -707,7 +710,6 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
           city: formData.city,
           state: formData.state,
           zip_code: formData.zip_code,
-          bio: formData.bio,
         });
         setIsProfileEditing(false);
         return;
@@ -716,23 +718,25 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
       if (view === 'billing') {
         const selectedPaymentMethod = formData.payment_method.trim();
         const isSelfPay = isSelfPayMethod(selectedPaymentMethod);
+        const isMedicaid = isMedicaidMethod(selectedPaymentMethod);
+        const needsInsuranceDetails = !isMedicaid && !isSelfPay;
 
         if (!selectedPaymentMethod) {
           toast.error('Please select a payment method.');
           setIsSaving(false);
           return;
         }
-        if (!isSelfPay && !formData.insurance_provider.trim()) {
+        if (needsInsuranceDetails && !formData.insurance_provider.trim()) {
           toast.error('Please enter an insurance provider for insurance billing.');
           setIsSaving(false);
           return;
         }
-        if (!isSelfPay && !formData.insurance_member_id.trim()) {
+        if (needsInsuranceDetails && !formData.insurance_member_id.trim()) {
           toast.error('Please enter an insurance member ID for insurance billing.');
           setIsSaving(false);
           return;
         }
-        if (!isSelfPay && !formData.policy_number.trim()) {
+        if (needsInsuranceDetails && !formData.policy_number.trim()) {
           toast.error('Please enter a policy number for insurance billing.');
           setIsSaving(false);
           return;
@@ -754,7 +758,7 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
             return;
           }
         }
-        if (!isSelfPay && (!frontInsuranceCard || !backInsuranceCard)) {
+        if (needsInsuranceDetails && (!frontInsuranceCard || !backInsuranceCard)) {
           toast.error('Please upload both the front and back insurance cards before saving insurance billing.');
           setIsSaving(false);
           return;
@@ -762,15 +766,16 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
 
         const billingPayload = {
           payment_method: selectedPaymentMethod,
-          insurance_provider: isSelfPay ? '' : formData.insurance_provider,
-          insurance_member_id: isSelfPay ? '' : formData.insurance_member_id,
-          policy_number: isSelfPay ? '' : formData.policy_number,
-          insurance_phone_number: isSelfPay ? '' : formData.insurance_phone_number,
-          has_secondary_insurance: isSelfPay ? false : formData.has_secondary_insurance,
-          secondary_insurance_provider: isSelfPay ? '' : formData.secondary_insurance_provider,
-          secondary_insurance_member_id: isSelfPay ? '' : formData.secondary_insurance_member_id,
-          secondary_policy_number: isSelfPay ? '' : formData.secondary_policy_number,
-          insurance: isSelfPay ? '' : formData.insurance_provider,
+          payment_authorization_status: derivePaymentAuthorizationStatus(selectedPaymentMethod),
+          insurance_provider: needsInsuranceDetails ? formData.insurance_provider : '',
+          insurance_member_id: needsInsuranceDetails ? formData.insurance_member_id : '',
+          policy_number: needsInsuranceDetails ? formData.policy_number : '',
+          insurance_phone_number: needsInsuranceDetails ? formData.insurance_phone_number : '',
+          has_secondary_insurance: needsInsuranceDetails ? formData.has_secondary_insurance : false,
+          secondary_insurance_provider: needsInsuranceDetails ? formData.secondary_insurance_provider : '',
+          secondary_insurance_member_id: needsInsuranceDetails ? formData.secondary_insurance_member_id : '',
+          secondary_policy_number: needsInsuranceDetails ? formData.secondary_policy_number : '',
+          insurance: needsInsuranceDetails ? formData.insurance_provider : '',
         };
 
         const billingResponse = await fetchWithAuth(buildUrl('/api/clients/me/billing'), {
@@ -825,23 +830,25 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
 
       const selectedPaymentMethod = formData.payment_method.trim();
       const isSelfPay = isSelfPayMethod(selectedPaymentMethod);
+      const isMedicaid = isMedicaidMethod(selectedPaymentMethod);
+      const needsInsuranceDetails = !isMedicaid && !isSelfPay;
 
       if (!selectedPaymentMethod) {
         toast.error('Please select a payment method.');
         setIsSaving(false);
         return;
       }
-      if (!isSelfPay && !formData.insurance_provider.trim()) {
+      if (needsInsuranceDetails && !formData.insurance_provider.trim()) {
         toast.error('Please enter an insurance provider for insurance billing.');
         setIsSaving(false);
         return;
       }
-      if (!isSelfPay && !formData.insurance_member_id.trim()) {
+      if (needsInsuranceDetails && !formData.insurance_member_id.trim()) {
         toast.error('Please enter an insurance member ID for insurance billing.');
         setIsSaving(false);
         return;
       }
-      if (!isSelfPay && !formData.policy_number.trim()) {
+      if (needsInsuranceDetails && !formData.policy_number.trim()) {
         toast.error('Please enter a policy number for insurance billing.');
         setIsSaving(false);
         return;
@@ -863,7 +870,7 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
           return;
         }
       }
-      if (!isSelfPay && (!frontInsuranceCard || !backInsuranceCard)) {
+      if (needsInsuranceDetails && (!frontInsuranceCard || !backInsuranceCard)) {
         toast.error('Please upload both the front and back insurance cards before saving insurance billing.');
         setIsSaving(false);
         return;
@@ -888,11 +895,17 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
 
       const billingPayload = {
         payment_method: selectedPaymentMethod,
-        insurance_provider: isSelfPay ? '' : formData.insurance_provider,
-        insurance_member_id: isSelfPay ? '' : formData.insurance_member_id,
-        policy_number: isSelfPay ? '' : formData.policy_number,
+        payment_authorization_status: derivePaymentAuthorizationStatus(selectedPaymentMethod),
+        insurance_provider: needsInsuranceDetails ? formData.insurance_provider : '',
+        insurance_member_id: needsInsuranceDetails ? formData.insurance_member_id : '',
+        policy_number: needsInsuranceDetails ? formData.policy_number : '',
+        insurance_phone_number: needsInsuranceDetails ? formData.insurance_phone_number : '',
+        has_secondary_insurance: needsInsuranceDetails ? formData.has_secondary_insurance : false,
+        secondary_insurance_provider: needsInsuranceDetails ? formData.secondary_insurance_provider : '',
+        secondary_insurance_member_id: needsInsuranceDetails ? formData.secondary_insurance_member_id : '',
+        secondary_policy_number: needsInsuranceDetails ? formData.secondary_policy_number : '',
         // Keep legacy insurance field in sync where backend still uses it.
-        insurance: isSelfPay ? '' : formData.insurance_provider,
+        insurance: needsInsuranceDetails ? formData.insurance_provider : '',
       };
 
       const billingResponse = await fetchWithAuth(buildUrl('/api/clients/me/billing'), {
@@ -945,15 +958,15 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
       toast.success('Profile updated successfully');
       setBillingPaymentMethodDisplay(selectedPaymentMethod);
       setBillingSnapshot({
-        payment_method: isSelfPay ? 'Self-Pay' : selectedPaymentMethod,
-        insurance_provider: isSelfPay ? '' : formData.insurance_provider,
-        insurance_member_id: isSelfPay ? '' : formData.insurance_member_id,
-        policy_number: isSelfPay ? '' : formData.policy_number,
-        insurance_phone_number: isSelfPay ? '' : formData.insurance_phone_number,
-        has_secondary_insurance: isSelfPay ? false : formData.has_secondary_insurance,
-        secondary_insurance_provider: isSelfPay ? '' : formData.secondary_insurance_provider,
-        secondary_insurance_member_id: isSelfPay ? '' : formData.secondary_insurance_member_id,
-        secondary_policy_number: isSelfPay ? '' : formData.secondary_policy_number,
+        payment_method: selectedPaymentMethod,
+        insurance_provider: needsInsuranceDetails ? formData.insurance_provider : '',
+        insurance_member_id: needsInsuranceDetails ? formData.insurance_member_id : '',
+        policy_number: needsInsuranceDetails ? formData.policy_number : '',
+        insurance_phone_number: needsInsuranceDetails ? formData.insurance_phone_number : '',
+        has_secondary_insurance: needsInsuranceDetails ? formData.has_secondary_insurance : false,
+        secondary_insurance_provider: needsInsuranceDetails ? formData.secondary_insurance_provider : '',
+        secondary_insurance_member_id: needsInsuranceDetails ? formData.secondary_insurance_member_id : '',
+        secondary_policy_number: needsInsuranceDetails ? formData.secondary_policy_number : '',
       });
       setIsBillingEditing(false);
     } catch (error: any) {
@@ -970,10 +983,13 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
   const frontInsuranceCard = getInsuranceCardDocumentForSide(insuranceCardDocuments, 'front');
   const backInsuranceCard = getInsuranceCardDocumentForSide(insuranceCardDocuments, 'back');
   const isProfileFormDisabled = isSaving || !isProfileEditing;
-  const requiresInsuranceCard = !isSelfPayMethod(formData.payment_method);
+  /** Commercial / Private only: both card images required before save. */
+  const needsCommercialPrivateInsuranceCards =
+    requiresInsuranceDetails(formData.payment_method) &&
+    (!frontInsuranceCard || !backInsuranceCard);
   const isBillingFormDisabled = isSaving || !isBillingEditing;
   const isBillingSaveDisabled =
-    isSaving || (requiresInsuranceCard && (!frontInsuranceCard || !backInsuranceCard));
+    isSaving || !isBillingEditing || needsCommercialPrivateInsuranceCards;
 
   const handleStartProfileEdit = () => {
     setProfileSnapshot({
@@ -984,7 +1000,6 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
       city: formData.city,
       state: formData.state,
       zip_code: formData.zip_code,
-      bio: formData.bio,
     });
     setIsProfileEditing(true);
   };
@@ -999,7 +1014,6 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
       city: profileSnapshot.city,
       state: profileSnapshot.state,
       zip_code: profileSnapshot.zip_code,
-      bio: profileSnapshot.bio,
     }));
     setIsProfileEditing(false);
   };
@@ -1069,7 +1083,11 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
       toast.success(`Insurance card ${side} uploaded successfully`);
       await fetchClientDocuments();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : `Failed to upload insurance card ${side}`);
+      const message =
+        error instanceof Error
+          ? formatClientDocumentErrorMessage(error.message)
+          : `Failed to upload insurance card ${side}`;
+      toast.error(message);
     } finally {
       setUploadingInsuranceCardSide((current) => (current === side ? null : current));
     }
@@ -1088,9 +1106,11 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
       await fetchClientDocuments();
       toast.success('Insurance card deleted successfully');
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Failed to delete insurance card'
-      );
+      const message =
+        error instanceof Error
+          ? formatClientDocumentErrorMessage(error.message)
+          : 'Failed to delete insurance card';
+      toast.error(message);
     } finally {
       setDeletingInsuranceCardId(null);
     }
@@ -1104,7 +1124,11 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
         (await getClientDocumentUrl('client-self', documentItem.id));
       window.open(url, '_blank', 'noopener,noreferrer');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to open insurance card');
+      const message =
+        error instanceof Error
+          ? formatClientDocumentErrorMessage(error.message)
+          : 'Failed to open insurance card';
+      toast.error(message);
     } finally {
       setActiveDocumentId(null);
     }
@@ -1135,7 +1159,11 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
       document.body.removeChild(link);
       URL.revokeObjectURL(objectUrl);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to download insurance card');
+      const message =
+        error instanceof Error
+          ? formatClientDocumentErrorMessage(error.message)
+          : 'Failed to download insurance card';
+      toast.error(message);
     } finally {
       setActiveDocumentId(null);
     }
@@ -1538,97 +1566,44 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
               </div>
             </div>
 
-            {hasInsuranceBilling(formData.payment_method) ? (
-              <>
-                <div className='grid gap-3 lg:grid-cols-2'>
-                  {[
-                    {
-                      side: 'front' as const,
-                      label: 'Front of Card',
-                      document: frontInsuranceCard,
-                    },
-                    {
-                      side: 'back' as const,
-                      label: 'Back of Card',
-                      document: backInsuranceCard,
-                    },
-                  ].map((slot) => (
-                    <div key={slot.side} className='rounded-lg border border-dashed p-3 space-y-3'>
-                      <div className='flex flex-col gap-2 md:flex-row md:items-center md:justify-between'>
-                        <div className='space-y-0.5'>
-                          <p className='font-medium'>Insurance {slot.label.toLowerCase()} *</p>
-                          <p className='text-sm text-muted-foreground'>
-                            Upload the {slot.label.toLowerCase()} of the insurance card. Staff will
-                            be able to view and download it from your client profile.
-                          </p>
-                        </div>
-                        <div>
-                          <input
-                            id={`insurance-card-${slot.side}-upload`}
-                            type='file'
-                            accept='.jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf'
-                            className='hidden'
-                            onChange={(event) => void handleInsuranceCardSelected(slot.side, event)}
-                            disabled={
-                              isBillingFormDisabled ||
-                              uploadingInsuranceCardSide !== null ||
-                              Boolean(deletingInsuranceCardId)
-                            }
-                          />
-                          <Button
-                            type='button'
-                            onClick={() =>
-                              document.getElementById(`insurance-card-${slot.side}-upload`)?.click()
-                            }
-                            disabled={
-                              isBillingFormDisabled ||
-                              uploadingInsuranceCardSide !== null ||
-                              Boolean(deletingInsuranceCardId)
-                            }
-                          >
-                            <Upload className='mr-2 h-4 w-4' />
-                            {uploadingInsuranceCardSide === slot.side
-                              ? 'Uploading...'
-                              : slot.document
-                                ? `Upload Another ${slot.side === 'front' ? 'Front' : 'Back'} Card`
-                                : `Upload ${slot.side === 'front' ? 'Front' : 'Back'} Card`}
-                          </Button>
-                        </div>
-                      </div>
-
-                      {documentsLoading ? (
-                        <div className='flex items-center gap-2 text-sm text-muted-foreground'>
-                          <Loader2 className='h-4 w-4 animate-spin' />
-                          Loading uploaded documents...
-                        </div>
-                      ) : slot.document ? (
-                        renderInsuranceCardDocument(slot.document)
-                      ) : (
-                        <p className='text-sm text-muted-foreground'>
-                          No {slot.label.toLowerCase()} uploaded yet.
-                        </p>
-                      )}
-                    </div>
-                  ))}
+            {(() => {
+              const msg = getPaymentMethodMessage(formData.payment_method);
+              if (!msg) return null;
+              const colors =
+                msg.variant === 'success'
+                  ? 'bg-green-50 border-green-200 text-green-800'
+                  : 'bg-blue-50 border-blue-200 text-blue-800';
+              return (
+                <div className={`rounded-lg border px-4 py-3 text-sm ${colors}`}>
+                  {msg.text}
                 </div>
+              );
+            })()}
 
+            {!isBillingEditing ? (
+              <p className='text-sm text-muted-foreground'>
+                Click <span className='font-medium text-foreground'>Edit Billing</span> to change your
+                payment method or add insurance or Medicaid card photos.
+              </p>
+            ) : (
+              <div className='space-y-6'>
                 <div className='space-y-1.5'>
-                  <Label>Payment Method</Label>
+                  <Label>Payment method</Label>
                   <Select
                     value={formData.payment_method || undefined}
                     onValueChange={(value) => {
-                      const selfPaySelected = isSelfPayMethod(value);
+                      const clearInsurance = isSelfPayMethod(value) || isMedicaidMethod(value);
                       setFormData((prev) => ({
                         ...prev,
                         payment_method: value,
-                        insurance_provider: selfPaySelected ? '' : prev.insurance_provider,
-                        insurance_member_id: selfPaySelected ? '' : prev.insurance_member_id,
-                        policy_number: selfPaySelected ? '' : prev.policy_number,
-                        insurance_phone_number: selfPaySelected ? '' : prev.insurance_phone_number,
-                        has_secondary_insurance: selfPaySelected ? false : prev.has_secondary_insurance,
-                        secondary_insurance_provider: selfPaySelected ? '' : prev.secondary_insurance_provider,
-                        secondary_insurance_member_id: selfPaySelected ? '' : prev.secondary_insurance_member_id,
-                        secondary_policy_number: selfPaySelected ? '' : prev.secondary_policy_number,
+                        insurance_provider: clearInsurance ? '' : prev.insurance_provider,
+                        insurance_member_id: clearInsurance ? '' : prev.insurance_member_id,
+                        policy_number: clearInsurance ? '' : prev.policy_number,
+                        insurance_phone_number: clearInsurance ? '' : prev.insurance_phone_number,
+                        has_secondary_insurance: clearInsurance ? false : prev.has_secondary_insurance,
+                        secondary_insurance_provider: clearInsurance ? '' : prev.secondary_insurance_provider,
+                        secondary_insurance_member_id: clearInsurance ? '' : prev.secondary_insurance_member_id,
+                        secondary_policy_number: clearInsurance ? '' : prev.secondary_policy_number,
                       }));
                       setBillingPaymentMethodDisplay(value);
                     }}
@@ -1647,12 +1622,80 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
                   </Select>
                 </div>
 
-                {isSelfPayMethod(formData.payment_method) ? (
-                  <p className='text-sm text-muted-foreground'>
-                    Self-pay billing is supported without storing credit card details.
-                  </p>
-                ) : (
+                {hasInsuranceBilling(formData.payment_method) ? (
                   <>
+                    <div className='grid gap-3 lg:grid-cols-2'>
+                      {[
+                        {
+                          side: 'front' as const,
+                          label: 'Front of Card',
+                          document: frontInsuranceCard,
+                        },
+                        {
+                          side: 'back' as const,
+                          label: 'Back of Card',
+                          document: backInsuranceCard,
+                        },
+                      ].map((slot) => (
+                        <div key={slot.side} className='rounded-lg border border-dashed p-3 space-y-3'>
+                          <div className='flex flex-col gap-2 md:flex-row md:items-center md:justify-between'>
+                            <div className='space-y-0.5'>
+                              <p className='font-medium'>Insurance {slot.label.toLowerCase()} *</p>
+                              <p className='text-sm text-muted-foreground'>
+                                Upload the {slot.label.toLowerCase()} of the insurance card. Staff will
+                                be able to view and download it from your client profile.
+                              </p>
+                            </div>
+                            <div>
+                              <input
+                                id={`insurance-card-${slot.side}-upload`}
+                                type='file'
+                                accept='.jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf'
+                                className='hidden'
+                                onChange={(event) => void handleInsuranceCardSelected(slot.side, event)}
+                                disabled={
+                                  isBillingFormDisabled ||
+                                  uploadingInsuranceCardSide !== null ||
+                                  Boolean(deletingInsuranceCardId)
+                                }
+                              />
+                              <Button
+                                type='button'
+                                onClick={() =>
+                                  document.getElementById(`insurance-card-${slot.side}-upload`)?.click()
+                                }
+                                disabled={
+                                  isBillingFormDisabled ||
+                                  uploadingInsuranceCardSide !== null ||
+                                  Boolean(deletingInsuranceCardId)
+                                }
+                              >
+                                <Upload className='mr-2 h-4 w-4' />
+                                {uploadingInsuranceCardSide === slot.side
+                                  ? 'Uploading...'
+                                  : slot.document
+                                    ? `Upload Another ${slot.side === 'front' ? 'Front' : 'Back'} Card`
+                                    : `Upload ${slot.side === 'front' ? 'Front' : 'Back'} Card`}
+                              </Button>
+                            </div>
+                          </div>
+
+                          {documentsLoading ? (
+                            <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+                              <Loader2 className='h-4 w-4 animate-spin' />
+                              Loading uploaded documents...
+                            </div>
+                          ) : slot.document ? (
+                            renderInsuranceCardDocument(slot.document)
+                          ) : (
+                            <p className='text-sm text-muted-foreground'>
+                              No {slot.label.toLowerCase()} uploaded yet.
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
                     <div className='space-y-1.5'>
                       <Label htmlFor='insurance_provider'>Insurance Provider *</Label>
                       <Input
@@ -1778,57 +1821,150 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
                       ) : null}
                     </div>
                   </>
-                )}
+                ) : null}
+
+                {isMedicaidMethod(formData.payment_method) ? (
+                  <>
+                    <p className='text-sm text-muted-foreground'>
+                      Upload photos of your Medicaid ID card (front and back). This is your state or
+                      managed-care Medicaid card—not a credit card. Uploads are optional but help us
+                      verify your coverage.
+                    </p>
+                    <div className='grid gap-3 lg:grid-cols-2'>
+                      {[
+                        {
+                          side: 'front' as const,
+                          label: 'Front of Medicaid card',
+                          document: frontInsuranceCard,
+                        },
+                        {
+                          side: 'back' as const,
+                          label: 'Back of Medicaid card',
+                          document: backInsuranceCard,
+                        },
+                      ].map((slot) => (
+                        <div key={slot.side} className='rounded-lg border border-dashed p-3 space-y-3'>
+                          <div className='flex flex-col gap-2 md:flex-row md:items-center md:justify-between'>
+                            <div className='space-y-0.5'>
+                              <p className='font-medium'>{slot.label}</p>
+                              <p className='text-sm text-muted-foreground'>
+                                Staff can view and download this from your profile.
+                              </p>
+                            </div>
+                            <div>
+                              <input
+                                id={`medicaid-card-${slot.side}-upload`}
+                                type='file'
+                                accept='.jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf'
+                                className='hidden'
+                                onChange={(event) => void handleInsuranceCardSelected(slot.side, event)}
+                                disabled={
+                                  isBillingFormDisabled ||
+                                  uploadingInsuranceCardSide !== null ||
+                                  Boolean(deletingInsuranceCardId)
+                                }
+                              />
+                              <Button
+                                type='button'
+                                onClick={() =>
+                                  document.getElementById(`medicaid-card-${slot.side}-upload`)?.click()
+                                }
+                                disabled={
+                                  isBillingFormDisabled ||
+                                  uploadingInsuranceCardSide !== null ||
+                                  Boolean(deletingInsuranceCardId)
+                                }
+                              >
+                                <Upload className='mr-2 h-4 w-4' />
+                                {uploadingInsuranceCardSide === slot.side
+                                  ? 'Uploading...'
+                                  : slot.document
+                                    ? `Replace ${slot.side === 'front' ? 'Front' : 'Back'}`
+                                    : `Upload ${slot.side === 'front' ? 'Front' : 'Back'}`}
+                              </Button>
+                            </div>
+                          </div>
+
+                          {documentsLoading ? (
+                            <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+                              <Loader2 className='h-4 w-4 animate-spin' />
+                              Loading uploaded documents...
+                            </div>
+                          ) : slot.document ? (
+                            renderInsuranceCardDocument(slot.document)
+                          ) : (
+                            <p className='text-sm text-muted-foreground'>
+                              No {slot.side} photo uploaded yet.
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : null}
+
+                {isSelfPayMethod(formData.payment_method) ? (
+                  <p className='text-sm text-muted-foreground'>
+                    Self-pay billing is supported without storing credit card details in this portal.
+                  </p>
+                ) : null}
+
+                {!formData.payment_method.trim() ? (
+                  <p className='text-sm text-muted-foreground'>
+                    Choose a payment method above to configure the rest of your billing details.
+                  </p>
+                ) : null}
 
                 <div className='flex justify-end'>
                   <Button
                     type='submit'
-                    disabled={isBillingSaveDisabled || !isBillingEditing}
+                    disabled={isBillingSaveDisabled}
                     title={
-                      requiresInsuranceCard && (!frontInsuranceCard || !backInsuranceCard)
+                      needsCommercialPrivateInsuranceCards
                         ? 'Upload front and back insurance cards to enable saving'
                         : undefined
                     }
                   >
                     {isSaving
                       ? 'Saving...'
-                      : requiresInsuranceCard && (!frontInsuranceCard || !backInsuranceCard)
+                      : needsCommercialPrivateInsuranceCards
                         ? 'Upload Insurance Card'
                         : 'Save Billing Changes'}
                   </Button>
                 </div>
-              </>
-            ) : (
-              <p className='text-sm text-muted-foreground'>
-                Insurance details and card uploads appear here when an insurance-based payment
-                method is selected.
-              </p>
+              </div>
             )}
           </form>
         </CardContent>
       </Card>
       ) : null}
 
-      {view !== 'profile' ? (
-        <div className='mt-6'>
-          {effectiveClientId ? (
-            <QuickBooksCardOnFileForm
-              clientId={effectiveClientId}
-              initialDisplayMode='compact'
-            />
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>Card on File</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className='text-sm text-muted-foreground'>
-                  We could not load your client record yet. Please refresh and try again.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+      {view !== 'profile' && !isMedicaidMethod(formData.payment_method) ? (
+        <Card className='mt-6'>
+          <CardHeader>
+            <CardTitle>Payment authorization</CardTitle>
+          </CardHeader>
+          <CardContent className='space-y-4'>
+            <p className='text-sm text-muted-foreground'>
+              For plans that require a card or bank payment on file, we collect that through a{' '}
+              <span className='font-medium text-foreground'>payment authorization form</span>—not by
+              entering card numbers in this portal. Download the form below, complete it, and return
+              it to your care team as they instruct. When we have your authorization on file, your
+              status will show in billing.
+            </p>
+            <Button variant='outline' size='sm' className='w-fit' asChild>
+              <a
+                href={getPaymentAuthorizationFormHref()}
+                download
+                target='_blank'
+                rel='noopener noreferrer'
+              >
+                <Download className='mr-2 h-4 w-4' />
+                Download payment authorization form (PDF)
+              </a>
+            </Button>
+          </CardContent>
+        </Card>
       ) : null}
     </div>
   );

@@ -223,7 +223,7 @@ describe('useRequestForm', () => {
         services_interested: ['Labor Support'],
         service_support_details: 'Looking for support',
         service_needed: 'Labor Support',
-        payment_method: 'Medicaid',
+        payment_method: 'Commercial Insurance',
         annual_income: '',
         service_specifics: '',
         race_ethnicity: '',
@@ -301,6 +301,107 @@ describe('useRequestForm', () => {
   });
 
   describe('Form Validation', () => {
+    it('allows baby_name to be empty (optional field)', async () => {
+      const result = fullSchema.safeParse({
+        firstname: 'Jane',
+        lastname: 'Doe',
+        email: 'jane.doe@example.com',
+        phone_number: '555-123-4567',
+        pronouns: 'She/Her',
+        pronouns_other: '',
+        preferred_contact_method: 'Phone',
+        preferred_name: '',
+        address: '123 Main St',
+        city: 'Springfield',
+        state: 'IL',
+        zip_code: '62704',
+        referral_source: 'Google',
+        due_date: '2025-06-15',
+        birth_location: 'Hospital',
+        birth_hospital: 'Springfield General',
+        number_of_babies: 'Singleton',
+        baby_name: '',
+        provider_type: 'Midwife',
+        pregnancy_number: '1',
+        services_interested: ['Labor Support'],
+        service_support_details: 'Looking for support',
+        service_needed: 'Labor Support',
+        payment_method: 'Self-Pay',
+      });
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.baby_name).toBe('');
+      }
+    });
+
+    it('allows baby_name to be undefined (optional field)', () => {
+      const result = fullSchema.safeParse({
+        firstname: 'Jane',
+        lastname: 'Doe',
+        email: 'jane.doe@example.com',
+        phone_number: '555-123-4567',
+        pronouns: 'She/Her',
+        pronouns_other: '',
+        preferred_contact_method: 'Phone',
+        preferred_name: '',
+        address: '123 Main St',
+        city: 'Springfield',
+        state: 'IL',
+        zip_code: '62704',
+        referral_source: 'Google',
+        due_date: '2025-06-15',
+        birth_location: 'Hospital',
+        birth_hospital: 'Springfield General',
+        number_of_babies: 'Singleton',
+        provider_type: 'Midwife',
+        pregnancy_number: '1',
+        services_interested: ['Labor Support'],
+        service_support_details: 'Looking for support',
+        service_needed: 'Labor Support',
+        payment_method: 'Self-Pay',
+      });
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.baby_name).toBeUndefined();
+      }
+    });
+
+    it('saves baby_name when provided', () => {
+      const result = fullSchema.safeParse({
+        firstname: 'Jane',
+        lastname: 'Doe',
+        email: 'jane.doe@example.com',
+        phone_number: '555-123-4567',
+        pronouns: 'She/Her',
+        pronouns_other: '',
+        preferred_contact_method: 'Phone',
+        preferred_name: '',
+        address: '123 Main St',
+        city: 'Springfield',
+        state: 'IL',
+        zip_code: '62704',
+        referral_source: 'Google',
+        due_date: '2025-06-15',
+        birth_location: 'Hospital',
+        birth_hospital: 'Springfield General',
+        number_of_babies: 'Singleton',
+        baby_name: 'Lily',
+        provider_type: 'Midwife',
+        pregnancy_number: '1',
+        services_interested: ['Labor Support'],
+        service_support_details: 'Looking for support',
+        service_needed: 'Labor Support',
+        payment_method: 'Self-Pay',
+      });
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.baby_name).toBe('Lily');
+      }
+    });
+
     it('validates form fields correctly', async () => {
       const mockOnSubmit = vi.fn();
       const { result } = renderHook(() => useRequestForm(mockOnSubmit));

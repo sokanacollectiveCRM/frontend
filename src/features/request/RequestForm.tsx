@@ -17,6 +17,8 @@ import {
   Step9Payment,
 } from './Step3Home';
 import { RequestFormValues } from './useRequestForm';
+import { StepNavigation } from './components/StepNavigation';
+import { StepHeader } from './components/StepHeader';
 
 function RefreshWarningModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   if (!isOpen) return null;
@@ -191,50 +193,34 @@ function RequestFormContent() {
   return (
     <>
       <div className={styles.requestForm}>
-        {/* Progress Bar */}
-        <div
-          style={{
-            width: '100%',
-            height: 8,
-            background: '#e0e0e0',
-            borderRadius: 4,
-            margin: '24px 0 32px 0',
-            overflow: 'hidden',
-          }}
-        >
-          <div
-            style={{
-              width: `${progress}%`,
-              height: '100%',
-              background: '#00bcd4',
-              transition: 'width 0.3s cubic-bezier(.4,0,.2,1)',
-            }}
-          />
-        </div>
+        {/* Main Header Section */}
         <div
           style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            marginBottom: '2.5rem',
+            marginBottom: '1.5rem',
+            paddingBottom: '1rem',
+            borderBottom: '1px solid #e0e0e0',
           }}
         >
           <img
             src='/logo.jpeg'
             alt='Sokana Collective Logo'
             style={{
-              width: 180,
+              width: 140,
               height: 'auto',
-              margin: '0 auto 1.5rem auto',
+              margin: '0 auto 0.8rem auto',
               display: 'block',
             }}
           />
           <h1
             style={{
               fontWeight: 700,
-              fontSize: '2.2rem',
+              fontSize: '1.5rem',
               margin: 0,
               textAlign: 'center',
+              color: '#333',
             }}
           >
             Request for Service Form
@@ -242,10 +228,12 @@ function RequestFormContent() {
           <div
             style={{
               color: '#666',
-              fontSize: '1.15rem',
-              margin: '1.2rem 0 0 0',
+              fontSize: '0.9rem',
+              margin: '0.6rem 0 0 0',
               textAlign: 'center',
-              maxWidth: 700,
+              maxWidth: 500,
+              lineHeight: 1.4,
+              padding: '0 1rem',
             }}
           >
             Please complete this form as thoroughly as possible so we can match
@@ -255,19 +243,49 @@ function RequestFormContent() {
             type="button"
             onClick={fillTestData}
             style={{
-              marginTop: 12,
-              padding: '6px 12px',
-              fontSize: 13,
+              marginTop: 10,
+              padding: '5px 10px',
+              fontSize: 11,
               color: '#009688',
               background: 'transparent',
               border: '1px dashed #009688',
-              borderRadius: 6,
+              borderRadius: 4,
               cursor: 'pointer',
             }}
           >
             Fill with test data
           </button>
         </div>
+
+        {/* Combined Progress and Navigation Section */}
+        <div style={{ marginBottom: '1.5rem' }}>
+          {/* Progress Bar */}
+          <div
+            style={{
+              width: '100%',
+              height: 4,
+              background: '#e0e0e0',
+              borderRadius: 2,
+              margin: '0 0 1.5rem 0',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                width: `${progress}%`,
+                height: '100%',
+                background: '#00bcd4',
+                transition: 'width 0.3s cubic-bezier(.4,0,.2,1)',
+              }}
+            />
+          </div>
+          
+          {/* Step Navigation */}
+          <StepNavigation currentStep={step} isDesktop={false} />
+        </div>
+        
+        {/* Step Header */}
+        <StepHeader currentStep={step} totalSteps={totalSteps} />
         <Form {...form}>
           {step === 0 && (
             <Step8ServicesInterested

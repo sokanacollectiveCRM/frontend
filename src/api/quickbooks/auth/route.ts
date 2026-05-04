@@ -1,6 +1,6 @@
-const API_BASE = (
-  import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050'
-).replace(/\/$/, '');
+import { API_CONFIG } from '@/api/config';
+
+const API_BASE = API_CONFIG.baseUrl.replace(/\/$/, '');
 
 type QuickBooksAuthUrlResponse = {
   url?: string;

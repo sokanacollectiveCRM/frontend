@@ -20,6 +20,7 @@ interface RequestFormContextType {
   totalSteps: number;
   handleNextStep: () => Promise<boolean>;
   handleBack: () => void;
+  jumpToStep: (targetStep: number) => Promise<boolean>;
   isSubmitting: boolean;
   setIsSubmitting: (submitting: boolean) => void;
   submitted: boolean;
@@ -317,6 +318,43 @@ export function RequestFormProvider({
     if (step > 0) setStep(step - 1);
   };
 
+  const jumpToStep = async (targetStep: number): Promise<boolean> => {
+    if (targetStep < 0 || targetStep >= totalSteps) {
+      return false;
+    }
+
+    if (targetStep === step) {
+      return true;
+    }
+
+    // Always allow going back so users can review or fix earlier sections.
+    if (targetStep < step) {
+      setStep(targetStep);
+      return true;
+    }
+
+    // Jumping forward: validate each step up to (but not including) the target,
+    // same bar as advancing with "Next" (no skipping incomplete steps).
+    for (let i = 0; i < targetStep; i++) {
+      const ok = await form.trigger(stepFields[i], {
+        shouldFocus: i === step,
+      });
+      if (!ok) {
+        const firstErrorField = Object.keys(form.formState.errors)[0];
+        if (firstErrorField) {
+          const el = document.getElementById(firstErrorField);
+          if (el && typeof el.scrollIntoView === 'function') {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }
+        return false;
+      }
+    }
+
+    setStep(targetStep);
+    return true;
+  };
+
   const value: RequestFormContextType = {
     form,
     step,
@@ -324,6 +362,7 @@ export function RequestFormProvider({
     totalSteps,
     handleNextStep,
     handleBack,
+    jumpToStep,
     isSubmitting,
     setIsSubmitting,
     submitted,

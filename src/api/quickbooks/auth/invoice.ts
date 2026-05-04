@@ -1,7 +1,7 @@
+import { API_CONFIG } from '@/api/config';
 import { withTokenRefresh } from './utils';
 
-const API_BASE =
-  import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050';
+const API_BASE = API_CONFIG.baseUrl.replace(/\/$/, '');
 
 // QuickBooks API response type
 export interface QuickBooksInvoiceResponse {

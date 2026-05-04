@@ -1,6 +1,7 @@
 // API service functions for Doula Dashboard
 // Base URL: http://localhost:5050/api
 import { buildUrl, fetchWithAuth } from '@/api/http';
+import { normalizeHourType, type HourType } from '@/features/hours/data/hour-types';
 
 const API_BASE =
   (import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050') + '/api';
@@ -28,6 +29,11 @@ export interface DoulaProfile {
   gender?: string;
   pronouns?: string;
   race_ethnicity?: string[];
+  /**
+   * Languages spoken other than English.
+   * Stored as an array of strings for readability in exports/reports.
+   */
+  languages_other_than_english?: string[];
   race_ethnicity_other?: string;
   other_demographic_details?: string;
   created_at: string;
@@ -39,6 +45,7 @@ export async function getDoulaProfile(): Promise<DoulaProfile> {
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'include',
   });
 
   if (!response.ok) {
@@ -64,6 +71,7 @@ export interface UpdateProfileData {
   gender?: string;
   pronouns?: string;
   race_ethnicity?: string[];
+  languages_other_than_english?: string[];
   race_ethnicity_other?: string;
   other_demographic_details?: string;
 }
@@ -103,7 +111,6 @@ export async function uploadDoulaProfilePicture(file: File): Promise<DoulaProfil
 export async function updateDoulaProfile(
   data: UpdateProfileData
 ): Promise<DoulaProfile> {
-  
   // Log the payload being sent
   console.log('updateDoulaProfile - Sending payload:', JSON.stringify(data, null, 2));
   
@@ -440,6 +447,9 @@ export interface AssignedClientDetailed extends AssignedClientLite {
   allergies?: string;
   hospital?: string;
   birthOutcomes?: string;
+  birthOutcomesInduction?: boolean;
+  birthOutcomesDeliveryType?: string;
+  birthOutcomesMedicationsUsed?: string[];
   // ... more fields as needed
 }
 
@@ -531,6 +541,24 @@ export async function getAssignedClients(
           client.birth_outcomes ||
           client.birthOutcomes ||
           '',
+        birthOutcomesInduction:
+          client.user.birth_outcomes_induction ??
+          client.user.birthOutcomesInduction ??
+          client.birth_outcomes_induction ??
+          client.birthOutcomesInduction ??
+          undefined,
+        birthOutcomesDeliveryType:
+          client.user.birth_outcomes_delivery_type ||
+          client.user.birthOutcomesDeliveryType ||
+          client.birth_outcomes_delivery_type ||
+          client.birthOutcomesDeliveryType ||
+          '',
+        birthOutcomesMedicationsUsed:
+          client.user.birth_outcomes_medications_used ||
+          client.user.birthOutcomesMedicationsUsed ||
+          client.birth_outcomes_medications_used ||
+          client.birthOutcomesMedicationsUsed ||
+          [],
         serviceNeeded: client.serviceNeeded || client.user.service_needed || '',
       };
     }
@@ -551,6 +579,12 @@ export async function getAssignedClients(
       allergies: client.allergies || '',
       hospital: client.hospital || '',
       birthOutcomes: client.birthOutcomes || client.birth_outcomes || '',
+      birthOutcomesInduction:
+        client.birthOutcomesInduction ?? client.birth_outcomes_induction ?? undefined,
+      birthOutcomesDeliveryType:
+        client.birthOutcomesDeliveryType || client.birth_outcomes_delivery_type || '',
+      birthOutcomesMedicationsUsed:
+        client.birthOutcomesMedicationsUsed || client.birth_outcomes_medications_used || [],
       serviceNeeded: client.serviceNeeded || client.service_needed || '',
     };
   });
@@ -601,6 +635,17 @@ export async function getAssignedClientDetails(
     birthOutcomes: String(
       source?.birthOutcomes ?? source?.birth_outcomes ?? ''
     ),
+    birthOutcomesInduction:
+      source?.birthOutcomesInduction ?? source?.birth_outcomes_induction ?? undefined,
+    birthOutcomesDeliveryType: String(
+      source?.birthOutcomesDeliveryType ?? source?.birth_outcomes_delivery_type ?? ''
+    ),
+    birthOutcomesMedicationsUsed: Array.isArray(
+      source?.birthOutcomesMedicationsUsed ?? source?.birth_outcomes_medications_used
+    )
+      ? (source?.birthOutcomesMedicationsUsed ??
+          source?.birth_outcomes_medications_used) as string[]
+      : [],
   };
 }
 
@@ -618,6 +663,7 @@ export interface HoursEntry {
   startTime: string;
   endTime: string;
   hours: number;
+  type: HourType;
   note: string | null;
   createdAt: string;
 }
@@ -626,8 +672,11 @@ export interface LogHoursData {
   clientId: string;
   startTime: string; // ISO 8601 format
   endTime: string; // ISO 8601 format
+  type: Exclude<HourType, 'unknown'>;
   note?: string;
 }
+
+export interface UpdateHoursData extends Partial<LogHoursData> {}
 
 export async function logHours(data: LogHoursData): Promise<HoursEntry> {
   const response = await fetch(`${API_BASE}/doulas/hours`, {
@@ -641,6 +690,26 @@ export async function logHours(data: LogHoursData): Promise<HoursEntry> {
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Failed to log hours' }));
     throw new Error(error.error || 'Failed to log hours');
+  }
+
+  return response.json();
+}
+
+export async function updateHours(
+  hourId: string,
+  data: UpdateHoursData
+): Promise<HoursEntry> {
+  const response = await fetch(`${API_BASE}/doulas/hours/${hourId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to update hours' }));
+    throw new Error(error.error || 'Failed to update hours');
   }
 
   return response.json();
@@ -682,6 +751,7 @@ export async function getDoulaHours(): Promise<HoursEntry[]> {
   return hoursArray.map((entry) => {
     const startTime = entry.startTime || entry.start_time || '';
     const endTime = entry.endTime || entry.end_time || '';
+    const type = normalizeHourType(entry.type || entry.hour_type || entry.hourType);
     const start = startTime ? new Date(startTime) : null;
     const end = endTime ? new Date(endTime) : null;
     const computedHours =
@@ -699,6 +769,7 @@ export async function getDoulaHours(): Promise<HoursEntry[]> {
       startTime,
       endTime,
       hours: typeof entry.hours === 'number' ? entry.hours : computedHours,
+      type,
       note: entry.note || null,
       createdAt: entry.createdAt || entry.created_at || entry.startTime || entry.start_time || new Date().toISOString(),
     } as HoursEntry;

@@ -50,7 +50,6 @@ export function Step2Home({
 
   return (
     <div className={styles['step-2-home']}>
-      <div className={styles['form-section-title']}>Home Details</div>
       <div className={styles['form-grid']}>
         {/* Address - Full Width */}
         <div className={styles['form-field']}>

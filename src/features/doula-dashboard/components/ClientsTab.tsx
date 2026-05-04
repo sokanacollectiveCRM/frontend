@@ -11,6 +11,7 @@ import {
 import { toast } from 'sonner';
 import { Users, Mail, Phone, Calendar, Search, Eye } from 'lucide-react';
 import { format } from 'date-fns';
+import { STATUS_LABELS } from '@/features/clients/data/schema';
 
 interface ClientsTabProps {
   onClientSelect?: (clientId: string) => void;
@@ -158,7 +159,7 @@ export default function ClientsTab({ onClientSelect }: ClientsTabProps) {
                         {client.firstname || 'No'} {client.lastname || 'Name'}
                       </CardTitle>
                       <Badge className={`mt-2 ${getStatusBadgeColor(client.status || 'matching')}`}>
-                        {client.status || 'matching'}
+                        {STATUS_LABELS[client.status as keyof typeof STATUS_LABELS] || client.status || 'matching'}
                       </Badge>
                     </div>
                   </div>

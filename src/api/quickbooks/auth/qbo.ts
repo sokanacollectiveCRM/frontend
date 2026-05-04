@@ -1,5 +1,6 @@
-const API_BASE =
- import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050';
+import { API_CONFIG } from '@/api/config';
+
+const API_BASE = API_CONFIG.baseUrl.replace(/\/$/, '');
 
 /**
  * Check QuickBooks connection status using the global token.

@@ -1,5 +1,10 @@
+import { Badge } from '@/common/components/ui/badge';
 import LongText from '@/common/components/ui/long-text';
 import { HoursRows } from '@/features/hours/context/clients-context';
+import {
+  getHourTypeBadgeClass,
+  getHourTypeLabel,
+} from '@/features/hours/data/hour-types';
 import { cn } from '@/lib/utils';
 import { ColumnDef } from '@tanstack/react-table';
 import { DataTableColumnHeader } from './data-table-column-header';
@@ -55,6 +60,35 @@ export const columns: ColumnDef<HoursRows>[] = [
         {row.getValue('end_time')}
       </div>
     ),
+  },
+  {
+    accessorKey: 'type',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Hour Type' />
+    ),
+    cell: ({ row }) => {
+      const type = row.getValue('type') as string;
+      const normalizedType =
+        type === 'prenatal' || type === 'postpartum' ? type : 'unknown';
+
+      return (
+        <Badge
+          className={cn(
+            'capitalize',
+            getHourTypeBadgeClass(normalizedType as 'prenatal' | 'postpartum' | 'unknown')
+          )}
+        >
+          {getHourTypeLabel(
+            normalizedType as 'prenatal' | 'postpartum' | 'unknown'
+          )}
+        </Badge>
+      );
+    },
+    filterFn: (row, columnId, filterValue) => {
+      if (!filterValue) return true;
+      return row.getValue(columnId) === filterValue;
+    },
+    enableSorting: true,
   },
   {
     accessorKey: 'duration',

@@ -1,8 +1,8 @@
 // src/api/quickbooks/auth/customer.ts
+import { API_CONFIG } from '@/api/config';
 import { withTokenRefresh } from './utils';
 
-const API_BASE =
-  import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050';
+const API_BASE = API_CONFIG.baseUrl.replace(/\/$/, '');
 
 export interface CreateCustomerParams {
   internalCustomerId: string;

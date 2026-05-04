@@ -13,6 +13,8 @@ import {
   Step9Payment,
 } from './Step3Home';
 import { useRequestFormContext } from './contexts/RequestFormContext';
+import { StepNavigation } from './components/StepNavigation';
+import { StepHeader } from './components/StepHeader';
 
 export default function RequestFormDesktop() {
   const {
@@ -137,50 +139,34 @@ export default function RequestFormDesktop() {
 
   return (
     <div className={styles.requestForm}>
-      {/* Progress Bar */}
-      <div
-        style={{
-          width: '100%',
-          height: 8,
-          background: '#e0e0e0',
-          borderRadius: 4,
-          margin: '24px 0 32px 0',
-          overflow: 'hidden',
-        }}
-      >
-        <div
-          style={{
-            width: `${progress}%`,
-            height: '100%',
-            background: '#00bcd4',
-            transition: 'width 0.3s cubic-bezier(.4,0,.2,1)',
-          }}
-        />
-      </div>
+      {/* Main Header Section */}
       <div
         style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          marginBottom: '2.5rem',
+          marginBottom: '2rem',
+          paddingBottom: '1.5rem',
+          borderBottom: '1px solid #e0e0e0',
         }}
       >
         <img
           src='/logo.jpeg'
           alt='Sokana Collective Logo'
           style={{
-            width: 180,
+            width: 160,
             height: 'auto',
-            margin: '0 auto 1.5rem auto',
+            margin: '0 auto 1rem auto',
             display: 'block',
           }}
         />
         <h1
           style={{
             fontWeight: 700,
-            fontSize: '2.2rem',
+            fontSize: '1.8rem',
             margin: 0,
             textAlign: 'center',
+            color: '#333',
           }}
         >
           Request for Service Form
@@ -188,10 +174,11 @@ export default function RequestFormDesktop() {
         <div
           style={{
             color: '#666',
-            fontSize: '1.15rem',
-            margin: '1.2rem 0 0 0',
+            fontSize: '1rem',
+            margin: '0.8rem 0 0 0',
             textAlign: 'center',
-            maxWidth: 700,
+            maxWidth: 600,
+            lineHeight: 1.5,
           }}
         >
           Please complete this form as thoroughly as possible so we can match
@@ -203,17 +190,47 @@ export default function RequestFormDesktop() {
           style={{
             marginTop: 12,
             padding: '6px 12px',
-            fontSize: 13,
+            fontSize: 12,
             color: '#009688',
             background: 'transparent',
             border: '1px dashed #009688',
-            borderRadius: 6,
+            borderRadius: 4,
             cursor: 'pointer',
           }}
         >
           Fill with test data
         </button>
       </div>
+
+      {/* Combined Progress and Navigation Section */}
+      <div style={{ marginBottom: '2rem' }}>
+        {/* Progress Bar */}
+        <div
+          style={{
+            width: '100%',
+            height: 4,
+            background: '#e0e0e0',
+            borderRadius: 2,
+            margin: '0 0 2rem 0',
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
+              width: `${progress}%`,
+              height: '100%',
+              background: '#00bcd4',
+              transition: 'width 0.3s cubic-bezier(.4,0,.2,1)',
+            }}
+          />
+        </div>
+        
+        {/* Step Navigation */}
+        <StepNavigation currentStep={step} isDesktop={true} />
+      </div>
+      
+      {/* Step Header */}
+      <StepHeader currentStep={step} totalSteps={totalSteps} showProgressText={false} />
       <Form {...form}>
         {step === 0 && (
           <Step8ServicesInterested

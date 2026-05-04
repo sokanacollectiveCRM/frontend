@@ -31,7 +31,6 @@ export function Step4Service({
         handleNextStep();
       }}
     >
-      <div className={styles['form-section-title']}>Income & Service Info</div>
       <FormField
         control={control}
         name='annual_income'

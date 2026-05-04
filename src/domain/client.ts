@@ -6,7 +6,7 @@
 export type ClientStatus =
   | 'lead'
   | 'contacted'
-  | 'matching'
+  | 'matched'
   | 'interviewing'
   | 'follow up'
   | 'contract'
@@ -17,7 +17,7 @@ export type ClientStatus =
 export const CLIENT_STATUSES: ClientStatus[] = [
   'lead',
   'contacted',
-  'matching',
+  'matched',
   'interviewing',
   'follow up',
   'contract',
@@ -29,7 +29,7 @@ export const CLIENT_STATUSES: ClientStatus[] = [
 export const CLIENT_STATUS_LABELS: Record<ClientStatus, string> = {
   lead: 'Lead',
   contacted: 'Contacted',
-  matching: 'Matching',
+  matched: 'Matched',
   interviewing: 'Interviewed',
   'follow up': 'Follow Up',
   contract: 'Contract',
@@ -95,6 +95,12 @@ export interface ClientDetail {
   healthNotes?: string;
   /** Doula narrative: delivery type, complications, interventions, birth weight, etc. */
   birthOutcomes?: string;
+  /** Structured birth outcomes: was labor induced? */
+  birthOutcomesInduction?: boolean;
+  /** Structured delivery type (reportable enum). */
+  birthOutcomesDeliveryType?: string;
+  /** Structured medications used during birth (reportable multi-select). */
+  birthOutcomesMedicationsUsed?: string[];
   allergies?: string;
   medications?: string;
   dateOfBirth?: string;
@@ -112,6 +118,15 @@ export interface ClientDetail {
   annualIncome?: string;
   insurance?: string;
   paymentMethod?: string;
+  /**
+   * Derived authorization status for payment collection.
+   * - not_required: Medicaid clients (no card needed)
+   * - required: Insurance / Self-Pay clients who have not yet added a card
+   * - on_file: Insurance / Self-Pay clients with a tokenized card on file
+   * - failed: Authorization was attempted but failed
+   */
+  paymentAuthorizationStatus?: string;
+  authorizedAt?: string;
   insuranceProvider?: string;
   insuranceMemberId?: string;
   policyNumber?: string;

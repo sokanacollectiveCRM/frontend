@@ -5,6 +5,7 @@ import { Input } from '@/common/components/ui/input';
 import { Label } from '@/common/components/ui/label';
 import { Textarea } from '@/common/components/ui/textarea';
 import { Checkbox } from '@/common/components/ui/checkbox';
+import { Badge } from '@/common/components/ui/badge';
 import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
 import {
   getDoulaProfile,
@@ -15,7 +16,7 @@ import {
 } from '@/api/doulas/doulaService';
 import { toast } from 'sonner';
 import UserAvatar from '@/common/components/user/UserAvatar';
-import { Camera } from 'lucide-react';
+import { Camera, X } from 'lucide-react';
 import {
   ANOTHER_RACE_ETHNICITY,
   DOULA_RACE_ETHNICITY_OPTIONS,
@@ -24,11 +25,7 @@ import {
   RACE_ETHNICITY_FIELD_LABEL,
   toggleRaceEthnicitySelection,
 } from '../doulaDemographics';
-
-interface ProfileCompletionStatus {
-  isComplete: boolean;
-  missingFields: string[];
-}
+import type { ProfileCompletionStatus } from '../doulaDashboardTypes';
 
 interface ProfileTabProps {
   onProfileStatusChange?: (status: ProfileCompletionStatus) => void;
@@ -45,6 +42,7 @@ const REQUIRED_TEXT_FIELDS = [
   'country',
   'zip_code',
   'bio',
+  'pronouns',
 ] as const satisfies ReadonlyArray<keyof UpdateProfileData>;
 
 type RequiredTextField = (typeof REQUIRED_TEXT_FIELDS)[number];
@@ -58,6 +56,7 @@ const FIELD_LABELS: Record<RequiredTextField, string> = {
   country: 'Country',
   zip_code: 'Zip Code',
   bio: 'Bio',
+  pronouns: 'Pronouns',
 };
 
 function profileToFormData(profile: DoulaProfile): UpdateProfileData {
@@ -78,6 +77,11 @@ function profileToFormData(profile: DoulaProfile): UpdateProfileData {
     gender: profile.gender || '',
     pronouns: profile.pronouns || '',
     race_ethnicity: normalizeRaceEthnicityFromApi(profile.race_ethnicity),
+    languages_other_than_english: Array.isArray(profile.languages_other_than_english)
+      ? profile.languages_other_than_english.filter(
+          (l): l is string => typeof l === 'string' && l.trim().length > 0
+        )
+      : [],
     race_ethnicity_other: profile.race_ethnicity_other || '',
     other_demographic_details: profile.other_demographic_details || '',
   };
@@ -87,6 +91,12 @@ const getMissingRequiredFields = (data: UpdateProfileData): string[] => {
   const missing = REQUIRED_TEXT_FIELDS.filter((field) => !String(data[field] ?? '').trim()).map(
     (field) => FIELD_LABELS[field]
   );
+  const langs = Array.isArray(data.languages_other_than_english)
+    ? data.languages_other_than_english.filter((l) => String(l).trim().length > 0)
+    : [];
+  if (langs.length === 0) {
+    missing.push('Languages spoken (other than English)');
+  }
   if (!isDoulaRaceEthnicityComplete(data.race_ethnicity, data.race_ethnicity_other)) {
     if (!Array.isArray(data.race_ethnicity) || data.race_ethnicity.length === 0) {
       missing.push(RACE_ETHNICITY_FIELD_LABEL);
@@ -102,6 +112,7 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
   const [isLoading, setIsLoading] = useState(!cachedProfile);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingPicture, setIsUploadingPicture] = useState(false);
+  const [languageDraft, setLanguageDraft] = useState('');
   const [formData, setFormData] = useState<UpdateProfileData>({
     firstname: '',
     lastname: '',
@@ -114,6 +125,7 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
     gender: '',
     pronouns: '',
     race_ethnicity: [],
+    languages_other_than_english: [],
     race_ethnicity_other: '',
     other_demographic_details: '',
   });
@@ -188,6 +200,34 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const addLanguage = (raw: string) => {
+    const next = raw.trim();
+    if (!next) return;
+    setFormData((prev) => {
+      const current = Array.isArray(prev.languages_other_than_english)
+        ? prev.languages_other_than_english
+        : [];
+      const exists = current.some((l) => l.trim().toLowerCase() === next.toLowerCase());
+      if (exists) return prev;
+      return {
+        ...prev,
+        languages_other_than_english: [...current, next],
+      };
+    });
+  };
+
+  const removeLanguage = (language: string) => {
+    setFormData((prev) => {
+      const current = Array.isArray(prev.languages_other_than_english)
+        ? prev.languages_other_than_english
+        : [];
+      return {
+        ...prev,
+        languages_other_than_english: current.filter((l) => l !== language),
+      };
+    });
+  };
+
   const handleProfilePictureChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -208,7 +248,27 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const missingFields = getMissingRequiredFields(formData);
+    // If the user typed a language but didn't press Enter/Add, include it on submit.
+    const pendingLanguage = languageDraft.trim();
+    const nextFormData: UpdateProfileData =
+      pendingLanguage.length > 0
+        ? {
+            ...formData,
+            languages_other_than_english: [
+              ...new Set([
+                ...((formData.languages_other_than_english ?? []).map((l) => String(l).trim()).filter(Boolean)),
+                pendingLanguage,
+              ]),
+            ],
+          }
+        : formData;
+
+    if (pendingLanguage.length > 0) {
+      setLanguageDraft('');
+      setFormData(nextFormData);
+    }
+
+    const missingFields = getMissingRequiredFields(nextFormData);
     if (missingFields.length > 0) {
       toast.error(`Complete all required fields: ${missingFields.join(', ')}`);
       onProfileStatusChange?.({ isComplete: false, missingFields });
@@ -218,10 +278,10 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
     setIsSaving(true);
     
     // Log the form data being submitted
-    console.log('ProfileTab - Submitting form data:', JSON.stringify(formData, null, 2));
+    console.log('ProfileTab - Submitting form data:', JSON.stringify(nextFormData, null, 2));
     
     try {
-      const updated = await updateDoulaProfile(formData);
+      const updated = await updateDoulaProfile(nextFormData);
       console.log('ProfileTab - Update response received:', JSON.stringify(updated, null, 2));
       
       // Update profile state - this will trigger the useEffect to sync formData
@@ -403,7 +463,7 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
               <div>
                 <h3 className='text-sm font-semibold text-foreground'>Demographics</h3>
                 <p className='text-xs text-muted-foreground mt-1'>
-                  Optional unless noted. Race / ethnicity is required (select all that apply).
+                  All fields in this section are required unless noted.
                 </p>
               </div>
 
@@ -419,14 +479,67 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
                   />
                 </div>
                 <div className='space-y-2'>
-                  <Label htmlFor='pronouns'>Pronouns</Label>
+                  <Label htmlFor='pronouns'>
+                    Pronouns
+                    <span className='text-destructive'> *</span>
+                  </Label>
                   <Input
                     id='pronouns'
                     name='pronouns'
                     value={formData.pronouns || ''}
                     onChange={handleInputChange}
                     placeholder='e.g. she/her, he/him, they/them'
+                    required
                   />
+                </div>
+              </div>
+
+              <div className='space-y-3'>
+                <Label className='text-base'>
+                  Languages spoken (other than English)
+                  <span className='text-destructive'> *</span>
+                </Label>
+                <p className='text-xs text-muted-foreground'>
+                  Add at least one language. Press Enter or click Add after typing.
+                </p>
+                <div className='flex flex-col gap-2 sm:flex-row sm:items-center'>
+                  <Input
+                    value={languageDraft}
+                    onChange={(e) => setLanguageDraft(e.target.value)}
+                    placeholder='Type a language (e.g. Spanish)'
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addLanguage(languageDraft);
+                        setLanguageDraft('');
+                      }
+                    }}
+                  />
+                  <Button
+                    type='button'
+                    variant='secondary'
+                    onClick={() => {
+                      addLanguage(languageDraft);
+                      setLanguageDraft('');
+                    }}
+                  >
+                    Add
+                  </Button>
+                </div>
+                <div className='flex flex-wrap gap-2'>
+                  {(formData.languages_other_than_english ?? []).map((lang) => (
+                    <Badge key={lang} variant='secondary' className='flex items-center gap-1'>
+                      <span>{lang}</span>
+                      <button
+                        type='button'
+                        className='ml-1 rounded-sm hover:bg-background/40'
+                        onClick={() => removeLanguage(lang)}
+                        aria-label={`Remove ${lang}`}
+                      >
+                        <X className='h-3 w-3' />
+                      </button>
+                    </Badge>
+                  ))}
                 </div>
               </div>
 
@@ -516,4 +629,3 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
     </div>
   );
 }
-

@@ -12,6 +12,7 @@ import {
 import { Input } from '@/common/components/ui/input';
 import { Label } from '@/common/components/ui/label';
 import { Badge } from '@/common/components/ui/badge';
+import { Checkbox } from '@/common/components/ui/checkbox';
 import {
   Popover,
   PopoverContent,
@@ -30,7 +31,7 @@ import { Client } from '@/features/clients/data/schema';
 import type { ClientDetail } from '@/domain/client';
 import { cn } from '@/lib/utils';
 import { normalizeZipCode } from '@/common/utils/zipCode';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, isValid, parseISO } from 'date-fns';
 import {
   Baby,
   Calendar as CalendarIcon,
@@ -61,6 +62,15 @@ import {
   listClientDocuments,
   type ClientDocument,
 } from '@/api/clients/clientDocuments';
+import {
+  isMedicaidMethod,
+  isSelfPayMethod as sharedIsSelfPayMethod,
+  getPaymentMethodMessage,
+  derivePaymentAuthorizationStatus,
+  PAYMENT_AUTHORIZATION_STATUS_LABELS,
+  requiresPaymentMethodOnFile,
+  type PaymentAuthorizationStatus,
+} from '@/lib/paymentRules';
 
 interface LeadProfileModalProps {
   open: boolean;
@@ -118,13 +128,13 @@ const DEMOGRAPHICS_INCOME_OPTIONS = [
 const CLIENT_STATUS_OPTIONS = [
   'lead',
   'contacted',
-  'matching',
+  'matched',
   'interviewing',
   'follow up',
   'contract',
   'active',
   'complete',
-  'not hired'
+  'not hired',
 ];
 
 // Pregnancy & Health options (exact from request form)
@@ -141,14 +151,30 @@ const NUMBER_OF_BABIES_OPTIONS = [
 ];
 const PROVIDER_TYPE_OPTIONS = ['Midwife', 'OB', 'Family Doctor', 'Other'];
 
+const BIRTH_OUTCOMES_DELIVERY_TYPE_OPTIONS = [
+  'Vaginal (unmedicated)',
+  'Vaginal with pain medication/epidural',
+  'Assisted vaginal (vacuum/forceps)',
+  'Emergency Cesarean',
+  'Scheduled Cesarean',
+] as const;
+
+const BIRTH_OUTCOMES_MEDICATION_OPTIONS = [
+  'Pitocin',
+  'Narcotic IV',
+  'Epidural',
+  'Nitrous Oxide',
+  'Cytotec',
+] as const;
+
 function isSelfPayMethod(method: string): boolean {
-  const normalized = method.trim().toLowerCase();
-  return normalized === 'self-pay' || normalized === 'self pay' || normalized === 'selfpay';
+  return sharedIsSelfPayMethod(method);
 }
 
+/** Returns true when insurance-specific fields should be shown (not Medicaid, not Self-Pay). */
 function hasInsuranceBilling(method: string): boolean {
-  const normalized = method.trim();
-  return normalized.length > 0 && !isSelfPayMethod(normalized);
+  const trimmed = method.trim();
+  return trimmed.length > 0 && !isSelfPayMethod(trimmed) && !isMedicaidMethod(trimmed);
 }
 
 function hasAnyInsuranceDetails(source: Record<string, unknown> | null | undefined): boolean {
@@ -174,6 +200,13 @@ function hasAnyInsuranceDetails(source: Record<string, unknown> | null | undefin
     const value = source[field];
     return typeof value === 'string' ? value.trim().length > 0 : Boolean(value);
   });
+}
+
+function normalizeLifecycleStatus(value: unknown): string {
+  const raw = String(value ?? '').trim().toLowerCase();
+  if (raw === 'matching') return 'matched';
+  if (raw === 'customer') return 'not hired';
+  return String(value ?? '').trim();
 }
 
 function isImageDocument(document: ClientDocument): boolean {
@@ -226,10 +259,12 @@ export function LeadProfileModal({
   const [loadingNotes, setLoadingNotes] = useState(false);
   const [savingNote, setSavingNote] = useState(false);
   const [notesError, setNotesError] = useState<string | null>(null);
-  const [openSections, setOpenSections] = useState<Set<string>>(new Set(['contact', 'services']));
-  const [isEditing, setIsEditing] = useState(true);
+  /** Include `notes` so Admin Notes + history are visible when the profile opens (audit trail is primary for this block). */
+  const [openSections, setOpenSections] = useState<Set<string>>(new Set(['contact', 'services', 'notes']));
+  const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState<Partial<Client>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [isRecordingPaymentAuth, setIsRecordingPaymentAuth] = useState(false);
   const [isSavingBirthOutcomes, setIsSavingBirthOutcomes] = useState(false);
   // Primary source for display: full detail from GET /clients/:id (authorized users get PHI).
   const [fetchedDetail, setFetchedDetail] = useState<ClientDetail | null>(null);
@@ -390,12 +425,15 @@ export function LeadProfileModal({
 
       setDocumentPreviewUrls((prev) => {
         const next = { ...prev };
-        entries.forEach((entry) => {
-          if (entry) {
+        let changed = false;
+        for (const entry of entries) {
+          if (entry && next[entry[0]] !== entry[1]) {
             next[entry[0]] = entry[1];
+            changed = true;
           }
-        });
-        return next;
+        }
+        // Always returning `{ ...prev }` retriggered the effect (it depended on `documentPreviewUrls`) → remount loop.
+        return changed ? next : prev;
       });
     };
 
@@ -403,7 +441,7 @@ export function LeadProfileModal({
     return () => {
       cancelled = true;
     };
-  }, [client?.id, clientDocuments, documentPreviewUrls]);
+  }, [client?.id, clientDocuments]);
 
   const fetchNotes = async () => {
     if (!client?.id) return;
@@ -507,6 +545,7 @@ export function LeadProfileModal({
       date_of_birth: get('date_of_birth', 'dateOfBirth'),
       serviceNeeded: (get('service_needed', 'serviceNeeded') ?? '') as string,
       service_needed: (get('service_needed', 'serviceNeeded') ?? '') as string,
+      status: normalizeLifecycleStatus(get('status', 'status')) as any,
       payment_method: paymentMethod,
       insurance_provider: (get('insurance_provider', 'insuranceProvider') ?? get('insurance', 'insurance')) as string | undefined,
       insurance_member_id: (get('insurance_member_id', 'insuranceMemberId') ?? '') as string | undefined,
@@ -533,15 +572,16 @@ export function LeadProfileModal({
     setEditedData(initializedData);
   }, [client, detailSource, dataFingerprint]);
 
-  const toggleSection = (sectionId: string) => {
-    setOpenSections(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(sectionId)) {
-        newSet.delete(sectionId);
+  /** Radix passes the next open state; do not toggle (double onOpenChange can flip closed again). */
+  const setSectionOpen = (sectionId: string, nextOpen: boolean) => {
+    setOpenSections((prev) => {
+      const next = new Set(prev);
+      if (nextOpen) {
+        next.add(sectionId);
       } else {
-        newSet.add(sectionId);
+        next.delete(sectionId);
       }
-      return newSet;
+      return next;
     });
   };
 
@@ -659,10 +699,16 @@ export function LeadProfileModal({
       };
 
       // Tie billing fields to payment method:
-      // - Self-pay clears insurance fields
-      // - Insurance methods keep insurance fields
+      // - Medicaid: clears insurance fields, sets authorization status to not_required
+      // - Self-pay: clears insurance fields, authorization required
+      // - Insurance methods: keep insurance fields, authorization required
       if (effectivePaymentMethod) {
-        if (isSelfPayMethod(effectivePaymentMethod)) {
+        markChanged(
+          'payment_authorization_status',
+          derivePaymentAuthorizationStatus(effectivePaymentMethod)
+        );
+
+        if (isSelfPayMethod(effectivePaymentMethod) || isMedicaidMethod(effectivePaymentMethod)) {
           markChanged('insurance_provider', '');
           markChanged('insurance_member_id', '');
           markChanged('policy_number', '');
@@ -704,7 +750,16 @@ export function LeadProfileModal({
 
       // Handle status update separately using the dedicated status endpoint
       if (updateData.status !== undefined) {
-        const statusResult = await updateClientStatus(client.id, updateData.status);
+        const statusResult = await updateClientStatus(client.id, updateData.status, {
+          id: client.id,
+          firstName: String(
+            editedData.firstname || editedData.firstName || client.firstname || client.firstName || ''
+          ),
+          lastName: String(
+            editedData.lastname || editedData.lastName || client.lastname || client.lastName || ''
+          ),
+          email: String(editedData.email || client.email || ''),
+        });
         if (!statusResult.success) {
           toast.error(statusResult.error || 'Failed to update client status');
           setIsSaving(false);
@@ -895,65 +950,96 @@ export function LeadProfileModal({
       return;
     }
 
-    const birthOutcomes = String(
-      getDisplayValue('birth_outcomes', 'birthOutcomes') || ''
+    const inductionRaw = getDisplayValue(
+      'birth_outcomes_induction',
+      'birthOutcomesInduction'
     );
+    const induction =
+      inductionRaw === ''
+        ? undefined
+        : inductionRaw.toLowerCase() === 'true'
+          ? true
+          : inductionRaw.toLowerCase() === 'false'
+            ? false
+            : undefined;
+
+    const deliveryType = String(
+      getDisplayValue(
+        'birth_outcomes_delivery_type',
+        'birthOutcomesDeliveryType'
+      ) || ''
+    ).trim();
+
+    const medicationsRaw =
+      (editedData as any).birth_outcomes_medications_used ??
+      (editedData as any).birthOutcomesMedicationsUsed ??
+      (detailSource as any)?.birth_outcomes_medications_used ??
+      (detailSource as any)?.birthOutcomesMedicationsUsed ??
+      (client as any)?.birth_outcomes_medications_used ??
+      (client as any)?.birthOutcomesMedicationsUsed ??
+      [];
+    const medicationsUsed = Array.isArray(medicationsRaw)
+      ? (medicationsRaw as unknown[]).map((v) => String(v)).filter(Boolean)
+      : [];
+
+    const missing: string[] = [];
+    if (induction === undefined) missing.push('Induction (Yes/No)');
+    if (!deliveryType) missing.push('Delivery type');
+    if (medicationsUsed.length === 0) missing.push('Medications used (select at least one)');
+    if (missing.length > 0) {
+      toast.error(`Complete required fields: ${missing.join(', ')}`);
+      return;
+    }
 
     setIsSavingBirthOutcomes(true);
     try {
-      const response = await fetchWithAuth(
-        buildUrl(`/api/clients/${encodeURIComponent(client.id)}`),
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            birth_outcomes: birthOutcomes,
-          }),
-        }
-      );
+      const result = await updateClient(client.id, {
+        birth_outcomes_induction: induction,
+        birth_outcomes_delivery_type: deliveryType,
+        birth_outcomes_medications_used: medicationsUsed,
+      });
 
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => '');
-        throw new Error(
-          errorText || `Failed to save birth outcomes (${response.status})`
-        );
-      }
-
-      const result = await response.json().catch(() => null);
-      if (result && result.success === false) {
+      if (!result.success) {
         throw new Error(result.error || 'Failed to save birth outcomes');
       }
 
       setEditedData((prev) => ({
         ...prev,
-        birth_outcomes: birthOutcomes,
-        birthOutcomes: birthOutcomes,
+        birth_outcomes_induction: induction,
+        birthOutcomesInduction: induction,
+        birth_outcomes_delivery_type: deliveryType,
+        birthOutcomesDeliveryType: deliveryType,
+        birth_outcomes_medications_used: medicationsUsed,
+        birthOutcomesMedicationsUsed: medicationsUsed,
       }));
 
-      if (birthOutcomes.trim()) {
-        try {
-          await createClientNote(client.id, {
-            type: 'note',
-            description: birthOutcomes,
-            metadata: {
-              category: 'birth-outcomes',
-              field: 'birth_outcomes',
-              ...(currentUserDisplayName
-                ? { createdByName: currentUserDisplayName }
-                : {}),
-              ...(user?.role ? { createdByRole: user.role } : {}),
-            },
-          });
-        } catch (noteErr) {
-          console.error('Error creating birth outcomes history note:', noteErr);
-          toast.error(
-            'Birth outcomes saved, but failed to create history record'
-          );
-          await fetchNotes();
-          return;
-        }
+      try {
+        await createClientNote(client.id, {
+          type: 'note',
+          description: [
+            `Induction: ${induction ? 'Yes' : 'No'}`,
+            `Delivery type: ${deliveryType}`,
+            `Medications used: ${medicationsUsed.join(', ')}`,
+          ].join('\n'),
+          metadata: {
+            category: 'birth-outcomes',
+            field: 'birth_outcomes_structured',
+            ...(currentUserDisplayName
+              ? { createdByName: currentUserDisplayName }
+              : {}),
+            ...(user?.role ? { createdByRole: user.role } : {}),
+          },
+        });
+      } catch (noteErr) {
+        console.error(
+          'Error creating birth outcomes history note:',
+          noteErr
+        );
+        toast.error(
+          'Birth outcomes saved, but failed to create history record'
+        );
+        await fetchNotes();
+        return;
       }
 
       if (refreshClients) {
@@ -1141,9 +1227,96 @@ export function LeadProfileModal({
     if (fieldKey === 'payment_method') {
       return normalizeBillingPaymentMethod(v);
     }
+    if (fieldKey === 'status') {
+      return normalizeLifecycleStatus(v);
+    }
     const s = String(v);
     if (s === '[redacted]' || s === '') return '';
     return s;
+  };
+
+  /** Staff-only: mark payment authorization form (or equivalent) received — updates billing API. */
+  const handleRecordPaymentAuthorization = async () => {
+    if (!client?.id) return;
+    setIsRecordingPaymentAuth(true);
+    try {
+      const pm = normalizeBillingPaymentMethod(getDisplayValue('payment_method', 'paymentMethod'));
+      const authorizedAt = new Date().toISOString();
+      const needsIns = hasInsuranceBilling(pm);
+      const hasSecondary =
+        needsIns &&
+        String(getDisplayValue('has_secondary_insurance', 'hasSecondaryInsurance') || '')
+          .toLowerCase() === 'true';
+
+      const normalizedBillingData: Record<string, unknown> = {
+        payment_method: pm,
+        payment_authorization_status: 'on_file',
+        authorized_at: authorizedAt,
+        insurance: needsIns
+          ? getDisplayValue('insurance_provider', 'insuranceProvider') ||
+            getDisplayValue('insurance', null)
+          : '',
+        insurance_provider: needsIns ? getDisplayValue('insurance_provider', 'insuranceProvider') : '',
+        insurance_member_id: needsIns ? getDisplayValue('insurance_member_id', 'insuranceMemberId') : '',
+        policy_number: needsIns ? getDisplayValue('policy_number', 'policyNumber') : '',
+        insurance_phone_number: needsIns ? getDisplayValue('insurance_phone_number', 'insurancePhoneNumber') : '',
+        has_secondary_insurance: hasSecondary,
+        secondary_insurance_provider: hasSecondary
+          ? getDisplayValue('secondary_insurance_provider', 'secondaryInsuranceProvider')
+          : '',
+        secondary_insurance_member_id: hasSecondary
+          ? getDisplayValue('secondary_insurance_member_id', 'secondaryInsuranceMemberId')
+          : '',
+        secondary_policy_number: hasSecondary
+          ? getDisplayValue('secondary_policy_number', 'secondaryPolicyNumber')
+          : '',
+      };
+
+      const billingResponse = await fetchWithAuth(
+        buildUrl(`/api/clients/${encodeURIComponent(client.id)}/billing`),
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(normalizedBillingData),
+        }
+      );
+
+      if (!billingResponse.ok) {
+        if (isEndpointUnavailableStatus(billingResponse.status)) {
+          const fallbackResult = await updateClientPhi(client.id, normalizedBillingData);
+          if (!fallbackResult.success) {
+            throw new Error(fallbackResult.error || 'Failed to record payment authorization');
+          }
+        } else {
+          const errText = await billingResponse.text().catch(() => '');
+          throw new Error(errText || `Request failed (${billingResponse.status})`);
+        }
+      }
+
+      setEditedData((prev) => ({
+        ...prev,
+        payment_authorization_status: 'on_file',
+        paymentAuthorizationStatus: 'on_file',
+        authorized_at: authorizedAt,
+        authorizedAt: authorizedAt,
+      }));
+      setFetchedDetail((prev) =>
+        prev
+          ? {
+              ...prev,
+              paymentAuthorizationStatus: 'on_file',
+              authorizedAt: authorizedAt,
+            }
+          : null
+      );
+
+      toast.success('Payment authorization recorded as on file.');
+      refreshClients?.();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to record payment authorization');
+    } finally {
+      setIsRecordingPaymentAuth(false);
+    }
   };
 
   const renderEditableField = (
@@ -1162,10 +1335,16 @@ export function LeadProfileModal({
       : fieldKey === 'first_name' ? 'firstname'
       : fieldKey === 'last_name' ? 'lastname'
       : fieldKey === 'birth_outcomes' ? 'birthOutcomes'
+      : fieldKey === 'birth_outcomes_induction' ? 'birthOutcomesInduction'
+      : fieldKey === 'birth_outcomes_delivery_type' ? 'birthOutcomesDeliveryType'
+      : fieldKey === 'payment_authorization_status' ? 'paymentAuthorizationStatus'
       : null;
     let value: string | Date = altKey !== null ? getDisplayValue(fieldKey, altKey) : (editedData[fieldKey] ?? '');
     if (fieldKey === 'payment_method') {
       value = normalizeBillingPaymentMethod(value);
+    }
+    if (fieldKey === 'status') {
+      value = normalizeLifecycleStatus(value);
     }
 
     // Never show [redacted] in the detail modal (authorized view; backend gates PHI on GET /clients/:id)
@@ -1361,7 +1540,11 @@ export function LeadProfileModal({
     const isOpen = openSections.has(sectionId);
 
     return (
-      <Collapsible open={isOpen} onOpenChange={() => toggleSection(sectionId)} className="border rounded-lg mb-3">
+      <Collapsible
+        open={isOpen}
+        onOpenChange={(nextOpen) => setSectionOpen(sectionId, nextOpen)}
+        className="border rounded-lg mb-3"
+      >
         <CollapsibleTrigger asChild>
           <Button variant="ghost" className="w-full justify-between p-3 h-auto hover:bg-muted/50">
             <div className="flex items-center gap-2">
@@ -1412,7 +1595,10 @@ export function LeadProfileModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className="max-w-4xl max-h-[90vh] overflow-y-auto"
+        data-testid={`lead-profile-dialog-${String(client.id)}`}
+      >
         <DialogHeader className="pb-4">
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2">
@@ -1498,9 +1684,107 @@ export function LeadProfileModal({
             {/* Billing */}
             {renderCollapsibleSection(
               'billing',
-              'Billing Information',
+              (() => {
+                const pm = String(getDisplayValue('payment_method', 'paymentMethod') || '');
+                const authStatus = String(
+                  getDisplayValue('payment_authorization_status', 'paymentAuthorizationStatus') || ''
+                ) as PaymentAuthorizationStatus | '';
+                const statusLabel = authStatus
+                  ? (PAYMENT_AUTHORIZATION_STATUS_LABELS[authStatus as PaymentAuthorizationStatus] ?? authStatus)
+                  : null;
+                const statusColors: Record<string, string> = {
+                  not_required: 'bg-green-100 text-green-800',
+                  on_file: 'bg-blue-100 text-blue-800',
+                  required: 'bg-amber-100 text-amber-800',
+                  failed: 'bg-red-100 text-red-800',
+                };
+                return (
+                  <div className="flex items-center gap-2">
+                    <span>Billing Information</span>
+                    {pm && (
+                      <Badge variant="outline" className="text-xs font-normal">
+                        {pm}
+                      </Badge>
+                    )}
+                    {statusLabel && (
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[authStatus] ?? 'bg-muted text-muted-foreground'}`}>
+                        {statusLabel}
+                      </span>
+                    )}
+                  </div>
+                );
+              })(),
               <>
                 {renderEditableField('Payment Method', 'payment_method', undefined, 'select', PAYMENT_METHOD_OPTIONS)}
+                {(() => {
+                  const pm = String(getDisplayValue('payment_method', 'paymentMethod') || '');
+                  const msg = getPaymentMethodMessage(pm);
+                  if (!msg) return null;
+                  const colors =
+                    msg.variant === 'success'
+                      ? 'bg-green-50 border-green-200 text-green-800'
+                      : 'bg-blue-50 border-blue-200 text-blue-800';
+                  return (
+                    <div className={`rounded-lg border px-4 py-3 text-sm ${colors}`}>
+                      {msg.text}
+                    </div>
+                  );
+                })()}
+                {(() => {
+                  const pmForStaff = String(getDisplayValue('payment_method', 'paymentMethod') || '');
+                  const authForStaff = String(
+                    getDisplayValue('payment_authorization_status', 'paymentAuthorizationStatus') || ''
+                  )
+                    .trim()
+                    .toLowerCase();
+                  const needsAuthOnFile = requiresPaymentMethodOnFile(pmForStaff);
+                  const alreadyOnFile = authForStaff === 'on_file';
+                  const atRaw = getDisplayValue('authorized_at', 'authorizedAt');
+                  let atLabel = '';
+                  if (atRaw) {
+                    const parsed = parseISO(atRaw);
+                    atLabel = isValid(parsed) ? format(parsed, 'MMM d, yyyy · h:mm a') : atRaw;
+                  }
+                  if (!needsAuthOnFile) return null;
+                  return (
+                    <div className="rounded-lg border border-dashed border-primary/35 bg-muted/40 p-3 space-y-2">
+                      <p className="text-sm font-medium text-foreground">Staff: payment authorization</p>
+                      <p className="text-xs text-muted-foreground leading-snug">
+                        When you receive a signed payment authorization form (or equivalent), record it here so
+                        status shows <strong>On file</strong> in this profile and the Clients list.
+                      </p>
+                      {alreadyOnFile ? (
+                        <div className="flex flex-wrap items-center gap-2 text-sm">
+                          <Badge variant="outline" className="bg-blue-50 text-blue-900 border-blue-200">
+                            On file
+                          </Badge>
+                          {atLabel ? (
+                            <span className="text-muted-foreground text-xs">Recorded {atLabel}</span>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">Date not stored</span>
+                          )}
+                        </div>
+                      ) : (
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => void handleRecordPaymentAuthorization()}
+                          disabled={isRecordingPaymentAuth}
+                          className="w-fit"
+                        >
+                          {isRecordingPaymentAuth ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Saving…
+                            </>
+                          ) : (
+                            'Record payment authorization on file'
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })()}
                 {hasInsuranceBilling(String(getDisplayValue('payment_method', 'paymentMethod') || '')) ||
                 hasInsuranceDetails ? (
                   <>
@@ -1571,11 +1855,7 @@ export function LeadProfileModal({
                       </>
                     ) : null}
                   </>
-                ) : (
-                  <div className="text-sm text-muted-foreground">
-                    Self-pay billing is supported without storing credit card details.
-                  </div>
-                )}
+                ) : null}
               </>,
               <FileText className="h-5 w-5" />
             )}
@@ -1707,9 +1987,171 @@ export function LeadProfileModal({
               </div>,
               <>
                 <p className="text-sm text-muted-foreground -mt-1 mb-1">
-                  Written summary of the birth (e.g. delivery type, complications, interventions, birth weight). Free text — not limited to preset options.
+                  Structured birth outcomes for reporting. All fields are required.
                 </p>
-                {renderEditableField('Birth Outcomes', 'birth_outcomes', undefined, 'textarea', undefined, 6)}
+                <div className="rounded-lg border p-3 space-y-3">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-muted-foreground">
+                      Induction <span className="text-destructive">*</span>
+                    </Label>
+                    {isEditing ? (
+                      <Select
+                        value={String(
+                          getDisplayValue(
+                            'birth_outcomes_induction',
+                            'birthOutcomesInduction'
+                          ) || ''
+                        )}
+                        onValueChange={(next) => {
+                          const parsed =
+                            next === 'true'
+                              ? true
+                              : next === 'false'
+                                ? false
+                                : undefined;
+                          setEditedData((prev) => ({
+                            ...prev,
+                            birth_outcomes_induction: parsed,
+                            birthOutcomesInduction: parsed,
+                          }));
+                        }}
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Select..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="true">Yes</SelectItem>
+                          <SelectItem value="false">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm">
+                        {(() => {
+                          const v = getDisplayValue(
+                            'birth_outcomes_induction',
+                            'birthOutcomesInduction'
+                          );
+                          if (v === '') return 'Not provided';
+                          return v.toLowerCase() === 'true' ? 'Yes' : 'No';
+                        })()}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-muted-foreground">
+                      Delivery type <span className="text-destructive">*</span>
+                    </Label>
+                    {isEditing ? (
+                      <Select
+                        value={String(
+                          getDisplayValue(
+                            'birth_outcomes_delivery_type',
+                            'birthOutcomesDeliveryType'
+                          ) || ''
+                        )}
+                        onValueChange={(next) => {
+                          setEditedData((prev) => ({
+                            ...prev,
+                            birth_outcomes_delivery_type: next,
+                            birthOutcomesDeliveryType: next,
+                          }));
+                        }}
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Select..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {BIRTH_OUTCOMES_DELIVERY_TYPE_OPTIONS.map((opt) => (
+                            <SelectItem key={opt} value={opt}>
+                              {opt}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm">
+                        {String(
+                          getDisplayValue(
+                            'birth_outcomes_delivery_type',
+                            'birthOutcomesDeliveryType'
+                          ) || 'Not provided'
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-muted-foreground">
+                      Medications used <span className="text-destructive">*</span>
+                    </Label>
+                    {(() => {
+                      const raw =
+                        (editedData as any).birth_outcomes_medications_used ??
+                        (editedData as any).birthOutcomesMedicationsUsed ??
+                        (detailSource as any)?.birth_outcomes_medications_used ??
+                        (detailSource as any)?.birthOutcomesMedicationsUsed ??
+                        (client as any)?.birth_outcomes_medications_used ??
+                        (client as any)?.birthOutcomesMedicationsUsed ??
+                        [];
+                      const current = Array.isArray(raw)
+                        ? (raw as unknown[]).map((v) => String(v)).filter(Boolean)
+                        : [];
+
+                      const toggle = (opt: string) => {
+                        const next = current.includes(opt)
+                          ? current.filter((v) => v !== opt)
+                          : [...current, opt];
+                        setEditedData((prev) => ({
+                          ...prev,
+                          birth_outcomes_medications_used: next,
+                          birthOutcomesMedicationsUsed: next,
+                        }));
+                      };
+
+                      if (!isEditing) {
+                        return (
+                          <div className="mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm">
+                            {current.length > 0 ? current.join(', ') : 'Not provided'}
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="mt-1 grid gap-2 sm:grid-cols-2">
+                          {BIRTH_OUTCOMES_MEDICATION_OPTIONS.map((opt) => (
+                            <div key={opt} className="flex items-center gap-2">
+                              <Checkbox
+                                id={`birth-outcomes-med-${opt}`}
+                                checked={current.includes(opt)}
+                                onCheckedChange={() => toggle(opt)}
+                              />
+                              <Label
+                                htmlFor={`birth-outcomes-med-${opt}`}
+                                className="text-sm font-normal"
+                              >
+                                {opt}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+
+                {String(
+                  getDisplayValue('birth_outcomes', 'birthOutcomes') || ''
+                ).trim() ? (
+                  <div className="pt-3">
+                    <Label className="text-sm font-medium text-muted-foreground">
+                      Legacy Birth Outcomes (read-only)
+                    </Label>
+                    <div className="mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm min-h-[72px] whitespace-pre-wrap">
+                      {String(getDisplayValue('birth_outcomes', 'birthOutcomes') || '')}
+                    </div>
+                  </div>
+                ) : null}
                 {isEditing && (
                   <div className="flex justify-end pt-1">
                     <Button
@@ -1766,9 +2208,17 @@ export function LeadProfileModal({
             )}
 
             {/* Notes Section */}
-            <Collapsible open={openSections.has('notes')} onOpenChange={() => toggleSection('notes')} className="border rounded-lg mb-3">
+            <Collapsible
+              open={openSections.has('notes')}
+              onOpenChange={(nextOpen) => setSectionOpen('notes', nextOpen)}
+              className="border rounded-lg mb-3"
+            >
               <CollapsibleTrigger asChild>
-                <Button variant="ghost" className="w-full justify-between p-3 h-auto hover:bg-muted/50">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-between p-3 h-auto hover:bg-muted/50"
+                  data-testid="admin-notes-collapsible-trigger"
+                >
                   <div className="flex items-center gap-2">
                     <MessageSquare className="h-5 w-5" />
                     <span className="font-semibold">Admin Notes</span>
@@ -1795,18 +2245,19 @@ export function LeadProfileModal({
                       className="resize-none"
                     />
                     <div className="flex items-center gap-2">
-                      <Select value={noteCategory} onValueChange={setNoteCategory} disabled={savingNote}>
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {NOTE_CATEGORIES.map((category) => (
-                            <SelectItem key={category} value={category}>
-                              {category}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <select
+                        data-testid="admin-note-category-trigger"
+                        value={noteCategory}
+                        onChange={(e) => setNoteCategory(e.target.value)}
+                        disabled={savingNote}
+                        className="h-9 w-[180px] rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {NOTE_CATEGORIES.map((category) => (
+                          <option key={category} value={category} data-testid={`admin-note-option-${category}`}>
+                            {category}
+                          </option>
+                        ))}
+                      </select>
                       <Button
                         onClick={handleSaveNote}
                         disabled={savingNote || !newNote.trim()}

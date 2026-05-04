@@ -5,6 +5,7 @@ import { extractClientList, mapClient, mapClientDetail } from '../mappers/client
 import type { ClientListItemDTO, ClientDetailDTO } from '../dto/client.dto';
 import type { Client, ClientDetail } from '@/domain/client';
 import { normalizeZipCode } from '@/common/utils/zipCode';
+import { syncQuickBooksCustomerFromClient } from '@/common/utils/syncQuickBooksCustomer';
 
 /**
  * Normalize API response to an array of client list DTOs.
@@ -80,7 +81,23 @@ export async function updateClientStatus(clientId: string, status: string): Prom
     '/clients/status',
     { clientId, status }
   );
-  return mapClientDetail(dto);
+  const client = mapClientDetail(dto);
+
+  if (client.status === 'matched' || (client as any).status === 'customer') {
+    const syncResult = await syncQuickBooksCustomerFromClient({
+      id: client.id,
+      status: client.status,
+      firstName: client.firstName,
+      lastName: client.lastName,
+      email: client.email,
+    });
+
+    if (!syncResult.success && syncResult.error) {
+      console.warn('QuickBooks customer sync skipped or failed:', syncResult.error);
+    }
+  }
+
+  return client;
 }
 
 /**

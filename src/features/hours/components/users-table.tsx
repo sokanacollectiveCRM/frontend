@@ -23,6 +23,8 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { useState } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/common/components/ui/select';
+import { hourTypeOptions } from '@/features/hours/data/hour-types';
 import { DataTablePagination } from './data-table-pagination';
 import { UsersPrimaryButtons } from './users-primary-buttons';
 
@@ -67,7 +69,29 @@ export function UsersTable({ columns, data }: DataTableProps) {
 
   return (
     <div className='space-y-4'>
-      <div className='flex justify-end'>
+      <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+        <div className='flex items-center gap-2'>
+          <span className='text-sm text-muted-foreground'>Filter by type</span>
+          <Select
+            value={(table.getColumn('type')?.getFilterValue() as string) ?? 'all'}
+            onValueChange={(value) =>
+              table.getColumn('type')?.setFilterValue(value === 'all' ? undefined : value)
+            }
+          >
+            <SelectTrigger className='w-[180px]'>
+              <SelectValue placeholder='All hour types' />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='all'>All hour types</SelectItem>
+              {hourTypeOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+              <SelectItem value='unknown'>Unknown</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <UsersPrimaryButtons />
       </div>
       <div className='rounded-md border'>

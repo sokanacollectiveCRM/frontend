@@ -43,7 +43,7 @@ export default function Pipeline() {
     const groups: Record<UserStatus, Client[]> = {
       lead: [],
       contacted: [],
-      matching: [],
+      matched: [],
       interviewing: [],
       'follow up': [],
       contract: [],
@@ -51,6 +51,7 @@ export default function Pipeline() {
       complete: [],
       'not hired': [],
       customer: [],
+      matching: [],
     };
     for (const user of userList) {
       if (USER_STATUSES.includes(user.status as UserStatus)) {
@@ -80,19 +81,23 @@ export default function Pipeline() {
         <div className='-mx-4 flex-1 overflow-auto px-4 py-1 lg:flex-row lg:space-x-12 lg:space-y-0'>
           <UsersBoard
             usersByStatus={groupedUsers}
-            onStatusChange={async (userId: string, newStatus: UserStatus) => {
-              const normalizedStatus: Client['status'] =
-                newStatus === 'customer' ? 'not hired' : newStatus;
+            onStatusChange={async (userId: string, newStatus: UserStatus, user: Client) => {
               setUserList((prev) =>
                 prev.map((u) =>
-                  u.id === userId ? { ...u, status: normalizedStatus } : u
+                  u.id === userId ? { ...u, status: newStatus } : u
                 )
               );
 
               try {
-                const result = await updateClientStatus(userId, normalizedStatus);
+                const result = await updateClientStatus(userId, newStatus, {
+                  id: user.id,
+                  firstName: user.user.firstname,
+                  lastName: user.user.lastname,
+                  email: user.user.email,
+                });
                 if (result.success) {
-                  toast.success(`Client status updated to ${normalizedStatus}`);
+                  toast.success(`Client status updated to ${newStatus}`);
+                  getClients();
                 } else {
                   toast.error(result.error || 'Failed to update client status');
                   setUserList((prev) =>
