@@ -6,7 +6,6 @@ function buildMinimalValidRequest(overrides: Partial<RequestFormValues> = {}): R
     // Step 0 (services)
     services_interested: ['Labor Support'],
     service_support_details: 'Support details',
-    service_needed: 'Labor support',
 
     // Step 1 (client)
     firstname: 'Test',
@@ -17,6 +16,7 @@ function buildMinimalValidRequest(overrides: Partial<RequestFormValues> = {}): R
     pronouns_other: '',
     preferred_contact_method: 'Email',
     preferred_name: '',
+    age: 28,
     children_expected: '',
 
     // Step 2 (home)
@@ -27,7 +27,7 @@ function buildMinimalValidRequest(overrides: Partial<RequestFormValues> = {}): R
     home_phone: '',
     home_type: '',
     home_access: '',
-    pets: '',
+    pets: 'None',
 
     // Step 3 (family) optional
     relationship_status: '',
@@ -41,6 +41,7 @@ function buildMinimalValidRequest(overrides: Partial<RequestFormValues> = {}): R
 
     // Step 4 (referral) required
     referral_source: 'Google',
+    referral_source_other: '',
     referral_name: '',
     referral_email: '',
 
@@ -66,10 +67,14 @@ function buildMinimalValidRequest(overrides: Partial<RequestFormValues> = {}): R
     past_pregnancy_experience: '',
 
     // Step 9 (payment)
-    payment_method: 'Self-Pay',
+    payment_method: 'Not sure / Need help figuring this out',
+    insurance_policy_holder_name: '',
+    insurance_policy_holder_dob: '',
+    insurance_policy_holder_relationship: '',
     insurance_provider: '',
     insurance_member_id: '',
     policy_number: '',
+    insurance_plan_type: '',
     insurance_phone_number: '',
     has_secondary_insurance: false,
     secondary_insurance_provider: '',
@@ -77,6 +82,8 @@ function buildMinimalValidRequest(overrides: Partial<RequestFormValues> = {}): R
     secondary_policy_number: '',
     annual_income: '',
     service_specifics: '',
+    self_pay_sliding_support_type: '',
+    self_pay_sliding_tier: '',
 
     // Step 10 (demographics) optional
     race_ethnicity: '',
@@ -101,9 +108,9 @@ describe('Request form payment validation (schema)', () => {
     }
   });
 
-  it('Self-Pay does not require insurance details', () => {
+  it('Not sure / Need help does not require insurance details', () => {
     const data = buildMinimalValidRequest({
-      payment_method: 'Self-Pay',
+      payment_method: 'Not sure / Need help figuring this out',
       insurance_provider: '',
       insurance_member_id: '',
       policy_number: '',
@@ -112,29 +119,108 @@ describe('Request form payment validation (schema)', () => {
     expect(result.success).toBe(true);
   });
 
-  it('Commercial Insurance requires insurance provider, member id, and policy number', () => {
+  it('Self-Pay, Sliding Scale Available requires support type and tier', () => {
+    const missingTier = buildMinimalValidRequest({
+      payment_method: 'Self-Pay, Sliding Scale Available',
+      self_pay_sliding_support_type: 'Labor support',
+      self_pay_sliding_tier: '',
+    });
+    const r1 = fullSchema.safeParse(missingTier);
+    expect(r1.success).toBe(false);
+
+    const missingScope = buildMinimalValidRequest({
+      payment_method: 'Self-Pay, Sliding Scale Available',
+      self_pay_sliding_support_type: '',
+      self_pay_sliding_tier: '$0 – $24,999',
+    });
+    const r2 = fullSchema.safeParse(missingScope);
+    expect(r2.success).toBe(false);
+  });
+
+  it('Self-Pay, Sliding Scale Available passes when scope and tier are set', () => {
     const data = buildMinimalValidRequest({
-      payment_method: 'Commercial Insurance',
+      payment_method: 'Self-Pay, Sliding Scale Available',
+      self_pay_sliding_support_type: 'Both',
+      self_pay_sliding_tier: '$45,000 – $64,999',
+    });
+    const result = fullSchema.safeParse(data);
+    expect(result.success).toBe(true);
+  });
+
+  it('Full Support option does not require insurance details', () => {
+    const data = buildMinimalValidRequest({
+      payment_method: 'I am unable to pay / Full Support Option',
       insurance_provider: '',
       insurance_member_id: '',
       policy_number: '',
     });
     const result = fullSchema.safeParse(data);
+    expect(result.success).toBe(true);
+  });
+
+  it('Private/Commercial Insurance requires policy holder, company, member id, and plan type (group number optional)', () => {
+    const data = buildMinimalValidRequest({
+      payment_method: 'Private/Commercial Insurance',
+      insurance_policy_holder_name: '',
+      insurance_policy_holder_dob: '',
+      insurance_policy_holder_relationship: '',
+      insurance_provider: '',
+      insurance_member_id: '',
+      policy_number: '',
+      insurance_plan_type: '',
+    });
+    const result = fullSchema.safeParse(data);
     expect(result.success).toBe(false);
     if (!result.success) {
       const messages = result.error.issues.map((i) => i.message);
-      expect(messages.join(' | ')).toMatch(/insurance provider/i);
-      expect(messages.join(' | ')).toMatch(/member id/i);
-      expect(messages.join(' | ')).toMatch(/policy number/i);
+      expect(messages.join(' | ')).toMatch(/policy holder name/i);
+      expect(messages.join(' | ')).toMatch(/insurance company/i);
+      expect(messages.join(' | ')).toMatch(/member id|subscriber id/i);
+      expect(messages.join(' | ')).toMatch(/plan type/i);
+    }
+  });
+
+  it('Private/Commercial Insurance passes with full primary insurance details (no group number)', () => {
+    const data = buildMinimalValidRequest({
+      payment_method: 'Private/Commercial Insurance',
+      insurance_policy_holder_name: 'Jane Doe',
+      insurance_policy_holder_dob: '1992-03-01',
+      insurance_policy_holder_relationship: 'Self',
+      insurance_provider: 'Aetna',
+      insurance_member_id: 'MEM-1',
+      policy_number: '',
+      insurance_plan_type: 'PPO',
+    });
+    const result = fullSchema.safeParse(data);
+    expect(result.success).toBe(true);
+  });
+
+  it('Medicaid requires the same primary insurance fields as commercial', () => {
+    const data = buildMinimalValidRequest({
+      payment_method: 'Medicaid',
+      insurance_policy_holder_name: '',
+      insurance_provider: '',
+      insurance_member_id: '',
+      insurance_plan_type: '',
+    });
+    const result = fullSchema.safeParse(data);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const messages = result.error.issues.map((i) => i.message).join(' | ');
+      expect(messages).toMatch(/policy holder|insurance company|member id|plan type|relationship/i);
     }
   });
 
   it('Secondary insurance fields become required when has_secondary_insurance is true', () => {
     const data = buildMinimalValidRequest({
-      payment_method: 'Commercial Insurance',
+      payment_method: 'Private/Commercial Insurance',
+      insurance_policy_holder_name: 'Jane Doe',
+      insurance_policy_holder_dob: '1990-01-01',
+      insurance_policy_holder_relationship: 'Self',
       insurance_provider: 'Aetna',
       insurance_member_id: 'MEM-1',
-      policy_number: 'POL-1',
+      policy_number: '',
+      insurance_plan_type: 'HMO',
       has_secondary_insurance: true,
       secondary_insurance_provider: '',
       secondary_insurance_member_id: '',

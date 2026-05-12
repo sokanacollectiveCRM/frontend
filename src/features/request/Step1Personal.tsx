@@ -24,6 +24,7 @@ type FocusField =
   | 'preferred_contact_method'
   | 'pronouns'
   | 'preferred_name'
+  | 'age'
   | 'pregnancy_number'
   | 'birth_hospital';
 
@@ -49,6 +50,7 @@ export function Step1Personal({
     preferred_contact_method: !!values.preferred_contact_method,
     pronouns: !!values.pronouns,
     preferred_name: !!values.preferred_name,
+    age: values.age !== '' && values.age !== undefined && values.age !== null,
     pregnancy_number: !!values.pregnancy_number,
     birth_hospital: !!values.birth_hospital,
   });
@@ -208,6 +210,7 @@ export function Step1Personal({
           >
             <option value='' disabled hidden></option>
             <option value='Phone'>Phone</option>
+            <option value='Text'>Text</option>
             <option value='Email'>Email</option>
           </select>
           <label
@@ -245,6 +248,32 @@ export function Step1Personal({
           {errors.preferred_contact_method && (
             <div className={styles['form-error']}>
               {errors.preferred_contact_method.message as string}
+            </div>
+          )}
+        </div>
+        <div className={styles['form-field']}>
+          <input
+            className={styles['form-input']}
+            {...form.register('preferred_name')}
+            id='preferred_name'
+            autoComplete='off'
+            onFocus={() => handleFocus('preferred_name')}
+            onBlur={() => handleBlur('preferred_name')}
+          />
+          <label
+            htmlFor='preferred_name'
+            className={
+              styles['form-floating-label'] +
+              (focus.preferred_name || values.preferred_name
+                ? ' ' + styles['form-label--active']
+                : '')
+            }
+          >
+            Preferred Name, if different from first name
+          </label>
+          {errors.preferred_name && (
+            <div className={styles['form-error']}>
+              {errors.preferred_name.message as string}
             </div>
           )}
         </div>
@@ -313,26 +342,37 @@ export function Step1Personal({
         <div className={styles['form-field']}>
           <input
             className={styles['form-input']}
-            {...form.register('preferred_name')}
-            id='preferred_name'
+            {...form.register('age')}
+            id='age'
+            type='number'
+            min={1}
+            max={120}
+            step={1}
+            inputMode='numeric'
             autoComplete='off'
-            onFocus={() => handleFocus('preferred_name')}
-            onBlur={() => handleBlur('preferred_name')}
+            onFocus={() => handleFocus('age')}
+            onBlur={() => handleBlur('age')}
+            onWheel={(e) => {
+              e.currentTarget.blur();
+            }}
           />
           <label
-            htmlFor='preferred_name'
+            htmlFor='age'
             className={
               styles['form-floating-label'] +
-              (focus.preferred_name || values.preferred_name
+              (focus.age ||
+              (values.age !== '' &&
+                values.age !== undefined &&
+                values.age !== null)
                 ? ' ' + styles['form-label--active']
                 : '')
             }
           >
-            Preferred name
+            Age
           </label>
-          {errors.preferred_name && (
+          {errors.age && (
             <div className={styles['form-error']}>
-              {errors.preferred_name.message as string}
+              {errors.age.message as string}
             </div>
           )}
         </div>

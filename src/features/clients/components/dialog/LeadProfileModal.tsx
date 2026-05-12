@@ -63,14 +63,27 @@ import {
   type ClientDocument,
 } from '@/api/clients/clientDocuments';
 import {
+  ALL_PAYMENT_METHOD_OPTIONS,
   isMedicaidMethod,
   isSelfPayMethod as sharedIsSelfPayMethod,
+  isFullSupportMethod,
+  isNotSurePaymentMethod,
   getPaymentMethodMessage,
   derivePaymentAuthorizationStatus,
+  normalizeBillingPaymentMethod,
   PAYMENT_AUTHORIZATION_STATUS_LABELS,
   requiresPaymentMethodOnFile,
+  requiresInsuranceDetails,
+  INSURANCE_PLAN_TYPE_OPTIONS,
+  INSURANCE_POLICY_HOLDER_RELATIONSHIP_OPTIONS,
   type PaymentAuthorizationStatus,
 } from '@/lib/paymentRules';
+import { PREGNANCY_BABY_POSTPARTUM_QUESTION_LABEL } from '@/features/request/stepConfig';
+import {
+  normalizeReferralSourceStoredValue,
+  REFERRAL_SOURCE_OPTIONS,
+  REFERRAL_SOURCE_OTHER_VALUE,
+} from '@/features/request/referralSourceOptions';
 
 interface LeadProfileModalProps {
   open: boolean;
@@ -84,11 +97,10 @@ const NOTE_CATEGORIES = ['General', 'Communication', 'Milestone', 'Follow-up', '
 
 // Dropdown options from request form (exact matches)
 const PRONOUNS_OPTIONS = ['She/Her', 'He/Him', 'They/Them', 'Ze/Hir/Zir', 'None', 'Other'];
-const PREFERRED_CONTACT_OPTIONS = ['Phone', 'Email'];
+const PREFERRED_CONTACT_OPTIONS = ['Phone', 'Text', 'Email'];
 const HOME_TYPE_OPTIONS = ['House', 'Condo', 'Apartment', 'Shelter', 'Other'];
 const RELATIONSHIP_OPTIONS = ['Spouse', 'Partner', 'Friend', 'Parent', 'Sibling', 'Other'];
 const FAMILY_PRONOUNS_OPTIONS = ['She/Her', 'He/Him', 'They/Them', 'Ze/Hir/Zir', 'None'];
-const REFERRAL_OPTIONS = ['Google', 'Doula Match', 'Former client', 'Sokana Member', 'Social Media', 'Email Blast'];
 const SERVICES_OPTIONS = ['Labor Support', 'Postpartum Support', '1st Night Care', 'Lactation Support', 'Perinatal Education', 'Abortion Support', 'Other'];
 const ANNUAL_INCOME_OPTIONS = [
   '$0-$24,999',
@@ -98,7 +110,6 @@ const ANNUAL_INCOME_OPTIONS = [
   '$85,000-$99,999',
   '100k and above'
 ];
-const PAYMENT_METHOD_OPTIONS = ['Self-Pay', 'Commercial Insurance', 'Private Insurance', 'Medicaid', 'Other'];
 const RACE_OPTIONS = ['African American/Black', 'Asian/Pacific Islander', 'Caucasian/White', 'Hispanic', 'Two or more races', 'Other'];
 const LANGUAGE_OPTIONS = ['English', 'Spanish', 'French', 'Mandarin', 'Arabic', 'Other'];
 const AGE_OPTIONS = ['Under 20', '20-25', '26-35', '36 and older'];
@@ -171,15 +182,17 @@ function isSelfPayMethod(method: string): boolean {
   return sharedIsSelfPayMethod(method);
 }
 
-/** Returns true when insurance-specific fields should be shown (not Medicaid, not Self-Pay). */
-function hasInsuranceBilling(method: string): boolean {
-  const trimmed = method.trim();
-  return trimmed.length > 0 && !isSelfPayMethod(trimmed) && !isMedicaidMethod(trimmed);
-}
-
 function hasAnyInsuranceDetails(source: Record<string, unknown> | null | undefined): boolean {
   if (!source) return false;
   const fields = [
+    'insurance_policy_holder_name',
+    'insurancePolicyHolderName',
+    'insurance_policy_holder_dob',
+    'insurancePolicyHolderDob',
+    'insurance_policy_holder_relationship',
+    'insurancePolicyHolderRelationship',
+    'insurance_plan_type',
+    'insurancePlanType',
     'insurance_provider',
     'insuranceProvider',
     'insurance_member_id',
@@ -213,31 +226,6 @@ function isImageDocument(document: ClientDocument): boolean {
   const contentType = document.contentType?.toLowerCase() || '';
   if (contentType.startsWith('image/')) return true;
   return /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(document.fileName);
-}
-
-function normalizeBillingPaymentMethod(method: unknown): string {
-  const raw = String(method ?? '').trim();
-  if (!raw) return '';
-
-  const normalized = raw.toLowerCase().replace(/_/g, ' ').replace(/\s+/g, ' ');
-
-  if (normalized === 'self-pay' || normalized === 'self pay' || normalized === 'selfpay') {
-    return 'Self-Pay';
-  }
-  if (normalized === 'commercial insurance') {
-    return 'Commercial Insurance';
-  }
-  if (normalized === 'private insurance') {
-    return 'Private Insurance';
-  }
-  if (normalized === 'medicaid') {
-    return 'Medicaid';
-  }
-  if (normalized === 'other') {
-    return 'Other';
-  }
-
-  return raw;
 }
 
 function isEndpointUnavailableStatus(status: number): boolean {
@@ -547,6 +535,13 @@ export function LeadProfileModal({
       service_needed: (get('service_needed', 'serviceNeeded') ?? '') as string,
       status: normalizeLifecycleStatus(get('status', 'status')) as any,
       payment_method: paymentMethod,
+      insurance_policy_holder_name: get('insurance_policy_holder_name', 'insurancePolicyHolderName'),
+      insurance_policy_holder_dob: get('insurance_policy_holder_dob', 'insurancePolicyHolderDob'),
+      insurance_policy_holder_relationship: get(
+        'insurance_policy_holder_relationship',
+        'insurancePolicyHolderRelationship'
+      ),
+      insurance_plan_type: get('insurance_plan_type', 'insurancePlanType'),
       insurance_provider: (get('insurance_provider', 'insuranceProvider') ?? get('insurance', 'insurance')) as string | undefined,
       insurance_member_id: (get('insurance_member_id', 'insuranceMemberId') ?? '') as string | undefined,
       policy_number: (get('policy_number', 'policyNumber') ?? '') as string | undefined,
@@ -565,6 +560,10 @@ export function LeadProfileModal({
     };
     delete (initializedData as Record<string, unknown>).self_pay_card_info;
     delete (initializedData as Record<string, unknown>).selfPayCardInfo;
+    const rawReferral = stripRedacted(get('referral_source', 'referralSource'));
+    if (rawReferral !== undefined) {
+      initializedData.referral_source = normalizeReferralSourceStoredValue(rawReferral);
+    }
     console.log('🔍 [Init] Final initializedData:', {
       phoneNumber: initializedData.phoneNumber,
       phone_number: (initializedData as any).phone_number,
@@ -699,19 +698,31 @@ export function LeadProfileModal({
       };
 
       // Tie billing fields to payment method:
-      // - Medicaid: clears insurance fields, sets authorization status to not_required
-      // - Self-pay: clears insurance fields, authorization required
-      // - Insurance methods: keep insurance fields, authorization required
+      // - Self-pay / Full Support: clears insurance fields
+      // - Medicaid & commercial/private: keep insurance fields; authorization per derivePaymentAuthorizationStatus
       if (effectivePaymentMethod) {
         markChanged(
           'payment_authorization_status',
           derivePaymentAuthorizationStatus(effectivePaymentMethod)
         );
 
-        if (isSelfPayMethod(effectivePaymentMethod) || isMedicaidMethod(effectivePaymentMethod)) {
+        if (
+          isSelfPayMethod(effectivePaymentMethod) ||
+          isFullSupportMethod(effectivePaymentMethod) ||
+          isNotSurePaymentMethod(effectivePaymentMethod)
+        ) {
+          markChanged('insurance_policy_holder_name', '');
+          markChanged('insurance_policy_holder_dob', '');
+          markChanged('insurance_policy_holder_relationship', '');
+          markChanged('insurance_plan_type', '');
           markChanged('insurance_provider', '');
           markChanged('insurance_member_id', '');
           markChanged('policy_number', '');
+          markChanged('insurance_phone_number', '');
+          markChanged('has_secondary_insurance', false);
+          markChanged('secondary_insurance_provider', '');
+          markChanged('secondary_insurance_member_id', '');
+          markChanged('secondary_policy_number', '');
           markChanged('insurance', '');
         } else {
           const insuranceProvider = normalizeForSave(
@@ -803,6 +814,10 @@ export function LeadProfileModal({
       const billingFieldKeys = new Set([
         'payment_method',
         'insurance',
+        'insurance_policy_holder_name',
+        'insurance_policy_holder_dob',
+        'insurance_policy_holder_relationship',
+        'insurance_plan_type',
         'insurance_provider',
         'insurance_member_id',
         'policy_number',
@@ -1194,7 +1209,12 @@ export function LeadProfileModal({
   };
 
   const handleCancelEdit = () => {
-    setEditedData((detailSource ?? detailedClient ?? {}) as Partial<Client>);
+    const base = { ...(detailSource ?? detailedClient ?? {}) } as Partial<Client>;
+    const raw = base.referral_source ?? (base as Record<string, unknown>).referralSource;
+    if (raw !== undefined && raw !== null && String(raw).trim() !== '') {
+      base.referral_source = normalizeReferralSourceStoredValue(String(raw));
+    }
+    setEditedData(base);
     setIsEditing(false);
   };
 
@@ -1232,6 +1252,9 @@ export function LeadProfileModal({
     }
     const s = String(v);
     if (s === '[redacted]' || s === '') return '';
+    if (fieldKey === 'referral_source') {
+      return normalizeReferralSourceStoredValue(s);
+    }
     return s;
   };
 
@@ -1242,7 +1265,7 @@ export function LeadProfileModal({
     try {
       const pm = normalizeBillingPaymentMethod(getDisplayValue('payment_method', 'paymentMethod'));
       const authorizedAt = new Date().toISOString();
-      const needsIns = hasInsuranceBilling(pm);
+      const needsIns = requiresInsuranceDetails(pm);
       const hasSecondary =
         needsIns &&
         String(getDisplayValue('has_secondary_insurance', 'hasSecondaryInsurance') || '')
@@ -1256,6 +1279,16 @@ export function LeadProfileModal({
           ? getDisplayValue('insurance_provider', 'insuranceProvider') ||
             getDisplayValue('insurance', null)
           : '',
+        insurance_policy_holder_name: needsIns
+          ? getDisplayValue('insurance_policy_holder_name', 'insurancePolicyHolderName')
+          : '',
+        insurance_policy_holder_dob: needsIns
+          ? getDisplayValue('insurance_policy_holder_dob', 'insurancePolicyHolderDob')
+          : '',
+        insurance_policy_holder_relationship: needsIns
+          ? getDisplayValue('insurance_policy_holder_relationship', 'insurancePolicyHolderRelationship')
+          : '',
+        insurance_plan_type: needsIns ? getDisplayValue('insurance_plan_type', 'insurancePlanType') : '',
         insurance_provider: needsIns ? getDisplayValue('insurance_provider', 'insuranceProvider') : '',
         insurance_member_id: needsIns ? getDisplayValue('insurance_member_id', 'insuranceMemberId') : '',
         policy_number: needsIns ? getDisplayValue('policy_number', 'policyNumber') : '',
@@ -1323,7 +1356,7 @@ export function LeadProfileModal({
     label: string,
     fieldKey: string,
     icon?: React.ReactNode,
-    type: 'text' | 'email' | 'tel' | 'textarea' | 'select' | 'multiselect' | 'date' = 'text',
+    type: 'text' | 'email' | 'tel' | 'textarea' | 'select' | 'multiselect' | 'date' | 'number' = 'text',
     options?: string[],
     textareaRows = 3
   ) => {
@@ -1338,8 +1371,15 @@ export function LeadProfileModal({
       : fieldKey === 'birth_outcomes_induction' ? 'birthOutcomesInduction'
       : fieldKey === 'birth_outcomes_delivery_type' ? 'birthOutcomesDeliveryType'
       : fieldKey === 'payment_authorization_status' ? 'paymentAuthorizationStatus'
+      : fieldKey === 'insurance_policy_holder_name' ? 'insurancePolicyHolderName'
+      : fieldKey === 'insurance_policy_holder_dob' ? 'insurancePolicyHolderDob'
+      : fieldKey === 'insurance_policy_holder_relationship' ? 'insurancePolicyHolderRelationship'
+      : fieldKey === 'insurance_plan_type' ? 'insurancePlanType'
       : null;
-    let value: string | Date = altKey !== null ? getDisplayValue(fieldKey, altKey) : (editedData[fieldKey] ?? '');
+    let value: string | Date =
+      altKey !== null || fieldKey === 'referral_source'
+        ? getDisplayValue(fieldKey, altKey)
+        : (editedData[fieldKey] ?? '');
     if (fieldKey === 'payment_method') {
       value = normalizeBillingPaymentMethod(value);
     }
@@ -1652,9 +1692,10 @@ export function LeadProfileModal({
                 {renderEditableField('Last Name', 'lastname')}
                 {renderEditableField('Email', 'email', <Mail className="h-4 w-4" />, 'email')}
                 {renderEditableField('Phone Number', 'phoneNumber', <Phone className="h-4 w-4" />, 'tel')}
-                {renderEditableField('Preferred Name', 'preferred_name')}
-                {renderEditableField('Pronouns', 'pronouns', undefined, 'select', PRONOUNS_OPTIONS)}
                 {renderEditableField('Preferred Contact Method', 'preferred_contact_method', undefined, 'select', PREFERRED_CONTACT_OPTIONS)}
+                {renderEditableField('Preferred Name', 'preferred_name')}
+                {renderEditableField('Age', 'age', undefined, 'number')}
+                {renderEditableField('Pronouns', 'pronouns', undefined, 'select', PRONOUNS_OPTIONS)}
                 {renderEditableField('Children Expected', 'children_expected')}
                 {renderEditableField('Address', 'address', <MapPin className="h-4 w-4" />, 'textarea')}
                 {renderEditableField('City', 'city')}
@@ -1662,7 +1703,7 @@ export function LeadProfileModal({
                 {renderEditableField('ZIP Code', 'zip_code')}
                 {renderEditableField('Home Type', 'home_type', undefined, 'select', HOME_TYPE_OPTIONS)}
                 {renderEditableField('Home Access', 'home_access')}
-                {renderEditableField('Pets', 'pets')}
+                {renderEditableField('Pets/Animals in Home', 'pets')}
               </>,
               <User className="h-5 w-5" />
             )}
@@ -1715,7 +1756,7 @@ export function LeadProfileModal({
                 );
               })(),
               <>
-                {renderEditableField('Payment Method', 'payment_method', undefined, 'select', PAYMENT_METHOD_OPTIONS)}
+                {renderEditableField('Payment Method', 'payment_method', undefined, 'select', [...ALL_PAYMENT_METHOD_OPTIONS])}
                 {(() => {
                   const pm = String(getDisplayValue('payment_method', 'paymentMethod') || '');
                   const msg = getPaymentMethodMessage(pm);
@@ -1785,7 +1826,7 @@ export function LeadProfileModal({
                     </div>
                   );
                 })()}
-                {hasInsuranceBilling(String(getDisplayValue('payment_method', 'paymentMethod') || '')) ||
+                {requiresInsuranceDetails(String(getDisplayValue('payment_method', 'paymentMethod') || '')) ||
                 hasInsuranceDetails ? (
                   <>
                     <div className="rounded-lg border p-3 space-y-3">
@@ -1824,9 +1865,25 @@ export function LeadProfileModal({
                         ))}
                       </div>
                     </div>
-                    {renderEditableField('Insurance Provider', 'insurance_provider')}
-                    {renderEditableField('Insurance Member ID', 'insurance_member_id')}
-                    {renderEditableField('Policy Number', 'policy_number')}
+                    {renderEditableField('Policy Holder Name', 'insurance_policy_holder_name')}
+                    {renderEditableField('Policy Holder Date of Birth', 'insurance_policy_holder_dob', undefined, 'date')}
+                    {renderEditableField(
+                      'Policy Holder Relationship to Client',
+                      'insurance_policy_holder_relationship',
+                      undefined,
+                      'select',
+                      [...INSURANCE_POLICY_HOLDER_RELATIONSHIP_OPTIONS]
+                    )}
+                    {renderEditableField('Insurance Company Name', 'insurance_provider')}
+                    {renderEditableField('Member ID / Subscriber ID', 'insurance_member_id')}
+                    {renderEditableField('Group Number (optional)', 'policy_number')}
+                    {renderEditableField(
+                      'Plan Type',
+                      'insurance_plan_type',
+                      undefined,
+                      'select',
+                      [...INSURANCE_PLAN_TYPE_OPTIONS]
+                    )}
                     {renderEditableField('Insurance Phone Number', 'insurance_phone_number')}
                     <div className="py-2">
                       <Label className="text-sm font-medium text-muted-foreground">Secondary Insurance</Label>
@@ -1882,7 +1939,20 @@ export function LeadProfileModal({
               'referral',
               'Referral Information',
               <>
-                {renderEditableField('Referral Source', 'referral_source', undefined, 'select', REFERRAL_OPTIONS)}
+                {renderEditableField(
+                  'Referral Source',
+                  'referral_source',
+                  undefined,
+                  'select',
+                  [...REFERRAL_SOURCE_OPTIONS],
+                )}
+                {getDisplayValue('referral_source', null) === REFERRAL_SOURCE_OTHER_VALUE &&
+                  renderEditableField(
+                    'How they heard about Sokana (other)',
+                    'referral_source_other',
+                    undefined,
+                    'textarea',
+                  )}
                 {renderEditableField('Referral Name', 'referral_name')}
                 {renderEditableField('Referral Email', 'referral_email', <Mail className="h-4 w-4" />, 'email')}
               </>,
@@ -1902,8 +1972,19 @@ export function LeadProfileModal({
                 {renderEditableField('Provider Type', 'provider_type', undefined, 'select', PROVIDER_TYPE_OPTIONS)}
                 {renderEditableField('Pregnancy Number', 'pregnancy_number')}
                 {renderEditableField('Allergies', 'allergies', undefined, 'textarea')}
-                {renderEditableField('Health History', 'health_history', undefined, 'textarea')}
-                {renderEditableField('Health Notes', 'health_notes', undefined, 'textarea')}
+                {renderEditableField(
+                  PREGNANCY_BABY_POSTPARTUM_QUESTION_LABEL,
+                  'health_history',
+                  undefined,
+                  'textarea',
+                )}
+                {String((editedData as any).health_notes ?? '').trim() !== '' &&
+                  renderEditableField(
+                    'Health notes (previous intake)',
+                    'health_notes',
+                    undefined,
+                    'textarea',
+                  )}
               </>,
               <Baby className="h-5 w-5" />
             )}

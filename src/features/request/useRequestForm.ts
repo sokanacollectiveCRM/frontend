@@ -4,9 +4,16 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import {
   PAYMENT_METHOD_OPTIONS as SHARED_PAYMENT_METHOD_OPTIONS,
+  INSURANCE_PLAN_TYPE_OPTIONS,
+  INSURANCE_POLICY_HOLDER_RELATIONSHIP_OPTIONS,
   isMedicaidMethod,
   isSelfPayMethod as sharedIsSelfPayMethod,
+  isSelfPaySlidingScaleMethod,
+  requiresInsuranceDetails,
+  type InsurancePlanType,
+  type InsurancePolicyHolderRelationship,
 } from '@/lib/paymentRules';
+import { SELF_PAY_SLIDING_SUPPORT_TYPES } from '@/lib/slidingScaleData';
 
 export const PAYMENT_METHOD_OPTIONS = SHARED_PAYMENT_METHOD_OPTIONS;
 
@@ -26,6 +33,24 @@ export const fullSchema = z
     pronouns_other: z.string().optional(),
     preferred_contact_method: z.string().min(1, 'Please select your preferred contact method.'),
     preferred_name: z.string().optional(),
+    age: z
+      .union([z.string(), z.number()])
+      .transform((val: string | number) => {
+        if (val === '' || val === null || val === undefined) return NaN;
+        if (typeof val === 'number') {
+          return Number.isFinite(val) ? val : NaN;
+        }
+        const t = String(val).trim();
+        if (t === '') return NaN;
+        if (!/^\d+$/.test(t)) return NaN;
+        return parseInt(t, 10);
+      })
+      .refine((n) => !Number.isNaN(n), { message: 'Please enter your age.' })
+      .refine((n) => Number.isInteger(n), {
+        message: 'Please enter a whole number for your age.',
+      })
+      .refine((n) => n >= 1, { message: 'Age must be at least 1.' })
+      .refine((n) => n <= 120, { message: 'Please enter a valid age.' }),
     children_expected: z.string().optional(),
 
     // 2. Home Details
@@ -36,7 +61,10 @@ export const fullSchema = z
     home_phone: z.string().optional(), // removed from form, made optional
     home_type: z.string().optional(), // made optional
     home_access: z.string().optional(), // made optional
-    pets: z.string().optional(), // made optional
+    pets: z
+      .string()
+      .trim()
+      .min(1, 'Please list the types of any pets/animals that are in the home.'),
 
     // 3. Family Members (all optional)
     relationship_status: z.string().optional(),
@@ -52,7 +80,12 @@ export const fullSchema = z
     family_pronouns: z.string().optional(),
 
     // 4. Referral
-    referral_source: z.string().min(1, 'Please tell us how you heard about us.'), // required
+    referral_source: z
+      .string()
+      .trim()
+      .min(1, 'Please select how you heard about Sokana.'), // required — blocks Next until chosen
+    /** Free text when referral_source is "Other". */
+    referral_source_other: z.string().optional(),
     referral_name: z.string().optional(), // made optional, allow "N/A"
     referral_email: z.string().optional().refine((val) => {
       if (!val || val.trim() === '') return true; // Allow empty
@@ -115,13 +148,19 @@ export const fullSchema = z
     service_support_details: z
       .string()
       .min(1, 'Please describe the support you are looking for.'),
-    service_needed: z.string().min(1, 'Please tell us what service you need.'),
+    /** Filled automatically on submit from selections + details; no separate form field. */
+    service_needed: z.string().optional(),
 
     // 9. Payment
     payment_method: z.union([z.literal(''), z.enum(PAYMENT_METHOD_OPTIONS)]),
+    insurance_policy_holder_name: z.string().optional(),
+    insurance_policy_holder_dob: z.string().optional(),
+    insurance_policy_holder_relationship: z.string().optional(),
     insurance_provider: z.string().optional(),
     insurance_member_id: z.string().optional(),
+    /** Stored as `policy_number` in API — group number (optional). */
     policy_number: z.string().optional(),
+    insurance_plan_type: z.string().optional(),
     insurance_phone_number: z.string().optional(),
     has_secondary_insurance: z.boolean().optional(),
     secondary_insurance_provider: z.string().optional(),
@@ -129,6 +168,8 @@ export const fullSchema = z
     secondary_policy_number: z.string().optional(),
     annual_income: z.string().optional(),
     service_specifics: z.string().optional(),
+    self_pay_sliding_support_type: z.string().optional(),
+    self_pay_sliding_tier: z.string().optional(),
 
     // 10. Client Demographics (ALL OPTIONAL)
     race_ethnicity: z.string().optional(),
@@ -147,6 +188,15 @@ export const fullSchema = z
       path: ['pronouns_other'],
     }
   )
+  .refine(
+    (data) =>
+      data.referral_source !== 'Other' ||
+      Boolean(data.referral_source_other?.trim()),
+    {
+      message: 'Please describe how you heard about Sokana.',
+      path: ['referral_source_other'],
+    }
+  )
   .superRefine((data, ctx) => {
     if (!data.payment_method) {
       ctx.addIssue({
@@ -156,33 +206,57 @@ export const fullSchema = z
       });
     }
 
-    // Insurance details are only required for Commercial / Private Insurance.
-    // Medicaid uses its own billing workflow; Self-Pay has no insurance.
-    const needsInsuranceDetails =
-      data.payment_method &&
-      !isMedicaidMethod(data.payment_method) &&
-      !isSelfPayMethod(data.payment_method);
+    // Insurance details for commercial, private, or Medicaid. Self-Pay / Full Support have none.
+    const needsInsuranceDetails = requiresInsuranceDetails(data.payment_method);
 
     if (needsInsuranceDetails) {
+      if (!data.insurance_policy_holder_name?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Please enter the policy holder name.',
+          path: ['insurance_policy_holder_name'],
+        });
+      }
+      if (!data.insurance_policy_holder_dob?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Please enter the policy holder date of birth.',
+          path: ['insurance_policy_holder_dob'],
+        });
+      }
+      const rel = data.insurance_policy_holder_relationship?.trim() ?? '';
+      if (
+        !rel ||
+        !INSURANCE_POLICY_HOLDER_RELATIONSHIP_OPTIONS.includes(
+          rel as InsurancePolicyHolderRelationship
+        )
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Please select the policy holder’s relationship to you.',
+          path: ['insurance_policy_holder_relationship'],
+        });
+      }
       if (!data.insurance_provider?.trim()) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Please enter your insurance provider.',
+          message: 'Please enter your insurance company name.',
           path: ['insurance_provider'],
         });
       }
       if (!data.insurance_member_id?.trim()) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Please enter your insurance member ID.',
+          message: 'Please enter your member ID or subscriber ID.',
           path: ['insurance_member_id'],
         });
       }
-      if (!data.policy_number?.trim()) {
+      const plan = data.insurance_plan_type?.trim() ?? '';
+      if (!plan || !INSURANCE_PLAN_TYPE_OPTIONS.includes(plan as InsurancePlanType)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Please enter your policy number.',
-          path: ['policy_number'],
+          message: 'Please select a plan type.',
+          path: ['insurance_plan_type'],
         });
       }
     }
@@ -210,23 +284,42 @@ export const fullSchema = z
         });
       }
     }
+
+    if (isSelfPaySlidingScaleMethod(data.payment_method)) {
+      const scope = data.self_pay_sliding_support_type?.trim() ?? '';
+      if (!scope || !SELF_PAY_SLIDING_SUPPORT_TYPES.includes(scope as (typeof SELF_PAY_SLIDING_SUPPORT_TYPES)[number])) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Please select whether you are interested in labor support, postpartum support, or both.',
+          path: ['self_pay_sliding_support_type'],
+        });
+      }
+      if (!data.self_pay_sliding_tier?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Please select the income row that best matches your household from the sliding scale chart.',
+          path: ['self_pay_sliding_tier'],
+        });
+      }
+    }
   });
 
 export type RequestFormValues = z.infer<typeof fullSchema>;
 
 export const stepFields: (keyof RequestFormValues)[][] = [
   // 1. Services Interested In (MOVED TO FIRST)
-  ['services_interested', 'service_support_details', 'service_needed'],
+  ['services_interested', 'service_support_details'],
   // 2. Client Details
   [
     'firstname',
     'lastname',
     'email',
     'phone_number',
-    'pronouns',
-    'pronouns_other',
     'preferred_contact_method',
     'preferred_name',
+    'age',
+    'pronouns',
+    'pronouns_other',
     'children_expected',
   ],
   // 3. Home Details
@@ -248,12 +341,11 @@ export const stepFields: (keyof RequestFormValues)[][] = [
     'middle_name',
     'family_email',
     'mobile_phone',
-    'work_phone',
   ],
   // 5. Referral
-  ['referral_source', 'referral_name', 'referral_email'],
-  // 6. Health History
-  ['health_history', 'allergies', 'health_notes'],
+  ['referral_source', 'referral_source_other', 'referral_name', 'referral_email'],
+  // 6. Health (pregnancy/baby/postpartum + allergies only on this step)
+  ['health_history', 'allergies'],
   // 7. Pregnancy/Baby
   [
     'due_date',
@@ -274,9 +366,13 @@ export const stepFields: (keyof RequestFormValues)[][] = [
   // 9. Payment (stays near the end)
   [
     'payment_method',
+    'insurance_policy_holder_name',
+    'insurance_policy_holder_dob',
+    'insurance_policy_holder_relationship',
     'insurance_provider',
     'insurance_member_id',
     'policy_number',
+    'insurance_plan_type',
     'insurance_phone_number',
     'has_secondary_insurance',
     'secondary_insurance_provider',
@@ -284,6 +380,8 @@ export const stepFields: (keyof RequestFormValues)[][] = [
     'secondary_policy_number',
     'annual_income',
     'service_specifics',
+    'self_pay_sliding_support_type',
+    'self_pay_sliding_tier',
   ],
   // 10. Client Demographics
   [
@@ -313,6 +411,7 @@ export function useRequestForm(
       pronouns_other: '',
       preferred_contact_method: '',
       preferred_name: '',
+      age: '',
       children_expected: '',
       address: '',
       city: '',
@@ -331,6 +430,7 @@ export function useRequestForm(
       family_email: '',
       family_pronouns: '',
       referral_source: '',
+      referral_source_other: '',
       referral_name: '',
       referral_email: '',
       health_history: '',
@@ -351,9 +451,13 @@ export function useRequestForm(
       service_support_details: '',
       service_needed: '',
       payment_method: '',
+      insurance_policy_holder_name: '',
+      insurance_policy_holder_dob: '',
+      insurance_policy_holder_relationship: '',
       insurance_provider: '',
       insurance_member_id: '',
       policy_number: '',
+      insurance_plan_type: '',
       insurance_phone_number: '',
       has_secondary_insurance: false,
       secondary_insurance_provider: '',
@@ -361,6 +465,8 @@ export function useRequestForm(
       secondary_policy_number: '',
       annual_income: '',
       service_specifics: '',
+      self_pay_sliding_support_type: '',
+      self_pay_sliding_tier: '',
       race_ethnicity: '',
       primary_language: '',
       client_age_range: '',

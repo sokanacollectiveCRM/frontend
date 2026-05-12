@@ -404,11 +404,12 @@ export function Step2Home({
           </label>
         </div>
 
-        {/* Pets - Full Width */}
+        {/* Pets / Animals in Home - Full Width (required) */}
         <div className={styles['form-field']}>
           {errors.pets && (
             <div className={styles['form-error']} style={{ marginBottom: 6 }}>
-              Please describe pets.
+              {(errors.pets.message as string) ||
+                'Please list the types of any pets/animals that are in the home.'}
             </div>
           )}
           <input
@@ -416,6 +417,7 @@ export function Step2Home({
             {...form.register('pets')}
             id='pets'
             autoComplete='off'
+            aria-required='true'
             onFocus={() => handleFocus('pets')}
             onBlur={() => handleBlur('pets')}
           />
@@ -427,8 +429,9 @@ export function Step2Home({
                 ? ' ' + styles['form-label--active']
                 : '')
             }
+            style={{ left: 0, right: 0, maxWidth: 'calc(100% - 36px)' }}
           >
-            Pets
+            Please list the types of any pets/animals that are in the home. *
           </label>
         </div>
       </div>

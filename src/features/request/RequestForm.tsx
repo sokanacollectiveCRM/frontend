@@ -242,6 +242,7 @@ function RequestFormContent() {
           <button
             type="button"
             onClick={fillTestData}
+            title="Loads a complete sample (including age, provider type, primary + secondary insurance). Resets the form and returns to the first step. Submit still hits your backend URL from env."
             style={{
               marginTop: 10,
               padding: '5px 10px',
@@ -393,12 +394,20 @@ export default function RequestForm() {
       Triplets: 3,
       Quadruplets: 4,
     };
+    const servicesSummary =
+      Array.isArray(formData.services_interested) &&
+      formData.services_interested.length > 0
+        ? formData.services_interested.join(', ')
+        : '';
+
     const payload = {
       ...formData,
       number_of_babies:
         typeof formData.number_of_babies === 'string'
           ? babyCountMap[formData.number_of_babies] || 1
           : formData.number_of_babies,
+      service_needed:
+        servicesSummary || (formData.service_support_details || '').trim(),
     };
     // Use the same pattern as login endpoint (no /api prefix)
     // @ts-ignore - Vite environment variable

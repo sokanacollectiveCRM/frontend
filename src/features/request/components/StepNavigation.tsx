@@ -56,6 +56,7 @@ export const StepNavigation: React.FC<StepNavigationProps> = ({
           {STEP_CONFIG.map((step) => {
             const status = getStepStatus(step.id);
             const canNavigate = canNavigateToStep(step.id);
+            const desktopLabel = step.navTitle ?? step.title;
 
             return (
               <div key={step.id} className={styles.stepItem}>
@@ -68,12 +69,12 @@ export const StepNavigation: React.FC<StepNavigationProps> = ({
                   aria-label={`${step.title}, step ${step.id + 1} of ${STEP_CONFIG.length}${status === 'current' ? ' (current)' : ''}${status === 'completed' ? ' (completed)' : ''}${!canNavigate && status === 'upcoming' ? ' (locked)' : ''}`}
                   title={
                     canNavigate
-                      ? `Go to ${step.title}`
-                      : `${step.title}${!canNavigate ? ' (locked)' : ''}`
+                      ? `Go to ${desktopLabel}`
+                      : `${desktopLabel}${!canNavigate ? ' (locked)' : ''}`
                   }
                 >
                   <span className={styles.stepNumber}>{step.id + 1}</span>
-                  <span className={styles.stepTitle}>{step.title}</span>
+                  <span className={styles.stepTitle}>{desktopLabel}</span>
                 </button>
               </div>
             );

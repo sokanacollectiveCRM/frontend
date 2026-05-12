@@ -7,14 +7,31 @@
  *  - Admin billing workflow (LeadProfileModal)
  */
 
+/** Values shown on the public request form (Step 9 — Payment). */
 export const PAYMENT_METHOD_OPTIONS = [
-  'Commercial Insurance',
-  'Private Insurance',
+  'Private/Commercial Insurance',
   'Medicaid',
-  'Self-Pay',
+  'Self-Pay, Sliding Scale Available',
+  'I am unable to pay / Full Support Option',
+  'Not sure / Need help figuring this out',
 ] as const;
 
 export type PaymentMethod = (typeof PAYMENT_METHOD_OPTIONS)[number];
+
+/** Historical / staff-edited values still accepted in billing and lead profiles. */
+export const LEGACY_PAYMENT_METHOD_OPTIONS = [
+  'Commercial Insurance',
+  'Private Insurance',
+  'Self-Pay',
+  'Other',
+] as const;
+
+export const ALL_PAYMENT_METHOD_OPTIONS = [
+  ...PAYMENT_METHOD_OPTIONS,
+  ...LEGACY_PAYMENT_METHOD_OPTIONS,
+] as const;
+
+export type AllKnownPaymentMethod = (typeof ALL_PAYMENT_METHOD_OPTIONS)[number];
 
 export type PaymentAuthorizationStatus =
   | 'not_required'
@@ -45,30 +62,87 @@ export function isMedicaidMethod(method: unknown): boolean {
   return normalize(method) === 'medicaid';
 }
 
+export function isSelfPaySlidingScaleMethod(method: unknown): boolean {
+  return normalize(method) === 'self-pay, sliding scale available';
+}
+
 export function isSelfPayMethod(method: unknown): boolean {
   const n = normalize(method);
-  return n === 'self-pay' || n === 'self pay' || n === 'selfpay';
+  return (
+    n === 'self-pay' ||
+    n === 'self pay' ||
+    n === 'selfpay' ||
+    n === 'self-pay, sliding scale available'
+  );
+}
+
+export function isNotSurePaymentMethod(method: unknown): boolean {
+  return normalize(method) === 'not sure / need help figuring this out';
+}
+
+export function isFullSupportMethod(method: unknown): boolean {
+  const n = normalize(method);
+  return (
+    n === 'i am unable to pay / full support option' ||
+    (n.includes('full support') && n.includes('unable to pay'))
+  );
 }
 
 export function isInsuranceMethod(method: unknown): boolean {
   const n = normalize(method);
-  return n === 'commercial insurance' || n === 'private insurance';
+  return (
+    n === 'private/commercial insurance' ||
+    n === 'commercial insurance' ||
+    n === 'private insurance'
+  );
 }
+
+/** Plan type options shown on intake and aligned with staff/client records. */
+export const INSURANCE_PLAN_TYPE_OPTIONS = [
+  'HMO',
+  'PPO',
+  'EPO',
+  'POS',
+  'HDHP',
+  'Medicaid',
+  'Medicare',
+  'Other',
+] as const;
+
+export type InsurancePlanType = (typeof INSURANCE_PLAN_TYPE_OPTIONS)[number];
+
+/** Policy holder’s relationship to the client (subscriber). */
+export const INSURANCE_POLICY_HOLDER_RELATIONSHIP_OPTIONS = [
+  'Self',
+  'Spouse',
+  'Partner',
+  'Parent',
+  'Child',
+  'Sibling',
+  'Other',
+] as const;
+
+export type InsurancePolicyHolderRelationship =
+  (typeof INSURANCE_POLICY_HOLDER_RELATIONSHIP_OPTIONS)[number];
 
 /**
  * Returns true when the client **must** have a payment method on file.
  * Medicaid clients are excluded — they follow the Medicaid workflow only.
  */
 export function requiresPaymentMethodOnFile(method: unknown): boolean {
-  return !isMedicaidMethod(method) && Boolean(normalize(method));
+  if (!normalize(method)) return false;
+  if (isMedicaidMethod(method)) return false;
+  if (isFullSupportMethod(method)) return false;
+  if (isNotSurePaymentMethod(method)) return false;
+  return true;
 }
 
 /**
- * Returns true when insurance-specific fields (provider, member ID, etc.)
- * should be collected.
+ * Returns true when primary insurance details (company, member ID, policy holder, etc.)
+ * should be collected — commercial, private, **or** Medicaid.
  */
 export function requiresInsuranceDetails(method: unknown): boolean {
-  return isInsuranceMethod(method);
+  return isInsuranceMethod(method) || isMedicaidMethod(method);
 }
 
 // ---------------------------------------------------------------------------
@@ -87,7 +161,7 @@ export function getPaymentMethodMessage(method: unknown): PaymentMethodMessage |
 
   if (isMedicaidMethod(method)) {
     return {
-      text: 'No payment method required. Your services will be billed through Medicaid.',
+      text: 'No credit or debit card on file is required for Medicaid. Please enter your Medicaid coverage details below exactly as they appear on your member card.',
       variant: 'success',
     };
   }
@@ -95,6 +169,20 @@ export function getPaymentMethodMessage(method: unknown): PaymentMethodMessage |
   if (isSelfPayMethod(method)) {
     return {
       text: 'A payment authorization is required. Our team will send you a payment authorization form—return it to us; you do not enter card numbers in this portal.',
+      variant: 'info',
+    };
+  }
+
+  if (isFullSupportMethod(method)) {
+    return {
+      text: 'You selected the Full Support option. A team member will follow up with you.',
+      variant: 'warning',
+    };
+  }
+
+  if (isNotSurePaymentMethod(method)) {
+    return {
+      text: 'No problem—a team member will reach out to help you figure out payment and coverage.',
       variant: 'info',
     };
   }
@@ -125,6 +213,8 @@ export function derivePaymentAuthorizationStatus(
   hasAuthorizationOnFile = false
 ): PaymentAuthorizationStatus {
   if (isMedicaidMethod(method)) return 'not_required';
+  if (isFullSupportMethod(method)) return 'not_required';
+  if (isNotSurePaymentMethod(method)) return 'not_required';
   if (!normalize(method)) return 'required';
   return hasAuthorizationOnFile ? 'on_file' : 'required';
 }
@@ -137,11 +227,55 @@ export function normalizePaymentMethod(raw: unknown): string {
   const n = normalize(raw);
 
   if (isMedicaidMethod(n)) return 'Medicaid';
-  if (isSelfPayMethod(n)) return 'Self-Pay';
+  if (n === 'self-pay, sliding scale available') return 'Self-Pay, Sliding Scale Available';
+  if (isSelfPayMethod(raw) && !isSelfPaySlidingScaleMethod(raw)) return 'Self-Pay';
+  if (n === 'private/commercial insurance') return 'Private/Commercial Insurance';
   if (n === 'commercial insurance') return 'Commercial Insurance';
   if (n === 'private insurance') return 'Private Insurance';
+  if (isNotSurePaymentMethod(raw)) return 'Not sure / Need help figuring this out';
+  if (isFullSupportMethod(raw)) return 'I am unable to pay / Full Support Option';
 
   return String(raw ?? '').trim();
+}
+
+/**
+ * Normalises API / snake_case values to the canonical billing dropdown string when possible.
+ */
+export function normalizeBillingPaymentMethod(method: unknown): string {
+  const raw = String(method ?? '').trim();
+  if (!raw) return '';
+
+  const normalized = raw.toLowerCase().replace(/_/g, ' ').replace(/\s+/g, ' ');
+
+  if (normalized === 'self-pay, sliding scale available') {
+    return 'Self-Pay, Sliding Scale Available';
+  }
+  if (normalized === 'self-pay' || normalized === 'self pay' || normalized === 'selfpay') {
+    return 'Self-Pay';
+  }
+  if (normalized === 'private/commercial insurance') {
+    return 'Private/Commercial Insurance';
+  }
+  if (normalized === 'commercial insurance') {
+    return 'Commercial Insurance';
+  }
+  if (normalized === 'private insurance') {
+    return 'Private Insurance';
+  }
+  if (normalized === 'medicaid') {
+    return 'Medicaid';
+  }
+  if (normalized === 'not sure / need help figuring this out') {
+    return 'Not sure / Need help figuring this out';
+  }
+  if (normalized.includes('unable to pay') && normalized.includes('full support')) {
+    return 'I am unable to pay / Full Support Option';
+  }
+  if (normalized === 'other') {
+    return 'Other';
+  }
+
+  return raw;
 }
 
 // ---------------------------------------------------------------------------
@@ -224,6 +358,16 @@ export function getAdminPaymentCardColumn(
       sublabel: 'Medicaid',
       badgeClass: 'bg-green-100 text-green-800 border-green-200',
       tooltip: 'Medicaid: no card on file required for this billing path.',
+    };
+  }
+
+  if (isFullSupportMethod(paymentMethod) || isNotSurePaymentMethod(paymentMethod)) {
+    return {
+      label: 'Not needed',
+      sublabel: methodDisplay,
+      badgeClass: 'bg-green-100 text-green-800 border-green-200',
+      tooltip:
+        'No payment authorization on file is expected for this selection; staff will follow up as needed.',
     };
   }
 

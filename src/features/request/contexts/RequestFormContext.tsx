@@ -1,6 +1,7 @@
 import {
   RequestFormValues,
   fullSchema,
+  stepFields,
 } from '@/features/request/useRequestForm';
 import { DUMMY_TEST_LEAD } from '@/features/request/dummyTestLead';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -70,6 +71,7 @@ export function RequestFormProvider({
       pronouns_other: '',
       preferred_contact_method: '',
       preferred_name: '',
+      age: '',
       children_expected: '',
       address: '',
       city: '',
@@ -88,6 +90,7 @@ export function RequestFormProvider({
       work_phone: '',
       family_pronouns: '',
       referral_source: '',
+      referral_source_other: '',
       referral_name: '',
       referral_email: '',
       health_history: '',
@@ -109,9 +112,13 @@ export function RequestFormProvider({
       service_support_details: '',
       service_needed: '',
       payment_method: '',
+      insurance_policy_holder_name: '',
+      insurance_policy_holder_dob: '',
+      insurance_policy_holder_relationship: '',
       insurance_provider: '',
       insurance_member_id: '',
       policy_number: '',
+      insurance_plan_type: '',
       insurance_phone_number: '',
       has_secondary_insurance: false,
       secondary_insurance_provider: '',
@@ -119,6 +126,8 @@ export function RequestFormProvider({
       secondary_policy_number: '',
       annual_income: '',
       service_specifics: '',
+      self_pay_sliding_support_type: '',
+      self_pay_sliding_tier: '',
       race_ethnicity: '',
       primary_language: '',
       client_age_range: '',
@@ -164,6 +173,7 @@ export function RequestFormProvider({
 
   const fillTestData = () => {
     form.reset(DUMMY_TEST_LEAD as RequestFormValues);
+    setStep(0);
     setSubmitted(false);
   };
 
@@ -180,92 +190,23 @@ export function RequestFormProvider({
         return values.pronouns !== 'Other' || !errors[field];
       }
 
+      if (field === 'referral_source') {
+        const selected = String(values.referral_source ?? '').trim();
+        return Boolean(selected) && !errors.referral_source;
+      }
+
+      if (field === 'referral_source_other') {
+        return (
+          values.referral_source !== 'Other' ||
+          (Boolean(String(values.referral_source_other ?? '').trim()) &&
+            !errors.referral_source_other)
+        );
+      }
+
       // For all other fields, just check if there's no error
       return !errors[field];
     });
   };
-
-  const stepFields: (keyof RequestFormValues)[][] = [
-    // 1. Services Interested In (MOVED TO FIRST)
-    ['services_interested', 'service_support_details', 'service_needed'],
-    // 2. Client Details
-    [
-      'firstname',
-      'lastname',
-      'email',
-      'phone_number',
-      'pronouns',
-      'pronouns_other',
-      'preferred_contact_method',
-      'preferred_name',
-      'children_expected',
-    ],
-    // 3. Home Details
-    [
-      'address',
-      'city',
-      'state',
-      'zip_code',
-      'home_type',
-      'home_access',
-      'pets',
-    ],
-    // 4. Family Members
-    [
-      'relationship_status',
-      'first_name',
-      'last_name',
-      'family_pronouns',
-      'middle_name',
-      'family_email',
-      'mobile_phone',
-      'work_phone',
-    ],
-    // 5. Referral
-    ['referral_source', 'referral_name', 'referral_email'],
-    // 6. Health History
-    ['health_history', 'allergies', 'health_notes'],
-    // 7. Pregnancy/Baby
-    [
-      'due_date',
-      'birth_location',
-      'birth_hospital',
-      'number_of_babies',
-      'baby_name',
-      'provider_type',
-      'pregnancy_number',
-    ],
-    // 8. Past Pregnancies
-    [
-      'had_previous_pregnancies',
-      'previous_pregnancies_count',
-      'living_children_count',
-      'past_pregnancy_experience',
-    ],
-    // 9. Payment (stays near the end)
-    [
-      'payment_method',
-      'insurance_provider',
-      'insurance_member_id',
-      'policy_number',
-      'insurance_phone_number',
-      'has_secondary_insurance',
-      'secondary_insurance_provider',
-      'secondary_insurance_member_id',
-      'secondary_policy_number',
-      'annual_income',
-      'service_specifics',
-    ],
-    // 10. Client Demographics
-    [
-      'race_ethnicity',
-      'primary_language',
-      'client_age_range',
-      'insurance',
-      'demographics_multi',
-      'demographics_annual_income',
-    ],
-  ];
 
   const handleNextStep = async () => {
     console.log('handleNextStep called, current step:', step);

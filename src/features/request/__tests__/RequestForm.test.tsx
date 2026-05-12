@@ -71,9 +71,7 @@ describe('RequestForm', () => {
 
       // Test that the form renders correctly
       expect(screen.getByText('Request for Service Form')).toBeInTheDocument();
-      expect(
-        screen.getByText('What service(s) are you interested in?')
-      ).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Services Interested In/i })).toBeInTheDocument();
     });
 
     it('handles submission error with error message', async () => {
@@ -123,11 +121,12 @@ describe('RequestForm', () => {
       render(<RequestForm />);
 
       // Initial mobile step is services interested.
+      expect(screen.getByRole('heading', { name: /Services Interested In/i })).toBeInTheDocument();
       expect(
-        screen.getByText('What service(s) are you interested in?')
+        screen.getByText(/Which services are you interested in\?/i)
       ).toBeInTheDocument();
       expect(
-        screen.getByText(/What specific service do you need\?/i)
+        screen.getByText(/Describe the support you are looking for/i)
       ).toBeInTheDocument();
     });
 
@@ -136,7 +135,7 @@ describe('RequestForm', () => {
       render(<RequestForm />);
 
       const serviceDetails = screen.getByLabelText(
-        /What specific service do you need\?/i
+        /Describe the support you are looking for/i
       );
 
       await user.type(serviceDetails, 'Postpartum overnight support');
@@ -157,9 +156,7 @@ describe('RequestForm', () => {
 
       // Test that form renders correctly
       expect(screen.getByText('Request for Service Form')).toBeInTheDocument();
-      expect(
-        screen.getByText('What service(s) are you interested in?')
-      ).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Services Interested In/i })).toBeInTheDocument();
     });
   });
 }); 

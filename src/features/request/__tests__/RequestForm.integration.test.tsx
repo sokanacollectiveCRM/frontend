@@ -31,18 +31,11 @@ describe('RequestForm Integration Tests', () => {
 
       // Verify form renders correctly
       expect(screen.getByText('Request for Service Form')).toBeInTheDocument();
-      expect(
-        screen.getByText('What service(s) are you interested in?')
-      ).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Services Interested In/i })).toBeInTheDocument();
 
-      // Check for required fields on initial step
+      // Check for required fields on initial step (one open-ended prompt; service_need is derived on submit)
       expect(
-        screen.getByLabelText(
-          /What specific service do you need\? Please describe your requirements\*/i
-        )
-      ).toBeInTheDocument();
-      expect(
-        screen.getByLabelText(/What does doula support look like for you\?/i)
+        screen.getByLabelText(/Describe the support you are looking for/i)
       ).toBeInTheDocument();
     });
 
@@ -52,23 +45,18 @@ describe('RequestForm Integration Tests', () => {
 
       // Fill out the form fields
       const supportDetailsInput = screen.getByLabelText(
-        /What does doula support look like for you\?/i
-      );
-      const serviceNeededInput = screen.getByLabelText(
-        /What specific service do you need\? Please describe your requirements\*/i
+        /Describe the support you are looking for/i
       );
 
       await user.type(
         supportDetailsInput,
         'I need overnight support for 8 weeks after delivery.'
       );
-      await user.type(serviceNeededInput, 'Postpartum overnight doula care');
 
       // Verify values are set
       expect(supportDetailsInput).toHaveValue(
         'I need overnight support for 8 weeks after delivery.'
       );
-      expect(serviceNeededInput).toHaveValue('Postpartum overnight doula care');
     });
 
     it('shows Next button on first step', async () => {
@@ -162,18 +150,10 @@ describe('RequestForm Integration Tests', () => {
       render(<RequestForm />);
 
       // Check for form sections
-      expect(
-        screen.getByText('What service(s) are you interested in?')
-      ).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Services Interested In/i })).toBeInTheDocument();
 
-      // Check for form fields on initial step
       expect(
-        screen.getByLabelText(
-          /What specific service do you need\? Please describe your requirements\*/i
-        )
-      ).toBeInTheDocument();
-      expect(
-        screen.getByLabelText(/What does doula support look like for you\?/i)
+        screen.getByLabelText(/Describe the support you are looking for/i)
       ).toBeInTheDocument();
     });
 
@@ -197,10 +177,10 @@ describe('RequestForm Integration Tests', () => {
       render(<RequestForm />);
 
       // Fill some fields
-      const serviceNeededInput = screen.getByLabelText(
-        /What specific service do you need\? Please describe your requirements\*/i
+      const supportDetailsInput = screen.getByLabelText(
+        /Describe the support you are looking for/i
       );
-      await user.type(serviceNeededInput, 'Postpartum support needed');
+      await user.type(supportDetailsInput, 'Postpartum support needed');
 
       // Try to submit
       const nextButton = screen.getByRole('button', { name: /next/i });
@@ -208,7 +188,7 @@ describe('RequestForm Integration Tests', () => {
 
       // Form should still be visible and maintain field values
       expect(screen.getByText('Request for Service Form')).toBeInTheDocument();
-      expect(serviceNeededInput).toHaveValue('Postpartum support needed');
+      expect(supportDetailsInput).toHaveValue('Postpartum support needed');
     });
   });
 

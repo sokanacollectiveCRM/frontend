@@ -156,6 +156,8 @@ export type ContractTemplate = {
 export type Client = User & {
   // Contact & Basic Info
   preferred_name?: string;
+  /** Client age in years (exact), from intake; distinct from optional `client_age_range`. */
+  age?: number | string;
   pronouns?: string;
   preferred_contact_method?: string;
   children_expected?: string;
@@ -172,6 +174,8 @@ export type Client = User & {
   service_needed?: string;
   service_specifics?: string;
   annual_income?: string;
+  self_pay_sliding_support_type?: string;
+  self_pay_sliding_tier?: string;
   payment_method?: string;
   insurance_provider?: string;
   insurance_member_id?: string;
@@ -195,6 +199,7 @@ export type Client = User & {
   
   // Referral
   referral_source?: string;
+  referral_source_other?: string;
   referral_name?: string;
   referral_email?: string;
   

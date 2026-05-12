@@ -45,57 +45,30 @@ import {
 } from '@/api/clients/clientDocuments';
 import { normalizeZipCode } from '@/common/utils/zipCode';
 import {
+  ALL_PAYMENT_METHOD_OPTIONS,
   isMedicaidMethod,
   isSelfPayMethod as sharedIsSelfPayMethod,
+  isFullSupportMethod,
+  isNotSurePaymentMethod,
+  isInsuranceMethod,
   requiresInsuranceDetails,
   getPaymentMethodMessage,
   derivePaymentAuthorizationStatus,
+  normalizeBillingPaymentMethod,
+  INSURANCE_PLAN_TYPE_OPTIONS,
+  INSURANCE_POLICY_HOLDER_RELATIONSHIP_OPTIONS,
+  type AllKnownPaymentMethod,
 } from '@/lib/paymentRules';
 import { getPaymentAuthorizationFormHref } from '@/lib/paymentAuthorizationForm';
 
 type ClientDashboardView = 'all' | 'profile' | 'billing';
 
-const BILLING_PAYMENT_METHOD_OPTIONS = [
-  'Self-Pay',
-  'Commercial Insurance',
-  'Private Insurance',
-  'Medicaid',
-] as const;
-
-function normalizeBillingPaymentMethod(method: unknown): string {
-  const raw = String(method ?? '').trim();
-  if (!raw) return '';
-
-  const normalized = raw.toLowerCase().replace(/_/g, ' ').replace(/\s+/g, ' ');
-
-  if (normalized === 'self-pay' || normalized === 'self pay' || normalized === 'selfpay') {
-    return 'Self-Pay';
-  }
-  if (normalized === 'commercial insurance') {
-    return 'Commercial Insurance';
-  }
-  if (normalized === 'private insurance') {
-    return 'Private Insurance';
-  }
-  if (normalized === 'medicaid') {
-    return 'Medicaid';
-  }
-
-  return raw;
-}
-
 function isBillingPaymentMethodOption(value: string): boolean {
-  return BILLING_PAYMENT_METHOD_OPTIONS.includes(value as (typeof BILLING_PAYMENT_METHOD_OPTIONS)[number]);
+  return ALL_PAYMENT_METHOD_OPTIONS.includes(value as AllKnownPaymentMethod);
 }
 
 function isSelfPayMethod(method: string): boolean {
   return sharedIsSelfPayMethod(method);
-}
-
-/** Returns true when insurance-specific fields should be shown (not Medicaid, not Self-Pay). */
-function hasInsuranceBilling(method: string): boolean {
-  const trimmed = method.trim();
-  return trimmed.length > 0 && !isSelfPayMethod(trimmed) && !isMedicaidMethod(trimmed);
 }
 
 function isImageDocument(document: ClientDocument): boolean {
@@ -194,6 +167,10 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
   const [isBillingEditing, setIsBillingEditing] = useState(false);
   const [billingSnapshot, setBillingSnapshot] = useState({
     payment_method: '',
+    insurance_policy_holder_name: '',
+    insurance_policy_holder_dob: '',
+    insurance_policy_holder_relationship: '',
+    insurance_plan_type: '',
     insurance_provider: '',
     insurance_member_id: '',
     policy_number: '',
@@ -213,6 +190,10 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
     state: '',
     zip_code: '',
     payment_method: '',
+    insurance_policy_holder_name: '',
+    insurance_policy_holder_dob: '',
+    insurance_policy_holder_relationship: '',
+    insurance_plan_type: '',
     insurance_provider: '',
     insurance_member_id: '',
     policy_number: '',
@@ -392,6 +373,15 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
         payment_method: isBillingPaymentMethodOption(profilePaymentMethod)
           ? profilePaymentMethod
           : '',
+        insurance_policy_holder_name:
+          profile?.insurance_policy_holder_name || profile?.insurancePolicyHolderName || '',
+        insurance_policy_holder_dob:
+          profile?.insurance_policy_holder_dob || profile?.insurancePolicyHolderDob || '',
+        insurance_policy_holder_relationship:
+          profile?.insurance_policy_holder_relationship ||
+          profile?.insurancePolicyHolderRelationship ||
+          '',
+        insurance_plan_type: profile?.insurance_plan_type || profile?.insurancePlanType || '',
         insurance_provider:
           profile?.insurance_provider ||
           profile?.insuranceProvider ||
@@ -459,6 +449,34 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
             payment_method: isBillingPaymentMethodOption(loadedPaymentMethod)
               ? loadedPaymentMethod
               : '',
+            insurance_policy_holder_name:
+              String(
+                billing.insurance_policy_holder_name ??
+                  billing.insurancePolicyHolderName ??
+                  profileBillingState.insurance_policy_holder_name ??
+                  ''
+              ) || '',
+            insurance_policy_holder_dob:
+              String(
+                billing.insurance_policy_holder_dob ??
+                  billing.insurancePolicyHolderDob ??
+                  profileBillingState.insurance_policy_holder_dob ??
+                  ''
+              ) || '',
+            insurance_policy_holder_relationship:
+              String(
+                billing.insurance_policy_holder_relationship ??
+                  billing.insurancePolicyHolderRelationship ??
+                  profileBillingState.insurance_policy_holder_relationship ??
+                  ''
+              ) || '',
+            insurance_plan_type:
+              String(
+                billing.insurance_plan_type ??
+                  billing.insurancePlanType ??
+                  profileBillingState.insurance_plan_type ??
+                  ''
+              ) || '',
             insurance_provider:
               String(
                 billing.insurance_provider ??
@@ -549,6 +567,10 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
         state: '',
         zip_code: '',
         payment_method: '',
+        insurance_policy_holder_name: '',
+        insurance_policy_holder_dob: '',
+        insurance_policy_holder_relationship: '',
+        insurance_plan_type: '',
         insurance_provider: '',
         insurance_member_id: '',
         policy_number: '',
@@ -717,29 +739,46 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
 
       if (view === 'billing') {
         const selectedPaymentMethod = formData.payment_method.trim();
-        const isSelfPay = isSelfPayMethod(selectedPaymentMethod);
-        const isMedicaid = isMedicaidMethod(selectedPaymentMethod);
-        const needsInsuranceDetails = !isMedicaid && !isSelfPay;
+        const needsInsuranceDetails = requiresInsuranceDetails(selectedPaymentMethod);
+        const needsCommercialInsuranceCards = isInsuranceMethod(selectedPaymentMethod);
 
         if (!selectedPaymentMethod) {
           toast.error('Please select a payment method.');
           setIsSaving(false);
           return;
         }
-        if (needsInsuranceDetails && !formData.insurance_provider.trim()) {
-          toast.error('Please enter an insurance provider for insurance billing.');
-          setIsSaving(false);
-          return;
-        }
-        if (needsInsuranceDetails && !formData.insurance_member_id.trim()) {
-          toast.error('Please enter an insurance member ID for insurance billing.');
-          setIsSaving(false);
-          return;
-        }
-        if (needsInsuranceDetails && !formData.policy_number.trim()) {
-          toast.error('Please enter a policy number for insurance billing.');
-          setIsSaving(false);
-          return;
+        if (needsInsuranceDetails) {
+          if (!formData.insurance_policy_holder_name.trim()) {
+            toast.error('Please enter the policy holder name.');
+            setIsSaving(false);
+            return;
+          }
+          if (!formData.insurance_policy_holder_dob.trim()) {
+            toast.error('Please enter the policy holder date of birth.');
+            setIsSaving(false);
+            return;
+          }
+          if (!formData.insurance_policy_holder_relationship.trim()) {
+            toast.error('Please select the policy holder relationship to you.');
+            setIsSaving(false);
+            return;
+          }
+          if (!formData.insurance_provider.trim()) {
+            toast.error('Please enter your insurance company name.');
+            setIsSaving(false);
+            return;
+          }
+          if (!formData.insurance_member_id.trim()) {
+            toast.error('Please enter your member ID or subscriber ID.');
+            setIsSaving(false);
+            return;
+          }
+          const plan = formData.insurance_plan_type.trim();
+          if (!plan || !INSURANCE_PLAN_TYPE_OPTIONS.includes(plan as (typeof INSURANCE_PLAN_TYPE_OPTIONS)[number])) {
+            toast.error('Please select a plan type.');
+            setIsSaving(false);
+            return;
+          }
         }
         if (formData.has_secondary_insurance) {
           if (!formData.secondary_insurance_provider.trim()) {
@@ -758,7 +797,7 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
             return;
           }
         }
-        if (needsInsuranceDetails && (!frontInsuranceCard || !backInsuranceCard)) {
+        if (needsCommercialInsuranceCards && (!frontInsuranceCard || !backInsuranceCard)) {
           toast.error('Please upload both the front and back insurance cards before saving insurance billing.');
           setIsSaving(false);
           return;
@@ -767,6 +806,12 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
         const billingPayload = {
           payment_method: selectedPaymentMethod,
           payment_authorization_status: derivePaymentAuthorizationStatus(selectedPaymentMethod),
+          insurance_policy_holder_name: needsInsuranceDetails ? formData.insurance_policy_holder_name : '',
+          insurance_policy_holder_dob: needsInsuranceDetails ? formData.insurance_policy_holder_dob : '',
+          insurance_policy_holder_relationship: needsInsuranceDetails
+            ? formData.insurance_policy_holder_relationship
+            : '',
+          insurance_plan_type: needsInsuranceDetails ? formData.insurance_plan_type : '',
           insurance_provider: needsInsuranceDetails ? formData.insurance_provider : '',
           insurance_member_id: needsInsuranceDetails ? formData.insurance_member_id : '',
           policy_number: needsInsuranceDetails ? formData.policy_number : '',
@@ -813,45 +858,67 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
 
         toast.success('Billing updated successfully');
         setBillingPaymentMethodDisplay(selectedPaymentMethod);
+        const persistIns = requiresInsuranceDetails(selectedPaymentMethod);
         setBillingSnapshot({
-          payment_method: isSelfPay ? 'Self-Pay' : selectedPaymentMethod,
-          insurance_provider: isSelfPay ? '' : formData.insurance_provider,
-          insurance_member_id: isSelfPay ? '' : formData.insurance_member_id,
-          policy_number: isSelfPay ? '' : formData.policy_number,
-          insurance_phone_number: isSelfPay ? '' : formData.insurance_phone_number,
-          has_secondary_insurance: isSelfPay ? false : formData.has_secondary_insurance,
-          secondary_insurance_provider: isSelfPay ? '' : formData.secondary_insurance_provider,
-          secondary_insurance_member_id: isSelfPay ? '' : formData.secondary_insurance_member_id,
-          secondary_policy_number: isSelfPay ? '' : formData.secondary_policy_number,
+          payment_method: selectedPaymentMethod,
+          insurance_policy_holder_name: persistIns ? formData.insurance_policy_holder_name : '',
+          insurance_policy_holder_dob: persistIns ? formData.insurance_policy_holder_dob : '',
+          insurance_policy_holder_relationship: persistIns ? formData.insurance_policy_holder_relationship : '',
+          insurance_plan_type: persistIns ? formData.insurance_plan_type : '',
+          insurance_provider: persistIns ? formData.insurance_provider : '',
+          insurance_member_id: persistIns ? formData.insurance_member_id : '',
+          policy_number: persistIns ? formData.policy_number : '',
+          insurance_phone_number: persistIns ? formData.insurance_phone_number : '',
+          has_secondary_insurance: persistIns ? formData.has_secondary_insurance : false,
+          secondary_insurance_provider: persistIns ? formData.secondary_insurance_provider : '',
+          secondary_insurance_member_id: persistIns ? formData.secondary_insurance_member_id : '',
+          secondary_policy_number: persistIns ? formData.secondary_policy_number : '',
         });
         setIsBillingEditing(false);
         return;
       }
 
       const selectedPaymentMethod = formData.payment_method.trim();
-      const isSelfPay = isSelfPayMethod(selectedPaymentMethod);
-      const isMedicaid = isMedicaidMethod(selectedPaymentMethod);
-      const needsInsuranceDetails = !isMedicaid && !isSelfPay;
+      const needsInsuranceDetails = requiresInsuranceDetails(selectedPaymentMethod);
+      const needsCommercialInsuranceCards = isInsuranceMethod(selectedPaymentMethod);
 
       if (!selectedPaymentMethod) {
         toast.error('Please select a payment method.');
         setIsSaving(false);
         return;
       }
-      if (needsInsuranceDetails && !formData.insurance_provider.trim()) {
-        toast.error('Please enter an insurance provider for insurance billing.');
-        setIsSaving(false);
-        return;
-      }
-      if (needsInsuranceDetails && !formData.insurance_member_id.trim()) {
-        toast.error('Please enter an insurance member ID for insurance billing.');
-        setIsSaving(false);
-        return;
-      }
-      if (needsInsuranceDetails && !formData.policy_number.trim()) {
-        toast.error('Please enter a policy number for insurance billing.');
-        setIsSaving(false);
-        return;
+      if (needsInsuranceDetails) {
+        if (!formData.insurance_policy_holder_name.trim()) {
+          toast.error('Please enter the policy holder name.');
+          setIsSaving(false);
+          return;
+        }
+        if (!formData.insurance_policy_holder_dob.trim()) {
+          toast.error('Please enter the policy holder date of birth.');
+          setIsSaving(false);
+          return;
+        }
+        if (!formData.insurance_policy_holder_relationship.trim()) {
+          toast.error('Please select the policy holder relationship to you.');
+          setIsSaving(false);
+          return;
+        }
+        if (!formData.insurance_provider.trim()) {
+          toast.error('Please enter your insurance company name.');
+          setIsSaving(false);
+          return;
+        }
+        if (!formData.insurance_member_id.trim()) {
+          toast.error('Please enter your member ID or subscriber ID.');
+          setIsSaving(false);
+          return;
+        }
+        const planAll = formData.insurance_plan_type.trim();
+        if (!planAll || !INSURANCE_PLAN_TYPE_OPTIONS.includes(planAll as (typeof INSURANCE_PLAN_TYPE_OPTIONS)[number])) {
+          toast.error('Please select a plan type.');
+          setIsSaving(false);
+          return;
+        }
       }
       if (formData.has_secondary_insurance) {
         if (!formData.secondary_insurance_provider.trim()) {
@@ -870,7 +937,7 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
           return;
         }
       }
-      if (needsInsuranceDetails && (!frontInsuranceCard || !backInsuranceCard)) {
+      if (needsCommercialInsuranceCards && (!frontInsuranceCard || !backInsuranceCard)) {
         toast.error('Please upload both the front and back insurance cards before saving insurance billing.');
         setIsSaving(false);
         return;
@@ -896,6 +963,12 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
       const billingPayload = {
         payment_method: selectedPaymentMethod,
         payment_authorization_status: derivePaymentAuthorizationStatus(selectedPaymentMethod),
+        insurance_policy_holder_name: needsInsuranceDetails ? formData.insurance_policy_holder_name : '',
+        insurance_policy_holder_dob: needsInsuranceDetails ? formData.insurance_policy_holder_dob : '',
+        insurance_policy_holder_relationship: needsInsuranceDetails
+          ? formData.insurance_policy_holder_relationship
+          : '',
+        insurance_plan_type: needsInsuranceDetails ? formData.insurance_plan_type : '',
         insurance_provider: needsInsuranceDetails ? formData.insurance_provider : '',
         insurance_member_id: needsInsuranceDetails ? formData.insurance_member_id : '',
         policy_number: needsInsuranceDetails ? formData.policy_number : '',
@@ -957,16 +1030,21 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
 
       toast.success('Profile updated successfully');
       setBillingPaymentMethodDisplay(selectedPaymentMethod);
+      const persistInsAll = requiresInsuranceDetails(selectedPaymentMethod);
       setBillingSnapshot({
         payment_method: selectedPaymentMethod,
-        insurance_provider: needsInsuranceDetails ? formData.insurance_provider : '',
-        insurance_member_id: needsInsuranceDetails ? formData.insurance_member_id : '',
-        policy_number: needsInsuranceDetails ? formData.policy_number : '',
-        insurance_phone_number: needsInsuranceDetails ? formData.insurance_phone_number : '',
-        has_secondary_insurance: needsInsuranceDetails ? formData.has_secondary_insurance : false,
-        secondary_insurance_provider: needsInsuranceDetails ? formData.secondary_insurance_provider : '',
-        secondary_insurance_member_id: needsInsuranceDetails ? formData.secondary_insurance_member_id : '',
-        secondary_policy_number: needsInsuranceDetails ? formData.secondary_policy_number : '',
+        insurance_policy_holder_name: persistInsAll ? formData.insurance_policy_holder_name : '',
+        insurance_policy_holder_dob: persistInsAll ? formData.insurance_policy_holder_dob : '',
+        insurance_policy_holder_relationship: persistInsAll ? formData.insurance_policy_holder_relationship : '',
+        insurance_plan_type: persistInsAll ? formData.insurance_plan_type : '',
+        insurance_provider: persistInsAll ? formData.insurance_provider : '',
+        insurance_member_id: persistInsAll ? formData.insurance_member_id : '',
+        policy_number: persistInsAll ? formData.policy_number : '',
+        insurance_phone_number: persistInsAll ? formData.insurance_phone_number : '',
+        has_secondary_insurance: persistInsAll ? formData.has_secondary_insurance : false,
+        secondary_insurance_provider: persistInsAll ? formData.secondary_insurance_provider : '',
+        secondary_insurance_member_id: persistInsAll ? formData.secondary_insurance_member_id : '',
+        secondary_policy_number: persistInsAll ? formData.secondary_policy_number : '',
       });
       setIsBillingEditing(false);
     } catch (error: any) {
@@ -983,10 +1061,9 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
   const frontInsuranceCard = getInsuranceCardDocumentForSide(insuranceCardDocuments, 'front');
   const backInsuranceCard = getInsuranceCardDocumentForSide(insuranceCardDocuments, 'back');
   const isProfileFormDisabled = isSaving || !isProfileEditing;
-  /** Commercial / Private only: both card images required before save. */
+  /** Commercial / Private only: both card images required before save (Medicaid may save without). */
   const needsCommercialPrivateInsuranceCards =
-    requiresInsuranceDetails(formData.payment_method) &&
-    (!frontInsuranceCard || !backInsuranceCard);
+    isInsuranceMethod(formData.payment_method) && (!frontInsuranceCard || !backInsuranceCard);
   const isBillingFormDisabled = isSaving || !isBillingEditing;
   const isBillingSaveDisabled =
     isSaving || !isBillingEditing || needsCommercialPrivateInsuranceCards;
@@ -1021,6 +1098,10 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
   const handleStartBillingEdit = () => {
       setBillingSnapshot({
         payment_method: formData.payment_method,
+        insurance_policy_holder_name: formData.insurance_policy_holder_name,
+        insurance_policy_holder_dob: formData.insurance_policy_holder_dob,
+        insurance_policy_holder_relationship: formData.insurance_policy_holder_relationship,
+        insurance_plan_type: formData.insurance_plan_type,
         insurance_provider: formData.insurance_provider,
         insurance_member_id: formData.insurance_member_id,
         policy_number: formData.policy_number,
@@ -1037,6 +1118,10 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
     setFormData((prev) => ({
       ...prev,
       payment_method: billingSnapshot.payment_method,
+      insurance_policy_holder_name: billingSnapshot.insurance_policy_holder_name,
+      insurance_policy_holder_dob: billingSnapshot.insurance_policy_holder_dob,
+      insurance_policy_holder_relationship: billingSnapshot.insurance_policy_holder_relationship,
+      insurance_plan_type: billingSnapshot.insurance_plan_type,
       insurance_provider: billingSnapshot.insurance_provider,
       insurance_member_id: billingSnapshot.insurance_member_id,
       policy_number: billingSnapshot.policy_number,
@@ -1592,10 +1677,19 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
                   <Select
                     value={formData.payment_method || undefined}
                     onValueChange={(value) => {
-                      const clearInsurance = isSelfPayMethod(value) || isMedicaidMethod(value);
+                      const clearInsurance =
+                        isSelfPayMethod(value) ||
+                        isFullSupportMethod(value) ||
+                        isNotSurePaymentMethod(value);
                       setFormData((prev) => ({
                         ...prev,
                         payment_method: value,
+                        insurance_policy_holder_name: clearInsurance ? '' : prev.insurance_policy_holder_name,
+                        insurance_policy_holder_dob: clearInsurance ? '' : prev.insurance_policy_holder_dob,
+                        insurance_policy_holder_relationship: clearInsurance
+                          ? ''
+                          : prev.insurance_policy_holder_relationship,
+                        insurance_plan_type: clearInsurance ? '' : prev.insurance_plan_type,
                         insurance_provider: clearInsurance ? '' : prev.insurance_provider,
                         insurance_member_id: clearInsurance ? '' : prev.insurance_member_id,
                         policy_number: clearInsurance ? '' : prev.policy_number,
@@ -1613,7 +1707,7 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
                       <SelectValue placeholder='Select payment method' />
                     </SelectTrigger>
                     <SelectContent>
-                      {BILLING_PAYMENT_METHOD_OPTIONS.map((option) => (
+                      {ALL_PAYMENT_METHOD_OPTIONS.map((option) => (
                         <SelectItem key={option} value={option}>
                           {option}
                         </SelectItem>
@@ -1622,7 +1716,7 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
                   </Select>
                 </div>
 
-                {hasInsuranceBilling(formData.payment_method) ? (
+                {requiresInsuranceDetails(formData.payment_method) ? (
                   <>
                     <div className='grid gap-3 lg:grid-cols-2'>
                       {[
@@ -1640,10 +1734,13 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
                         <div key={slot.side} className='rounded-lg border border-dashed p-3 space-y-3'>
                           <div className='flex flex-col gap-2 md:flex-row md:items-center md:justify-between'>
                             <div className='space-y-0.5'>
-                              <p className='font-medium'>Insurance {slot.label.toLowerCase()} *</p>
+                              <p className='font-medium'>
+                                Insurance {slot.label.toLowerCase()}
+                                {isInsuranceMethod(formData.payment_method) ? ' *' : ' (optional)'}
+                              </p>
                               <p className='text-sm text-muted-foreground'>
-                                Upload the {slot.label.toLowerCase()} of the insurance card. Staff will
-                                be able to view and download it from your client profile.
+                                Upload the {slot.label.toLowerCase()} of your insurance or Medicaid ID
+                                card. Staff will be able to view and download it from your client profile.
                               </p>
                             </div>
                             <div>
@@ -1696,8 +1793,56 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
                       ))}
                     </div>
 
+                    <div className='grid grid-cols-1 gap-3 md:grid-cols-2'>
+                      <div className='space-y-1.5'>
+                        <Label htmlFor='insurance_policy_holder_name'>Policy holder name *</Label>
+                        <Input
+                          id='insurance_policy_holder_name'
+                          value={formData.insurance_policy_holder_name}
+                          onChange={(e) =>
+                            setFormData({ ...formData, insurance_policy_holder_name: e.target.value })
+                          }
+                          disabled={isBillingFormDisabled}
+                        />
+                      </div>
+                      <div className='space-y-1.5'>
+                        <Label htmlFor='insurance_policy_holder_dob'>Policy holder date of birth *</Label>
+                        <Input
+                          id='insurance_policy_holder_dob'
+                          type='date'
+                          value={formData.insurance_policy_holder_dob}
+                          onChange={(e) =>
+                            setFormData({ ...formData, insurance_policy_holder_dob: e.target.value })
+                          }
+                          disabled={isBillingFormDisabled}
+                        />
+                      </div>
+                    </div>
+
                     <div className='space-y-1.5'>
-                      <Label htmlFor='insurance_provider'>Insurance Provider *</Label>
+                      <Label htmlFor='insurance_policy_holder_relationship'>
+                        Relationship of policy holder to you *
+                      </Label>
+                      <select
+                        id='insurance_policy_holder_relationship'
+                        className='flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
+                        value={formData.insurance_policy_holder_relationship}
+                        onChange={(e) =>
+                          setFormData({ ...formData, insurance_policy_holder_relationship: e.target.value })
+                        }
+                        disabled={isBillingFormDisabled}
+                      >
+                        <option value=''>Select relationship</option>
+                        {INSURANCE_POLICY_HOLDER_RELATIONSHIP_OPTIONS.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className='space-y-1.5'>
+                      <Label htmlFor='insurance_provider'>Insurance company name *</Label>
                       <Input
                         id='insurance_provider'
                         value={formData.insurance_provider}
@@ -1710,7 +1855,7 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
 
                     <div className='grid grid-cols-2 gap-3'>
                       <div className='space-y-1.5'>
-                        <Label htmlFor='insurance_member_id'>Insurance Member ID *</Label>
+                        <Label htmlFor='insurance_member_id'>Member ID / Subscriber ID *</Label>
                         <Input
                           id='insurance_member_id'
                           value={formData.insurance_member_id}
@@ -1722,7 +1867,7 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
                       </div>
 
                       <div className='space-y-1.5'>
-                        <Label htmlFor='policy_number'>Policy Number *</Label>
+                        <Label htmlFor='policy_number'>Group number (optional)</Label>
                         <Input
                           id='policy_number'
                           value={formData.policy_number}
@@ -1732,6 +1877,26 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
                           disabled={isBillingFormDisabled}
                         />
                       </div>
+                    </div>
+
+                    <div className='space-y-1.5'>
+                      <Label htmlFor='insurance_plan_type'>Plan type *</Label>
+                      <select
+                        id='insurance_plan_type'
+                        className='flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
+                        value={formData.insurance_plan_type}
+                        onChange={(e) =>
+                          setFormData({ ...formData, insurance_plan_type: e.target.value })
+                        }
+                        disabled={isBillingFormDisabled}
+                      >
+                        <option value=''>Select plan type</option>
+                        {INSURANCE_PLAN_TYPE_OPTIONS.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
                     </div>
 
                     <div className='space-y-1.5'>
@@ -1819,86 +1984,6 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
                           </div>
                         </>
                       ) : null}
-                    </div>
-                  </>
-                ) : null}
-
-                {isMedicaidMethod(formData.payment_method) ? (
-                  <>
-                    <p className='text-sm text-muted-foreground'>
-                      Upload photos of your Medicaid ID card (front and back). This is your state or
-                      managed-care Medicaid card—not a credit card. Uploads are optional but help us
-                      verify your coverage.
-                    </p>
-                    <div className='grid gap-3 lg:grid-cols-2'>
-                      {[
-                        {
-                          side: 'front' as const,
-                          label: 'Front of Medicaid card',
-                          document: frontInsuranceCard,
-                        },
-                        {
-                          side: 'back' as const,
-                          label: 'Back of Medicaid card',
-                          document: backInsuranceCard,
-                        },
-                      ].map((slot) => (
-                        <div key={slot.side} className='rounded-lg border border-dashed p-3 space-y-3'>
-                          <div className='flex flex-col gap-2 md:flex-row md:items-center md:justify-between'>
-                            <div className='space-y-0.5'>
-                              <p className='font-medium'>{slot.label}</p>
-                              <p className='text-sm text-muted-foreground'>
-                                Staff can view and download this from your profile.
-                              </p>
-                            </div>
-                            <div>
-                              <input
-                                id={`medicaid-card-${slot.side}-upload`}
-                                type='file'
-                                accept='.jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf'
-                                className='hidden'
-                                onChange={(event) => void handleInsuranceCardSelected(slot.side, event)}
-                                disabled={
-                                  isBillingFormDisabled ||
-                                  uploadingInsuranceCardSide !== null ||
-                                  Boolean(deletingInsuranceCardId)
-                                }
-                              />
-                              <Button
-                                type='button'
-                                onClick={() =>
-                                  document.getElementById(`medicaid-card-${slot.side}-upload`)?.click()
-                                }
-                                disabled={
-                                  isBillingFormDisabled ||
-                                  uploadingInsuranceCardSide !== null ||
-                                  Boolean(deletingInsuranceCardId)
-                                }
-                              >
-                                <Upload className='mr-2 h-4 w-4' />
-                                {uploadingInsuranceCardSide === slot.side
-                                  ? 'Uploading...'
-                                  : slot.document
-                                    ? `Replace ${slot.side === 'front' ? 'Front' : 'Back'}`
-                                    : `Upload ${slot.side === 'front' ? 'Front' : 'Back'}`}
-                              </Button>
-                            </div>
-                          </div>
-
-                          {documentsLoading ? (
-                            <div className='flex items-center gap-2 text-sm text-muted-foreground'>
-                              <Loader2 className='h-4 w-4 animate-spin' />
-                              Loading uploaded documents...
-                            </div>
-                          ) : slot.document ? (
-                            renderInsuranceCardDocument(slot.document)
-                          ) : (
-                            <p className='text-sm text-muted-foreground'>
-                              No {slot.side} photo uploaded yet.
-                            </p>
-                          )}
-                        </div>
-                      ))}
                     </div>
                   </>
                 ) : null}

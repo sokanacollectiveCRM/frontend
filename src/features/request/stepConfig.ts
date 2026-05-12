@@ -1,7 +1,18 @@
+/** Used on the request form Health step and matching CRM field labels. */
+export const PREGNANCY_BABY_POSTPARTUM_QUESTION_LABEL =
+  'Is there anything we should know regarding your pregnancy, baby, or postpartum period?';
+
 export interface StepInfo {
   id: number;
+  /** Main page heading (StepHeader). */
   title: string;
-  shortTitle: string; // For navigation bar on smaller screens
+  /** Compact label in the mobile step strip. */
+  shortTitle: string;
+  /**
+   * Desktop step-rail label when it should differ from `title` (e.g. short progress
+   * label while the page uses a plain-language heading).
+   */
+  navTitle?: string;
 }
 
 export const STEP_CONFIG: StepInfo[] = [
@@ -27,13 +38,15 @@ export const STEP_CONFIG: StepInfo[] = [
   },
   {
     id: 4,
-    title: "Referral", 
-    shortTitle: "Referral"
+    title: 'How did you hear about us?',
+    shortTitle: 'Referral',
+    navTitle: 'Referral',
   },
   {
     id: 5,
-    title: "Health History",
-    shortTitle: "Health"
+    title: 'Health information',
+    shortTitle: 'Health',
+    navTitle: 'Health',
   },
   {
     id: 6,

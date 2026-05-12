@@ -110,6 +110,8 @@ export interface ClientDetailDTO {
   baby_name?: string;
   number_of_babies?: number;
   race_ethnicity?: string;
+  /** Exact age in years from intake (request form Client Details). */
+  age?: number;
   client_age_range?: string;
   annual_income?: string;
   insurance?: string;
@@ -118,6 +120,10 @@ export interface ClientDetailDTO {
   authorized_at?: string;
   insurance_provider?: string;
   insurance_member_id?: string;
+  insurance_policy_holder_name?: string;
+  insurance_policy_holder_dob?: string;
+  insurance_policy_holder_relationship?: string;
+  insurance_plan_type?: string;
   policy_number?: string;
   insurance_phone_number?: string;
   has_secondary_insurance?: boolean;
@@ -125,4 +131,10 @@ export interface ClientDetailDTO {
   secondary_insurance_member_id?: string;
   secondary_policy_number?: string;
   self_pay_card_info?: string;
+
+  /** Intake — how the client found Sokana (CRM / request form). */
+  referral_source?: string;
+  referral_source_other?: string;
+  referral_name?: string;
+  referral_email?: string;
 }

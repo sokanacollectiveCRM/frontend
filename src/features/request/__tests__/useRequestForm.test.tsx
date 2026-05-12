@@ -23,6 +23,7 @@ describe('useRequestForm', () => {
         pronouns_other: '',
         preferred_contact_method: 'Phone',
         preferred_name: '',
+        age: '28',
         address: '123 Main St',
         city: 'Springfield',
         state: 'IL',
@@ -36,10 +37,10 @@ describe('useRequestForm', () => {
         family_last_name: 'Doe',
         family_middle_name: 'Marie',
         family_mobile_phone: '555-222-3333',
-        family_work_phone: '555-444-5555',
         family_email: 'alex.doe@example.com',
         family_pronouns: 'They/Them',
         referral_source: 'Google',
+        referral_source_other: '',
         referral_name: 'Sokana',
         referral_email: 'referral@example.com',
         health_history: 'No major health issues',
@@ -59,10 +60,14 @@ describe('useRequestForm', () => {
         services_interested: ['Labor Support', 'Postpartum Support'],
         service_support_details: 'I am looking for both labor and postpartum support, including overnight care for 2 weeks.',
         service_needed: 'Labor Support',
-        payment_method: 'Commercial Insurance',
+        payment_method: 'Private/Commercial Insurance',
+        insurance_policy_holder_name: 'Jane Doe',
+        insurance_policy_holder_dob: '1990-04-12',
+        insurance_policy_holder_relationship: 'Self',
         insurance_provider: 'Blue Cross Blue Shield',
         insurance_member_id: 'ABC12345',
-        policy_number: 'POL98765',
+        policy_number: 'GRP-77',
+        insurance_plan_type: 'PPO',
         insurance_phone_number: '800-555-1212',
         has_secondary_insurance: false,
         secondary_insurance_provider: '',
@@ -78,6 +83,81 @@ describe('useRequestForm', () => {
 
       const result = fullSchema.safeParse(validData);
       expect(result.success).toBe(true);
+    });
+
+    it('requires explanation when referral source is Other', () => {
+      const base = {
+        firstname: 'Jane',
+        lastname: 'Doe',
+        email: 'jane.doe@example.com',
+        phone_number: '555-123-4567',
+        pronouns: 'She/Her',
+        pronouns_other: '',
+        preferred_contact_method: 'Phone',
+        preferred_name: '',
+        age: '28',
+        address: '123 Main St',
+        city: 'Springfield',
+        state: 'IL',
+        zip_code: '62704',
+        home_phone: '',
+        home_type: '',
+        home_access: '',
+        pets: 'None',
+        relationship_status: '',
+        first_name: '',
+        last_name: '',
+        middle_name: '',
+        family_email: '',
+        mobile_phone: '',
+        work_phone: '',
+        family_pronouns: '',
+        referral_source: 'Other',
+        referral_source_other: '',
+        referral_name: '',
+        referral_email: '',
+        health_history: '',
+        allergies: '',
+        health_notes: '',
+        due_date: '2025-06-15',
+        birth_location: 'Hospital',
+        birth_hospital: '',
+        number_of_babies: 'Singleton',
+        baby_name: '',
+        provider_type: 'Midwife',
+        pregnancy_number: '1',
+        hospital: '',
+        had_previous_pregnancies: false,
+        previous_pregnancies_count: 0,
+        living_children_count: 0,
+        past_pregnancy_experience: '',
+        services_interested: ['Labor Support'],
+        service_support_details: 'Looking for support',
+        service_needed: 'Labor Support',
+        payment_method: 'Not sure / Need help figuring this out',
+        annual_income: '',
+        service_specifics: '',
+        race_ethnicity: '',
+        primary_language: '',
+        client_age_range: '',
+        insurance: '',
+        demographics_multi: [],
+        demographics_annual_income: '',
+      };
+
+      const emptyOther = fullSchema.safeParse(base);
+      expect(emptyOther.success).toBe(false);
+      if (!emptyOther.success) {
+        expect(
+          emptyOther.error.issues.some((i) => i.path.includes('referral_source_other'))
+        ).toBe(true);
+      }
+
+      const withOther = fullSchema.safeParse({
+        ...base,
+        referral_source_other: 'Neighborhood parent group',
+      });
+      expect(withOther.success).toBe(true);
     });
 
     it('fails validation with missing required fields', () => {
@@ -115,7 +195,7 @@ describe('useRequestForm', () => {
       }
     });
 
-    it('allows self-pay without insurance details', () => {
+    it('allows not-sure payment path without insurance details', () => {
       const result = fullSchema.safeParse({
         firstname: 'Jane',
         lastname: 'Doe',
@@ -125,6 +205,7 @@ describe('useRequestForm', () => {
         pronouns_other: '',
         preferred_contact_method: 'Phone',
         preferred_name: '',
+        age: '28',
         address: '123 Main St',
         city: 'Springfield',
         state: 'IL',
@@ -132,7 +213,7 @@ describe('useRequestForm', () => {
         home_phone: '',
         home_type: '',
         home_access: '',
-        pets: '',
+        pets: 'None',
         relationship_status: '',
         first_name: '',
         last_name: '',
@@ -142,6 +223,7 @@ describe('useRequestForm', () => {
         work_phone: '',
         family_pronouns: '',
         referral_source: 'Google',
+        referral_source_other: '',
         referral_name: '',
         referral_email: '',
         health_history: '',
@@ -162,7 +244,7 @@ describe('useRequestForm', () => {
         services_interested: ['Labor Support'],
         service_support_details: 'Looking for support',
         service_needed: 'Labor Support',
-        payment_method: 'Self-Pay',
+        payment_method: 'Not sure / Need help figuring this out',
         annual_income: '',
         service_specifics: '',
         race_ethnicity: '',
@@ -186,6 +268,7 @@ describe('useRequestForm', () => {
         pronouns_other: '',
         preferred_contact_method: 'Phone',
         preferred_name: '',
+        age: '28',
         address: '123 Main St',
         city: 'Springfield',
         state: 'IL',
@@ -193,7 +276,7 @@ describe('useRequestForm', () => {
         home_phone: '',
         home_type: '',
         home_access: '',
-        pets: '',
+        pets: 'None',
         relationship_status: '',
         first_name: '',
         last_name: '',
@@ -203,6 +286,7 @@ describe('useRequestForm', () => {
         work_phone: '',
         family_pronouns: '',
         referral_source: 'Google',
+        referral_source_other: '',
         referral_name: '',
         referral_email: '',
         health_history: '',
@@ -223,9 +307,23 @@ describe('useRequestForm', () => {
         services_interested: ['Labor Support'],
         service_support_details: 'Looking for support',
         service_needed: 'Labor Support',
-        payment_method: 'Commercial Insurance',
+        payment_method: 'Private/Commercial Insurance',
+        insurance_policy_holder_name: '',
+        insurance_policy_holder_dob: '',
+        insurance_policy_holder_relationship: '',
+        insurance_provider: '',
+        insurance_member_id: '',
+        policy_number: '',
+        insurance_plan_type: '',
+        insurance_phone_number: '',
+        has_secondary_insurance: false,
+        secondary_insurance_provider: '',
+        secondary_insurance_member_id: '',
+        secondary_policy_number: '',
         annual_income: '',
         service_specifics: '',
+        self_pay_sliding_support_type: '',
+        self_pay_sliding_tier: '',
         race_ethnicity: '',
         primary_language: '',
         client_age_range: '',
@@ -237,7 +335,12 @@ describe('useRequestForm', () => {
       expect(result.success).toBe(false);
       if (!result.success) {
         expect(
-          result.error.issues.some((issue) => issue.path.includes('insurance_provider'))
+          result.error.issues.some(
+            (issue) =>
+              issue.path.includes('insurance_provider') ||
+              issue.path.includes('insurance_policy_holder_name') ||
+              issue.path.includes('insurance_plan_type')
+          )
         ).toBe(true);
       }
     });
@@ -311,10 +414,12 @@ describe('useRequestForm', () => {
         pronouns_other: '',
         preferred_contact_method: 'Phone',
         preferred_name: '',
+        age: '28',
         address: '123 Main St',
         city: 'Springfield',
         state: 'IL',
         zip_code: '62704',
+        pets: 'None',
         referral_source: 'Google',
         due_date: '2025-06-15',
         birth_location: 'Hospital',
@@ -326,7 +431,7 @@ describe('useRequestForm', () => {
         services_interested: ['Labor Support'],
         service_support_details: 'Looking for support',
         service_needed: 'Labor Support',
-        payment_method: 'Self-Pay',
+        payment_method: 'Not sure / Need help figuring this out',
       });
 
       expect(result.success).toBe(true);
@@ -345,10 +450,12 @@ describe('useRequestForm', () => {
         pronouns_other: '',
         preferred_contact_method: 'Phone',
         preferred_name: '',
+        age: '28',
         address: '123 Main St',
         city: 'Springfield',
         state: 'IL',
         zip_code: '62704',
+        pets: 'None',
         referral_source: 'Google',
         due_date: '2025-06-15',
         birth_location: 'Hospital',
@@ -359,7 +466,7 @@ describe('useRequestForm', () => {
         services_interested: ['Labor Support'],
         service_support_details: 'Looking for support',
         service_needed: 'Labor Support',
-        payment_method: 'Self-Pay',
+        payment_method: 'Not sure / Need help figuring this out',
       });
 
       expect(result.success).toBe(true);
@@ -378,10 +485,12 @@ describe('useRequestForm', () => {
         pronouns_other: '',
         preferred_contact_method: 'Phone',
         preferred_name: '',
+        age: '28',
         address: '123 Main St',
         city: 'Springfield',
         state: 'IL',
         zip_code: '62704',
+        pets: 'None',
         referral_source: 'Google',
         due_date: '2025-06-15',
         birth_location: 'Hospital',
@@ -393,12 +502,54 @@ describe('useRequestForm', () => {
         services_interested: ['Labor Support'],
         service_support_details: 'Looking for support',
         service_needed: 'Labor Support',
-        payment_method: 'Self-Pay',
+        payment_method: 'Not sure / Need help figuring this out',
       });
 
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.baby_name).toBe('Lily');
+      }
+    });
+
+    it('rejects empty, non-numeric, out-of-range, or negative age', () => {
+      const base = {
+        firstname: 'Jane',
+        lastname: 'Doe',
+        email: 'jane.doe@example.com',
+        phone_number: '555-123-4567',
+        pronouns: 'She/Her',
+        pronouns_other: '',
+        preferred_contact_method: 'Phone',
+        preferred_name: '',
+        age: '28',
+        address: '123 Main St',
+        city: 'Springfield',
+        state: 'IL',
+        zip_code: '62704',
+        pets: 'None',
+        referral_source: 'Google',
+        due_date: '2025-06-15',
+        birth_location: 'Hospital',
+        birth_hospital: 'Springfield General',
+        number_of_babies: 'Singleton',
+        provider_type: 'Midwife',
+        pregnancy_number: '1',
+        services_interested: ['Labor Support'],
+        service_support_details: 'Looking for support',
+        service_needed: 'Labor Support',
+        payment_method: 'Not sure / Need help figuring this out',
+      };
+
+      expect(fullSchema.safeParse({ ...base, age: '' }).success).toBe(false);
+      expect(fullSchema.safeParse({ ...base, age: '12a' }).success).toBe(false);
+      expect(fullSchema.safeParse({ ...base, age: '-5' }).success).toBe(false);
+      expect(fullSchema.safeParse({ ...base, age: '0' }).success).toBe(false);
+      expect(fullSchema.safeParse({ ...base, age: '121' }).success).toBe(false);
+      expect(fullSchema.safeParse({ ...base, age: '28' }).success).toBe(true);
+      const parsed = fullSchema.safeParse({ ...base, age: '28' });
+      expect(parsed.success).toBe(true);
+      if (parsed.success) {
+        expect(parsed.data.age).toBe(28);
       }
     });
 
@@ -414,6 +565,7 @@ describe('useRequestForm', () => {
         result.current.form.setValue('phone_number', '555-123-4567');
         result.current.form.setValue('pronouns', 'He/Him');
         result.current.form.setValue('preferred_contact_method', 'Email');
+        result.current.form.setValue('age', '28');
       });
 
       const isValid = await result.current.form.trigger([
@@ -423,6 +575,7 @@ describe('useRequestForm', () => {
         'phone_number',
         'pronouns',
         'preferred_contact_method',
+        'age',
       ]);
 
       expect(isValid).toBe(true);

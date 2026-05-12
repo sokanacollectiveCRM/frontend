@@ -33,6 +33,7 @@ import { toast } from 'sonner';
 import { MessageSquare, Phone, Calendar, Mail, FileText, Plus, ArrowLeft, User, MapPin, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import React from 'react';
+import { PREGNANCY_BABY_POSTPARTUM_QUESTION_LABEL } from '@/features/request/stepConfig';
 
 interface ActivitiesTabProps {
   clientId: string | null;
@@ -873,7 +874,9 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                     )}
                     {clientDetails?.healthHistory && (
                       <div className='md:col-span-2'>
-                        <p className='text-xs text-gray-500'>Health History</p>
+                        <p className='text-xs text-gray-500'>
+                          {PREGNANCY_BABY_POSTPARTUM_QUESTION_LABEL}
+                        </p>
                         <p className='text-sm text-gray-900'>{clientDetails.healthHistory}</p>
                       </div>
                     )}

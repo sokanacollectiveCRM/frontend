@@ -5,14 +5,31 @@ import {
   PopoverTrigger,
 } from '@/common/components/ui/popover';
 import { useEffect, useState } from 'react';
-import { useWatch } from 'react-hook-form';
+import { useWatch, useFormState } from 'react-hook-form';
 import styles from './RequestForm.module.scss';
+import { PREGNANCY_BABY_POSTPARTUM_QUESTION_LABEL } from './stepConfig';
+import {
+  REFERRAL_SOURCE_OPTIONS,
+  REFERRAL_SOURCE_OTHER_VALUE,
+} from './referralSourceOptions';
 import FloatingLabelDatePicker from './components/FloatingLabelDatePicker';
 import {
   PAYMENT_METHOD_OPTIONS,
   isSelfPayMethod,
-  isMedicaidMethod,
 } from './useRequestForm';
+import {
+  INSURANCE_PLAN_TYPE_OPTIONS,
+  INSURANCE_POLICY_HOLDER_RELATIONSHIP_OPTIONS,
+  isFullSupportMethod,
+  isInsuranceMethod,
+  isNotSurePaymentMethod,
+  isSelfPaySlidingScaleMethod,
+  requiresInsuranceDetails,
+} from '@/lib/paymentRules';
+import {
+  SLIDING_SCALE_TIER_ROWS,
+  SELF_PAY_SLIDING_SUPPORT_TYPES,
+} from '@/lib/slidingScaleData';
 
 function ArrowSVG({ color = '#757575' }: { color?: string }) {
   return (
@@ -36,14 +53,6 @@ const relationshipOptions = [
   'Other',
 ];
 const pronounOptions = ['She/Her', 'He/Him', 'They/Them', 'Ze/Hir/Zir', 'None'];
-const referralOptions = [
-  'Google',
-  'Doula Match',
-  'Former client',
-  'Sokana Member',
-  'Social Media',
-  'Email Blast',
-];
 
 export function Step3FamilyMembers({
   form,
@@ -62,7 +71,6 @@ export function Step3FamilyMembers({
     family_middle_name: false,
     family_email: false,
     family_mobile_phone: false,
-    family_work_phone: false,
   });
   const [relationshipOpen, setRelationshipOpen] = useState(false);
   const [pronounsOpen, setPronounsOpen] = useState(false);
@@ -80,7 +88,6 @@ export function Step3FamilyMembers({
     'middle_name',
     'family_email',
     'mobile_phone',
-    'work_phone',
   ].every((field) => !errors[field]);
 
   // Debug logs
@@ -330,33 +337,6 @@ export function Step3FamilyMembers({
             </div>
           )}
         </div>
-        {/* Workphone */}
-        <div className={styles['form-field']}>
-          <input
-            className={styles['form-input']}
-            {...form.register('family_work_phone')}
-            id='family_work_phone'
-            autoComplete='off'
-            onFocus={() => handleFocus('family_work_phone')}
-            onBlur={() => handleBlur('family_work_phone')}
-          />
-          <label
-            htmlFor='family_work_phone'
-            className={
-              styles['form-floating-label'] +
-              (focus.family_work_phone || values.family_work_phone
-                ? ' ' + styles['form-label--active']
-                : '')
-            }
-          >
-            Workphone
-          </label>
-          {errors.family_work_phone && (
-            <div className={styles['form-error']}>
-              {errors.family_work_phone.message as string}
-            </div>
-          )}
-        </div>
       </div>
       <div className={styles['step-buttons-row']}>
         <Button type='button' onClick={handleBack} disabled={step === 0}>
@@ -385,22 +365,38 @@ export function Step4Referral({
   const errors = form.formState.errors;
   const [focus, setFocus] = useState({
     referral_source: false,
+    referral_source_other: false,
     referral_name: false,
     referral_email: false,
   });
   const [referralOpen, setReferralOpen] = useState(false);
+
+  const referralSource = useWatch({
+    control: form.control,
+    name: 'referral_source',
+  });
+  const referralSourceOther = useWatch({
+    control: form.control,
+    name: 'referral_source_other',
+  });
 
   const handleFocus = (field: keyof typeof focus) =>
     setFocus((f) => ({ ...f, [field]: true }));
   const handleBlur = (field: keyof typeof focus) =>
     setFocus((f) => ({ ...f, [field]: false }));
 
-  const isStepValid = ['referral_source'].every((field) => !errors[field]);
+  const hasReferralSource = Boolean(String(referralSource ?? '').trim());
+  const isReferralOther = referralSource === REFERRAL_SOURCE_OTHER_VALUE;
+  const otherExplanationOk =
+    !isReferralOther ||
+    Boolean(String(referralSourceOther ?? '').trim());
+  const isStepValid =
+    hasReferralSource &&
+    !errors.referral_source &&
+    otherExplanationOk &&
+    !errors.referral_source_other;
 
-  // Debug logs
-  console.log('Step4Referral values:', values);
-  console.log('Step4Referral errors:', errors);
-  console.log('Step4Referral isStepValid:', isStepValid);
+  const referralSourceRegister = form.register('referral_source');
 
   return (
     <div>
@@ -412,9 +408,17 @@ export function Step4Referral({
               styles['form-select'] +
               (errors.referral_source ? ' ' + styles['form-label--error'] : '')
             }
-            {...form.register('referral_source')}
+            {...referralSourceRegister}
             id='referral_source'
             defaultValue=''
+            onChange={(e) => {
+              referralSourceRegister.onChange(e);
+              if (e.target.value !== REFERRAL_SOURCE_OTHER_VALUE) {
+                form.setValue('referral_source_other', '', {
+                  shouldValidate: true,
+                });
+              }
+            }}
             onFocus={() => {
               handleFocus('referral_source');
               setReferralOpen(true);
@@ -425,7 +429,7 @@ export function Step4Referral({
             }}
           >
             <option value='' disabled hidden></option>
-            {referralOptions.map((opt) => (
+            {REFERRAL_SOURCE_OPTIONS.map((opt) => (
               <option key={opt} value={opt}>
                 {opt}
               </option>
@@ -442,7 +446,7 @@ export function Step4Referral({
             }
             style={{ left: 0, right: 0, maxWidth: 'calc(100% - 36px)' }}
           >
-            Referral source*
+            How did you hear about us? *
           </label>
           <span
             className={styles['form-select-arrow']}
@@ -458,10 +462,54 @@ export function Step4Referral({
           </span>
           {errors.referral_source && (
             <div className={styles['form-error']}>
-              {(errors.referral_source.message as string) || 'Required.'}
+              {(errors.referral_source.message as string) ||
+                'Please select how you heard about Sokana.'}
             </div>
           )}
         </div>
+        {isReferralOther && (
+          <div
+            className={styles['form-field']}
+            style={{ gridColumn: '1 / span 4' }}
+          >
+            <textarea
+              className={
+                styles['form-input'] +
+                (errors.referral_source_other
+                  ? ' ' + styles['form-label--error']
+                  : '')
+              }
+              {...form.register('referral_source_other')}
+              id='referral_source_other'
+              data-type='textarea'
+              autoComplete='off'
+              onFocus={() => handleFocus('referral_source_other')}
+              onBlur={() => handleBlur('referral_source_other')}
+              style={{ minHeight: 80, height: 'auto' }}
+            />
+            <label
+              htmlFor='referral_source_other'
+              className={
+                styles['form-floating-label'] +
+                (focus.referral_source_other || referralSourceOther
+                  ? ' ' + styles['form-label--active']
+                  : '') +
+                (errors.referral_source_other
+                  ? ' ' + styles['form-label--error']
+                  : '')
+              }
+              style={{ left: 0, right: 0, maxWidth: 'calc(100% - 36px)' }}
+            >
+              Please describe how you heard about Sokana *
+            </label>
+            {errors.referral_source_other && (
+              <div className={styles['form-error']}>
+                {(errors.referral_source_other.message as string) ||
+                  'Please describe how you heard about Sokana.'}
+              </div>
+            )}
+          </div>
+        )}
         {/* Referral Name */}
         <div className={styles['form-field']}>
           <input
@@ -484,8 +532,9 @@ export function Step4Referral({
                 : '') +
               (errors.referral_name ? ' ' + styles['form-label--error'] : '')
             }
+            style={{ left: 0, right: 0, maxWidth: 'calc(100% - 36px)' }}
           >
-            Full name/ agency
+            Name of person, agency, midwife, or organization that referred you, if applicable
           </label>
           {errors.referral_name && (
             <div className={styles['form-error']}>
@@ -553,7 +602,6 @@ export function Step5HealthHistory({
   const [focus, setFocus] = useState({
     health_history: false,
     allergies: false,
-    health_notes: false,
   });
 
   const handleFocus = (field: keyof typeof focus) =>
@@ -561,33 +609,27 @@ export function Step5HealthHistory({
   const handleBlur = (field: keyof typeof focus) =>
     setFocus((f) => ({ ...f, [field]: false }));
 
-  const isStepValid = ['allergies', 'health_notes'].every(
-    (field) => !errors[field]
-  );
-
-  // Debug logs
-  console.log('Step5HealthHistory values:', values);
-  console.log('Step5HealthHistory errors:', errors);
-  console.log('Step5HealthHistory isStepValid:', isStepValid);
+  const isStepValid = !errors.health_history && !errors.allergies;
 
   return (
     <div>
       <div className={styles['form-grid']}>
-        {/* Health History */}
         <div
           className={styles['form-field']}
           style={{ gridColumn: '1 / span 4' }}
         >
-          <input
+          <textarea
             className={
               styles['form-input'] +
               (errors.health_history ? ' ' + styles['form-label--error'] : '')
             }
             {...form.register('health_history')}
             id='health_history'
+            data-type='textarea'
             autoComplete='off'
             onFocus={() => handleFocus('health_history')}
             onBlur={() => handleBlur('health_history')}
+            style={{ minHeight: 80, height: 'auto' }}
           />
           <label
             htmlFor='health_history'
@@ -599,7 +641,7 @@ export function Step5HealthHistory({
               (errors.health_history ? ' ' + styles['form-label--error'] : '')
             }
           >
-            Health History
+            {PREGNANCY_BABY_POSTPARTUM_QUESTION_LABEL}
           </label>
           {errors.health_history && (
             <div className={styles['form-error']}>
@@ -607,7 +649,6 @@ export function Step5HealthHistory({
             </div>
           )}
         </div>
-        {/* Allergies */}
         <div
           className={styles['form-field']}
           style={{ gridColumn: '1 / span 4' }}
@@ -641,40 +682,6 @@ export function Step5HealthHistory({
             </div>
           )}
         </div>
-        {/* Other Health Notes */}
-        <div
-          className={styles['form-field']}
-          style={{ gridColumn: '1 / span 4' }}
-        >
-          <input
-            className={
-              styles['form-input'] +
-              (errors.health_notes ? ' ' + styles['form-label--error'] : '')
-            }
-            {...form.register('health_notes')}
-            id='health_notes'
-            autoComplete='off'
-            onFocus={() => handleFocus('health_notes')}
-            onBlur={() => handleBlur('health_notes')}
-          />
-          <label
-            htmlFor='health_notes'
-            className={
-              styles['form-floating-label'] +
-              (focus.health_notes || values.health_notes
-                ? ' ' + styles['form-label--active']
-                : '') +
-              (errors.health_notes ? ' ' + styles['form-label--error'] : '')
-            }
-          >
-            Other Health Notes
-          </label>
-          {errors.health_notes && (
-            <div className={styles['form-error']}>
-              {(errors.health_notes.message as string) || 'Required.'}
-            </div>
-          )}
-        </div>
       </div>
       <div className={styles['step-buttons-row']}>
         <Button type='button' onClick={handleBack} disabled={step === 0}>
@@ -700,7 +707,37 @@ export function Step6PregnancyBaby({
   totalSteps,
 }: any) {
   const values = form.getValues();
-  const errors = form.formState.errors;
+  const { errors } = useFormState({
+    control: form.control,
+    name: [
+      'due_date',
+      'birth_location',
+      'number_of_babies',
+      'provider_type',
+      'pregnancy_number',
+    ],
+  });
+
+  const [dueDate, birthLocation, numberOfBabies, providerType, pregnancyNumber] =
+    useWatch({
+      control: form.control,
+      name: [
+        'due_date',
+        'birth_location',
+        'number_of_babies',
+        'provider_type',
+        'pregnancy_number',
+      ] as const,
+    }) ?? ['', '', '', '', 0];
+
+  const watchedByField: Record<string, unknown> = {
+    due_date: dueDate,
+    birth_location: birthLocation,
+    number_of_babies: numberOfBabies,
+    provider_type: providerType,
+    pregnancy_number: pregnancyNumber,
+  };
+
   const [focus, setFocus] = useState({
     due_date: false,
     birth_location: false,
@@ -732,20 +769,22 @@ export function Step6PregnancyBaby({
   ];
   const providerTypeOptions = ['Midwife', 'OB', 'Family Doctor', 'Other'];
 
-  const watchedBirthLocation = useWatch({ control: form.control, name: 'birth_location' });
-  const isHomeBirth = watchedBirthLocation === 'Home';
-
   const requiredFields = [
     'due_date',
     'birth_location',
     'number_of_babies',
+    'provider_type',
     'pregnancy_number',
   ];
 
   const isStepValid = requiredFields.every((field) => {
-    const hasValue = values[field];
-    const hasError = errors[field];
-    console.log(`Field ${field}: hasValue=${hasValue}, hasError=${hasError}, value=${values[field]}`);
+    const raw = watchedByField[field];
+    const hasError = errors[field as keyof typeof errors];
+    const hasValue =
+      field === 'pregnancy_number'
+        ? Number(raw) >= 1
+        : Boolean(raw !== undefined && raw !== null && String(raw).trim() !== '');
+    console.log(`Field ${field}: hasValue=${hasValue}, hasError=${hasError}, value=${raw}`);
     return !hasError && hasValue;
   });
 
@@ -1205,7 +1244,6 @@ export function Step8ServicesInterested({
   const [focus, setFocus] = useState({
     services_interested: false,
     service_support_details: false,
-    service_needed: false,
   });
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const handleFocus = (field: keyof typeof focus) =>
@@ -1255,7 +1293,7 @@ export function Step8ServicesInterested({
               color: errors.services_interested ? '#d32f2f' : undefined,
             }}
           >
-            Select all that apply*
+            Which services are you interested in? (Select all that apply)*
           </label>
           <Popover open={dropdownOpen} onOpenChange={setDropdownOpen}>
             <PopoverTrigger asChild>
@@ -1352,45 +1390,14 @@ export function Step8ServicesInterested({
                 : '')
             }
           >
-            What does doula support look like for you? Be specific. How can a
-            labor doula help? For postpartum do you want daytime, overnights and
-            for how many weeks*
+            Describe the support you are looking for — for example how a doula
+            can help during labor, or for postpartum whether you prefer daytime
+            visits, overnights, and roughly how many weeks. If you chose
+            'Other' above, explain here.*
           </label>
           {errors.service_support_details && (
             <div className={styles['form-error']}>
               {errors.service_support_details.message as string}
-            </div>
-          )}
-        </div>
-        {/* Service needed field */}
-        <div
-          className={styles['form-field']}
-          style={{ gridColumn: '1 / span 4' }}
-        >
-          <textarea
-            className={styles['form-input']}
-            {...form.register('service_needed')}
-            id='service_needed'
-            data-type="textarea"
-            onFocus={() => handleFocus('service_needed')}
-            onBlur={() => handleBlur('service_needed')}
-            style={{ minHeight: 80, height: 'auto' }}
-          />
-          <label
-            htmlFor='service_needed'
-            className={
-              styles['form-floating-label'] +
-              (focus.service_needed || values.service_needed
-                ? ' ' + styles['form-label--active']
-                : '')
-            }
-          >
-            What specific service do you need? Please describe your
-            requirements*
-          </label>
-          {errors.service_needed && (
-            <div className={styles['form-error']}>
-              {errors.service_needed.message as string}
             </div>
           )}
         </div>
@@ -1429,7 +1436,18 @@ export function Step9Payment({
     name: 'has_secondary_insurance',
   });
   const isSelfPay = isSelfPayMethod(paymentMethod || '');
-  const isMedicaid = isMedicaidMethod(paymentMethod || '');
+  const isSelfPaySlidingScale = isSelfPaySlidingScaleMethod(paymentMethod || '');
+  const isFullSupport = isFullSupportMethod(paymentMethod || '');
+  const isNotSure = isNotSurePaymentMethod(paymentMethod || '');
+  const needsInsuranceDetails = requiresInsuranceDetails(paymentMethod || '');
+  const slidingSupportType = useWatch({
+    control: form.control,
+    name: 'self_pay_sliding_support_type',
+  });
+  const slidingTier = useWatch({
+    control: form.control,
+    name: 'self_pay_sliding_tier',
+  });
   const [focus, setFocus] = useState({ payment_method: false });
   const [open, setOpen] = useState({ payment_method: false });
   const handleFocus = (field: keyof typeof focus) =>
@@ -1449,25 +1467,19 @@ export function Step9Payment({
       <div
         style={{
           color: '#666',
-          fontSize: '1.15rem',
+          fontSize: 'clamp(1rem, 3.2vw, 1.15rem)',
           marginBottom: '2.5rem',
           maxWidth: 900,
+          lineHeight: 1.55,
+          wordBreak: 'break-word',
         }}
       >
-        At Sokana Collective we believe that price should not be a barrier for
-        our services. We have our full fee prices listed under each service
-        section on our website and we would like that to be paid by those who
-        can afford it. For those who are unable to pay the full fee we have the
-        following sliding scale:{' '}
-        <a
-          href='https://www.sokanacollective.com/services'
-          target='_blank'
-          rel='noopener noreferrer'
-        >
-          https://www.sokanacollective.com/services
-        </a>{' '}
-        (copy and paste link in browser) Check all that apply based on the
-        services you are interested in.
+        <p style={{ margin: '0 0 1rem' }}>
+          {`At Sokana Collective, we believe everyone deserves access to care, regardless of financial circumstances. We offer several payment options, including insurance and sliding scale support to meet your needs.`}
+        </p>
+        <p style={{ margin: 0 }}>
+          {`Please select how you'd like to pay for services below. If you're not sure what you qualify for, we're here to support you.`}
+        </p>
       </div>
       <div className={styles['form-grid']}>
         {/* Payment Method Dropdown */}
@@ -1574,10 +1586,22 @@ export function Step9Payment({
                   }}
                   onClick={() => {
                     form.setValue('payment_method', opt, { shouldValidate: true });
-                    if (isSelfPayMethod(opt) || isMedicaidMethod(opt)) {
+                    if (!isSelfPaySlidingScaleMethod(opt)) {
+                      form.setValue('self_pay_sliding_support_type', '');
+                      form.setValue('self_pay_sliding_tier', '');
+                    }
+                    if (
+                      isSelfPayMethod(opt) ||
+                      isFullSupportMethod(opt) ||
+                      isNotSurePaymentMethod(opt)
+                    ) {
+                      form.setValue('insurance_policy_holder_name', '');
+                      form.setValue('insurance_policy_holder_dob', '');
+                      form.setValue('insurance_policy_holder_relationship', '');
                       form.setValue('insurance_provider', '');
                       form.setValue('insurance_member_id', '');
                       form.setValue('policy_number', '');
+                      form.setValue('insurance_plan_type', '');
                       form.setValue('insurance_phone_number', '');
                       form.setValue('has_secondary_insurance', false);
                       form.setValue('secondary_insurance_provider', '');
@@ -1594,23 +1618,48 @@ export function Step9Payment({
           </Popover>
         </div>
 
-        {isMedicaid ? (
+        {isFullSupport ? (
           <div
             className={styles['form-field']}
             style={{ gridColumn: '1 / span 4', marginTop: 8 }}
           >
             <div
               style={{
-                background: '#f0fdf4',
-                border: '1px solid #bbf7d0',
+                background: '#fffbeb',
+                border: '1px solid #fde68a',
                 borderRadius: 8,
                 padding: '14px 16px',
-                color: '#166534',
+                color: '#92400e',
                 fontSize: 15,
-                lineHeight: 1.5,
+                lineHeight: 1.55,
+                whiteSpace: 'normal',
               }}
             >
-              ✓ No payment method required. Your services will be billed through Medicaid.
+              If you are unable to pay for services at any level, you may request full support.
+              Approved clients receive labor and postpartum care at no cost, including up to 32
+              hours of postpartum support. You will have to pay a one-time $150 administrative
+              fee. A team member will follow up with you.
+            </div>
+          </div>
+        ) : isNotSure ? (
+          <div
+            className={styles['form-field']}
+            style={{ gridColumn: '1 / span 4', marginTop: 8 }}
+          >
+            <div
+              style={{
+                background: '#f0f9ff',
+                border: '1px solid #bae6fd',
+                borderRadius: 8,
+                padding: '14px 16px',
+                color: '#0c4a6e',
+                fontSize: 15,
+                lineHeight: 1.55,
+                whiteSpace: 'normal',
+              }}
+            >
+              That is completely fine. A team member will contact you to help sort out insurance,
+              Medicaid, sliding scale, or other options—no payment details are needed here.
             </div>
           </div>
         ) : isSelfPay ? (
@@ -1618,6 +1667,247 @@ export function Step9Payment({
             className={styles['form-field']}
             style={{ gridColumn: '1 / span 4', marginTop: 8 }}
           >
+            {isSelfPaySlidingScale ? (
+              <div
+                style={{
+                  marginBottom: 16,
+                  padding: '18px 18px 20px',
+                  background: '#fafafa',
+                  border: '1px solid #e0e0e0',
+                  borderRadius: 8,
+                  color: '#333',
+                  fontSize: 16,
+                  lineHeight: 1.6,
+                  maxWidth: '100%',
+                }}
+              >
+                <p style={{ margin: '0 0 12px' }}>
+                  We offer a sliding scale for self-pay clients based on financial need. Please review
+                  the options below and select what feels most appropriate for your current situation.
+                </p>
+                <p style={{ margin: 0, fontWeight: 600, color: '#1a365d' }}>
+                  This is a trust-based sliding scale. No documentation required.
+                </p>
+
+                <input type='hidden' {...form.register('self_pay_sliding_support_type')} />
+                <input type='hidden' {...form.register('self_pay_sliding_tier')} />
+
+                <fieldset
+                  id='self_pay_sliding_support_type'
+                  style={{
+                    border: 'none',
+                    margin: '20px 0 0',
+                    padding: 0,
+                  }}
+                >
+                  <legend
+                    style={{
+                      fontWeight: 600,
+                      fontSize: 15,
+                      marginBottom: 10,
+                      color: '#222',
+                    }}
+                  >
+                    Which support are you considering?
+                  </legend>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: 10,
+                    }}
+                  >
+                    {SELF_PAY_SLIDING_SUPPORT_TYPES.map((label) => (
+                      <button
+                        key={label}
+                        type='button'
+                        onClick={() => {
+                          form.setValue('self_pay_sliding_support_type', label, {
+                            shouldValidate: true,
+                          });
+                          form.setValue('self_pay_sliding_tier', '', { shouldValidate: true });
+                        }}
+                        style={{
+                          flex: '1 1 140px',
+                          minHeight: 44,
+                          padding: '10px 14px',
+                          fontSize: 15,
+                          cursor: 'pointer',
+                          borderRadius: 6,
+                          border:
+                            slidingSupportType === label
+                              ? '2px solid #00bcd4'
+                              : '1px solid #bdbdbd',
+                          background: slidingSupportType === label ? '#e0f7fa' : '#fff',
+                          color: '#222',
+                          fontWeight: slidingSupportType === label ? 600 : 400,
+                        }}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  {errors.self_pay_sliding_support_type && (
+                    <div className={styles['form-error']} style={{ marginTop: 8 }}>
+                      {errors.self_pay_sliding_support_type.message as string}
+                    </div>
+                  )}
+                </fieldset>
+
+                {slidingSupportType ? (
+                  <div style={{ marginTop: 22 }} id='self_pay_sliding_tier'>
+                    <div
+                      style={{
+                        fontWeight: 600,
+                        fontSize: 15,
+                        marginBottom: 10,
+                        color: '#222',
+                      }}
+                    >
+                      Sliding scale — select the row that fits your household
+                    </div>
+                    <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                      <table
+                        style={{
+                          width: '100%',
+                          borderCollapse: 'collapse',
+                          fontSize: 14,
+                          background: '#fff',
+                          border: '1px solid #e0e0e0',
+                        }}
+                      >
+                        <thead>
+                          <tr style={{ background: '#f5f5f5' }}>
+                            <th
+                              style={{
+                                textAlign: 'left',
+                                padding: '10px 8px',
+                                borderBottom: '1px solid #e0e0e0',
+                                width: 40,
+                              }}
+                            >
+                              {' '}
+                            </th>
+                            <th
+                              style={{
+                                textAlign: 'left',
+                                padding: '10px 8px',
+                                borderBottom: '1px solid #e0e0e0',
+                              }}
+                            >
+                              Annual household income
+                            </th>
+                            {(slidingSupportType === 'Labor support' ||
+                              slidingSupportType === 'Both') && (
+                              <th
+                                style={{
+                                  textAlign: 'left',
+                                  padding: '10px 8px',
+                                  borderBottom: '1px solid #e0e0e0',
+                                }}
+                              >
+                                Labor support
+                              </th>
+                            )}
+                            {(slidingSupportType === 'Postpartum support' ||
+                              slidingSupportType === 'Both') && (
+                              <th
+                                style={{
+                                  textAlign: 'left',
+                                  padding: '10px 8px',
+                                  borderBottom: '1px solid #e0e0e0',
+                                }}
+                              >
+                                Postpartum support
+                              </th>
+                            )}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {SLIDING_SCALE_TIER_ROWS.map((row) => {
+                            const selected = slidingTier === row.incomeLabel;
+                            return (
+                              <tr
+                                key={row.id}
+                                style={{
+                                  background: selected ? '#e0f7fa' : undefined,
+                                  cursor: 'pointer',
+                                }}
+                                onClick={() => {
+                                  form.setValue('self_pay_sliding_tier', row.incomeLabel, {
+                                    shouldValidate: true,
+                                  });
+                                }}
+                              >
+                                <td
+                                  style={{
+                                    padding: '10px 8px',
+                                    borderBottom: '1px solid #eee',
+                                    verticalAlign: 'top',
+                                  }}
+                                >
+                                  <input
+                                    type='radio'
+                                    name='self_pay_sliding_tier_choice'
+                                    checked={selected}
+                                    onChange={() => {
+                                      form.setValue('self_pay_sliding_tier', row.incomeLabel, {
+                                        shouldValidate: true,
+                                      });
+                                    }}
+                                    aria-label={`Select ${row.incomeLabel}`}
+                                  />
+                                </td>
+                                <td
+                                  style={{
+                                    padding: '10px 8px',
+                                    borderBottom: '1px solid #eee',
+                                    verticalAlign: 'top',
+                                    fontWeight: 500,
+                                  }}
+                                >
+                                  {row.incomeLabel}
+                                </td>
+                                {(slidingSupportType === 'Labor support' ||
+                                  slidingSupportType === 'Both') && (
+                                  <td
+                                    style={{
+                                      padding: '10px 8px',
+                                      borderBottom: '1px solid #eee',
+                                      verticalAlign: 'top',
+                                    }}
+                                  >
+                                    {row.laborRate}
+                                  </td>
+                                )}
+                                {(slidingSupportType === 'Postpartum support' ||
+                                  slidingSupportType === 'Both') && (
+                                  <td
+                                    style={{
+                                      padding: '10px 8px',
+                                      borderBottom: '1px solid #eee',
+                                      verticalAlign: 'top',
+                                    }}
+                                  >
+                                    {row.postpartumRate}
+                                  </td>
+                                )}
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                    {errors.self_pay_sliding_tier && (
+                      <div className={styles['form-error']} style={{ marginTop: 8 }}>
+                        {errors.self_pay_sliding_tier.message as string}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
             <div
               style={{
                 background: '#eff6ff',
@@ -1633,7 +1923,7 @@ export function Step9Payment({
               complete and return—card numbers are not collected in this form.
             </div>
           </div>
-        ) : paymentMethod && !isMedicaid && !isSelfPay ? (
+        ) : paymentMethod && isInsuranceMethod(paymentMethod) ? (
           <div
             className={styles['form-field']}
             style={{ gridColumn: '1 / span 4', marginTop: 8 }}
@@ -1656,8 +1946,120 @@ export function Step9Payment({
           </div>
         ) : null}
 
-        {!isMedicaid && !isSelfPay && paymentMethod ? (
+        {needsInsuranceDetails ? (
           <>
+            {isInsuranceMethod(paymentMethod) ? null : (
+              <div
+                className={styles['form-field']}
+                style={{ gridColumn: '1 / span 4', marginTop: 4, marginBottom: 4 }}
+              >
+                <div
+                  style={{
+                    background: '#f0fdf4',
+                    border: '1px solid #bbf7d0',
+                    borderRadius: 8,
+                    padding: '12px 14px',
+                    color: '#166534',
+                    fontSize: 15,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Enter your Medicaid coverage details exactly as they appear on your member ID card.
+                </div>
+              </div>
+            )}
+
+            <div className={styles['form-field']} style={{ gridColumn: '1 / span 2' }}>
+              <input
+                className={styles['form-input']}
+                {...form.register('insurance_policy_holder_name')}
+                id='insurance_policy_holder_name'
+                autoComplete='name'
+              />
+              <label
+                htmlFor='insurance_policy_holder_name'
+                className={
+                  styles['form-floating-label'] +
+                  (values.insurance_policy_holder_name ? ' ' + styles['form-label--active'] : '')
+                }
+              >
+                Policy holder name *
+              </label>
+              {insuranceFieldError(
+                'insurance_policy_holder_name',
+                'Please enter the policy holder name.'
+              ) && (
+                <div className={styles['form-error']}>
+                  {insuranceFieldError(
+                    'insurance_policy_holder_name',
+                    'Please enter the policy holder name.'
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className={styles['form-field']} style={{ gridColumn: '3 / span 2' }}>
+              <input
+                className={styles['form-input']}
+                {...form.register('insurance_policy_holder_dob')}
+                id='insurance_policy_holder_dob'
+                type='date'
+              />
+              <label
+                htmlFor='insurance_policy_holder_dob'
+                className={
+                  styles['form-floating-label'] +
+                  (values.insurance_policy_holder_dob ? ' ' + styles['form-label--active'] : '')
+                }
+              >
+                Policy holder date of birth *
+              </label>
+              {insuranceFieldError(
+                'insurance_policy_holder_dob',
+                'Please enter the policy holder date of birth.'
+              ) && (
+                <div className={styles['form-error']}>
+                  {insuranceFieldError(
+                    'insurance_policy_holder_dob',
+                    'Please enter the policy holder date of birth.'
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className={styles['form-field']} style={{ gridColumn: '1 / span 4' }}>
+              <label
+                htmlFor='insurance_policy_holder_relationship'
+                style={{ display: 'block', fontSize: 14, color: '#555', marginBottom: 6 }}
+              >
+                Relationship of policy holder to you *
+              </label>
+              <select
+                id='insurance_policy_holder_relationship'
+                className={styles['form-input']}
+                style={{ width: '100%', fontSize: 17 }}
+                {...form.register('insurance_policy_holder_relationship')}
+              >
+                <option value=''>Select relationship</option>
+                {INSURANCE_POLICY_HOLDER_RELATIONSHIP_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+              {insuranceFieldError(
+                'insurance_policy_holder_relationship',
+                'Please select the policy holder’s relationship to you.'
+              ) && (
+                <div className={styles['form-error']}>
+                  {insuranceFieldError(
+                    'insurance_policy_holder_relationship',
+                    'Please select the policy holder’s relationship to you.'
+                  )}
+                </div>
+              )}
+            </div>
+
             <div className={styles['form-field']} style={{ gridColumn: '1 / span 4' }}>
               <input
                 className={styles['form-input']}
@@ -1674,11 +2076,11 @@ export function Step9Payment({
                   (values.insurance_provider ? ' ' + styles['form-label--active'] : '')
                 }
               >
-                Insurance Provider *
+                Insurance company name *
               </label>
-              {insuranceFieldError('insurance_provider', 'Please enter your insurance provider.') && (
+              {insuranceFieldError('insurance_provider', 'Please enter your insurance company name.') && (
                 <div className={styles['form-error']}>
-                  {insuranceFieldError('insurance_provider', 'Please enter your insurance provider.')}
+                  {insuranceFieldError('insurance_provider', 'Please enter your insurance company name.')}
                 </div>
               )}
             </div>
@@ -1697,11 +2099,17 @@ export function Step9Payment({
                   (values.insurance_member_id ? ' ' + styles['form-label--active'] : '')
                 }
               >
-                Member ID *
+                Member ID / Subscriber ID *
               </label>
-              {insuranceFieldError('insurance_member_id', 'Please enter your insurance member ID.') && (
+              {insuranceFieldError(
+                'insurance_member_id',
+                'Please enter your member ID or subscriber ID.'
+              ) && (
                 <div className={styles['form-error']}>
-                  {insuranceFieldError('insurance_member_id', 'Please enter your insurance member ID.')}
+                  {insuranceFieldError(
+                    'insurance_member_id',
+                    'Please enter your member ID or subscriber ID.'
+                  )}
                 </div>
               )}
             </div>
@@ -1720,11 +2128,33 @@ export function Step9Payment({
                   (values.policy_number ? ' ' + styles['form-label--active'] : '')
                 }
               >
-                Policy Number *
+                Group number (if applicable)
               </label>
-              {insuranceFieldError('policy_number', 'Please enter your policy number.') && (
+            </div>
+
+            <div className={styles['form-field']} style={{ gridColumn: '1 / span 4' }}>
+              <label
+                htmlFor='insurance_plan_type'
+                style={{ display: 'block', fontSize: 14, color: '#555', marginBottom: 6 }}
+              >
+                Plan type *
+              </label>
+              <select
+                id='insurance_plan_type'
+                className={styles['form-input']}
+                style={{ width: '100%', fontSize: 17 }}
+                {...form.register('insurance_plan_type')}
+              >
+                <option value=''>Select plan type</option>
+                {INSURANCE_PLAN_TYPE_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+              {insuranceFieldError('insurance_plan_type', 'Please select a plan type.') && (
                 <div className={styles['form-error']}>
-                  {insuranceFieldError('policy_number', 'Please enter your policy number.')}
+                  {insuranceFieldError('insurance_plan_type', 'Please select a plan type.')}
                 </div>
               )}
             </div>
@@ -1879,7 +2309,7 @@ export function Step9Payment({
           </>
         ) : null}
       </div>
-      {!isSelfPay && !isMedicaid && paymentMethod ? (
+      {needsInsuranceDetails ? (
         <div
           style={{
             color: '#666',

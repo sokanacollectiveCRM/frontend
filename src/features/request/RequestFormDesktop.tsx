@@ -187,6 +187,7 @@ export default function RequestFormDesktop() {
         <button
           type='button'
           onClick={fillTestData}
+          title='Loads a complete sample (including age, provider type, primary + secondary insurance). Resets the form and returns to the first step.'
           style={{
             marginTop: 12,
             padding: '6px 12px',
