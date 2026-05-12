@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { z } from 'zod';
 import {
   PAYMENT_METHOD_OPTIONS as SHARED_PAYMENT_METHOD_OPTIONS,
@@ -304,9 +304,12 @@ export const fullSchema = z
     }
   });
 
-export type RequestFormValues = z.infer<typeof fullSchema>;
+/** Raw form state (matches empty defaults and string inputs, e.g. `age: ''`). */
+export type RequestFormInput = z.input<typeof fullSchema>;
+/** Parsed payload after Zod transforms (e.g. numeric `age`). */
+export type RequestFormValues = z.output<typeof fullSchema>;
 
-export const stepFields: (keyof RequestFormValues)[][] = [
+export const stepFields: (keyof RequestFormInput)[][] = [
   // 1. Services Interested In (MOVED TO FIRST)
   ['services_interested', 'service_support_details'],
   // 2. Client Details
@@ -399,8 +402,12 @@ export function useRequestForm(
 ) {
   const [step, setStep] = useState(0);
   const totalSteps = 10;
-  const form = useForm<RequestFormValues>({
-    resolver: zodResolver(fullSchema),
+  const form = useForm<RequestFormInput, unknown, RequestFormValues>({
+    resolver: zodResolver(fullSchema) as Resolver<
+      RequestFormInput,
+      unknown,
+      RequestFormValues
+    >,
     mode: 'onChange',
     defaultValues: {
       firstname: '',
@@ -492,7 +499,7 @@ export function useRequestForm(
 
     // If this is the final step, submit the form
     if (step === totalSteps - 1) {
-      const formData = form.getValues();
+      const formData = fullSchema.parse(form.getValues());
       await onSubmit(formData);
       return true;
     }

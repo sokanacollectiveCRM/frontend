@@ -692,7 +692,7 @@ export function LeadProfileModal({
           ''
       ).trim();
       const normalizeForSave = (value: unknown) => String(value ?? '').trim();
-      const markChanged = (field: string, value: string) => {
+      const markChanged = (field: string, value: string | boolean) => {
         updateData[field] = value;
         if (!changedFields.includes(field)) changedFields.push(field);
       };

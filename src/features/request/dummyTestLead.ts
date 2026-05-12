@@ -1,11 +1,11 @@
-import type { RequestFormValues } from './useRequestForm';
+import type { RequestFormInput } from './useRequestForm';
 
 /**
  * Full-path dummy lead for manual QA and backend DB checks.
  * Use "Fill with test data" on /request — resets the form and returns to the first step.
  * On submit, the SPA sets `service_needed` from services + support text (see RequestForm.tsx).
  */
-export const DUMMY_TEST_LEAD: Partial<RequestFormValues> = {
+export const DUMMY_TEST_LEAD: Partial<RequestFormInput> = {
   // Step 0 — Services interested
   services_interested: ['Labor Support', 'Postpartum Support'],
   service_support_details:

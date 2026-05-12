@@ -715,6 +715,8 @@ export function Step6PregnancyBaby({
       'number_of_babies',
       'provider_type',
       'pregnancy_number',
+      'birth_hospital',
+      'baby_name',
     ],
   });
 

@@ -1,4 +1,5 @@
 import {
+  RequestFormInput,
   RequestFormValues,
   fullSchema,
   stepFields,
@@ -12,10 +13,10 @@ import {
   useEffect,
   useState,
 } from 'react';
-import { type UseFormReturn, useForm } from 'react-hook-form';
+import { type UseFormReturn, useForm, type Resolver } from 'react-hook-form';
 
 interface RequestFormContextType {
-  form: UseFormReturn<RequestFormValues>;
+  form: UseFormReturn<RequestFormInput, unknown, RequestFormValues>;
   step: number;
   setStep: (step: number) => void;
   totalSteps: number;
@@ -55,12 +56,16 @@ export function RequestFormProvider({
   const totalSteps = 10;
 
   // No client-side storage for HIPAA compliance
-  const getSavedFormData = (): Partial<RequestFormValues> => {
+  const getSavedFormData = (): Partial<RequestFormInput> => {
     return {};
   };
 
-  const form = useForm<RequestFormValues>({
-    resolver: zodResolver(fullSchema),
+  const form = useForm<RequestFormInput, unknown, RequestFormValues>({
+    resolver: zodResolver(fullSchema) as Resolver<
+      RequestFormInput,
+      unknown,
+      RequestFormValues
+    >,
     mode: 'onChange',
     defaultValues: {
       firstname: '',
@@ -172,7 +177,7 @@ export function RequestFormProvider({
   };
 
   const fillTestData = () => {
-    form.reset(DUMMY_TEST_LEAD as RequestFormValues);
+    form.reset(DUMMY_TEST_LEAD);
     setStep(0);
     setSubmitted(false);
   };
@@ -233,7 +238,7 @@ export function RequestFormProvider({
     if (step === totalSteps - 1) {
       setIsSubmitting(true);
       try {
-        const formData = form.getValues();
+        const formData = fullSchema.parse(form.getValues());
         await onSubmit(formData);
         setSubmitted(true);
         // Don't clear form data - let user see the thank you message
