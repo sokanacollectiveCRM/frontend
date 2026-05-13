@@ -1,7 +1,14 @@
 import { Button } from '@/common/components/ui/button';
 import { useState } from 'react';
+import { useWatch } from 'react-hook-form';
 import { useRequestFormContext } from './contexts/RequestFormContext';
 import styles from './RequestForm.module.scss';
+
+function hasFilledValue(v: unknown): boolean {
+  if (v === undefined || v === null) return false;
+  if (typeof v === 'number') return !Number.isNaN(v);
+  return String(v).trim() !== '';
+}
 
 function ArrowSVG({ color = '#757575' }: { color?: string }) {
   return (
@@ -24,9 +31,7 @@ type FocusField =
   | 'preferred_contact_method'
   | 'pronouns'
   | 'preferred_name'
-  | 'age'
-  | 'pregnancy_number'
-  | 'birth_hospital';
+  | 'age';
 
 export function Step1Personal({
   form,
@@ -37,22 +42,43 @@ export function Step1Personal({
   totalSteps,
   isDesktopOrTablet = false,
 }: any) {
-  const values = form.getValues();
   const errors = form.formState.errors;
   const { isStepValid } = useRequestFormContext();
 
-  // Floating label focus state - initialize based on current values
+  const [
+    wFirstname,
+    wLastname,
+    wEmail,
+    wPhone,
+    wPreferredContact,
+    wPronouns,
+    wPreferredName,
+    wAge,
+  ] =
+    useWatch({
+      control: form.control,
+      name: [
+        'firstname',
+        'lastname',
+        'email',
+        'phone_number',
+        'preferred_contact_method',
+        'pronouns',
+        'preferred_name',
+        'age',
+      ] as const,
+    }) ?? ['', '', '', '', '', '', '', ''];
+
+  // Floating label focus state (blur uses live getValues; "filled" uses useWatch so labels stay up after reset/fill)
   const [focus, setFocus] = useState<Record<FocusField, boolean>>({
-    firstname: !!values.firstname,
-    lastname: !!values.lastname,
-    email: !!values.email,
-    phone_number: !!values.phone_number,
-    preferred_contact_method: !!values.preferred_contact_method,
-    pronouns: !!values.pronouns,
-    preferred_name: !!values.preferred_name,
-    age: values.age !== '' && values.age !== undefined && values.age !== null,
-    pregnancy_number: !!values.pregnancy_number,
-    birth_hospital: !!values.birth_hospital,
+    firstname: false,
+    lastname: false,
+    email: false,
+    phone_number: false,
+    preferred_contact_method: false,
+    pronouns: false,
+    preferred_name: false,
+    age: false,
   });
   // Select open state
   const [pronounsOpen, setPronounsOpen] = useState(false);
@@ -61,8 +87,8 @@ export function Step1Personal({
   const handleFocus = (field: FocusField) =>
     setFocus((f) => ({ ...f, [field]: true }));
   const handleBlur = (field: FocusField) => {
-    const currentValue = values[field];
-    setFocus((f) => ({ ...f, [field]: !!currentValue }));
+    const currentValue = form.getValues(field);
+    setFocus((f) => ({ ...f, [field]: hasFilledValue(currentValue) }));
   };
 
   // Arrow color logic
@@ -73,7 +99,6 @@ export function Step1Personal({
   };
 
   // Add debug logs
-  console.log('Step1Personal values:', values);
   console.log('Step1Personal errors:', errors);
   console.log('Step1Personal isValid:', form.formState.isValid);
 
@@ -99,7 +124,7 @@ export function Step1Personal({
             htmlFor='firstname'
             className={
               styles['form-floating-label'] +
-              (focus.firstname || values.firstname
+              (focus.firstname || hasFilledValue(wFirstname)
                 ? ' ' + styles['form-label--active']
                 : '')
             }
@@ -125,7 +150,7 @@ export function Step1Personal({
             htmlFor='lastname'
             className={
               styles['form-floating-label'] +
-              (focus.lastname || values.lastname
+              (focus.lastname || hasFilledValue(wLastname)
                 ? ' ' + styles['form-label--active']
                 : '')
             }
@@ -152,7 +177,7 @@ export function Step1Personal({
             htmlFor='email'
             className={
               styles['form-floating-label'] +
-              (focus.email || values.email
+              (focus.email || hasFilledValue(wEmail)
                 ? ' ' + styles['form-label--active']
                 : '')
             }
@@ -178,7 +203,7 @@ export function Step1Personal({
             htmlFor='phone_number'
             className={
               styles['form-floating-label'] +
-              (focus.phone_number || values.phone_number
+              (focus.phone_number || hasFilledValue(wPhone)
                 ? ' ' + styles['form-label--active']
                 : '')
             }
@@ -217,7 +242,7 @@ export function Step1Personal({
             htmlFor='preferred_contact_method'
             className={
               styles['form-floating-label'] +
-              (focus.preferred_contact_method || values.preferred_contact_method
+              (focus.preferred_contact_method || hasFilledValue(wPreferredContact)
                 ? ' ' + styles['form-label--active']
                 : '')
             }
@@ -264,7 +289,7 @@ export function Step1Personal({
             htmlFor='preferred_name'
             className={
               styles['form-floating-label'] +
-              (focus.preferred_name || values.preferred_name
+              (focus.preferred_name || hasFilledValue(wPreferredName)
                 ? ' ' + styles['form-label--active']
                 : '')
             }
@@ -305,7 +330,7 @@ export function Step1Personal({
             htmlFor='pronouns'
             className={
               styles['form-floating-label'] +
-              (focus.pronouns || values.pronouns
+              (focus.pronouns || hasFilledValue(wPronouns)
                 ? ' ' + styles['form-label--active']
                 : '')
             }
@@ -360,10 +385,7 @@ export function Step1Personal({
             htmlFor='age'
             className={
               styles['form-floating-label'] +
-              (focus.age ||
-              (values.age !== '' &&
-                values.age !== undefined &&
-                values.age !== null)
+              (focus.age || hasFilledValue(wAge)
                 ? ' ' + styles['form-label--active']
                 : '')
             }

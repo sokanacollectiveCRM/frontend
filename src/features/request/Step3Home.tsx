@@ -31,6 +31,12 @@ import {
   SELF_PAY_SLIDING_SUPPORT_TYPES,
 } from '@/lib/slidingScaleData';
 
+function hasFilledFloatingValue(v: unknown): boolean {
+  if (v === undefined || v === null) return false;
+  if (typeof v === 'number') return !Number.isNaN(v);
+  return String(v).trim() !== '';
+}
+
 function ArrowSVG({ color = '#757575' }: { color?: string }) {
   return (
     <svg
@@ -61,8 +67,29 @@ export function Step3FamilyMembers({
   step,
   totalSteps,
 }: any) {
-  const values = form.getValues();
   const errors = form.formState.errors;
+  const [
+    wRelationship,
+    wFamFirst,
+    wFamLast,
+    wFamPronouns,
+    wFamMiddle,
+    wFamEmail,
+    wFamMobile,
+  ] =
+    useWatch({
+      control: form.control,
+      name: [
+        'relationship_status',
+        'family_first_name',
+        'family_last_name',
+        'family_pronouns',
+        'family_middle_name',
+        'family_email',
+        'family_mobile_phone',
+      ] as const,
+    }) ?? ['', '', '', '', '', '', ''];
+
   const [focus, setFocus] = useState({
     relationship_status: false,
     family_first_name: false,
@@ -77,8 +104,10 @@ export function Step3FamilyMembers({
 
   const handleFocus = (field: keyof typeof focus) =>
     setFocus((f) => ({ ...f, [field]: true }));
-  const handleBlur = (field: keyof typeof focus) =>
-    setFocus((f) => ({ ...f, [field]: false }));
+  const handleBlur = (field: keyof typeof focus) => {
+    const v = form.getValues(field as never);
+    setFocus((f) => ({ ...f, [field]: hasFilledFloatingValue(v) }));
+  };
 
   const isStepValid = [
     'relationship_status',
@@ -91,7 +120,6 @@ export function Step3FamilyMembers({
   ].every((field) => !errors[field]);
 
   // Debug logs
-  console.log('Step3FamilyMembers values:', values);
   console.log('Step3FamilyMembers errors:', errors);
   console.log('Step3FamilyMembers isStepValid:', isStepValid);
 
@@ -125,7 +153,7 @@ export function Step3FamilyMembers({
             htmlFor='relationship_status'
             className={
               styles['form-floating-label'] +
-              (focus.relationship_status || values.relationship_status
+              (focus.relationship_status || hasFilledFloatingValue(wRelationship)
                 ? ' ' + styles['form-label--active']
                 : '')
             }
@@ -164,7 +192,7 @@ export function Step3FamilyMembers({
             htmlFor='family_first_name'
             className={
               styles['form-floating-label'] +
-              (focus.family_first_name || values.family_first_name
+              (focus.family_first_name || hasFilledFloatingValue(wFamFirst)
                 ? ' ' + styles['form-label--active']
                 : '')
             }
@@ -191,7 +219,7 @@ export function Step3FamilyMembers({
             htmlFor='family_last_name'
             className={
               styles['form-floating-label'] +
-              (focus.family_last_name || values.family_last_name
+              (focus.family_last_name || hasFilledFloatingValue(wFamLast)
                 ? ' ' + styles['form-label--active']
                 : '')
             }
@@ -231,7 +259,7 @@ export function Step3FamilyMembers({
             htmlFor='family_pronouns'
             className={
               styles['form-floating-label'] +
-              (focus.family_pronouns || values.family_pronouns
+              (focus.family_pronouns || hasFilledFloatingValue(wFamPronouns)
                 ? ' ' + styles['form-label--active']
                 : '')
             }
@@ -270,7 +298,7 @@ export function Step3FamilyMembers({
             htmlFor='family_middle_name'
             className={
               styles['form-floating-label'] +
-              (focus.family_middle_name || values.family_middle_name
+              (focus.family_middle_name || hasFilledFloatingValue(wFamMiddle)
                 ? ' ' + styles['form-label--active']
                 : '')
             }
@@ -297,7 +325,7 @@ export function Step3FamilyMembers({
             htmlFor='family_email'
             className={
               styles['form-floating-label'] +
-              (focus.family_email || values.family_email
+              (focus.family_email || hasFilledFloatingValue(wFamEmail)
                 ? ' ' + styles['form-label--active']
                 : '')
             }
@@ -324,7 +352,7 @@ export function Step3FamilyMembers({
             htmlFor='family_mobile_phone'
             className={
               styles['form-floating-label'] +
-              (focus.family_mobile_phone || values.family_mobile_phone
+              (focus.family_mobile_phone || hasFilledFloatingValue(wFamMobile)
                 ? ' ' + styles['form-label--active']
                 : '')
             }
@@ -361,7 +389,6 @@ export function Step4Referral({
   step,
   totalSteps,
 }: any) {
-  const values = form.getValues();
   const errors = form.formState.errors;
   const [focus, setFocus] = useState({
     referral_source: false,
@@ -379,11 +406,21 @@ export function Step4Referral({
     control: form.control,
     name: 'referral_source_other',
   });
+  const referralName = useWatch({
+    control: form.control,
+    name: 'referral_name',
+  });
+  const referralEmail = useWatch({
+    control: form.control,
+    name: 'referral_email',
+  });
 
   const handleFocus = (field: keyof typeof focus) =>
     setFocus((f) => ({ ...f, [field]: true }));
-  const handleBlur = (field: keyof typeof focus) =>
-    setFocus((f) => ({ ...f, [field]: false }));
+  const handleBlur = (field: keyof typeof focus) => {
+    const v = form.getValues(field);
+    setFocus((f) => ({ ...f, [field]: hasFilledFloatingValue(v) }));
+  };
 
   const hasReferralSource = Boolean(String(referralSource ?? '').trim());
   const isReferralOther = referralSource === REFERRAL_SOURCE_OTHER_VALUE;
@@ -439,7 +476,7 @@ export function Step4Referral({
             htmlFor='referral_source'
             className={
               styles['form-floating-label'] +
-              (focus.referral_source || values.referral_source
+              (focus.referral_source || hasReferralSource
                 ? ' ' + styles['form-label--active']
                 : '') +
               (errors.referral_source ? ' ' + styles['form-label--error'] : '')
@@ -491,7 +528,7 @@ export function Step4Referral({
               htmlFor='referral_source_other'
               className={
                 styles['form-floating-label'] +
-                (focus.referral_source_other || referralSourceOther
+                (focus.referral_source_other || hasFilledFloatingValue(referralSourceOther)
                   ? ' ' + styles['form-label--active']
                   : '') +
                 (errors.referral_source_other
@@ -527,7 +564,7 @@ export function Step4Referral({
             htmlFor='referral_name'
             className={
               styles['form-floating-label'] +
-              (focus.referral_name || values.referral_name
+              (focus.referral_name || hasFilledFloatingValue(referralName)
                 ? ' ' + styles['form-label--active']
                 : '') +
               (errors.referral_name ? ' ' + styles['form-label--error'] : '')
@@ -559,7 +596,7 @@ export function Step4Referral({
             htmlFor='referral_email'
             className={
               styles['form-floating-label'] +
-              (focus.referral_email || values.referral_email
+              (focus.referral_email || hasFilledFloatingValue(referralEmail)
                 ? ' ' + styles['form-label--active']
                 : '') +
               (errors.referral_email ? ' ' + styles['form-label--error'] : '')

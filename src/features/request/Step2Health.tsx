@@ -1,8 +1,15 @@
 import { Button } from '@/common/components/ui/button';
 import { useState } from 'react';
+import { useWatch } from 'react-hook-form';
 import styles from './RequestForm.module.scss';
 
 const homeTypeOptions = ['House', 'Condo', 'Apartment', 'Shelter', 'Other'];
+
+function hasFilledValue(v: unknown): boolean {
+  if (v === undefined || v === null) return false;
+  if (typeof v === 'number') return !Number.isNaN(v);
+  return String(v).trim() !== '';
+}
 
 export function Step2Home({
   form,
@@ -12,24 +19,46 @@ export function Step2Home({
   totalSteps,
   isDesktopOrTablet = false,
 }: any) {
-  const values = form.getValues();
   const errors = form.formState.errors;
+
+  const [
+    wAddress,
+    wCity,
+    wState,
+    wZip,
+    wHomeType,
+    wHomeAccess,
+    wPets,
+  ] =
+    useWatch({
+      control: form.control,
+      name: [
+        'address',
+        'city',
+        'state',
+        'zip_code',
+        'home_type',
+        'home_access',
+        'pets',
+      ] as const,
+    }) ?? ['', '', '', '', '', '', ''];
+
   const [focus, setFocus] = useState({
-    address: !!values.address,
-    city: !!values.city,
-    state: !!values.state,
-    zip_code: !!values.zip_code,
-    home_type: !!values.home_type,
-    home_access: !!values.home_access,
-    pets: !!values.pets,
+    address: false,
+    city: false,
+    state: false,
+    zip_code: false,
+    home_type: false,
+    home_access: false,
+    pets: false,
   });
   const [homeTypeOpen, setHomeTypeOpen] = useState(false);
 
   const handleFocus = (field: keyof typeof focus) =>
     setFocus((f) => ({ ...f, [field]: true }));
   const handleBlur = (field: keyof typeof focus) => {
-    const currentValue = values[field];
-    setFocus((f) => ({ ...f, [field]: !!currentValue }));
+    const currentValue = form.getValues(field);
+    setFocus((f) => ({ ...f, [field]: hasFilledValue(currentValue) }));
   };
 
   const isStepValid = [
@@ -43,7 +72,6 @@ export function Step2Home({
   ].every((field) => !errors[field]);
 
   // Debug logs
-  console.log('Step2Home values:', values);
   console.log('Step2Home errors:', errors);
   console.log('Step2Home isStepValid:', isStepValid);
   console.log('Step2Home isDesktopOrTablet:', isDesktopOrTablet);
@@ -70,7 +98,7 @@ export function Step2Home({
             htmlFor='address'
             className={
               styles['form-floating-label'] +
-              (focus.address || values.address
+              (focus.address || hasFilledValue(wAddress)
                 ? ' ' + styles['form-label--active']
                 : '')
             }
@@ -101,7 +129,7 @@ export function Step2Home({
                 htmlFor='city'
                 className={
                   styles['form-floating-label'] +
-                  (focus.city || values.city
+                  (focus.city || hasFilledValue(wCity)
                     ? ' ' + styles['form-label--active']
                     : '')
                 }
@@ -128,7 +156,7 @@ export function Step2Home({
                 htmlFor='state'
                 className={
                   styles['form-floating-label'] +
-                  (focus.state || values.state
+                  (focus.state || hasFilledValue(wState)
                     ? ' ' + styles['form-label--active']
                     : '')
                 }
@@ -158,7 +186,7 @@ export function Step2Home({
                 htmlFor='city'
                 className={
                   styles['form-floating-label'] +
-                  (focus.city || values.city
+                  (focus.city || hasFilledValue(wCity)
                     ? ' ' + styles['form-label--active']
                     : '')
                 }
@@ -186,7 +214,7 @@ export function Step2Home({
                 htmlFor='state'
                 className={
                   styles['form-floating-label'] +
-                  (focus.state || values.state
+                  (focus.state || hasFilledValue(wState)
                     ? ' ' + styles['form-label--active']
                     : '')
                 }
@@ -219,7 +247,7 @@ export function Step2Home({
                 htmlFor='zip_code'
                 className={
                   styles['form-floating-label'] +
-                  (focus.zip_code || values.zip_code
+                  (focus.zip_code || hasFilledValue(wZip)
                     ? ' ' + styles['form-label--active']
                     : '')
                 }
@@ -260,7 +288,7 @@ export function Step2Home({
                 htmlFor='home_type'
                 className={
                   styles['form-floating-label'] +
-                  (focus.home_type || values.home_type
+                  (focus.home_type || hasFilledValue(wHomeType)
                     ? ' ' + styles['form-label--active']
                     : '')
                 }
@@ -307,7 +335,7 @@ export function Step2Home({
                 htmlFor='zip_code'
                 className={
                   styles['form-floating-label'] +
-                  (focus.zip_code || values.zip_code
+                  (focus.zip_code || hasFilledValue(wZip)
                     ? ' ' + styles['form-label--active']
                     : '')
                 }
@@ -348,7 +376,7 @@ export function Step2Home({
                 htmlFor='home_type'
                 className={
                   styles['form-floating-label'] +
-                  (focus.home_type || values.home_type
+                  (focus.home_type || hasFilledValue(wHomeType)
                     ? ' ' + styles['form-label--active']
                     : '')
                 }
@@ -395,7 +423,7 @@ export function Step2Home({
             htmlFor='home_access'
             className={
               styles['form-floating-label'] +
-              (focus.home_access || values.home_access
+              (focus.home_access || hasFilledValue(wHomeAccess)
                 ? ' ' + styles['form-label--active']
                 : '')
             }
@@ -425,7 +453,7 @@ export function Step2Home({
             htmlFor='pets'
             className={
               styles['form-floating-label'] +
-              (focus.pets || values.pets
+              (focus.pets || hasFilledValue(wPets)
                 ? ' ' + styles['form-label--active']
                 : '')
             }
