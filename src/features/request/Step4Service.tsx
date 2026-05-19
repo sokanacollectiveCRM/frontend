@@ -130,7 +130,7 @@ export function Step4Service({
         </Button>
         <Button
           type='submit'
-          disabled={!form.formState.isValid || form.formState.isSubmitting}
+          disabled={form.formState.isSubmitting}
         >
           {step === totalSteps - 1 ? 'Submit' : 'Next'}
         </Button>

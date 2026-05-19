@@ -35,6 +35,47 @@
     box-sizing: border-box;
   }
 
+  /* Long / multi-line labels: keep copy above the control so it never overlaps values */
+  .form-field-label-above {
+    gap: 0.35rem;
+
+    .form-floating-label {
+      position: static !important;
+      left: auto !important;
+      top: auto !important;
+      transform: none !important;
+      margin: 0 0 0.2rem 0;
+      padding: 0 0.1rem 0 0;
+      font-size: 0.95rem;
+      line-height: 1.35;
+      color: #757575;
+      white-space: normal !important;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      pointer-events: none;
+      z-index: 2;
+      background: #fff;
+    }
+
+    .form-floating-label.form-label--active {
+      font-size: 0.875rem;
+      color: #004d40;
+    }
+
+    .form-input,
+    .form-select {
+      margin-top: 0;
+      flex: 0 0 auto;
+    }
+  }
+
+  /* Referral step: one column so long labels are not squeezed into narrow grid cells */
+  .form-grid.step-referral-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.25rem 0 !important;
+  }
+
   .form-floating-label {
     position: absolute;
     left: 0.1rem;
@@ -194,6 +235,17 @@
     margin-top: 0.1rem;
     margin-bottom: 0.5rem;
     min-height: 1.2em;
+  }
+
+  .form-validation-banner {
+    margin: 0 0 1rem 0;
+    padding: 0.85rem 1rem;
+    border-radius: 4px;
+    border-left: 4px solid #d32f2f;
+    background: #ffebee;
+    color: #5d1a1a;
+    font-size: 0.98rem;
+    line-height: 1.45;
   }
 
   .step-buttons-row {
@@ -742,5 +794,26 @@
     padding-top: 2.2rem;
     padding-bottom: 0.5rem;
     height: auto;
+  }
+
+  /* Last in file: media blocks above also set .form-floating-label position — keep stacked labels in normal flow */
+  .form-field-label-above label.form-floating-label,
+  .form-field-label-above label.form-floating-label.form-label--active {
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    display: block !important;
+    width: 100%;
+    box-sizing: border-box;
+    white-space: normal !important;
+  }
+
+  .form-field-label-above textarea.form-input[data-type='textarea'],
+  .form-field-label-above textarea.form-input {
+    padding-top: 0;
+    margin-top: 0;
   }
 } 

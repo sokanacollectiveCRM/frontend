@@ -121,7 +121,7 @@ describe('useRequestForm', () => {
         health_notes: '',
         due_date: '2025-06-15',
         birth_location: 'Hospital',
-        birth_hospital: '',
+        birth_hospital: 'Springfield General',
         number_of_babies: 'Singleton',
         baby_name: '',
         provider_type: 'Midwife',
@@ -158,6 +158,50 @@ describe('useRequestForm', () => {
         referral_source_other: 'Neighborhood parent group',
       });
       expect(withOther.success).toBe(true);
+    });
+
+    it('requires birth location name for each birth location type', () => {
+      const base = {
+        firstname: 'Jane',
+        lastname: 'Doe',
+        email: 'jane.doe@example.com',
+        phone_number: '555-123-4567',
+        pronouns: 'She/Her',
+        pronouns_other: '',
+        preferred_contact_method: 'Phone',
+        preferred_name: '',
+        age: '28',
+        address: '123 Main St',
+        city: 'Springfield',
+        state: 'IL',
+        zip_code: '62704',
+        pets: 'None',
+        referral_source: 'Google',
+        due_date: '2025-06-15',
+        birth_hospital: '',
+        number_of_babies: 'Singleton',
+        provider_type: 'Midwife',
+        pregnancy_number: '1',
+        services_interested: ['Labor Support'],
+        service_support_details: 'Looking for support',
+        payment_method: 'Not sure / Need help figuring this out',
+      };
+
+      const homeMissing = fullSchema.safeParse({ ...base, birth_location: 'Home' });
+      expect(homeMissing.success).toBe(false);
+      if (!homeMissing.success) {
+        expect(homeMissing.error.issues.some((i) => i.path.includes('birth_hospital'))).toBe(
+          true
+        );
+        expect(homeMissing.error.issues.map((i) => i.message).join(' ')).toMatch(/home birth/i);
+      }
+
+      const hospitalOk = fullSchema.safeParse({
+        ...base,
+        birth_location: 'Hospital',
+        birth_hospital: 'Mercy Hospital',
+      });
+      expect(hospitalOk.success).toBe(true);
     });
 
     it('fails validation with missing required fields', () => {

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useForm, type Resolver } from 'react-hook-form';
 import { z } from 'zod';
 import {
-  PAYMENT_METHOD_OPTIONS as SHARED_PAYMENT_METHOD_OPTIONS,
+  REQUEST_FORM_PAYMENT_METHOD_OPTIONS,
   INSURANCE_PLAN_TYPE_OPTIONS,
   INSURANCE_POLICY_HOLDER_RELATIONSHIP_OPTIONS,
   isMedicaidMethod,
@@ -12,12 +12,43 @@ import {
   requiresInsuranceDetails,
   type InsurancePlanType,
   type InsurancePolicyHolderRelationship,
+  type RequestFormPaymentMethod,
 } from '@/lib/paymentRules';
 import { SELF_PAY_SLIDING_SUPPORT_TYPES } from '@/lib/slidingScaleData';
 
-export const PAYMENT_METHOD_OPTIONS = SHARED_PAYMENT_METHOD_OPTIONS;
+export const PAYMENT_METHOD_OPTIONS = REQUEST_FORM_PAYMENT_METHOD_OPTIONS;
 
-export type PaymentMethod = (typeof PAYMENT_METHOD_OPTIONS)[number];
+export type PaymentMethod = RequestFormPaymentMethod;
+
+export function getBirthLocationNameLabel(birthLocation: string): string {
+  switch (birthLocation) {
+    case 'Home':
+      return 'Home birth location*';
+    case 'Hospital':
+      return 'Hospital name*';
+    case 'Birth Center':
+      return 'Birth center name or location*';
+    case 'Other':
+      return 'Birth location name*';
+    default:
+      return 'Birth location name*';
+  }
+}
+
+export function getBirthLocationNameError(birthLocation: string): string {
+  switch (birthLocation) {
+    case 'Home':
+      return 'Please enter your home birth location (e.g. home address).';
+    case 'Hospital':
+      return 'Please enter the hospital name.';
+    case 'Birth Center':
+      return 'Please enter the birth center name or location.';
+    case 'Other':
+      return 'Please enter your birth location name.';
+    default:
+      return 'Please enter your birth location name.';
+  }
+}
 
 export const isSelfPayMethod = (value: string) => sharedIsSelfPayMethod(value);
 export { isMedicaidMethod };
@@ -198,6 +229,14 @@ export const fullSchema = z
     }
   )
   .superRefine((data, ctx) => {
+    if (data.birth_location?.trim() && !data.birth_hospital?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: getBirthLocationNameError(data.birth_location),
+        path: ['birth_hospital'],
+      });
+    }
+
     if (!data.payment_method) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

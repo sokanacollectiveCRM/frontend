@@ -94,29 +94,11 @@ test.describe('Request form — payment method selection (E2E)', () => {
     await expect(page.getByText('Client Demographics')).toBeVisible();
   });
 
-  test('Medicaid: same insurance fields as commercial and required', async ({ page }) => {
+  test('Medicaid is not offered on the request form payment step', async ({ page }) => {
     await goToPaymentStep(page);
 
     await page.locator('#payment_method').click();
-    await page.getByText('Medicaid', { exact: true }).click();
-
-    await expect(page.locator('#insurance_provider')).toBeVisible();
-    await expect(page.locator('#insurance_member_id')).toBeVisible();
-    await expect(page.locator('#insurance_plan_type')).toBeVisible();
-    await expect(page.getByText('Medicaid coverage details', { exact: false })).toBeVisible();
-
-    await clickFormNext(page);
-    await expect(page.getByText('Please enter the policy holder name.', { exact: true })).toBeVisible();
-
-    await page.locator('#insurance_policy_holder_name').fill('Medicaid User');
-    await page.locator('#insurance_policy_holder_dob').fill('1988-06-01');
-    await page.locator('#insurance_policy_holder_relationship').selectOption({ label: 'Self' });
-    await page.locator('#insurance_provider').fill('State Medicaid');
-    await page.locator('#insurance_member_id').fill('MCD-999');
-    await page.locator('#insurance_plan_type').selectOption({ label: 'Medicaid' });
-
-    await clickFormNext(page);
-    await expect(page.getByText('Client Demographics')).toBeVisible();
+    await expect(page.getByText('Medicaid', { exact: true })).toHaveCount(0);
   });
 });
 

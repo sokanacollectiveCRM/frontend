@@ -1,7 +1,6 @@
 import { Button } from '@/common/components/ui/button';
 import { useState } from 'react';
 import { useWatch } from 'react-hook-form';
-import { useRequestFormContext } from './contexts/RequestFormContext';
 import styles from './RequestForm.module.scss';
 
 function hasFilledValue(v: unknown): boolean {
@@ -43,7 +42,6 @@ export function Step1Personal({
   isDesktopOrTablet = false,
 }: any) {
   const errors = form.formState.errors;
-  const { isStepValid } = useRequestFormContext();
 
   const [
     wFirstname,
@@ -101,11 +99,6 @@ export function Step1Personal({
   // Add debug logs
   console.log('Step1Personal errors:', errors);
   console.log('Step1Personal isValid:', form.formState.isValid);
-
-  // Use the context's validation utility
-  const stepValid = isStepValid(step);
-
-  console.log('Step1Personal isStepValid:', stepValid);
 
   return (
     <div>
@@ -276,15 +269,9 @@ export function Step1Personal({
             </div>
           )}
         </div>
-        <div className={styles['form-field']}>
-          <input
-            className={styles['form-input']}
-            {...form.register('preferred_name')}
-            id='preferred_name'
-            autoComplete='off'
-            onFocus={() => handleFocus('preferred_name')}
-            onBlur={() => handleBlur('preferred_name')}
-          />
+        <div
+          className={`${styles['form-field']} ${styles['form-field-label-above']}`}
+        >
           <label
             htmlFor='preferred_name'
             className={
@@ -296,6 +283,14 @@ export function Step1Personal({
           >
             Preferred Name, if different from first name
           </label>
+          <input
+            className={styles['form-input']}
+            {...form.register('preferred_name')}
+            id='preferred_name'
+            autoComplete='off'
+            onFocus={() => handleFocus('preferred_name')}
+            onBlur={() => handleBlur('preferred_name')}
+          />
           {errors.preferred_name && (
             <div className={styles['form-error']}>
               {errors.preferred_name.message as string}
@@ -412,7 +407,7 @@ export function Step1Personal({
             console.log('handleNextStep called');
             handleNextStep();
           }}
-          disabled={!stepValid || form.formState.isSubmitting}
+          disabled={form.formState.isSubmitting}
         >
           {step === totalSteps - 1 ? 'Submit' : 'Next'}
         </Button>

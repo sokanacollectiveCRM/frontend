@@ -477,7 +477,7 @@ export function Step2Home({
           type='button'
           onClick={handleNextStep}
           className={styles['step-button']}
-          disabled={!isStepValid}
+          disabled={form.formState.isSubmitting}
           style={{ marginLeft: 'auto' }}
         >
           Next

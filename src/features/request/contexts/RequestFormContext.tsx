@@ -13,7 +13,7 @@ import {
   useEffect,
   useState,
 } from 'react';
-import { type UseFormReturn, useForm, type Resolver } from 'react-hook-form';
+import { type UseFormReturn, useForm, type Resolver, type FieldPath } from 'react-hook-form';
 
 interface RequestFormContextType {
   form: UseFormReturn<RequestFormInput, unknown, RequestFormValues>;
@@ -32,6 +32,8 @@ interface RequestFormContextType {
   isStepValid: (stepIndex: number) => boolean;
   showRefreshWarning: boolean;
   setShowRefreshWarning: (show: boolean) => void;
+  /** Shown when Next/Submit validation fails or submission errors; cleared when the step changes. */
+  stepGateMessage: string | null;
 }
 
 const RequestFormContext = createContext<RequestFormContextType | undefined>(
@@ -53,6 +55,7 @@ export function RequestFormProvider({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [showRefreshWarning, setShowRefreshWarning] = useState(false);
+  const [stepGateMessage, setStepGateMessage] = useState<string | null>(null);
   const totalSteps = 10;
 
   // No client-side storage for HIPAA compliance
@@ -144,6 +147,37 @@ export function RequestFormProvider({
     },
   });
 
+  const scrollFirstErroredFieldIntoView = () => {
+    const errs = form.formState.errors;
+    const firstKey = Object.keys(errs)[0];
+    if (!firstKey) return;
+    const el = document.getElementById(firstKey);
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (
+        el instanceof HTMLElement &&
+        typeof el.focus === 'function' &&
+        (el.tagName === 'INPUT' ||
+          el.tagName === 'SELECT' ||
+          el.tagName === 'TEXTAREA')
+      ) {
+        el.focus({ preventScroll: true });
+      }
+    }
+  };
+
+  const applyZodIssuesToForm = (issues: { path: (string | number)[]; message: string }[]) => {
+    for (const issue of issues) {
+      const p0 = issue.path[0];
+      if (typeof p0 === 'string') {
+        form.setError(p0 as FieldPath<RequestFormInput>, {
+          type: 'manual',
+          message: issue.message,
+        });
+      }
+    }
+  };
+
   // Refresh warning functionality
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -168,18 +202,24 @@ export function RequestFormProvider({
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [form, submitted]);
 
-  // No client-side storage for HIPAA compliance - form starts fresh each time
+  useEffect(() => {
+    setStepGateMessage(null);
+  }, [step]);
+
+  // No client-side storage for HIPAA compliance - form starts fresh each session
 
   const clearFormData = () => {
     form.reset();
     setStep(0);
     setSubmitted(false);
+    setStepGateMessage(null);
   };
 
   const fillTestData = () => {
     form.reset(DUMMY_TEST_LEAD);
     setStep(0);
     setSubmitted(false);
+    setStepGateMessage(null);
   };
 
   // Utility function to check if a step is valid, handling conditional fields
@@ -214,47 +254,53 @@ export function RequestFormProvider({
   };
 
   const handleNextStep = async () => {
-    console.log('handleNextStep called, current step:', step);
-    console.log('Current form values before validation:', form.getValues());
+    setStepGateMessage(null);
 
-    const valid = await form.trigger(stepFields[step], { shouldFocus: true });
-    console.log('Validation result:', valid);
-    console.log('Form errors after validation:', form.formState.errors);
-    console.log('Form values after validation:', form.getValues());
+    const fieldsToValidate =
+      step === totalSteps - 1 ? undefined : stepFields[step];
+    const valid = await form.trigger(fieldsToValidate, {
+      shouldFocus: true,
+    });
 
     if (!valid) {
-      // Optionally scroll to first error field for better UX
-      const firstErrorField = Object.keys(form.formState.errors)[0];
-      if (firstErrorField) {
-        const el = document.getElementById(firstErrorField);
-        if (el && typeof el.scrollIntoView === 'function') {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }
+      setStepGateMessage(
+        'Some required information is missing or invalid. Please review the highlighted fields on this page before continuing.',
+      );
+      setTimeout(() => scrollFirstErroredFieldIntoView(), 0);
       return false;
     }
 
     // If this is the final step, submit the form
     if (step === totalSteps - 1) {
+      const parsed = fullSchema.safeParse(form.getValues());
+      if (!parsed.success) {
+        applyZodIssuesToForm(parsed.error.issues);
+        setStepGateMessage(
+          'Some required information is missing or invalid. Please review the highlighted fields before submitting.',
+        );
+        setTimeout(() => scrollFirstErroredFieldIntoView(), 0);
+        return false;
+      }
+
       setIsSubmitting(true);
       try {
-        const formData = fullSchema.parse(form.getValues());
-        await onSubmit(formData);
+        await onSubmit(parsed.data);
         setSubmitted(true);
-        // Don't clear form data - let user see the thank you message
-        // Form will reset when they navigate away or refresh
+        setStepGateMessage(null);
+        return true;
       } catch (error) {
-        // Error is handled by the onSubmit function
         console.error('Submission failed:', error);
+        setStepGateMessage(
+          'We could not submit your request. Please try again in a moment. If the problem continues, contact Sokana Collective for help.',
+        );
+        return false;
       } finally {
         setIsSubmitting(false);
       }
-      return true;
     }
 
     // Otherwise, move to next step
     if (step < totalSteps - 1) {
-      console.log('Moving to next step:', step + 1);
       setStep(step + 1);
     }
     return true;
@@ -286,13 +332,10 @@ export function RequestFormProvider({
         shouldFocus: i === step,
       });
       if (!ok) {
-        const firstErrorField = Object.keys(form.formState.errors)[0];
-        if (firstErrorField) {
-          const el = document.getElementById(firstErrorField);
-          if (el && typeof el.scrollIntoView === 'function') {
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-        }
+        setStepGateMessage(
+          'Please complete the earlier steps before jumping ahead. Some required information is missing or invalid.',
+        );
+        setTimeout(() => scrollFirstErroredFieldIntoView(), 0);
         return false;
       }
     }
@@ -318,6 +361,7 @@ export function RequestFormProvider({
     isStepValid,
     showRefreshWarning,
     setShowRefreshWarning,
+    stepGateMessage,
   };
 
   return (

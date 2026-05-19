@@ -53,7 +53,7 @@ function buildMinimalValidRequest(overrides: Partial<RequestFormValues> = {}): R
     // Step 6 (pregnancy) required subset
     due_date: '2027-01-01',
     birth_location: 'Home',
-    birth_hospital: '',
+    birth_hospital: '123 Main St',
     number_of_babies: 'Singleton',
     baby_name: '',
     provider_type: 'Midwife',
@@ -195,20 +195,12 @@ describe('Request form payment validation (schema)', () => {
     expect(result.success).toBe(true);
   });
 
-  it('Medicaid requires the same primary insurance fields as commercial', () => {
+  it('rejects Medicaid on the public request form while it is hidden', () => {
     const data = buildMinimalValidRequest({
-      payment_method: 'Medicaid',
-      insurance_policy_holder_name: '',
-      insurance_provider: '',
-      insurance_member_id: '',
-      insurance_plan_type: '',
+      payment_method: 'Medicaid' as RequestFormValues['payment_method'],
     });
     const result = fullSchema.safeParse(data);
     expect(result.success).toBe(false);
-    if (!result.success) {
-      const messages = result.error.issues.map((i) => i.message).join(' | ');
-      expect(messages).toMatch(/policy holder|insurance company|member id|plan type|relationship/i);
-    }
   });
 
   it('Secondary insurance fields become required when has_secondary_insurance is true', () => {

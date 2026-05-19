@@ -15,6 +15,7 @@ import {
 import FloatingLabelDatePicker from './components/FloatingLabelDatePicker';
 import {
   PAYMENT_METHOD_OPTIONS,
+  getBirthLocationNameLabel,
   isSelfPayMethod,
 } from './useRequestForm';
 import {
@@ -108,20 +109,6 @@ export function Step3FamilyMembers({
     const v = form.getValues(field as never);
     setFocus((f) => ({ ...f, [field]: hasFilledFloatingValue(v) }));
   };
-
-  const isStepValid = [
-    'relationship_status',
-    'first_name',
-    'last_name',
-    'family_pronouns',
-    'middle_name',
-    'family_email',
-    'mobile_phone',
-  ].every((field) => !errors[field]);
-
-  // Debug logs
-  console.log('Step3FamilyMembers errors:', errors);
-  console.log('Step3FamilyMembers isStepValid:', isStepValid);
 
   return (
     <div>
@@ -373,7 +360,7 @@ export function Step3FamilyMembers({
         <Button
           type='submit'
           onClick={() => handleNextStep()}
-          disabled={!isStepValid || form.formState.isSubmitting}
+          disabled={form.formState.isSubmitting}
         >
           {step === totalSteps - 1 ? 'Submit' : 'Next'}
         </Button>
@@ -424,22 +411,31 @@ export function Step4Referral({
 
   const hasReferralSource = Boolean(String(referralSource ?? '').trim());
   const isReferralOther = referralSource === REFERRAL_SOURCE_OTHER_VALUE;
-  const otherExplanationOk =
-    !isReferralOther ||
-    Boolean(String(referralSourceOther ?? '').trim());
-  const isStepValid =
-    hasReferralSource &&
-    !errors.referral_source &&
-    otherExplanationOk &&
-    !errors.referral_source_other;
 
   const referralSourceRegister = form.register('referral_source');
 
   return (
     <div>
-      <div className={styles['form-grid']}>
+      <div
+        className={`${styles['form-grid']} ${styles['step-referral-grid']}`}
+      >
         {/* Referral Source */}
-        <div className={styles['form-field']}>
+        <div
+          className={`${styles['form-field']} ${styles['form-field-label-above']}`}
+        >
+          <label
+            htmlFor='referral_source'
+            className={
+              styles['form-floating-label'] +
+              (focus.referral_source || hasReferralSource
+                ? ' ' + styles['form-label--active']
+                : '') +
+              (errors.referral_source ? ' ' + styles['form-label--error'] : '')
+            }
+            style={{ left: 0, right: 0, maxWidth: 'calc(100% - 36px)' }}
+          >
+            How did you hear about us? *
+          </label>
           <select
             className={
               styles['form-select'] +
@@ -472,19 +468,6 @@ export function Step4Referral({
               </option>
             ))}
           </select>
-          <label
-            htmlFor='referral_source'
-            className={
-              styles['form-floating-label'] +
-              (focus.referral_source || hasReferralSource
-                ? ' ' + styles['form-label--active']
-                : '') +
-              (errors.referral_source ? ' ' + styles['form-label--error'] : '')
-            }
-            style={{ left: 0, right: 0, maxWidth: 'calc(100% - 36px)' }}
-          >
-            How did you hear about us? *
-          </label>
           <span
             className={styles['form-select-arrow']}
             style={{
@@ -506,24 +489,9 @@ export function Step4Referral({
         </div>
         {isReferralOther && (
           <div
-            className={styles['form-field']}
+            className={`${styles['form-field']} ${styles['form-field-label-above']}`}
             style={{ gridColumn: '1 / span 4' }}
           >
-            <textarea
-              className={
-                styles['form-input'] +
-                (errors.referral_source_other
-                  ? ' ' + styles['form-label--error']
-                  : '')
-              }
-              {...form.register('referral_source_other')}
-              id='referral_source_other'
-              data-type='textarea'
-              autoComplete='off'
-              onFocus={() => handleFocus('referral_source_other')}
-              onBlur={() => handleBlur('referral_source_other')}
-              style={{ minHeight: 80, height: 'auto' }}
-            />
             <label
               htmlFor='referral_source_other'
               className={
@@ -539,6 +507,21 @@ export function Step4Referral({
             >
               Please describe how you heard about Sokana *
             </label>
+            <textarea
+              className={
+                styles['form-input'] +
+                (errors.referral_source_other
+                  ? ' ' + styles['form-label--error']
+                  : '')
+              }
+              {...form.register('referral_source_other')}
+              id='referral_source_other'
+              data-type='textarea'
+              autoComplete='off'
+              onFocus={() => handleFocus('referral_source_other')}
+              onBlur={() => handleBlur('referral_source_other')}
+              style={{ minHeight: 80, height: 'auto' }}
+            />
             {errors.referral_source_other && (
               <div className={styles['form-error']}>
                 {(errors.referral_source_other.message as string) ||
@@ -548,18 +531,9 @@ export function Step4Referral({
           </div>
         )}
         {/* Referral Name */}
-        <div className={styles['form-field']}>
-          <input
-            className={
-              styles['form-input'] +
-              (errors.referral_name ? ' ' + styles['form-label--error'] : '')
-            }
-            {...form.register('referral_name')}
-            id='referral_name'
-            autoComplete='off'
-            onFocus={() => handleFocus('referral_name')}
-            onBlur={() => handleBlur('referral_name')}
-          />
+        <div
+          className={`${styles['form-field']} ${styles['form-field-label-above']}`}
+        >
           <label
             htmlFor='referral_name'
             className={
@@ -573,6 +547,17 @@ export function Step4Referral({
           >
             Name of person, agency, midwife, or organization that referred you, if applicable
           </label>
+          <input
+            className={
+              styles['form-input'] +
+              (errors.referral_name ? ' ' + styles['form-label--error'] : '')
+            }
+            {...form.register('referral_name')}
+            id='referral_name'
+            autoComplete='off'
+            onFocus={() => handleFocus('referral_name')}
+            onBlur={() => handleBlur('referral_name')}
+          />
           {errors.referral_name && (
             <div className={styles['form-error']}>
               {errors.referral_name.message as string}
@@ -580,18 +565,9 @@ export function Step4Referral({
           )}
         </div>
         {/* Referral Email (optional) */}
-        <div className={styles['form-field']}>
-          <input
-            className={
-              styles['form-input'] +
-              (errors.referral_email ? ' ' + styles['form-label--error'] : '')
-            }
-            {...form.register('referral_email')}
-            id='referral_email'
-            autoComplete='off'
-            onFocus={() => handleFocus('referral_email')}
-            onBlur={() => handleBlur('referral_email')}
-          />
+        <div
+          className={`${styles['form-field']} ${styles['form-field-label-above']}`}
+        >
           <label
             htmlFor='referral_email'
             className={
@@ -604,6 +580,17 @@ export function Step4Referral({
           >
             Email
           </label>
+          <input
+            className={
+              styles['form-input'] +
+              (errors.referral_email ? ' ' + styles['form-label--error'] : '')
+            }
+            {...form.register('referral_email')}
+            id='referral_email'
+            autoComplete='off'
+            onFocus={() => handleFocus('referral_email')}
+            onBlur={() => handleBlur('referral_email')}
+          />
           {errors.referral_email && (
             <div className={styles['form-error']}>
               {errors.referral_email.message as string}
@@ -618,7 +605,7 @@ export function Step4Referral({
         <Button
           type='submit'
           onClick={() => handleNextStep()}
-          disabled={!isStepValid || form.formState.isSubmitting}
+          disabled={form.formState.isSubmitting}
         >
           {step === totalSteps - 1 ? 'Submit' : 'Next'}
         </Button>
@@ -645,8 +632,6 @@ export function Step5HealthHistory({
     setFocus((f) => ({ ...f, [field]: true }));
   const handleBlur = (field: keyof typeof focus) =>
     setFocus((f) => ({ ...f, [field]: false }));
-
-  const isStepValid = !errors.health_history && !errors.allergies;
 
   return (
     <div>
@@ -727,7 +712,7 @@ export function Step5HealthHistory({
         <Button
           type='submit'
           onClick={() => handleNextStep()}
-          disabled={!isStepValid || form.formState.isSubmitting}
+          disabled={form.formState.isSubmitting}
         >
           {step === totalSteps - 1 ? 'Submit' : 'Next'}
         </Button>
@@ -769,14 +754,6 @@ export function Step6PregnancyBaby({
       ] as const,
     }) ?? ['', '', '', '', 0];
 
-  const watchedByField: Record<string, unknown> = {
-    due_date: dueDate,
-    birth_location: birthLocation,
-    number_of_babies: numberOfBabies,
-    provider_type: providerType,
-    pregnancy_number: pregnancyNumber,
-  };
-
   const [focus, setFocus] = useState({
     due_date: false,
     birth_location: false,
@@ -796,6 +773,7 @@ export function Step6PregnancyBaby({
     setFocus((f) => ({ ...f, [field]: false }));
 
   const birthLocationOptions = ['Hospital', 'Home', 'Birth Center', 'Other'];
+  const birthLocationNameLabel = getBirthLocationNameLabel(birthLocation || '');
   const numberOfBabiesOptions = [
     'Singleton',
     'Twins',
@@ -807,30 +785,6 @@ export function Step6PregnancyBaby({
     'Octuplets',
   ];
   const providerTypeOptions = ['Midwife', 'OB', 'Family Doctor', 'Other'];
-
-  const requiredFields = [
-    'due_date',
-    'birth_location',
-    'number_of_babies',
-    'provider_type',
-    'pregnancy_number',
-  ];
-
-  const isStepValid = requiredFields.every((field) => {
-    const raw = watchedByField[field];
-    const hasError = errors[field as keyof typeof errors];
-    const hasValue =
-      field === 'pregnancy_number'
-        ? Number(raw) >= 1
-        : Boolean(raw !== undefined && raw !== null && String(raw).trim() !== '');
-    console.log(`Field ${field}: hasValue=${hasValue}, hasError=${hasError}, value=${raw}`);
-    return !hasError && hasValue;
-  });
-
-  // Debug logs
-  console.log('Step6PregnancyBaby values:', values);
-  console.log('Step6PregnancyBaby errors:', errors);
-  console.log('Step6PregnancyBaby isStepValid:', isStepValid);
 
   return (
     <div>
@@ -914,7 +868,7 @@ export function Step6PregnancyBaby({
                 : '')
             }
           >
-            Name of hospital or birth center (optional)
+            {birthLocationNameLabel}
           </label>
           {errors.birth_hospital && (
             <div className={styles['form-error']}>
@@ -1091,7 +1045,7 @@ export function Step6PregnancyBaby({
         <Button
           type='submit'
           onClick={() => handleNextStep()}
-          disabled={!isStepValid || form.formState.isSubmitting}
+          disabled={form.formState.isSubmitting}
         >
           {step === totalSteps - 1 ? 'Submit' : 'Next'}
         </Button>
@@ -2456,9 +2410,6 @@ export function Step10ClientDemographics({
     return err.message;
   };
 
-  // All demographic fields are optional, so step is always valid (no required fields)
-  const isStepValid = true;
-
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   // Close dropdown when clicking outside
@@ -2958,7 +2909,7 @@ export function Step10ClientDemographics({
         <Button
           type='submit'
           onClick={() => handleNextStep()}
-          disabled={!isStepValid || form.formState.isSubmitting}
+          disabled={form.formState.isSubmitting}
         >
           {step === totalSteps - 1 ? 'Submit' : 'Next'}
         </Button>

@@ -49,3 +49,68 @@ Reference sample that matches the current form (also used by **“Fill with test
 3. Confirm the stored lead/request matches the POST body (network tab) and DB row.
 
 If anything in the DTO does not match your DB schema, document the mismatch and either adjust the backend mapper or coordinate a small frontend change — do **not** silently drop `age`, `provider_type`, or `service_needed`.
+
+---
+
+## CRM `fullSchema` vs `phi_clients` persistence (audit notes)
+
+**Source of truth for “what was submitted”:** the JSON POST body from the SPA (`RequestForm.tsx` spreads all validated `RequestFormValues` plus `number_of_babies` int + `service_needed` string). If a field is required by Zod and passes submit, it **is on the wire** unless something strips it before insert.
+
+**Where gaps usually are:** the backend intake path (e.g. `RequestFormRepository.saveData` → `INSERT` into `public.phi_clients`) only binding a subset of keys. Below is a concise checklist from a **live audit** (`test.lead@example.com` / Fill with test data): CRM + POST had the data; **Cloud SQL columns stayed null or unset** where the insert list omitted them.
+
+### Confirmed present on audited row (examples)
+
+- Identity / contact: `firstname` → `first_name`, `lastname` → `last_name`, `email`, `phone_number` → `phone` (names per your DB).
+- Address line: `address` → `address_line1` only (see gaps).
+- Health: `health_history`, `allergies`, `health_notes`.
+- Pregnancy (partial): `due_date`, `number_of_babies`, `pregnancy_number`.
+- Referral: `referral_source`, `referral_source_other` when applicable.
+- Payment: `payment_method` normalized (e.g. `Private/Commercial Insurance` → `Commercial Insurance`); primary + secondary billing columns when that path is used.
+- Submit-derived: `service_needed` string (from `services_interested` join + fallback to support text).
+- Demographics (optional step): fields you already map (`race_ethnicity`, `client_age_range`, etc.) as sent.
+
+### Gaps to fix in backend mapper (and/or add columns + migration)
+
+| JSON key (POST body) | CRM (Zod) | Typical issue on `phi_clients` |
+|----------------------|-----------|----------------------------------|
+| `city`, `state`, `zip_code` | Required step 2 | Often **null** if insert only maps `address` → `address_line1` |
+| `birth_location` | Required step 6 | **Not persisted** if not in insert list / no column |
+| `provider_type` | Required step 6 | **Not persisted** if not in insert list / no column |
+| `pronouns`, `preferred_contact_method`, `age` | Required step 1 | Often **missing** on row if not mapped (`date_of_birth` may stay null; CRM collects **age**, not DOB, unless you derive one) |
+| `pets` | Required step 2 | **Not persisted** if not mapped |
+| `services_interested` (array), `service_support_details` | Required step 0 | Only **`service_needed`** stored today; array + long text **lost** unless you add columns (JSON/text) or a child table |
+
+**Conditional (already in POST when applicable):** `pronouns_other` when pronouns = Other; `referral_source_other` when referral = Other; insurance block + secondary trio; sliding-scale fields when that payment path is selected.
+
+### Suggested backend follow-up
+
+1. Extend `saveData` (or equivalent) **INSERT/UPDATE** bindings for every CRM-meaningful key you want on `phi_clients`, or document intentional omission.
+2. Add a **DB integration test**: POST body shaped like `DUMMY_TEST_LEAD` → assert non-null `city`, `state`, `zip_code`, `birth_location`, `provider_type`, `pronouns`, `preferred_contact_method`, `age` (or mapped columns), `pets`, and optionally raw `services_interested` / `service_support_details` if you add storage.
+3. If `phi_clients` lacks columns, ship a **migration** first, then mapper.
+
+### One-off audit query template (Cloud SQL)
+
+Replace email and compare to your latest intake contract:
+
+```sql
+SELECT
+  id,
+  email,
+  city,
+  state,
+  zip_code,
+  address_line1,
+  due_date,
+  number_of_babies,
+  pregnancy_number,
+  referral_source,
+  payment_method,
+  service_needed
+  -- add: birth_location, provider_type, pronouns, preferred_contact_method, age, pets, … when columns exist
+FROM public.phi_clients
+WHERE email = 'test.lead@example.com'
+ORDER BY requested_at DESC NULLS LAST, updated_at DESC NULLS LAST
+LIMIT 5;
+```
+
+Re-run after changing `saveData` to confirm the row matches the POST body from DevTools → Network → `requestSubmission`.

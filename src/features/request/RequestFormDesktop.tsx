@@ -26,6 +26,7 @@ export default function RequestFormDesktop() {
     isSubmitting,
     submitted,
     fillTestData,
+    stepGateMessage,
   } = useRequestFormContext();
   const { control } = form;
 
@@ -232,6 +233,15 @@ export default function RequestFormDesktop() {
       
       {/* Step Header */}
       <StepHeader currentStep={step} totalSteps={totalSteps} showProgressText={false} />
+      {stepGateMessage ? (
+        <div
+          role='alert'
+          className={styles['form-validation-banner']}
+          aria-live='polite'
+        >
+          {stepGateMessage}
+        </div>
+      ) : null}
       <Form {...form}>
         {step === 0 && (
           <Step8ServicesInterested

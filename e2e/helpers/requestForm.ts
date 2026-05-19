@@ -28,12 +28,23 @@ export async function fillPregnancyStepMinimum(page: Page) {
   await fillPregnancyStepWithBirthLocation(page, 'Home');
 }
 
+const BIRTH_LOCATION_NAME_SAMPLES: Record<
+  'Home' | 'Hospital' | 'Birth Center' | 'Other',
+  string
+> = {
+  Home: '123 Main St, Chicago',
+  Hospital: 'Springfield General Hospital',
+  'Birth Center': 'Sunrise Birth Center',
+  Other: 'Planned birth location',
+};
+
 export async function fillPregnancyStepWithBirthLocation(
   page: Page,
   birthLocation: 'Home' | 'Hospital' | 'Birth Center' | 'Other'
 ) {
   await fillRequestFormDueDate(page);
   await page.locator('#birth_location').selectOption({ label: birthLocation });
+  await page.locator('#birth_hospital').fill(BIRTH_LOCATION_NAME_SAMPLES[birthLocation]);
   await page.locator('#number_of_babies').selectOption({ label: 'Singleton' });
   await page.locator('#provider_type').selectOption({ label: 'Midwife' });
   await page.locator('#pregnancy_number').fill('1');

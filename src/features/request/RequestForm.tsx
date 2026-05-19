@@ -92,7 +92,7 @@ function RefreshWarningModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
 
 function RequestFormContent() {
   const [isDesktop, setIsDesktop] = useState(() => window.matchMedia('(min-width: 600px)').matches);
-  const { form, step, totalSteps, handleNextStep, handleBack, isSubmitting, submitted, showRefreshWarning, setShowRefreshWarning, fillTestData } = useRequestFormContext();
+  const { form, step, totalSteps, handleNextStep, handleBack, isSubmitting, submitted, showRefreshWarning, setShowRefreshWarning, fillTestData, stepGateMessage } = useRequestFormContext();
 
   useEffect(() => {
     const mql = window.matchMedia('(min-width: 600px)');
@@ -287,6 +287,15 @@ function RequestFormContent() {
         
         {/* Step Header */}
         <StepHeader currentStep={step} totalSteps={totalSteps} />
+        {stepGateMessage ? (
+          <div
+            role='alert'
+            className={styles['form-validation-banner']}
+            aria-live='polite'
+          >
+            {stepGateMessage}
+          </div>
+        ) : null}
         <Form {...form}>
           {step === 0 && (
             <Step8ServicesInterested

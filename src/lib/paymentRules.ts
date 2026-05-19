@@ -18,6 +18,17 @@ export const PAYMENT_METHOD_OPTIONS = [
 
 export type PaymentMethod = (typeof PAYMENT_METHOD_OPTIONS)[number];
 
+/** Intake request form only — Medicaid hidden until re-enabled in product. */
+export const REQUEST_FORM_PAYMENT_METHOD_OPTIONS = [
+  'Private/Commercial Insurance',
+  'Self-Pay, Sliding Scale Available',
+  'I am unable to pay / Full Support Option',
+  'Not sure / Need help figuring this out',
+] as const satisfies ReadonlyArray<PaymentMethod>;
+
+export type RequestFormPaymentMethod =
+  (typeof REQUEST_FORM_PAYMENT_METHOD_OPTIONS)[number];
+
 /** Historical / staff-edited values still accepted in billing and lead profiles. */
 export const LEGACY_PAYMENT_METHOD_OPTIONS = [
   'Commercial Insurance',
