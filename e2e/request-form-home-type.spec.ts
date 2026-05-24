@@ -1,0 +1,129 @@
+import { test, expect } from '@playwright/test';
+import {
+  advanceFromHomeDetailsToSubmit,
+  checkHomeTypeOptions,
+  clickFormNext,
+  completeStep2HomeDetailsAddress,
+  HOME_TYPE_CHECKBOX_LABELS,
+  reachHomeDetailsStep,
+  submitRequestForm,
+} from './helpers/requestForm';
+
+test.describe('Request form — Home Type multi-select (E2E)', () => {
+  test('shows check-all-that-apply options on Home Details step', async ({ page }) => {
+    await reachHomeDetailsStep(page);
+
+    await expect(page.getByText('Home type (check all that apply)')).toBeVisible();
+    for (const label of Object.values(HOME_TYPE_CHECKBOX_LABELS)) {
+      await expect(page.getByRole('checkbox', { name: label, exact: true })).toBeVisible();
+    }
+  });
+
+  test('allows multiple selections and advances', async ({ page }) => {
+    await reachHomeDetailsStep(page);
+    await completeStep2HomeDetailsAddress(page);
+
+    await checkHomeTypeOptions(page, [
+      HOME_TYPE_CHECKBOX_LABELS.rent,
+      HOME_TYPE_CHECKBOX_LABELS.transitional,
+    ]);
+
+    await clickFormNext(page);
+    await expect(page.getByText('Family Members', { exact: false })).toBeVisible();
+  });
+
+  test('requires description when Other is selected', async ({ page }) => {
+    await reachHomeDetailsStep(page);
+    await completeStep2HomeDetailsAddress(page);
+
+    await page.getByRole('checkbox', { name: HOME_TYPE_CHECKBOX_LABELS.other, exact: true }).check();
+    await clickFormNext(page);
+
+    await expect(page.locator('[class*="form-error"]').filter({
+      hasText: 'Please describe your housing situation',
+    })).toBeVisible();
+
+    await page.locator('#home_type_other').fill('Co-living in a converted garage unit');
+    await clickFormNext(page);
+    await expect(page.getByText('Family Members', { exact: false })).toBeVisible();
+  });
+
+  test('Prefer not to answer is mutually exclusive with other options', async ({ page }) => {
+    await reachHomeDetailsStep(page);
+
+    await page
+      .getByRole('checkbox', { name: HOME_TYPE_CHECKBOX_LABELS.rent, exact: true })
+      .check();
+    await page
+      .getByRole('checkbox', { name: HOME_TYPE_CHECKBOX_LABELS.preferNot, exact: true })
+      .check();
+
+    await expect(
+      page.getByRole('checkbox', { name: HOME_TYPE_CHECKBOX_LABELS.rent, exact: true })
+    ).not.toBeChecked();
+    await expect(
+      page.getByRole('checkbox', { name: HOME_TYPE_CHECKBOX_LABELS.preferNot, exact: true })
+    ).toBeChecked();
+  });
+
+  test('submits home_type array and home_type_other to backend', async ({ page }) => {
+    test.setTimeout(120000);
+    const uniqueEmail = `home-type-e2e-${Date.now()}@example.com`;
+
+    await page.setViewportSize({ width: 500, height: 900 });
+    await page.goto('/request', { waitUntil: 'load' });
+    await page.getByRole('button', { name: 'Fill with test data' }).click();
+    await page
+      .getByRole('heading', { name: /Services Interested In/i })
+      .waitFor({ state: 'visible', timeout: 20000 });
+
+    await clickFormNext(page);
+    await page.locator('#email').fill(uniqueEmail);
+    await clickFormNext(page);
+
+    await expect(page.getByText('Home type (check all that apply)')).toBeVisible();
+    await page
+      .getByRole('checkbox', { name: HOME_TYPE_CHECKBOX_LABELS.rent, exact: true })
+      .uncheck()
+      .catch(() => {});
+    await checkHomeTypeOptions(page, [
+      HOME_TYPE_CHECKBOX_LABELS.other,
+      HOME_TYPE_CHECKBOX_LABELS.shelter,
+    ]);
+    await page.locator('#home_type_other').fill('Emergency shelter placement — week 32');
+    await clickFormNext(page);
+
+    await advanceFromHomeDetailsToSubmit(page);
+
+    const submissionResponse = page.waitForResponse(
+      (res) =>
+        res.url().includes('requestSubmission') &&
+        res.request().method() === 'POST',
+      { timeout: 90000 }
+    );
+    await submitRequestForm(page);
+
+    const response = await submissionResponse;
+    const postData = response.request().postDataJSON() as {
+      home_type?: string[];
+      home_type_other?: string;
+      email?: string;
+    };
+
+    expect(response.ok(), `submission failed: ${response.status()} ${await response.text()}`).toBe(
+      true
+    );
+    expect(postData.email).toBe(uniqueEmail);
+    expect(postData.home_type).toEqual(
+      expect.arrayContaining([
+        HOME_TYPE_CHECKBOX_LABELS.other,
+        HOME_TYPE_CHECKBOX_LABELS.shelter,
+      ])
+    );
+    expect(postData.home_type_other).toBe('Emergency shelter placement — week 32');
+
+    await expect(page.getByText('Request Form Submitted Successfully', { exact: false })).toBeVisible({
+      timeout: 15000,
+    });
+  });
+});

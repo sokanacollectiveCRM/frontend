@@ -86,7 +86,8 @@ export function RequestFormProvider({
       state: '',
       zip_code: '',
       home_phone: '',
-      home_type: '',
+      home_type: [],
+      home_type_other: '',
       home_access: '',
       pets: '',
       relationship_status: '',
@@ -245,6 +246,14 @@ export function RequestFormProvider({
           values.referral_source !== 'Other' ||
           (Boolean(String(values.referral_source_other ?? '').trim()) &&
             !errors.referral_source_other)
+        );
+      }
+
+      if (field === 'home_type_other') {
+        const selected = values.home_type ?? [];
+        return (
+          !selected.includes('Other') ||
+          (Boolean(String(values.home_type_other ?? '').trim()) && !errors.home_type_other)
         );
       }
 

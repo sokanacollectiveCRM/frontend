@@ -15,6 +15,7 @@ import {
   type RequestFormPaymentMethod,
 } from '@/lib/paymentRules';
 import { SELF_PAY_SLIDING_SUPPORT_TYPES } from '@/lib/slidingScaleData';
+import { HOME_TYPE_OTHER_VALUE } from './homeTypeOptions';
 
 export const PAYMENT_METHOD_OPTIONS = REQUEST_FORM_PAYMENT_METHOD_OPTIONS;
 
@@ -90,7 +91,8 @@ export const fullSchema = z
     state: z.string().min(1, 'Please enter your state.'),
     zip_code: z.string().min(1, 'Please enter your zip code.'),
     home_phone: z.string().optional(), // removed from form, made optional
-    home_type: z.string().optional(), // made optional
+    home_type: z.array(z.string()).optional(),
+    home_type_other: z.string().optional(),
     home_access: z.string().optional(), // made optional
     pets: z
       .string()
@@ -226,6 +228,15 @@ export const fullSchema = z
     {
       message: 'Please describe how you heard about Sokana.',
       path: ['referral_source_other'],
+    }
+  )
+  .refine(
+    (data) =>
+      !(data.home_type ?? []).includes(HOME_TYPE_OTHER_VALUE) ||
+      Boolean(data.home_type_other?.trim()),
+    {
+      message: 'Please describe your housing situation.',
+      path: ['home_type_other'],
     }
   )
   .superRefine((data, ctx) => {
@@ -371,6 +382,7 @@ export const stepFields: (keyof RequestFormInput)[][] = [
     'state',
     'zip_code',
     'home_type',
+    'home_type_other',
     'home_access',
     'pets',
   ],
@@ -464,7 +476,8 @@ export function useRequestForm(
       state: '',
       zip_code: '',
       home_phone: '',
-      home_type: '',
+      home_type: [],
+      home_type_other: '',
       home_access: '',
       pets: '',
       relationship_status: '',

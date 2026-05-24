@@ -84,6 +84,12 @@ import {
   REFERRAL_SOURCE_OPTIONS,
   REFERRAL_SOURCE_OTHER_VALUE,
 } from '@/features/request/referralSourceOptions';
+import {
+  HOME_TYPE_OPTIONS,
+  HOME_TYPE_OTHER_VALUE,
+  normalizeHomeTypeFromApi,
+  toggleHomeTypeSelection,
+} from '@/features/request/homeTypeOptions';
 
 interface LeadProfileModalProps {
   open: boolean;
@@ -98,7 +104,6 @@ const NOTE_CATEGORIES = ['General', 'Communication', 'Milestone', 'Follow-up', '
 // Dropdown options from request form (exact matches)
 const PRONOUNS_OPTIONS = ['She/Her', 'He/Him', 'They/Them', 'Ze/Hir/Zir', 'None', 'Other'];
 const PREFERRED_CONTACT_OPTIONS = ['Phone', 'Text', 'Email'];
-const HOME_TYPE_OPTIONS = ['House', 'Condo', 'Apartment', 'Shelter', 'Other'];
 const RELATIONSHIP_OPTIONS = ['Spouse', 'Partner', 'Friend', 'Parent', 'Sibling', 'Other'];
 const FAMILY_PRONOUNS_OPTIONS = ['She/Her', 'He/Him', 'They/Them', 'Ze/Hir/Zir', 'None'];
 const SERVICES_OPTIONS = ['Labor Support', 'Postpartum Support', '1st Night Care', 'Lactation Support', 'Perinatal Education', 'Abortion Support', 'Other'];
@@ -563,6 +568,14 @@ export function LeadProfileModal({
     const rawReferral = stripRedacted(get('referral_source', 'referralSource'));
     if (rawReferral !== undefined) {
       initializedData.referral_source = normalizeReferralSourceStoredValue(rawReferral);
+    }
+    const rawHomeType = get('home_type', 'homeType');
+    if (rawHomeType !== undefined && rawHomeType !== null && rawHomeType !== '') {
+      initializedData.home_type = normalizeHomeTypeFromApi(rawHomeType);
+    }
+    const rawHomeTypeOther = stripRedacted(get('home_type_other', 'homeTypeOther'));
+    if (rawHomeTypeOther !== undefined) {
+      initializedData.home_type_other = rawHomeTypeOther;
     }
     console.log('🔍 [Init] Final initializedData:', {
       phoneNumber: initializedData.phoneNumber,
@@ -1447,7 +1460,13 @@ export function LeadProfileModal({
             <div className="mt-1">
               <div className="flex flex-wrap gap-2">
                 {options.map((option) => {
-                  const isSelected = Array.isArray(value) && value.includes(option);
+                  const multiValue =
+                    fieldKey === 'home_type'
+                      ? normalizeHomeTypeFromApi(value)
+                      : Array.isArray(value)
+                        ? value
+                        : [];
+                  const isSelected = multiValue.includes(option);
                   return (
                     <Button
                       key={option}
@@ -1456,17 +1475,31 @@ export function LeadProfileModal({
                       size="sm"
                       onClick={() => {
                         if (!isEditing) return;
-                        const currentArray = Array.isArray(value) ? value : [];
-                        const newArray = isSelected
-                          ? currentArray.filter(item => item !== option)
-                          : [...currentArray, option];
-                        console.log(`Multi-select ${fieldKey} clicked:`, {
-                          option,
-                          isSelected,
-                          currentArray,
-                          newArray
-                        });
-                        setEditedData(prev => ({ ...prev, [fieldKey]: newArray }));
+                        const currentArray =
+                          fieldKey === 'home_type'
+                            ? normalizeHomeTypeFromApi(value)
+                            : Array.isArray(value)
+                              ? value
+                              : [];
+                        const newArray =
+                          fieldKey === 'home_type'
+                            ? toggleHomeTypeSelection(currentArray, option)
+                            : isSelected
+                              ? currentArray.filter((item) => item !== option)
+                              : [...currentArray, option];
+                        if (
+                          fieldKey === 'home_type' &&
+                          option === HOME_TYPE_OTHER_VALUE &&
+                          !newArray.includes(HOME_TYPE_OTHER_VALUE)
+                        ) {
+                          setEditedData((prev) => ({
+                            ...prev,
+                            home_type: newArray,
+                            home_type_other: '',
+                          }));
+                          return;
+                        }
+                        setEditedData((prev) => ({ ...prev, [fieldKey]: newArray }));
                       }}
                       disabled={!isEditing}
                       className={`text-xs ${!isEditing ? 'cursor-default' : ''}`}
@@ -1476,7 +1509,10 @@ export function LeadProfileModal({
                   );
                 })}
               </div>
-              {!isEditing && (!value || (Array.isArray(value) && value.length === 0)) && (
+              {!isEditing &&
+                (fieldKey === 'home_type'
+                  ? normalizeHomeTypeFromApi(value).length === 0
+                  : !value || (Array.isArray(value) && value.length === 0)) && (
                 <div className="text-sm text-muted-foreground mt-2">No options selected</div>
               )}
             </div>
@@ -1701,7 +1737,16 @@ export function LeadProfileModal({
                 {renderEditableField('City', 'city')}
                 {renderEditableField('State', 'state')}
                 {renderEditableField('ZIP Code', 'zip_code')}
-                {renderEditableField('Home Type', 'home_type', undefined, 'select', HOME_TYPE_OPTIONS)}
+                {renderEditableField(
+                  'Home Type',
+                  'home_type',
+                  undefined,
+                  'multiselect',
+                  [...HOME_TYPE_OPTIONS]
+                )}
+                {normalizeHomeTypeFromApi(editedData.home_type).includes(
+                  HOME_TYPE_OTHER_VALUE
+                ) && renderEditableField('Home Type (Other)', 'home_type_other')}
                 {renderEditableField('Home Access', 'home_access')}
                 {renderEditableField('Pets/Animals in Home', 'pets')}
               </>,

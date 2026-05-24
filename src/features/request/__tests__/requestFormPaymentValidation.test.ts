@@ -25,7 +25,8 @@ function buildMinimalValidRequest(overrides: Partial<RequestFormValues> = {}): R
     state: 'IL',
     zip_code: '60601',
     home_phone: '',
-    home_type: '',
+    home_type: [],
+    home_type_other: '',
     home_access: '',
     pets: 'None',
 

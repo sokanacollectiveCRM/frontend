@@ -164,7 +164,8 @@ export type Client = User & {
   address?: string;
   city?: string;
   state?: string;
-  home_type?: string;
+  home_type?: string[] | string;
+  home_type_other?: string;
   home_access?: string;
   pets?: string;
   

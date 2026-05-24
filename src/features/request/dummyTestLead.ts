@@ -27,7 +27,8 @@ export const DUMMY_TEST_LEAD: Partial<RequestFormInput> = {
   city: 'Springfield',
   state: 'IL',
   zip_code: '62704',
-  home_type: 'House',
+  home_type: ['Rent, apartment or house'],
+  home_type_other: '',
   home_access: 'Front door, no stairs',
   pets: 'None',
 

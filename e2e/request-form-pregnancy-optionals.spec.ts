@@ -1,50 +1,15 @@
 import { test, expect } from '@playwright/test';
 import {
   clickFormNext,
+  completeStep0Services,
+  completeStep1ClientDetails,
+  completeStep2HomeDetailsAddress,
+  completeStep3FamilyMembers,
+  completeStep4Referral,
+  completeStep5HealthHistory,
   fillPregnancyStepWithBirthLocation,
   fillRequestFormDueDate,
 } from './helpers/requestForm';
-
-async function completeStep0Services(page: import('@playwright/test').Page) {
-  await page.getByRole('button', { name: 'Select' }).click();
-  await page.getByRole('checkbox', { name: 'Labor Support' }).check();
-
-  await page.locator('#service_support_details').fill('Support details for testing.');
-  await clickFormNext(page);
-}
-
-async function completeStep1ClientDetails(page: import('@playwright/test').Page) {
-  await page.locator('#firstname').fill('Test');
-  await page.locator('#lastname').fill('User');
-  await page.locator('#email').fill('test.user@example.com');
-  await page.locator('#phone_number').fill('555-555-5555');
-  await page.locator('#preferred_contact_method').selectOption({ label: 'Email' });
-  await page.locator('#pronouns').selectOption({ label: 'They/Them' });
-  await page.locator('#age').fill('28');
-  await clickFormNext(page);
-}
-
-async function completeStep2HomeDetails(page: import('@playwright/test').Page) {
-  await page.locator('#address').fill('123 Main St');
-  await page.locator('#city').fill('Chicago');
-  await page.locator('#state').fill('IL');
-  await page.locator('#zip_code').fill('60601');
-  await page.locator('#pets').fill('None');
-  await clickFormNext(page);
-}
-
-async function completeStep3FamilyMembers(page: import('@playwright/test').Page) {
-  await clickFormNext(page);
-}
-
-async function completeStep4Referral(page: import('@playwright/test').Page) {
-  await page.locator('#referral_source').selectOption({ label: 'Google' });
-  await clickFormNext(page);
-}
-
-async function completeStep5HealthHistory(page: import('@playwright/test').Page) {
-  await clickFormNext(page);
-}
 
 async function reachPregnancyStep(page: import('@playwright/test').Page) {
   await page.setViewportSize({ width: 500, height: 900 });
@@ -54,7 +19,8 @@ async function reachPregnancyStep(page: import('@playwright/test').Page) {
   await completeStep0Services(page);
   await expect(page.getByText('Client Details')).toBeVisible();
   await completeStep1ClientDetails(page);
-  await completeStep2HomeDetails(page);
+  await completeStep2HomeDetailsAddress(page);
+  await clickFormNext(page);
   await completeStep3FamilyMembers(page);
   await completeStep4Referral(page);
   await completeStep5HealthHistory(page);

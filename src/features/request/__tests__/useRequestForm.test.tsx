@@ -29,7 +29,8 @@ describe('useRequestForm', () => {
         state: 'IL',
         zip_code: '62704',
         home_phone: '555-987-6543',
-        home_type: 'House',
+        home_type: ['Rent, apartment or house'],
+        home_type_other: '',
         home_access: 'Front door, no stairs',
         pets: 'Dog',
         relationship_status: 'Partner',
@@ -85,6 +86,91 @@ describe('useRequestForm', () => {
       expect(result.success).toBe(true);
     });
 
+    it('requires home_type_other when Home Type includes Other', () => {
+      const base = {
+        firstname: 'Jane',
+        lastname: 'Doe',
+        email: 'jane.doe@example.com',
+        phone_number: '555-123-4567',
+        pronouns: 'She/Her',
+        pronouns_other: '',
+        preferred_contact_method: 'Phone',
+        preferred_name: '',
+        age: '28',
+        address: '123 Main St',
+        city: 'Springfield',
+        state: 'IL',
+        zip_code: '62704',
+        home_phone: '',
+        home_type: ['Other'],
+        home_type_other: '',
+        home_access: '',
+        pets: 'None',
+        relationship_status: '',
+        first_name: '',
+        last_name: '',
+        middle_name: '',
+        family_email: '',
+        mobile_phone: '',
+        work_phone: '',
+        family_pronouns: '',
+        referral_source: 'Google',
+        referral_source_other: '',
+        referral_name: '',
+        referral_email: '',
+        health_history: '',
+        allergies: '',
+        health_notes: '',
+        due_date: '2025-06-15',
+        birth_location: 'Hospital',
+        birth_hospital: 'Springfield General',
+        number_of_babies: 'Singleton',
+        baby_name: '',
+        provider_type: 'Midwife',
+        pregnancy_number: '1',
+        had_previous_pregnancies: false,
+        previous_pregnancies_count: '0',
+        living_children_count: '0',
+        past_pregnancy_experience: '',
+        services_interested: ['Labor Support'],
+        service_support_details: 'Support details here for testing.',
+        service_needed: '',
+        payment_method: 'Private/Commercial Insurance',
+        insurance_policy_holder_name: 'Jane Doe',
+        insurance_policy_holder_dob: '1990-04-12',
+        insurance_policy_holder_relationship: 'Self',
+        insurance_provider: 'Blue Cross',
+        insurance_member_id: 'ABC',
+        policy_number: '',
+        insurance_plan_type: 'PPO',
+        insurance_phone_number: '800-555-1212',
+        has_secondary_insurance: false,
+        secondary_insurance_provider: '',
+        secondary_insurance_member_id: '',
+        secondary_policy_number: '',
+        race_ethnicity: '',
+        primary_language: '',
+        client_age_range: '',
+        insurance: '',
+        demographics_multi: [],
+        demographics_annual_income: '',
+      };
+
+      const emptyOther = fullSchema.safeParse(base);
+      expect(emptyOther.success).toBe(false);
+      if (!emptyOther.success) {
+        expect(
+          emptyOther.error.issues.some((i) => i.path.includes('home_type_other'))
+        ).toBe(true);
+      }
+
+      const withOther = fullSchema.safeParse({
+        ...base,
+        home_type_other: 'Co-living arrangement',
+      });
+      expect(withOther.success).toBe(true);
+    });
+
     it('requires explanation when referral source is Other', () => {
       const base = {
         firstname: 'Jane',
@@ -101,7 +187,8 @@ describe('useRequestForm', () => {
         state: 'IL',
         zip_code: '62704',
         home_phone: '',
-        home_type: '',
+        home_type: [],
+        home_type_other: '',
         home_access: '',
         pets: 'None',
         relationship_status: '',
@@ -255,7 +342,8 @@ describe('useRequestForm', () => {
         state: 'IL',
         zip_code: '62704',
         home_phone: '',
-        home_type: '',
+        home_type: [],
+        home_type_other: '',
         home_access: '',
         pets: 'None',
         relationship_status: '',
@@ -318,7 +406,8 @@ describe('useRequestForm', () => {
         state: 'IL',
         zip_code: '62704',
         home_phone: '',
-        home_type: '',
+        home_type: [],
+        home_type_other: '',
         home_access: '',
         pets: 'None',
         relationship_status: '',
