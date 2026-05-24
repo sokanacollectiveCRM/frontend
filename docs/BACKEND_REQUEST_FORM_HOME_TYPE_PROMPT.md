@@ -27,7 +27,8 @@ Implement **validation**, **persistence**, **read API shape**, and **tests** for
 
 | Concern | JSON keys | What “good” looks like |
 |--------|-----------|-------------------------|
-| Multi-select housing | `home_type` | `string[]` on wire; stored as JSON array (preferred) or equivalent |
+| Multi-select housing | `home_type` (POST body) | `string[]` on wire from SPA |
+| DB column | `home_types` | `TEXT[]` — **do not** INSERT into non-existent `home_type` column |
 | Other description | `home_type_other` | Non-empty string when `"Other"` ∈ `home_type`; empty otherwise |
 | Legacy data | existing `home_type` column | Old scalar values still readable; new intakes write arrays |
 | Staff view | GET client / lead detail | Return `home_type` as **array** (or normalize scalar → one-element array) + `home_type_other` |

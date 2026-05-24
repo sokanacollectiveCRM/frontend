@@ -29,6 +29,8 @@ function buildMinimalValidRequest(overrides: Partial<RequestFormValues> = {}): R
     home_type_other: '',
     home_access: '',
     pets: 'None',
+    home_adults_count: '1',
+    home_youth_count: '0',
 
     // Step 3 (family) optional
     relationship_status: '',

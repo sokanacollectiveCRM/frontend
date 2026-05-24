@@ -85,6 +85,9 @@ import {
   REFERRAL_SOURCE_OTHER_VALUE,
 } from '@/features/request/referralSourceOptions';
 import {
+  HOME_PEOPLE_COUNT_OPTIONS,
+} from '@/features/request/homePeopleCountOptions';
+import {
   HOME_TYPE_OPTIONS,
   HOME_TYPE_OTHER_VALUE,
   normalizeHomeTypeFromApi,
@@ -1749,6 +1752,20 @@ export function LeadProfileModal({
                 ) && renderEditableField('Home Type (Other)', 'home_type_other')}
                 {renderEditableField('Home Access', 'home_access')}
                 {renderEditableField('Pets/Animals in Home', 'pets')}
+                {renderEditableField(
+                  'Other People in Home — Adults (18+)',
+                  'home_adults_count',
+                  undefined,
+                  'select',
+                  [...HOME_PEOPLE_COUNT_OPTIONS]
+                )}
+                {renderEditableField(
+                  'Other People in Home — Youth (under 18)',
+                  'home_youth_count',
+                  undefined,
+                  'select',
+                  [...HOME_PEOPLE_COUNT_OPTIONS]
+                )}
               </>,
               <User className="h-5 w-5" />
             )}

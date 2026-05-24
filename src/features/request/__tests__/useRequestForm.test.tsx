@@ -33,6 +33,8 @@ describe('useRequestForm', () => {
         home_type_other: '',
         home_access: 'Front door, no stairs',
         pets: 'Dog',
+        home_adults_count: '2',
+        home_youth_count: '1',
         relationship_status: 'Partner',
         family_first_name: 'Alex',
         family_last_name: 'Doe',
@@ -106,6 +108,8 @@ describe('useRequestForm', () => {
         home_type_other: '',
         home_access: '',
         pets: 'None',
+        home_adults_count: '1',
+        home_youth_count: '0',
         relationship_status: '',
         first_name: '',
         last_name: '',
@@ -171,6 +175,55 @@ describe('useRequestForm', () => {
       expect(withOther.success).toBe(true);
     });
 
+    it('requires home_adults_count and home_youth_count on Home Details', () => {
+      const base = {
+        firstname: 'Jane',
+        lastname: 'Doe',
+        email: 'jane.doe@example.com',
+        phone_number: '555-123-4567',
+        pronouns: 'She/Her',
+        pronouns_other: '',
+        preferred_contact_method: 'Phone',
+        preferred_name: '',
+        age: '28',
+        address: '123 Main St',
+        city: 'Springfield',
+        state: 'IL',
+        zip_code: '62704',
+        home_type: [],
+        home_type_other: '',
+        home_access: '',
+        pets: 'None',
+        home_adults_count: '',
+        home_youth_count: '',
+        referral_source: 'Google',
+        due_date: '2024/15/2026',
+        birth_location: 'Hospital',
+        birth_hospital: 'General Hospital',
+        number_of_babies: 'Singleton',
+        provider_type: 'Midwife',
+        pregnancy_number: '1',
+        services_interested: ['Labor Support'],
+        service_support_details: 'Support details',
+        payment_method: 'Not sure / Need help figuring this out',
+      };
+
+      const missing = fullSchema.safeParse(base);
+      expect(missing.success).toBe(false);
+      if (!missing.success) {
+        const paths = missing.error.issues.map((i) => i.path[0]);
+        expect(paths).toContain('home_adults_count');
+        expect(paths).toContain('home_youth_count');
+      }
+
+      const valid = fullSchema.safeParse({
+        ...base,
+        home_adults_count: '5+',
+        home_youth_count: '0',
+      });
+      expect(valid.success).toBe(true);
+    });
+
     it('requires explanation when referral source is Other', () => {
       const base = {
         firstname: 'Jane',
@@ -191,6 +244,8 @@ describe('useRequestForm', () => {
         home_type_other: '',
         home_access: '',
         pets: 'None',
+        home_adults_count: '1',
+        home_youth_count: '0',
         relationship_status: '',
         first_name: '',
         last_name: '',
@@ -263,6 +318,8 @@ describe('useRequestForm', () => {
         state: 'IL',
         zip_code: '62704',
         pets: 'None',
+        home_adults_count: '1',
+        home_youth_count: '0',
         referral_source: 'Google',
         due_date: '2025-06-15',
         birth_hospital: '',
@@ -346,6 +403,8 @@ describe('useRequestForm', () => {
         home_type_other: '',
         home_access: '',
         pets: 'None',
+        home_adults_count: '1',
+        home_youth_count: '0',
         relationship_status: '',
         first_name: '',
         last_name: '',
@@ -410,6 +469,8 @@ describe('useRequestForm', () => {
         home_type_other: '',
         home_access: '',
         pets: 'None',
+        home_adults_count: '1',
+        home_youth_count: '0',
         relationship_status: '',
         first_name: '',
         last_name: '',
@@ -553,6 +614,8 @@ describe('useRequestForm', () => {
         state: 'IL',
         zip_code: '62704',
         pets: 'None',
+        home_adults_count: '1',
+        home_youth_count: '0',
         referral_source: 'Google',
         due_date: '2025-06-15',
         birth_location: 'Hospital',
@@ -589,6 +652,8 @@ describe('useRequestForm', () => {
         state: 'IL',
         zip_code: '62704',
         pets: 'None',
+        home_adults_count: '1',
+        home_youth_count: '0',
         referral_source: 'Google',
         due_date: '2025-06-15',
         birth_location: 'Hospital',
@@ -624,6 +689,8 @@ describe('useRequestForm', () => {
         state: 'IL',
         zip_code: '62704',
         pets: 'None',
+        home_adults_count: '1',
+        home_youth_count: '0',
         referral_source: 'Google',
         due_date: '2025-06-15',
         birth_location: 'Hospital',
@@ -660,6 +727,8 @@ describe('useRequestForm', () => {
         state: 'IL',
         zip_code: '62704',
         pets: 'None',
+        home_adults_count: '1',
+        home_youth_count: '0',
         referral_source: 'Google',
         due_date: '2025-06-15',
         birth_location: 'Hospital',

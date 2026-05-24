@@ -168,6 +168,8 @@ export type Client = User & {
   home_type_other?: string;
   home_access?: string;
   pets?: string;
+  home_adults_count?: string;
+  home_youth_count?: string;
   
   // Services
   services_interested?: string[];

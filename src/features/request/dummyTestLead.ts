@@ -31,6 +31,8 @@ export const DUMMY_TEST_LEAD: Partial<RequestFormInput> = {
   home_type_other: '',
   home_access: 'Front door, no stairs',
   pets: 'None',
+  home_adults_count: '1',
+  home_youth_count: '0',
 
   // Step 3 — Family members
   relationship_status: 'Partner',

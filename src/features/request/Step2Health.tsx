@@ -2,6 +2,12 @@ import { Button } from '@/common/components/ui/button';
 import { useState } from 'react';
 import { useWatch } from 'react-hook-form';
 import {
+  HOME_ADULTS_COUNT_LABEL,
+  HOME_PEOPLE_COUNT_OPTIONS,
+  HOME_PEOPLE_IN_HOME_QUESTION,
+  HOME_YOUTH_COUNT_LABEL,
+} from './homePeopleCountOptions';
+import {
   HOME_TYPE_OPTIONS,
   HOME_TYPE_OTHER_VALUE,
   toggleHomeTypeSelection,
@@ -131,6 +137,69 @@ function HomeTypeField({
   );
 }
 
+function HomePeopleCountSelect({
+  id,
+  label,
+  register,
+  error,
+  isOpen,
+  onFocus,
+  onBlur,
+  hasValue,
+}: {
+  id: 'home_adults_count' | 'home_youth_count';
+  label: string;
+  register: any;
+  error?: string;
+  isOpen: boolean;
+  onFocus: () => void;
+  onBlur: () => void;
+  hasValue: boolean;
+}) {
+  return (
+    <div className={styles['form-field']} style={{ flex: 1 }}>
+      <select
+        className={styles['form-select']}
+        {...register(id)}
+        id={id}
+        defaultValue=''
+        aria-required='true'
+        onFocus={onFocus}
+        onBlur={onBlur}
+      >
+        <option value='' disabled hidden></option>
+        {HOME_PEOPLE_COUNT_OPTIONS.map((opt) => (
+          <option key={opt} value={opt}>
+            {opt}
+          </option>
+        ))}
+      </select>
+      <label
+        htmlFor={id}
+        className={
+          styles['form-floating-label'] +
+          (isOpen || hasValue ? ' ' + styles['form-label--active'] : '')
+        }
+        style={{
+          left: 0,
+          color: isOpen ? '#00bcd4' : undefined,
+          right: 0,
+          maxWidth: 'calc(100% - 36px)',
+        }}
+      >
+        {label} *
+      </label>
+      <span
+        className={styles['form-select-arrow']}
+        style={{ color: isOpen ? '#00bcd4' : '#757575' }}
+      >
+        ▼
+      </span>
+      {error && <div className={styles['form-error']}>{error}</div>}
+    </div>
+  );
+}
+
 export function Step2Home({
   form,
   handleBack,
@@ -141,11 +210,20 @@ export function Step2Home({
 }: any) {
   const errors = form.formState.errors;
 
-  const [wAddress, wCity, wState, wZip, wHomeAccess, wPets] =
+  const [wAddress, wCity, wState, wZip, wHomeAccess, wPets, wHomeAdults, wHomeYouth] =
     useWatch({
       control: form.control,
-      name: ['address', 'city', 'state', 'zip_code', 'home_access', 'pets'] as const,
-    }) ?? ['', '', '', '', '', ''];
+      name: [
+        'address',
+        'city',
+        'state',
+        'zip_code',
+        'home_access',
+        'pets',
+        'home_adults_count',
+        'home_youth_count',
+      ] as const,
+    }) ?? ['', '', '', '', '', '', '', ''];
 
   const [focus, setFocus] = useState({
     address: false,
@@ -156,6 +234,8 @@ export function Step2Home({
     home_type_other: false,
     home_access: false,
     pets: false,
+    home_adults_count: false,
+    home_youth_count: false,
   });
 
   const handleFocus = (field: keyof typeof focus) =>
@@ -174,6 +254,8 @@ export function Step2Home({
     'home_type_other',
     'home_access',
     'pets',
+    'home_adults_count',
+    'home_youth_count',
   ].every((field) => !errors[field]);
 
   const homeTypeFieldProps = {
@@ -183,6 +265,84 @@ export function Step2Home({
     handleFocus,
     handleBlur,
   };
+
+  const peopleCountFields = (
+    <>
+      <p
+        className={
+          styles['form-floating-label'] + ' ' + styles['form-label--active']
+        }
+        style={{
+          position: 'static',
+          transform: 'none',
+          marginBottom: 8,
+          color:
+            errors.home_adults_count || errors.home_youth_count
+              ? '#d32f2f'
+              : '#757575',
+          width: '100%',
+          gridColumn: '1 / -1',
+        }}
+      >
+        {HOME_PEOPLE_IN_HOME_QUESTION}
+      </p>
+      {isDesktopOrTablet ? (
+        <div
+          style={{
+            display: 'flex',
+            gap: '1rem',
+            width: '100%',
+            marginBottom: '1rem',
+            gridColumn: '1 / -1',
+          }}
+        >
+          <HomePeopleCountSelect
+            id='home_adults_count'
+            label={HOME_ADULTS_COUNT_LABEL}
+            register={form.register}
+            error={errors.home_adults_count?.message as string | undefined}
+            isOpen={focus.home_adults_count}
+            onFocus={() => handleFocus('home_adults_count')}
+            onBlur={() => handleBlur('home_adults_count')}
+            hasValue={hasFilledValue(wHomeAdults)}
+          />
+          <HomePeopleCountSelect
+            id='home_youth_count'
+            label={HOME_YOUTH_COUNT_LABEL}
+            register={form.register}
+            error={errors.home_youth_count?.message as string | undefined}
+            isOpen={focus.home_youth_count}
+            onFocus={() => handleFocus('home_youth_count')}
+            onBlur={() => handleBlur('home_youth_count')}
+            hasValue={hasFilledValue(wHomeYouth)}
+          />
+        </div>
+      ) : (
+        <>
+          <HomePeopleCountSelect
+            id='home_adults_count'
+            label={HOME_ADULTS_COUNT_LABEL}
+            register={form.register}
+            error={errors.home_adults_count?.message as string | undefined}
+            isOpen={focus.home_adults_count}
+            onFocus={() => handleFocus('home_adults_count')}
+            onBlur={() => handleBlur('home_adults_count')}
+            hasValue={hasFilledValue(wHomeAdults)}
+          />
+          <HomePeopleCountSelect
+            id='home_youth_count'
+            label={HOME_YOUTH_COUNT_LABEL}
+            register={form.register}
+            error={errors.home_youth_count?.message as string | undefined}
+            isOpen={focus.home_youth_count}
+            onFocus={() => handleFocus('home_youth_count')}
+            onBlur={() => handleBlur('home_youth_count')}
+            hasValue={hasFilledValue(wHomeYouth)}
+          />
+        </>
+      )}
+    </>
+  );
 
   return (
     <div className={styles['step-2-home']}>
@@ -386,6 +546,8 @@ export function Step2Home({
             Home Access
           </label>
         </div>
+
+        {peopleCountFields}
 
         {/* Pets / Animals in Home - Full Width (required) */}
         <div className={styles['form-field']}>

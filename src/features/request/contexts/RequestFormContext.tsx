@@ -90,6 +90,8 @@ export function RequestFormProvider({
       home_type_other: '',
       home_access: '',
       pets: '',
+      home_adults_count: '',
+      home_youth_count: '',
       relationship_status: '',
       first_name: '',
       last_name: '',

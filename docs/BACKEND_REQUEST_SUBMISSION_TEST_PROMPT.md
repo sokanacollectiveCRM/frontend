@@ -78,6 +78,8 @@ If anything in the DTO does not match your DB schema, document the mismatch and 
 | `provider_type` | Required step 6 | **Not persisted** if not in insert list / no column |
 | `pronouns`, `preferred_contact_method`, `age` | Required step 1 | Often **missing** on row if not mapped (`date_of_birth` may stay null; CRM collects **age**, not DOB, unless you derive one) |
 | `pets` | Required step 2 | **Not persisted** if not mapped |
+| `home_adults_count`, `home_youth_count` | Required step 2 | **Not persisted** if not mapped — see `docs/BACKEND_REQUEST_FORM_HOME_PEOPLE_COUNT_PROMPT.md` |
+| `home_type` (array), `home_type_other` | Optional step 2 (Other conditional) | See `docs/BACKEND_REQUEST_FORM_HOME_TYPE_PROMPT.md` |
 | `services_interested` (array), `service_support_details` | Required step 0 | Only **`service_needed`** stored today; array + long text **lost** unless you add columns (JSON/text) or a child table |
 
 **Conditional (already in POST when applicable):** `pronouns_other` when pronouns = Other; `referral_source_other` when referral = Other; insurance block + secondary trio; sliding-scale fields when that payment path is selected.
@@ -85,7 +87,7 @@ If anything in the DTO does not match your DB schema, document the mismatch and 
 ### Suggested backend follow-up
 
 1. Extend `saveData` (or equivalent) **INSERT/UPDATE** bindings for every CRM-meaningful key you want on `phi_clients`, or document intentional omission.
-2. Add a **DB integration test**: POST body shaped like `DUMMY_TEST_LEAD` → assert non-null `city`, `state`, `zip_code`, `birth_location`, `provider_type`, `pronouns`, `preferred_contact_method`, `age` (or mapped columns), `pets`, and optionally raw `services_interested` / `service_support_details` if you add storage.
+2. Add a **DB integration test**: POST body shaped like `DUMMY_TEST_LEAD` → assert non-null `city`, `state`, `zip_code`, `birth_location`, `provider_type`, `pronouns`, `preferred_contact_method`, `age` (or mapped columns), `pets`, `home_adults_count`, `home_youth_count`, and optionally raw `services_interested` / `service_support_details` if you add storage.
 3. If `phi_clients` lacks columns, ship a **migration** first, then mapper.
 
 ### One-off audit query template (Cloud SQL)
@@ -106,7 +108,8 @@ SELECT
   referral_source,
   payment_method,
   service_needed
-  -- add: birth_location, provider_type, pronouns, preferred_contact_method, age, pets, … when columns exist
+  -- add: birth_location, provider_type, pronouns, preferred_contact_method, age, pets,
+  --      home_adults_count, home_youth_count, home_type, home_type_other, … when columns exist
 FROM public.phi_clients
 WHERE email = 'test.lead@example.com'
 ORDER BY requested_at DESC NULLS LAST, updated_at DESC NULLS LAST

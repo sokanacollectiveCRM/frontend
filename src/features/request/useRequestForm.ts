@@ -15,6 +15,7 @@ import {
   type RequestFormPaymentMethod,
 } from '@/lib/paymentRules';
 import { SELF_PAY_SLIDING_SUPPORT_TYPES } from '@/lib/slidingScaleData';
+import { HOME_PEOPLE_COUNT_OPTIONS } from './homePeopleCountOptions';
 import { HOME_TYPE_OTHER_VALUE } from './homeTypeOptions';
 
 export const PAYMENT_METHOD_OPTIONS = REQUEST_FORM_PAYMENT_METHOD_OPTIONS;
@@ -98,6 +99,16 @@ export const fullSchema = z
       .string()
       .trim()
       .min(1, 'Please list the types of any pets/animals that are in the home.'),
+    home_adults_count: z
+      .union([z.literal(''), z.enum(HOME_PEOPLE_COUNT_OPTIONS)])
+      .refine((val) => val !== '', {
+        message: 'Please select how many adults live in the home.',
+      }),
+    home_youth_count: z
+      .union([z.literal(''), z.enum(HOME_PEOPLE_COUNT_OPTIONS)])
+      .refine((val) => val !== '', {
+        message: 'Please select how many youth live in the home.',
+      }),
 
     // 3. Family Members (all optional)
     relationship_status: z.string().optional(),
@@ -385,6 +396,8 @@ export const stepFields: (keyof RequestFormInput)[][] = [
     'home_type_other',
     'home_access',
     'pets',
+    'home_adults_count',
+    'home_youth_count',
   ],
   // 4. Family Members
   [
@@ -480,6 +493,8 @@ export function useRequestForm(
       home_type_other: '',
       home_access: '',
       pets: '',
+      home_adults_count: '',
+      home_youth_count: '',
       relationship_status: '',
       first_name: '',
       last_name: '',

@@ -97,6 +97,8 @@ export async function completeStep2HomeDetailsAddress(page: Page) {
   await page.locator('#city').fill('Chicago');
   await page.locator('#state').fill('IL');
   await page.locator('#zip_code').fill('60601');
+  await page.locator('#home_adults_count').selectOption({ label: '1' });
+  await page.locator('#home_youth_count').selectOption({ label: '0' });
   await page.locator('#pets').fill('None');
 }
 
