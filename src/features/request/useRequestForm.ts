@@ -22,20 +22,9 @@ export const PAYMENT_METHOD_OPTIONS = REQUEST_FORM_PAYMENT_METHOD_OPTIONS;
 
 export type PaymentMethod = RequestFormPaymentMethod;
 
-export function getBirthLocationNameLabel(birthLocation: string): string {
-  switch (birthLocation) {
-    case 'Home':
-      return 'Home birth location*';
-    case 'Hospital':
-      return 'Hospital name*';
-    case 'Birth Center':
-      return 'Birth center name or location*';
-    case 'Other':
-      return 'Birth location name*';
-    default:
-      return 'Birth location name*';
-  }
-}
+/** Pregnancy step — place name field (legacy JSON key: `birth_hospital`). */
+export const BIRTH_LOCATION_NAME_LABEL =
+  'Name of hospital or birth center, if home, type home*';
 
 export function getBirthLocationNameError(birthLocation: string): string {
   switch (birthLocation) {

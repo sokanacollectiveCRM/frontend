@@ -14,8 +14,8 @@ import {
 } from './referralSourceOptions';
 import FloatingLabelDatePicker from './components/FloatingLabelDatePicker';
 import {
+  BIRTH_LOCATION_NAME_LABEL,
   PAYMENT_METHOD_OPTIONS,
-  getBirthLocationNameLabel,
   isSelfPayMethod,
 } from './useRequestForm';
 import {
@@ -773,7 +773,6 @@ export function Step6PregnancyBaby({
     setFocus((f) => ({ ...f, [field]: false }));
 
   const birthLocationOptions = ['Hospital', 'Home', 'Birth Center', 'Other'];
-  const birthLocationNameLabel = getBirthLocationNameLabel(birthLocation || '');
   const numberOfBabiesOptions = [
     'Singleton',
     'Twins',
@@ -868,7 +867,7 @@ export function Step6PregnancyBaby({
                 : '')
             }
           >
-            {birthLocationNameLabel}
+            {BIRTH_LOCATION_NAME_LABEL}
           </label>
           {errors.birth_hospital && (
             <div className={styles['form-error']}>

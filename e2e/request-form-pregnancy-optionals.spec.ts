@@ -37,7 +37,9 @@ test.describe('Request form — pregnancy step (E2E)', () => {
     await page.locator('#provider_type').selectOption({ label: 'Midwife' });
     await page.locator('#pregnancy_number').fill('1');
 
-    await expect(page.locator('label[for="birth_hospital"]')).toContainText('Home birth location');
+    await expect(page.locator('label[for="birth_hospital"]')).toContainText(
+      'Name of hospital or birth center, if home, type home'
+    );
     await expect(page.locator('#birth_hospital')).toHaveValue('');
     await expect(page.locator('#baby_name')).toHaveValue('');
 
@@ -49,13 +51,15 @@ test.describe('Request form — pregnancy step (E2E)', () => {
     await expect(page.getByRole('heading', { name: 'Past Pregnancies' })).toBeVisible();
   });
 
-  test('Hospital & Birth Center: location name is required with contextual labels', async ({
+  test('Hospital & Birth Center: location name is required with ticket label', async ({
     page,
   }) => {
     await reachPregnancyStep(page);
 
     await fillPregnancyStepWithBirthLocation(page, 'Hospital');
-    await expect(page.locator('label[for="birth_hospital"]')).toContainText('Hospital name');
+    await expect(page.locator('label[for="birth_hospital"]')).toContainText(
+      'Name of hospital or birth center, if home, type home'
+    );
 
     await clickFormNext(page);
     await expect(page.getByRole('heading', { name: 'Past Pregnancies' })).toBeVisible();
@@ -64,7 +68,9 @@ test.describe('Request form — pregnancy step (E2E)', () => {
     await expect(page.getByText('Pregnancy/Baby', { exact: true })).toBeVisible();
     await page.locator('#birth_location').selectOption({ label: 'Birth Center' });
     await page.locator('#birth_hospital').clear();
-    await expect(page.locator('label[for="birth_hospital"]')).toContainText('Birth center name or location');
+    await expect(page.locator('label[for="birth_hospital"]')).toContainText(
+      'Name of hospital or birth center, if home, type home'
+    );
 
     await clickFormNext(page);
     await expect(page.getByText('Please enter the birth center name or location', { exact: false })).toBeVisible();

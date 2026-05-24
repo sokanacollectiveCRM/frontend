@@ -1,5 +1,7 @@
 # Backend verification prompt — birth location name + intake payment options (May 2026)
 
+> **Status (May 2026):** Verified on backend `main` — birth place validation + persistence, four intake payment labels, Medicaid rejected on public submit, staff/billing paths unchanged. See backend `requestSubmissionDto.test.ts`, `requestSubmissionFlow.test.ts`, `clientBillingEndpoint.test.ts`.
+
 **Copy this entire document into the backend repo ticket, PR description, or agent prompt.**
 
 ---
@@ -227,7 +229,7 @@ Search the backend repo for:
 
 On the frontend (reference only):
 
-- Validation: `frontend-crm/src/features/request/useRequestForm.ts` (`getBirthLocationNameError`, `REQUEST_FORM_PAYMENT_METHOD_OPTIONS` via `@/lib/paymentRules`)
+- Validation: `frontend-crm/src/features/request/useRequestForm.ts` (`BIRTH_LOCATION_NAME_LABEL`, `getBirthLocationNameError`, `REQUEST_FORM_PAYMENT_METHOD_OPTIONS` via `@/lib/paymentRules`)
 - Submit: `frontend-crm/src/features/request/RequestForm.tsx`
 - Fixture: `frontend-crm/src/features/request/dummyTestLead.ts`
 
