@@ -29,7 +29,7 @@ function FinalStepInvalidSubmitHarness() {
   useEffect(() => {
     form.reset(DUMMY_TEST_LEAD as Partial<RequestFormInput>);
     form.setValue('payment_method', '', { shouldValidate: false });
-    setStep(9);
+    setStep(8);
   }, [form, setStep]);
 
   return (

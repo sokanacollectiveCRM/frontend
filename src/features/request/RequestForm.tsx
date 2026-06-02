@@ -8,7 +8,6 @@ import { Step1Personal } from './Step1Personal';
 import { Step2Home } from './Step2Health';
 import {
   Step10ClientDemographics,
-  Step3FamilyMembers,
   Step4Referral,
   Step5HealthHistory,
   Step6PregnancyBaby,
@@ -326,15 +325,6 @@ function RequestFormContent() {
             />
           )}
           {step === 3 && (
-            <Step3FamilyMembers
-              form={form}
-              handleBack={handleBack}
-              handleNextStep={handleNextStep}
-              step={step}
-              totalSteps={totalSteps}
-            />
-          )}
-          {step === 4 && (
             <Step4Referral
               form={form}
               handleBack={handleBack}
@@ -343,7 +333,7 @@ function RequestFormContent() {
               totalSteps={totalSteps}
             />
           )}
-          {step === 5 && (
+          {step === 4 && (
             <Step5HealthHistory
               form={form}
               handleBack={handleBack}
@@ -352,7 +342,7 @@ function RequestFormContent() {
               totalSteps={totalSteps}
             />
           )}
-          {step === 6 && (
+          {step === 5 && (
             <Step6PregnancyBaby
               form={form}
               handleBack={handleBack}
@@ -361,7 +351,7 @@ function RequestFormContent() {
               totalSteps={totalSteps}
             />
           )}
-          {step === 7 && (
+          {step === 6 && (
             <Step7PastPregnancies
               form={form}
               handleBack={handleBack}
@@ -370,7 +360,7 @@ function RequestFormContent() {
               totalSteps={totalSteps}
             />
           )}
-          {step === 8 && (
+          {step === 7 && (
             <Step9Payment
               form={form}
               handleBack={handleBack}
@@ -379,7 +369,7 @@ function RequestFormContent() {
               totalSteps={totalSteps}
             />
           )}
-          {step === 9 && (
+          {step === 8 && (
             <Step10ClientDemographics
               form={form}
               handleBack={handleBack}

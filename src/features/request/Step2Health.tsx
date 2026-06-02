@@ -12,6 +12,7 @@ import {
   HOME_TYPE_OTHER_VALUE,
   toggleHomeTypeSelection,
 } from './homeTypeOptions';
+import { SupportPersonFields } from './components/SupportPersonFields';
 import styles from './RequestForm.module.scss';
 
 function hasFilledValue(v: unknown): boolean {
@@ -71,22 +72,12 @@ function HomeTypeField({
       <div
         role='group'
         aria-label='Home type'
-        style={{ display: 'flex', flexDirection: 'column', gap: 10 }}
+        className={styles['form-option-list']}
         onFocus={() => handleFocus('home_type')}
         onBlur={() => handleBlur('home_type')}
       >
         {HOME_TYPE_OPTIONS.map((opt) => (
-          <label
-            key={opt}
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              fontSize: '16px',
-              cursor: 'pointer',
-              gap: 12,
-              margin: 0,
-            }}
-          >
+          <label key={opt} className={styles['form-option-label']}>
             <input
               type='checkbox'
               checked={selected.includes(opt)}
@@ -95,11 +86,9 @@ function HomeTypeField({
                 width: 20,
                 height: 20,
                 accentColor: selected.includes(opt) ? '#d32f2f' : '#bdbdbd',
-                marginTop: 2,
-                flexShrink: 0,
               }}
             />
-            <span style={{ lineHeight: 1.35 }}>{opt}</span>
+            <span className={styles['form-option-box']}>{opt}</span>
           </label>
         ))}
       </div>
@@ -210,7 +199,7 @@ export function Step2Home({
 }: any) {
   const errors = form.formState.errors;
 
-  const [wAddress, wCity, wState, wZip, wHomeAccess, wPets, wHomeAdults, wHomeYouth] =
+  const [wAddress, wCity, wState, wZip, wPets, wHomeAdults, wHomeYouth] =
     useWatch({
       control: form.control,
       name: [
@@ -218,12 +207,11 @@ export function Step2Home({
         'city',
         'state',
         'zip_code',
-        'home_access',
         'pets',
         'home_adults_count',
         'home_youth_count',
       ] as const,
-    }) ?? ['', '', '', '', '', '', '', ''];
+    }) ?? ['', '', '', '', '', '', ''];
 
   const [focus, setFocus] = useState({
     address: false,
@@ -232,7 +220,6 @@ export function Step2Home({
     zip_code: false,
     home_type: false,
     home_type_other: false,
-    home_access: false,
     pets: false,
     home_adults_count: false,
     home_youth_count: false,
@@ -252,10 +239,16 @@ export function Step2Home({
     'zip_code',
     'home_type',
     'home_type_other',
-    'home_access',
     'pets',
     'home_adults_count',
     'home_youth_count',
+    'relationship_status',
+    'first_name',
+    'last_name',
+    'middle_name',
+    'family_email',
+    'mobile_phone',
+    'family_pronouns',
   ].every((field) => !errors[field]);
 
   const homeTypeFieldProps = {
@@ -519,34 +512,6 @@ export function Step2Home({
 
         <HomeTypeField {...homeTypeFieldProps} />
 
-        {/* Home Access - Full Width */}
-        <div className={styles['form-field']}>
-          {errors.home_access && (
-            <div className={styles['form-error']} style={{ marginBottom: 6 }}>
-              Please describe home access.
-            </div>
-          )}
-          <input
-            className={styles['form-input']}
-            {...form.register('home_access')}
-            id='home_access'
-            autoComplete='off'
-            onFocus={() => handleFocus('home_access')}
-            onBlur={() => handleBlur('home_access')}
-          />
-          <label
-            htmlFor='home_access'
-            className={
-              styles['form-floating-label'] +
-              (focus.home_access || hasFilledValue(wHomeAccess)
-                ? ' ' + styles['form-label--active']
-                : '')
-            }
-          >
-            Home Access
-          </label>
-        </div>
-
         {peopleCountFields}
 
         {/* Pets / Animals in Home - Full Width (required) */}
@@ -579,6 +544,8 @@ export function Step2Home({
             Please list the types of any pets/animals that are in the home. *
           </label>
         </div>
+
+        <SupportPersonFields form={form} />
       </div>
 
       <div className={styles['step-buttons-row']}>

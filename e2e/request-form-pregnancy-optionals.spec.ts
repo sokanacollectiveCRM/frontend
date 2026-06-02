@@ -4,7 +4,6 @@ import {
   completeStep0Services,
   completeStep1ClientDetails,
   completeStep2HomeDetailsAddress,
-  completeStep3FamilyMembers,
   completeStep4Referral,
   completeStep5HealthHistory,
   fillPregnancyStepWithBirthLocation,
@@ -21,7 +20,6 @@ async function reachPregnancyStep(page: import('@playwright/test').Page) {
   await completeStep1ClientDetails(page);
   await completeStep2HomeDetailsAddress(page);
   await clickFormNext(page);
-  await completeStep3FamilyMembers(page);
   await completeStep4Referral(page);
   await completeStep5HealthHistory(page);
   await expect(page.getByText('Pregnancy/Baby', { exact: true })).toBeVisible();

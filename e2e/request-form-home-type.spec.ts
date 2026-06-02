@@ -29,7 +29,7 @@ test.describe('Request form — Home Type multi-select (E2E)', () => {
     ]);
 
     await clickFormNext(page);
-    await expect(page.getByText('Family Members', { exact: false })).toBeVisible();
+    await expect(page.locator('#referral_source')).toBeVisible();
   });
 
   test('requires description when Other is selected', async ({ page }) => {
@@ -45,7 +45,7 @@ test.describe('Request form — Home Type multi-select (E2E)', () => {
 
     await page.locator('#home_type_other').fill('Co-living in a converted garage unit');
     await clickFormNext(page);
-    await expect(page.getByText('Family Members', { exact: false })).toBeVisible();
+    await expect(page.locator('#referral_source')).toBeVisible();
   });
 
   test('Prefer not to answer is mutually exclusive with other options', async ({ page }) => {

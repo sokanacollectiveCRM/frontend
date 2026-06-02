@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import {
   clickFormNext,
   fillPregnancyStepMinimum,
+  selectNoPastPregnancies,
 } from './helpers/requestForm';
 
 async function goToPaymentStep(page: import('@playwright/test').Page) {
@@ -47,7 +48,8 @@ async function goToPaymentStep(page: import('@playwright/test').Page) {
   await fillPregnancyStepMinimum(page);
   await clickFormNext(page);
 
-  // Step 7 (past pregnancies) optional
+  // Step 7 (past pregnancies) — explicit choice required
+  await selectNoPastPregnancies(page);
   await clickFormNext(page);
 
   await expect(page.getByRole('heading', { name: 'Payment' })).toBeVisible();

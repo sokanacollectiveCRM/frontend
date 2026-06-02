@@ -98,7 +98,7 @@ button.stepButton.step-current:hover:not(:disabled) {
   display: block;
   white-space: normal;
   word-break: normal;
-  overflow-wrap: break-word;
+  overflow-wrap: normal;
   hyphens: manual;
 }
 
@@ -255,7 +255,7 @@ button.mobileStepButton.step-current:hover:not(:disabled) {
   display: block;
   white-space: normal;
   word-break: normal;
-  overflow-wrap: break-word;
+  overflow-wrap: normal;
   hyphens: manual;
 }
 

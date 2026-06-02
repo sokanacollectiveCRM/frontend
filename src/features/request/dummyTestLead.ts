@@ -34,7 +34,7 @@ export const DUMMY_TEST_LEAD: Partial<RequestFormInput> = {
   home_adults_count: '1',
   home_youth_count: '0',
 
-  // Step 3 — Family members
+  // Home Details — Support person (optional)
   relationship_status: 'Partner',
   first_name: 'Alex',
   last_name: 'Lead',
@@ -44,7 +44,7 @@ export const DUMMY_TEST_LEAD: Partial<RequestFormInput> = {
   work_phone: '',
   family_pronouns: 'They/Them',
 
-  // Step 4 — Referral
+  // Referral
   referral_source: 'Google',
   referral_source_other: '',
   referral_name: 'N/A',

@@ -51,324 +51,6 @@ function ArrowSVG({ color = '#757575' }: { color?: string }) {
   );
 }
 
-const relationshipOptions = [
-  'Spouse',
-  'Partner',
-  'Friend',
-  'Parent',
-  'Sibling',
-  'Other',
-];
-const pronounOptions = ['She/Her', 'He/Him', 'They/Them', 'Ze/Hir/Zir', 'None'];
-
-export function Step3FamilyMembers({
-  form,
-  handleBack,
-  handleNextStep,
-  step,
-  totalSteps,
-}: any) {
-  const errors = form.formState.errors;
-  const [
-    wRelationship,
-    wFamFirst,
-    wFamLast,
-    wFamPronouns,
-    wFamMiddle,
-    wFamEmail,
-    wFamMobile,
-  ] =
-    useWatch({
-      control: form.control,
-      name: [
-        'relationship_status',
-        'family_first_name',
-        'family_last_name',
-        'family_pronouns',
-        'family_middle_name',
-        'family_email',
-        'family_mobile_phone',
-      ] as const,
-    }) ?? ['', '', '', '', '', '', ''];
-
-  const [focus, setFocus] = useState({
-    relationship_status: false,
-    family_first_name: false,
-    family_last_name: false,
-    family_pronouns: false,
-    family_middle_name: false,
-    family_email: false,
-    family_mobile_phone: false,
-  });
-  const [relationshipOpen, setRelationshipOpen] = useState(false);
-  const [pronounsOpen, setPronounsOpen] = useState(false);
-
-  const handleFocus = (field: keyof typeof focus) =>
-    setFocus((f) => ({ ...f, [field]: true }));
-  const handleBlur = (field: keyof typeof focus) => {
-    const v = form.getValues(field as never);
-    setFocus((f) => ({ ...f, [field]: hasFilledFloatingValue(v) }));
-  };
-
-  return (
-    <div>
-      <div className={styles['form-grid']}>
-        {/* Relationship status */}
-        <div className={styles['form-field']}>
-          <select
-            className={styles['form-select']}
-            {...form.register('relationship_status')}
-            id='relationship_status'
-            defaultValue=''
-            onFocus={() => {
-              handleFocus('relationship_status');
-              setRelationshipOpen(true);
-            }}
-            onBlur={() => {
-              handleBlur('relationship_status');
-              setRelationshipOpen(false);
-            }}
-          >
-            <option value='' disabled hidden></option>
-            {relationshipOptions.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
-          <label
-            htmlFor='relationship_status'
-            className={
-              styles['form-floating-label'] +
-              (focus.relationship_status || hasFilledFloatingValue(wRelationship)
-                ? ' ' + styles['form-label--active']
-                : '')
-            }
-            style={{
-              left: 0,
-              color: relationshipOpen ? '#00bcd4' : undefined,
-              right: 0,
-              maxWidth: 'calc(100% - 36px)',
-            }}
-          >
-            Relationship status
-          </label>
-          <span
-            className={styles['form-select-arrow']}
-            style={{ color: relationshipOpen ? '#00bcd4' : '#757575' }}
-          >
-            ▼
-          </span>
-          {errors.relationship_status && (
-            <div className={styles['form-error']}>
-              {errors.relationship_status.message as string}
-            </div>
-          )}
-        </div>
-        {/* First Name */}
-        <div className={styles['form-field']}>
-          <input
-            className={styles['form-input']}
-            {...form.register('family_first_name')}
-            id='family_first_name'
-            autoComplete='off'
-            onFocus={() => handleFocus('family_first_name')}
-            onBlur={() => handleBlur('family_first_name')}
-          />
-          <label
-            htmlFor='family_first_name'
-            className={
-              styles['form-floating-label'] +
-              (focus.family_first_name || hasFilledFloatingValue(wFamFirst)
-                ? ' ' + styles['form-label--active']
-                : '')
-            }
-          >
-            First Name
-          </label>
-          {errors.family_first_name && (
-            <div className={styles['form-error']}>
-              {errors.family_first_name.message as string}
-            </div>
-          )}
-        </div>
-        {/* Last Name */}
-        <div className={styles['form-field']}>
-          <input
-            className={styles['form-input']}
-            {...form.register('family_last_name')}
-            id='family_last_name'
-            autoComplete='off'
-            onFocus={() => handleFocus('family_last_name')}
-            onBlur={() => handleBlur('family_last_name')}
-          />
-          <label
-            htmlFor='family_last_name'
-            className={
-              styles['form-floating-label'] +
-              (focus.family_last_name || hasFilledFloatingValue(wFamLast)
-                ? ' ' + styles['form-label--active']
-                : '')
-            }
-          >
-            Last Name
-          </label>
-          {errors.family_last_name && (
-            <div className={styles['form-error']}>
-              {errors.family_last_name.message as string}
-            </div>
-          )}
-        </div>
-        {/* Pronouns */}
-        <div className={styles['form-field']}>
-          <select
-            className={styles['form-select']}
-            {...form.register('family_pronouns')}
-            id='family_pronouns'
-            defaultValue=''
-            onFocus={() => {
-              handleFocus('family_pronouns');
-              setPronounsOpen(true);
-            }}
-            onBlur={() => {
-              handleBlur('family_pronouns');
-              setPronounsOpen(false);
-            }}
-          >
-            <option value='' disabled hidden></option>
-            {pronounOptions.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
-          <label
-            htmlFor='family_pronouns'
-            className={
-              styles['form-floating-label'] +
-              (focus.family_pronouns || hasFilledFloatingValue(wFamPronouns)
-                ? ' ' + styles['form-label--active']
-                : '')
-            }
-            style={{
-              left: 0,
-              color: pronounsOpen ? '#00bcd4' : undefined,
-              right: 0,
-              maxWidth: 'calc(100% - 36px)',
-            }}
-          >
-            Pronouns
-          </label>
-          <span
-            className={styles['form-select-arrow']}
-            style={{ color: pronounsOpen ? '#00bcd4' : '#757575' }}
-          >
-            ▼
-          </span>
-          {errors.family_pronouns && (
-            <div className={styles['form-error']}>
-              {errors.family_pronouns.message as string}
-            </div>
-          )}
-        </div>
-        {/* Middle Name */}
-        <div className={styles['form-field']}>
-          <input
-            className={styles['form-input']}
-            {...form.register('family_middle_name')}
-            id='family_middle_name'
-            autoComplete='off'
-            onFocus={() => handleFocus('family_middle_name')}
-            onBlur={() => handleBlur('family_middle_name')}
-          />
-          <label
-            htmlFor='family_middle_name'
-            className={
-              styles['form-floating-label'] +
-              (focus.family_middle_name || hasFilledFloatingValue(wFamMiddle)
-                ? ' ' + styles['form-label--active']
-                : '')
-            }
-          >
-            Middle Name
-          </label>
-          {errors.family_middle_name && (
-            <div className={styles['form-error']}>
-              {errors.family_middle_name.message as string}
-            </div>
-          )}
-        </div>
-        {/* Email */}
-        <div className={styles['form-field']}>
-          <input
-            className={styles['form-input']}
-            {...form.register('family_email')}
-            id='family_email'
-            autoComplete='off'
-            onFocus={() => handleFocus('family_email')}
-            onBlur={() => handleBlur('family_email')}
-          />
-          <label
-            htmlFor='family_email'
-            className={
-              styles['form-floating-label'] +
-              (focus.family_email || hasFilledFloatingValue(wFamEmail)
-                ? ' ' + styles['form-label--active']
-                : '')
-            }
-          >
-            Email
-          </label>
-          {errors.family_email && (
-            <div className={styles['form-error']}>
-              {errors.family_email.message as string}
-            </div>
-          )}
-        </div>
-        {/* Mobile phone */}
-        <div className={styles['form-field']}>
-          <input
-            className={styles['form-input']}
-            {...form.register('family_mobile_phone')}
-            id='family_mobile_phone'
-            autoComplete='off'
-            onFocus={() => handleFocus('family_mobile_phone')}
-            onBlur={() => handleBlur('family_mobile_phone')}
-          />
-          <label
-            htmlFor='family_mobile_phone'
-            className={
-              styles['form-floating-label'] +
-              (focus.family_mobile_phone || hasFilledFloatingValue(wFamMobile)
-                ? ' ' + styles['form-label--active']
-                : '')
-            }
-          >
-            Mobile phone
-          </label>
-          {errors.family_mobile_phone && (
-            <div className={styles['form-error']}>
-              {errors.family_mobile_phone.message as string}
-            </div>
-          )}
-        </div>
-      </div>
-      <div className={styles['step-buttons-row']}>
-        <Button type='button' onClick={handleBack} disabled={step === 0}>
-          Back
-        </Button>
-        <Button
-          type='submit'
-          onClick={() => handleNextStep()}
-          disabled={form.formState.isSubmitting}
-        >
-          {step === totalSteps - 1 ? 'Submit' : 'Next'}
-        </Button>
-      </div>
-    </div>
-  );
-}
-
 export function Step4Referral({
   form,
   handleBack,
@@ -564,7 +246,7 @@ export function Step4Referral({
             </div>
           )}
         </div>
-        {/* Referral Email (optional) */}
+        {/* Referral contact info (optional; JSON key: referral_email) */}
         <div
           className={`${styles['form-field']} ${styles['form-field-label-above']}`}
         >
@@ -578,7 +260,7 @@ export function Step4Referral({
               (errors.referral_email ? ' ' + styles['form-label--error'] : '')
             }
           >
-            Email
+            Contact Info
           </label>
           <input
             className={
@@ -1073,6 +755,25 @@ export function Step7PastPregnancies({
   const handleBlur = (field: keyof typeof focus) =>
     setFocus((f) => ({ ...f, [field]: false }));
 
+  const selectHadPastPregnancies = () => {
+    form.setValue('had_previous_pregnancies', true, { shouldValidate: true });
+  };
+
+  const selectNoPastPregnancies = () => {
+    form.setValue('had_previous_pregnancies', false, { shouldValidate: true });
+    form.setValue('previous_pregnancies_count', 0);
+    form.setValue('living_children_count', 0);
+    form.setValue('past_pregnancy_experience', '');
+  };
+
+  const checkboxStyle = (checked: boolean) => ({
+    width: 24,
+    height: 24,
+    accentColor: checked ? '#00bcd4' : undefined,
+    margin: 0,
+    flexShrink: 0,
+  });
+
   return (
     <div>
       <div className={styles['form-grid']} style={{ alignItems: 'center' }}>
@@ -1080,36 +781,44 @@ export function Step7PastPregnancies({
           className={styles['form-field']}
           style={{
             gridColumn: '1 / span 4',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 16,
             padding: '16px 0',
           }}
         >
-          <input
-            type='checkbox'
-            id='had_previous_pregnancies'
-            {...form.register('had_previous_pregnancies')}
-            style={{
-              width: 24,
-              height: 24,
-              accentColor: hadPrevious ? '#00bcd4' : undefined,
-              margin: 0,
-            }}
-          />
-          <label
-            htmlFor='had_previous_pregnancies'
-            style={{
-              fontSize: 20,
-              color: '#444',
-              marginLeft: 12,
-              cursor: 'pointer',
-            }}
-          >
-            Had previous pregnancie(s)
-          </label>
+          <div className={styles['form-option-list']}>
+            <label
+              htmlFor='had_previous_pregnancies_yes'
+              className={styles['form-option-label']}
+            >
+              <input
+                type='checkbox'
+                id='had_previous_pregnancies_yes'
+                checked={hadPrevious === true}
+                onChange={() => selectHadPastPregnancies()}
+                style={checkboxStyle(hadPrevious === true)}
+              />
+              <span className={styles['form-option-box']}>Had past pregnancies</span>
+            </label>
+            <label
+              htmlFor='had_previous_pregnancies_no'
+              className={styles['form-option-label']}
+            >
+              <input
+                type='checkbox'
+                id='had_previous_pregnancies_no'
+                checked={hadPrevious === false}
+                onChange={() => selectNoPastPregnancies()}
+                style={checkboxStyle(hadPrevious === false)}
+              />
+              <span className={styles['form-option-box']}>No past pregnancies</span>
+            </label>
+          </div>
+          {errors.had_previous_pregnancies && (
+            <div className={styles['form-error']}>
+              {errors.had_previous_pregnancies.message as string}
+            </div>
+          )}
         </div>
-        {hadPrevious && (
+        {hadPrevious === true && (
           <>
             <div className={styles['form-field']}>
               <input
@@ -1291,15 +1000,12 @@ export function Step8ServicesInterested({
             <PopoverTrigger asChild>
               <button
                 type='button'
-                className={styles['form-input']}
+                className={`${styles['form-input']} ${styles['form-option-trigger-text']}`}
                 style={{
                   textAlign: 'left',
                   minHeight: 40,
                   cursor: 'pointer',
                   background: '#fff',
-                  wordBreak: 'break-word',
-                  whiteSpace: 'normal',
-                  lineHeight: '1.3',
                 }}
                 onClick={() => setDropdownOpen(!dropdownOpen)}
               >
@@ -1325,15 +1031,8 @@ export function Step8ServicesInterested({
               {serviceOptions.map((opt) => (
                 <label
                   key={opt}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    fontSize: '16px',
-                    cursor: 'pointer',
-                    gap: 12,
-                    padding: '12px 16px',
-                    margin: 0,
-                  }}
+                  className={styles['form-option-label']}
+                  style={{ padding: '12px 16px' }}
                 >
                   <input
                     type='checkbox'
@@ -1348,7 +1047,7 @@ export function Step8ServicesInterested({
                       margin: 0,
                     }}
                   />
-                  {opt}
+                  <span className={styles['form-option-box']}>{opt}</span>
                 </label>
               ))}
             </PopoverContent>
@@ -1457,13 +1156,12 @@ export function Step9Payment({
   return (
     <div>
       <div
+        className={styles['form-prose']}
         style={{
           color: '#666',
           fontSize: 'clamp(1rem, 3.2vw, 1.15rem)',
           marginBottom: '2.5rem',
           maxWidth: 900,
-          lineHeight: 1.55,
-          wordBreak: 'break-word',
         }}
       >
         <p style={{ margin: '0 0 1rem' }}>
@@ -1503,7 +1201,7 @@ export function Step9Payment({
             <PopoverTrigger asChild>
               <button
                 type='button'
-                className={styles['form-input']}
+                className={`${styles['form-input']} ${styles['form-option-trigger-text']}`}
                 style={{
                   textAlign: 'left',
                   minHeight: 40,
@@ -1552,8 +1250,8 @@ export function Step9Payment({
               side='bottom'
               sideOffset={4}
               style={{
-                minWidth: 300,
-                maxWidth: 400,
+                minWidth: 'min(100vw - 40px, 400px)',
+                maxWidth: 'min(100vw - 40px, 400px)',
                 background: '#fff',
                 border: '1px solid #bdbdbd',
                 borderRadius: 4,
@@ -1565,16 +1263,11 @@ export function Step9Payment({
               {PAYMENT_METHOD_OPTIONS.map((opt) => (
                 <div
                   key={opt}
+                  className={styles['form-option-menu-item']}
                   style={{
                     padding: '14px 18px',
-                    fontSize: 17,
-                    cursor: 'pointer',
                     background:
                       values.payment_method === opt ? '#f5f5f5' : '#fff',
-                    color: '#222',
-                    whiteSpace: 'normal',
-                    wordBreak: 'break-word',
-                    lineHeight: 1.5,
                   }}
                   onClick={() => {
                     form.setValue('payment_method', opt, { shouldValidate: true });
@@ -1713,6 +1406,7 @@ export function Step9Payment({
                       <button
                         key={label}
                         type='button'
+                        className={styles['form-option-button']}
                         onClick={() => {
                           form.setValue('self_pay_sliding_support_type', label, {
                             shouldValidate: true,
@@ -1720,7 +1414,8 @@ export function Step9Payment({
                           form.setValue('self_pay_sliding_tier', '', { shouldValidate: true });
                         }}
                         style={{
-                          flex: '1 1 140px',
+                          flex: '1 1 148px',
+                          minWidth: 0,
                           minHeight: 44,
                           padding: '10px 14px',
                           fontSize: 15,
@@ -1771,6 +1466,7 @@ export function Step9Payment({
                         <thead>
                           <tr style={{ background: '#f5f5f5' }}>
                             <th
+                              className={styles['form-option-table-cell']}
                               style={{
                                 textAlign: 'left',
                                 padding: '10px 8px',
@@ -1781,6 +1477,7 @@ export function Step9Payment({
                               {' '}
                             </th>
                             <th
+                              className={styles['form-option-table-cell']}
                               style={{
                                 textAlign: 'left',
                                 padding: '10px 8px',
@@ -1792,6 +1489,7 @@ export function Step9Payment({
                             {(slidingSupportType === 'Labor support' ||
                               slidingSupportType === 'Both') && (
                               <th
+                                className={styles['form-option-table-cell']}
                                 style={{
                                   textAlign: 'left',
                                   padding: '10px 8px',
@@ -1804,6 +1502,7 @@ export function Step9Payment({
                             {(slidingSupportType === 'Postpartum support' ||
                               slidingSupportType === 'Both') && (
                               <th
+                                className={styles['form-option-table-cell']}
                                 style={{
                                   textAlign: 'left',
                                   padding: '10px 8px',
@@ -1851,6 +1550,7 @@ export function Step9Payment({
                                   />
                                 </td>
                                 <td
+                                  className={styles['form-option-table-cell']}
                                   style={{
                                     padding: '10px 8px',
                                     borderBottom: '1px solid #eee',
@@ -1863,6 +1563,7 @@ export function Step9Payment({
                                 {(slidingSupportType === 'Labor support' ||
                                   slidingSupportType === 'Both') && (
                                   <td
+                                    className={styles['form-option-table-cell']}
                                     style={{
                                       padding: '10px 8px',
                                       borderBottom: '1px solid #eee',
@@ -1875,6 +1576,7 @@ export function Step9Payment({
                                 {(slidingSupportType === 'Postpartum support' ||
                                   slidingSupportType === 'Both') && (
                                   <td
+                                    className={styles['form-option-table-cell']}
                                     style={{
                                       padding: '10px 8px',
                                       borderBottom: '1px solid #eee',
@@ -2175,14 +1877,8 @@ export function Step9Payment({
             >
               <label
                 htmlFor='has_secondary_insurance'
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  cursor: 'pointer',
-                  fontSize: 16,
-                  color: '#222',
-                }}
+                className={styles['form-option-label']}
+                style={{ color: '#222' }}
               >
                 <input
                   id='has_secondary_insurance'
@@ -2198,7 +1894,7 @@ export function Step9Payment({
                     }
                   }}
                 />
-                Secondary Insurance?
+                <span className={styles['form-option-box']}>Secondary Insurance?</span>
               </label>
             </div>
 
@@ -2810,23 +2506,14 @@ export function Step10ClientDemographics({
                 <button
                   key={opt}
                   type='button'
+                  className={styles['form-option-menu-item']}
                   onClick={() => handleMultiSelect(opt)}
                   style={{
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '12px 16px',
-                    margin: 0,
-                    border: 'none',
+                    fontWeight: selectedMulti.includes(opt) ? 600 : 400,
+                    color: selectedMulti.includes(opt) ? '#222' : '#444',
                     background: selectedMulti.includes(opt)
                       ? '#f5f5f5'
                       : '#fff',
-                    fontWeight: selectedMulti.includes(opt) ? 600 : 400,
-                    color: selectedMulti.includes(opt) ? '#222' : '#444',
-                    fontSize: 16,
-                    cursor: 'pointer',
-                    outline: 'none',
-                    transition:
-                      'background 0.15s, color 0.15s, font-weight 0.15s',
                   }}
                 >
                   {opt}

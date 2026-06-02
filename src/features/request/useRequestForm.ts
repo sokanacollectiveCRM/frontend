@@ -120,10 +120,7 @@ export const fullSchema = z
     /** Free text when referral_source is "Other". */
     referral_source_other: z.string().optional(),
     referral_name: z.string().optional(), // made optional, allow "N/A"
-    referral_email: z.string().optional().refine((val) => {
-      if (!val || val.trim() === '') return true; // Allow empty
-      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val); // Validate email if provided
-    }, 'Please enter a valid email address.'),
+    referral_email: z.string().optional(), // contact info: email, phone, or other free text
 
     // 5. Health History
     health_history: z.string().optional(), // made optional
@@ -150,8 +147,13 @@ export const fullSchema = z
       }),
     hospital: z.string().optional(),
 
-    // 7. Past Pregnancies (all optional)
-    had_previous_pregnancies: z.boolean().optional(),
+    // 7. Past Pregnancies — explicit yes/no; follow-up fields optional when "yes"
+    had_previous_pregnancies: z
+      .boolean()
+      .optional()
+      .refine((val): val is boolean => val === true || val === false, {
+        message: 'Please indicate whether you have had past pregnancies.',
+      }),
     previous_pregnancies_count: z
       .union([z.string(), z.number()])
       .optional()
@@ -383,13 +385,9 @@ export const stepFields: (keyof RequestFormInput)[][] = [
     'zip_code',
     'home_type',
     'home_type_other',
-    'home_access',
     'pets',
     'home_adults_count',
     'home_youth_count',
-  ],
-  // 4. Family Members
-  [
     'relationship_status',
     'first_name',
     'last_name',
@@ -398,7 +396,7 @@ export const stepFields: (keyof RequestFormInput)[][] = [
     'family_email',
     'mobile_phone',
   ],
-  // 5. Referral
+  // 4. Referral
   ['referral_source', 'referral_source_other', 'referral_name', 'referral_email'],
   // 6. Health (pregnancy/baby/postpartum + allergies only on this step)
   ['health_history', 'allergies'],
@@ -454,7 +452,7 @@ export function useRequestForm(
   onSubmit: (data: RequestFormValues) => Promise<void>
 ) {
   const [step, setStep] = useState(0);
-  const totalSteps = 10;
+  const totalSteps = 9;
   const form = useForm<RequestFormInput, unknown, RequestFormValues>({
     resolver: zodResolver(fullSchema) as Resolver<
       RequestFormInput,
@@ -506,7 +504,7 @@ export function useRequestForm(
       baby_name: '',
       provider_type: '',
       pregnancy_number: 0,
-      had_previous_pregnancies: false,
+      had_previous_pregnancies: undefined,
       previous_pregnancies_count: 0,
       living_children_count: 0,
       past_pregnancy_experience: '',

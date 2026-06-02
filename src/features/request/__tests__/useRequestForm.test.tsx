@@ -36,10 +36,10 @@ describe('useRequestForm', () => {
         home_adults_count: '2',
         home_youth_count: '1',
         relationship_status: 'Partner',
-        family_first_name: 'Alex',
-        family_last_name: 'Doe',
-        family_middle_name: 'Marie',
-        family_mobile_phone: '555-222-3333',
+        first_name: 'Alex',
+        last_name: 'Doe',
+        middle_name: 'Marie',
+        mobile_phone: '555-222-3333',
         family_email: 'alex.doe@example.com',
         family_pronouns: 'They/Them',
         referral_source: 'Google',
@@ -203,6 +203,7 @@ describe('useRequestForm', () => {
         number_of_babies: 'Singleton',
         provider_type: 'Midwife',
         pregnancy_number: '1',
+        had_previous_pregnancies: false,
         services_interested: ['Labor Support'],
         service_support_details: 'Support details',
         payment_method: 'Not sure / Need help figuring this out',
@@ -302,6 +303,60 @@ describe('useRequestForm', () => {
       expect(withOther.success).toBe(true);
     });
 
+    it('requires an explicit past pregnancies choice', () => {
+      const base = {
+        firstname: 'Jane',
+        lastname: 'Doe',
+        email: 'jane.doe@example.com',
+        phone_number: '555-123-4567',
+        pronouns: 'She/Her',
+        pronouns_other: '',
+        preferred_contact_method: 'Phone',
+        preferred_name: '',
+        age: '28',
+        address: '123 Main St',
+        city: 'Springfield',
+        state: 'IL',
+        zip_code: '62704',
+        pets: 'None',
+        home_adults_count: '1',
+        home_youth_count: '0',
+        referral_source: 'Google',
+        due_date: '2025-06-15',
+        birth_location: 'Hospital',
+        birth_hospital: 'Springfield General',
+        number_of_babies: 'Singleton',
+        provider_type: 'Midwife',
+        pregnancy_number: '1',
+        services_interested: ['Labor Support'],
+        service_support_details: 'Looking for support',
+        payment_method: 'Not sure / Need help figuring this out',
+      };
+
+      const unset = fullSchema.safeParse(base);
+      expect(unset.success).toBe(false);
+      if (!unset.success) {
+        expect(
+          unset.error.issues.some((i) => i.path.includes('had_previous_pregnancies'))
+        ).toBe(true);
+      }
+
+      const noHistory = fullSchema.safeParse({
+        ...base,
+        had_previous_pregnancies: false,
+      });
+      expect(noHistory.success).toBe(true);
+
+      const withHistory = fullSchema.safeParse({
+        ...base,
+        had_previous_pregnancies: true,
+        previous_pregnancies_count: 0,
+        living_children_count: 0,
+        past_pregnancy_experience: '',
+      });
+      expect(withHistory.success).toBe(true);
+    });
+
     it('requires birth location name for each birth location type', () => {
       const base = {
         firstname: 'Jane',
@@ -326,6 +381,7 @@ describe('useRequestForm', () => {
         number_of_babies: 'Singleton',
         provider_type: 'Midwife',
         pregnancy_number: '1',
+        had_previous_pregnancies: false,
         services_interested: ['Labor Support'],
         service_support_details: 'Looking for support',
         payment_method: 'Not sure / Need help figuring this out',
@@ -546,7 +602,7 @@ describe('useRequestForm', () => {
       const { result } = renderHook(() => useRequestForm(mockOnSubmit));
 
       expect(result.current.step).toBe(0);
-      expect(result.current.totalSteps).toBe(10);
+      expect(result.current.totalSteps).toBe(9);
       expect(result.current.form).toBeDefined();
       expect(result.current.handleNextStep).toBeDefined();
       expect(result.current.handleBack).toBeDefined();
@@ -624,6 +680,7 @@ describe('useRequestForm', () => {
         baby_name: '',
         provider_type: 'Midwife',
         pregnancy_number: '1',
+        had_previous_pregnancies: false,
         services_interested: ['Labor Support'],
         service_support_details: 'Looking for support',
         service_needed: 'Labor Support',
@@ -661,6 +718,7 @@ describe('useRequestForm', () => {
         number_of_babies: 'Singleton',
         provider_type: 'Midwife',
         pregnancy_number: '1',
+        had_previous_pregnancies: false,
         services_interested: ['Labor Support'],
         service_support_details: 'Looking for support',
         service_needed: 'Labor Support',
@@ -699,6 +757,7 @@ describe('useRequestForm', () => {
         baby_name: 'Lily',
         provider_type: 'Midwife',
         pregnancy_number: '1',
+        had_previous_pregnancies: false,
         services_interested: ['Labor Support'],
         service_support_details: 'Looking for support',
         service_needed: 'Labor Support',
@@ -736,6 +795,7 @@ describe('useRequestForm', () => {
         number_of_babies: 'Singleton',
         provider_type: 'Midwife',
         pregnancy_number: '1',
+        had_previous_pregnancies: false,
         services_interested: ['Labor Support'],
         service_support_details: 'Looking for support',
         service_needed: 'Labor Support',

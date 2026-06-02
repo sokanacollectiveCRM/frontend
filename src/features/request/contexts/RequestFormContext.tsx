@@ -56,7 +56,7 @@ export function RequestFormProvider({
   const [submitted, setSubmitted] = useState(false);
   const [showRefreshWarning, setShowRefreshWarning] = useState(false);
   const [stepGateMessage, setStepGateMessage] = useState<string | null>(null);
-  const totalSteps = 10;
+  const totalSteps = 9;
 
   // No client-side storage for HIPAA compliance
   const getSavedFormData = (): Partial<RequestFormInput> => {
@@ -115,7 +115,7 @@ export function RequestFormProvider({
       provider_type: '',
       pregnancy_number: 0,
       hospital: '',
-      had_previous_pregnancies: false,
+      had_previous_pregnancies: undefined,
       previous_pregnancies_count: 0,
       living_children_count: 0,
       past_pregnancy_experience: '',

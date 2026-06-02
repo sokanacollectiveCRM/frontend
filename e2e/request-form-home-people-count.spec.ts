@@ -16,6 +16,7 @@ test.describe('Request form — People in the Home counts (E2E)', () => {
   test('shows question and adult/youth count dropdowns on Home Details', async ({ page }) => {
     await reachHomeDetailsStep(page);
 
+    await expect(page.getByText('Support Person')).toBeVisible();
     await expect(page.getByText(HOME_PEOPLE_QUESTION)).toBeVisible();
     await expect(page.locator('#home_adults_count')).toBeVisible();
     await expect(page.locator('#home_youth_count')).toBeVisible();
@@ -58,7 +59,7 @@ test.describe('Request form — People in the Home counts (E2E)', () => {
     await page.locator('#home_youth_count').selectOption({ label: '2' });
 
     await clickFormNext(page);
-    await expect(page.getByText('Family Members', { exact: false })).toBeVisible();
+    await expect(page.locator('#referral_source')).toBeVisible();
   });
 
   test('submits home_adults_count and home_youth_count to backend', async ({ page }) => {

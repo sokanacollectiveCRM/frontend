@@ -14,7 +14,11 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "check:prod": "node scripts/check-production-readiness.mjs",
-    "smoke:api": "node scripts/smoke-api.mjs"
+    "smoke:api": "node scripts/smoke-api.mjs",
+    "portfolio:auth": "playwright test --config=playwright.portfolio.config.ts --project=setup",
+    "portfolio:capture": "playwright test --config=playwright.portfolio.config.ts --project=portfolio",
+    "portfolio:capture:live": "PORTFOLIO_AUTH_MODE=storage playwright test --config=playwright.portfolio.config.ts --project=portfolio",
+    "portfolio:capture:headed": "playwright test --config=playwright.portfolio.config.ts --project=portfolio --headed"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

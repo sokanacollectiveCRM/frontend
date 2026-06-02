@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import {
   clickFormNext,
   fillPregnancyStepMinimum,
+  selectNoPastPregnancies,
 } from './helpers/requestForm';
 
 test.describe('Request form — payment method required (E2E)', () => {
@@ -51,7 +52,8 @@ test.describe('Request form — payment method required (E2E)', () => {
     await fillPregnancyStepMinimum(page);
     await clickFormNext(page);
 
-    // Step 7 optional
+    // Step 7 — explicit past pregnancies choice
+    await selectNoPastPregnancies(page);
     await clickFormNext(page);
 
     await expect(page.getByRole('heading', { name: 'Payment' })).toBeVisible();

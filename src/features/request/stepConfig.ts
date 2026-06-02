@@ -33,38 +33,33 @@ export const STEP_CONFIG: StepInfo[] = [
   },
   {
     id: 3,
-    title: "Family Members",
-    shortTitle: "Family"
-  },
-  {
-    id: 4,
     title: 'How did you hear about us?',
     shortTitle: 'Referral',
     navTitle: 'Referral',
   },
   {
-    id: 5,
+    id: 4,
     title: 'Health information',
     shortTitle: 'Health',
     navTitle: 'Health',
   },
   {
-    id: 6,
+    id: 5,
     title: "Pregnancy/Baby",
     shortTitle: "Pregnancy"
   },
   {
-    id: 7,
+    id: 6,
     title: "Past Pregnancies",
     shortTitle: "Past"
   },
   {
-    id: 8,
+    id: 7,
     title: "Payment",
     shortTitle: "Payment"
   },
   {
-    id: 9,
+    id: 8,
     title: "Client Demographics",
     shortTitle: "Demographics"
   }
