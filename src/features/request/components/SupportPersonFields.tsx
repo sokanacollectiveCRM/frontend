@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { useWatch } from 'react-hook-form';
+import { useWatch, type UseFormReturn } from 'react-hook-form';
 import styles from '../RequestForm.module.scss';
+import type { RequestFormInput } from '../useRequestForm';
 import {
   SUPPORT_PERSON_PRONOUN_OPTIONS,
   SUPPORT_PERSON_RELATIONSHIP_OPTIONS,
@@ -14,12 +15,7 @@ function hasFilledFloatingValue(v: unknown): boolean {
 }
 
 type SupportPersonFieldsProps = {
-  form: {
-    register: (name: string) => object;
-    formState: { errors: Record<string, { message?: string } | undefined> };
-    getValues: (name: string) => unknown;
-    control: object;
-  };
+  form: UseFormReturn<RequestFormInput>;
 };
 
 export function SupportPersonFields({ form }: SupportPersonFieldsProps) {
