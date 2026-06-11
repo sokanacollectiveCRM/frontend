@@ -10,6 +10,8 @@ import PipelineRoutes from '@/features/pipeline/PipelineRoutes';
 import RequestRoutes from '@/features/request/RequestRoutes';
 import { Route, Routes } from 'react-router-dom';
 import {
+  BillingPortalRoute,
+  NonBillingOnlyRoute,
   PrivateRoute,
   PublicOnlyRoute,
 } from './common/components/routes/ProtectedRoutes';
@@ -28,6 +30,7 @@ import ProfileRoutes from './features/profiles/ProfileRoutes';
 import TeamRoutes from './features/teams/teamRoutes';
 import DoulaDashboardRoutes from './features/doula-dashboard/DoulaDashboardRoutes';
 import ContractSignedPage from './pages/ContractSignedPage';
+import BillingPortalRoutes from './features/billing-portal/BillingPortalRoutes';
 
 const AppRoutes = () => (
   <Routes>
@@ -55,25 +58,29 @@ const AppRoutes = () => (
     <Route>
       <Route element={<DashboardLayout />}>
         <Route element={<PrivateRoute />}>
-          <Route index element={<Home />} />
-          <Route path='/profile' element={<ClientDashboard view='profile' />} />
-          <Route path='/billing' element={<ClientDashboard view='billing' />} />
-          {ContractRoutes()}
-          {PipelineRoutes()}
-          {ClientRoutes()}
-          {PaymentsRoute()}
-
-          {HoursRoutes()}
-          {ProfileRoutes()}
-          {MyAccountRoutes()}
-          {TeamRoutes()}
-          {InboxRoutes()}
-          {QuickBooksRoutes()}
-          {CreateCustomerRoutes()}
-          {InvoiceRoute()}
-          {FinancialRoute()}
-          {DemographicsRoute()}
-          {DoulaDashboardRoutes()}
+          <Route element={<BillingPortalRoute />}>
+            {BillingPortalRoutes()}
+          </Route>
+          <Route element={<NonBillingOnlyRoute />}>
+            <Route index element={<Home />} />
+            <Route path='/profile' element={<ClientDashboard view='profile' />} />
+            <Route path='/billing' element={<ClientDashboard view='billing' />} />
+            {ContractRoutes()}
+            {PipelineRoutes()}
+            {ClientRoutes()}
+            {PaymentsRoute()}
+            {HoursRoutes()}
+            {ProfileRoutes()}
+            {MyAccountRoutes()}
+            {TeamRoutes()}
+            {InboxRoutes()}
+            {QuickBooksRoutes()}
+            {CreateCustomerRoutes()}
+            {InvoiceRoute()}
+            {FinancialRoute()}
+            {DemographicsRoute()}
+            {DoulaDashboardRoutes()}
+          </Route>
         </Route>
       </Route>
     </Route>

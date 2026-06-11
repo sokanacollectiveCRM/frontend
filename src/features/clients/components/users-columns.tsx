@@ -52,7 +52,7 @@ export const columns = (
       const clientNumber = (u.clientNumber ?? u.client_number ?? '') as string;
       return <span className='font-mono text-muted-foreground'>{clientNumber || '—'}</span>;
     },
-    meta: { className: 'w-24' },
+    meta: { className: 'w-[120px]' },
   },
   {
     id: 'client',
@@ -111,7 +111,7 @@ export const columns = (
         .toLowerCase()
         .includes((filterValue as string).toLowerCase());
     },
-    meta: { className: 'pl-10 w-60' },
+    meta: { className: 'pl-10 w-[240px]' },
   },
   {
     accessorKey: 'serviceNeeded',
@@ -122,14 +122,16 @@ export const columns = (
       const u = row.original as Record<string, unknown>;
       const service = (u.service_needed ?? u.serviceNeeded ?? '') as string;
       return (
-        <Badge variant='outline' className='max-w-36'>
-          {service || '—'}
-        </Badge>
+        <div className='min-w-0'>
+          <Badge variant='outline' className='flex max-w-full justify-start'>
+            <span className='truncate'>{service || '—'}</span>
+          </Badge>
+        </div>
       );
     },
     meta: {
       className: cn(
-        'drop-shadow-[0_1px_2px_rgb(0_0_0_/_0.1)] dark:drop-shadow-[0_1px_2px_rgb(255_255_255_/_0.1)] lg:drop-shadow-none'
+        'w-[220px] drop-shadow-[0_1px_2px_rgb(0_0_0_/_0.1)] dark:drop-shadow-[0_1px_2px_rgb(255_255_255_/_0.1)] lg:drop-shadow-none'
       ),
     },
     enableHiding: false,
@@ -143,13 +145,13 @@ export const columns = (
     cell: ({ row }) => {
       const { requestedAt } = row.original;
       return (
-        <div className='w-fit text-nowrap'>
+        <div className='w-full text-nowrap'>
           {requestedAt.toLocaleDateString() ?? '-'}
         </div>
       );
     },
     meta: {
-      className: cn(''),
+      className: cn('w-[120px]'),
     },
   },
   {
@@ -159,9 +161,10 @@ export const columns = (
     ),
     cell: ({ row }) => {
       const updated = row.getValue('updatedAt') as Date;
-      return <div>{updated.toLocaleDateString()}</div>;
+      return <div className='w-full text-nowrap'>{updated.toLocaleDateString()}</div>;
     },
     enableSorting: true,
+    meta: { className: 'w-[120px]' },
   },
   {
     id: 'payment_card',
@@ -199,7 +202,7 @@ export const columns = (
         </TooltipProvider>
       );
     },
-    meta: { className: 'w-[148px]' },
+    meta: { className: 'w-[96px]' },
     enableHiding: true,
   },
   {
@@ -260,6 +263,7 @@ export const columns = (
     },
     enableHiding: false,
     enableSorting: true,
+    meta: { className: 'w-[120px]' },
   },
   {
     id: 'portal',
@@ -360,7 +364,7 @@ export const columns = (
           );
       }
     },
-    meta: { className: 'w-32' },
+    meta: { className: 'w-[132px]' },
     enableHiding: false,
   },
   {
@@ -368,6 +372,6 @@ export const columns = (
     cell: ({ row }) => (
       <DataTableRowActions row={row} portalHandlers={portalHandlers} />
     ),
-    meta: { className: 'sticky right-0 z-10 w-16' },
+    meta: { className: 'w-[48px] pr-2 text-right' },
   },
 ];

@@ -7,13 +7,15 @@ import {
   CommandList,
 } from '@/common/components/ui/command';
 import { ScrollArea } from '@/common/components/ui/scroll-area';
+import { isAdminRole, isBillingOnlyRole, isDoulaRole } from '@/common/auth/roles';
 import { useSearch } from '@/common/contexts/SearchContext';
 import { UserContext } from '@/common/contexts/UserContext';
 import {
-  SidebarItem,
   SidebarSection,
-  sidebarSections,
+  SidebarItem,
+  getVisibleSidebarSections,
 } from '@/common/data/sidebar-data';
+import { useIsClientPortalUser } from '@/common/hooks/auth/useIsClientPortalUser';
 import { ArrowRight } from 'lucide-react';
 import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -22,6 +24,7 @@ export function CommandMenu() {
   const navigate = useNavigate();
   const { open, setOpen } = useSearch();
   const { user } = useContext(UserContext);
+  const { isClientPortalUser } = useIsClientPortalUser();
 
   const runCommand = React.useCallback(
     (command: () => unknown) => {
@@ -31,48 +34,12 @@ export function CommandMenu() {
     [setOpen]
   );
 
-  const isAdmin = user?.role === 'admin';
-  const isDoula = user?.role === 'doula';
-
-  // Filter sidebar sections based on user role (same logic as AppSidebar)
-  const filteredSections = sidebarSections
-    .map((section) => {
-      // Filter items based on role
-      const filteredItems = section.items.filter((item: SidebarItem) => {
-        // Admin-only items - only show to admins
-        if (item.adminOnly === true) {
-          return isAdmin;
-        }
-        // Doula-only items - only show to doulas
-        if ((item as SidebarItem).doulaOnly === true) {
-          return isDoula;
-        }
-        // Non-admin items (like Payments) - show to non-admins
-        if (item.adminOnly === false) {
-          return !isAdmin;
-        }
-        // Legacy admin filtering for specific items
-        if (
-          item.title === 'Invoices' ||
-          item.title === 'Customers' ||
-          item.title === 'Leads'
-        ) {
-          return isAdmin;
-        }
-        // Show all other items to everyone
-        return true;
-      });
-
-      // Return section with filtered items
-      return {
-        ...section,
-        items: filteredItems,
-      };
-    })
-    // Filter out empty sections
-    .filter((section) => section.items.length > 0)
-    // Filter out "Integrations" section unless admin
-    .filter((section) => section.label !== 'Integrations' || isAdmin);
+  const filteredSections = getVisibleSidebarSections({
+    isAdmin: isAdminRole(user?.role),
+    isDoula: isDoulaRole(user?.role),
+    isClient: isClientPortalUser,
+    isBillingOnly: isBillingOnlyRole(user?.role),
+  });
 
   return (
     <CommandDialog modal open={open} onOpenChange={setOpen}>

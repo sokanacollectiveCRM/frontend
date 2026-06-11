@@ -39,7 +39,7 @@ export function UsersPrimaryButtons({
     }
   };
   return (
-    <div className='flex gap-2'>
+    <div className='ml-auto flex shrink-0 flex-wrap justify-end gap-2'>
       <Button variant='outline' className='space-x-1' onClick={fetchCSV}>
         <span>Export</span>
         <SquarePlus size={18} />

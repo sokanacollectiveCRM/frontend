@@ -8,8 +8,9 @@ import {
   SidebarFooter,
   SidebarHeader,
 } from '@/common/components/ui/sidebar';
+import { isAdminRole, isBillingOnlyRole, isDoulaRole } from '@/common/auth/roles';
 import { UserContext } from '@/common/contexts/UserContext';
-import { sidebarSections, type SidebarItem } from '@/common/data/sidebar-data';
+import { getVisibleSidebarSections } from '@/common/data/sidebar-data';
 import { useIsClientPortalUser } from '@/common/hooks/auth/useIsClientPortalUser';
 import { useContext } from 'react';
 
@@ -22,53 +23,17 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     return null;
   }
 
-  const isAdmin = user?.role === 'admin';
-  const isDoula = user?.role === 'doula';
+  const isAdmin = isAdminRole(user?.role);
+  const isDoula = isDoulaRole(user?.role);
   const isClient = isClientPortalUser;
+  const isBillingOnly = isBillingOnlyRole(user?.role);
 
-  // Filter sections and items based on role
-  const visible = sidebarSections
-    .map((section) => {
-      // Filter items based on role
-      const filteredItems = section.items.filter((item: SidebarItem) => {
-        // Client-only items - only show to clients
-        if (item.clientOnly === true) {
-          return isClient;
-        }
-        // Admin-only items - only show to admins (and not clients)
-        if (item.adminOnly === true) {
-          return isAdmin && !isClient;
-        }
-        // Doula-only items - only show to doulas (and not clients)
-        if (item.doulaOnly === true) {
-          return isDoula && !isClient;
-        }
-        // Non-admin items (like Payments) - show to non-admins (but not clients)
-        if (item.adminOnly === false) {
-          return !isAdmin && !isClient;
-        }
-        // Legacy admin filtering for specific items
-        if (
-          item.title === 'Invoices' ||
-          item.title === 'Customers' ||
-          item.title === 'Leads'
-        ) {
-          return isAdmin && !isClient;
-        }
-        // Show all other items to everyone (except clients, who should only see client-only items)
-        return !isClient;
-      });
-
-      // Return section with filtered items
-      return {
-        ...section,
-        items: filteredItems,
-      };
-    })
-    // Filter out empty sections
-    .filter((section) => section.items.length > 0)
-    // Filter out "Integrations" section unless admin
-    .filter((section) => section.label !== 'Integrations' || isAdmin);
+  const visible = getVisibleSidebarSections({
+    isAdmin,
+    isDoula,
+    isClient,
+    isBillingOnly,
+  });
 
   return (
     <Sidebar collapsible='icon' variant='floating' {...props}>

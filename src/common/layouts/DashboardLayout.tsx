@@ -7,11 +7,11 @@ export default function DashboardLayout() {
   return (
     <SearchProvider>
       <SidebarProvider>
-        <div className='flex w-screen overflow-x-hidden'>
+        <div className='flex min-h-screen w-full overflow-x-hidden'>
           <aside className='w-64 shrink-0 border-r bg-muted p-4'>
             <AppSidebar />
           </aside>
-          <main className='flex-1 w-full'>
+          <main className='min-w-0 flex-1'>
             <Outlet />
           </main>
         </div>

@@ -1,3 +1,5 @@
+import { AccessDenied } from '@/common/components/routes/AccessDenied';
+import { getBillingHomePath, isBillingOnlyRole, canAccessBillingPortal } from '@/common/auth/roles';
 import { Navigate, Outlet } from 'react-router-dom';
 
 import { useUser } from '@/common/hooks/user/useUser';
@@ -31,4 +33,40 @@ export function PublicOnlyRoute() {
   }
 
   return !user ? <Outlet /> : <Navigate to='/' replace />;
+}
+
+export function NonBillingOnlyRoute() {
+  const { user, isLoading } = useUser();
+  const { isLoading: isClientLoading } = useClientAuth();
+
+  if (isLoading || isClientLoading) {
+    return <div className='p-6 text-center'>Loading session…</div>;
+  }
+
+  if (isBillingOnlyRole(user?.role)) {
+    return <Navigate to={getBillingHomePath()} replace />;
+  }
+
+  return <Outlet />;
+}
+
+export function BillingPortalRoute() {
+  const { user, isLoading } = useUser();
+  const { client, isLoading: isClientLoading } = useClientAuth();
+
+  if (isLoading || isClientLoading) {
+    return <div className='p-6 text-center'>Loading session…</div>;
+  }
+
+  if (client) {
+    return (
+      <AccessDenied description='This billing workspace is limited to internal staff with billing access.' />
+    );
+  }
+
+  if (!canAccessBillingPortal(user?.role)) {
+    return <AccessDenied />;
+  }
+
+  return <Outlet />;
 }

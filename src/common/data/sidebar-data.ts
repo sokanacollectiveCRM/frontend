@@ -22,6 +22,8 @@ export interface SidebarItem {
   adminOnly?: boolean;
   doulaOnly?: boolean;
   clientOnly?: boolean;
+  billingOnly?: boolean;
+  billingAccess?: boolean;
 }
 
 export interface SidebarSection {
@@ -37,6 +39,23 @@ export const sidebarSections = [
       { title: 'Inbox', url: '/inbox', icon: Inbox, clientOnly: false },
       { title: 'Leads', url: '/clients', icon: Search, adminOnly: true },
       { title: 'Customers', url: '/clients/new', icon: UserPlus, adminOnly: true },
+    ],
+  },
+  {
+    label: 'Billing',
+    items: [
+      {
+        title: 'Payment Schedules',
+        url: '/billing/payment-schedules',
+        icon: LucideCreditCard,
+        billingAccess: true,
+      },
+      {
+        title: 'Contracts',
+        url: '/billing/contracts',
+        icon: FileText,
+        billingAccess: true,
+      },
     ],
   },
   {
@@ -123,3 +142,62 @@ export const sidebarSections = [
     ],
   },
 ];
+
+export function getVisibleSidebarSections({
+  isAdmin,
+  isDoula,
+  isClient,
+  isBillingOnly,
+}: {
+  isAdmin: boolean;
+  isDoula: boolean;
+  isClient: boolean;
+  isBillingOnly: boolean;
+}): SidebarSection[] {
+  return sidebarSections
+    .map((section) => {
+      const filteredItems = section.items.filter((item: SidebarItem) => {
+        if (item.billingAccess === true) {
+          return isAdmin || isBillingOnly;
+        }
+        if (item.billingOnly === true) {
+          return isBillingOnly;
+        }
+        if (isBillingOnly) {
+          return false;
+        }
+        if (item.clientOnly === true) {
+          return isClient;
+        }
+        if (item.adminOnly === true) {
+          return isAdmin && !isClient;
+        }
+        if (item.doulaOnly === true) {
+          return isDoula && !isClient;
+        }
+        if (item.adminOnly === false) {
+          return !isAdmin && !isClient;
+        }
+        if (
+          item.title === 'Invoices' ||
+          item.title === 'Customers' ||
+          item.title === 'Leads'
+        ) {
+          return isAdmin && !isClient;
+        }
+        return !isClient;
+      });
+
+      return {
+        ...section,
+        items: filteredItems,
+      };
+    })
+    .filter((section) => section.items.length > 0)
+    .filter((section) => {
+      if (isBillingOnly) {
+        return section.label === 'Billing';
+      }
+      return section.label !== 'Integrations' || isAdmin;
+    });
+}

@@ -24,8 +24,8 @@ export function DataTableToolbar<TData>({
   const isCustomers = viewMode === 'customers';
 
   return (
-    <div className='flex items-center justify-between'>
-      <div className='flex flex-1 flex-row items-center gap-x-2'>
+    <div className='flex flex-wrap items-start justify-between gap-3'>
+      <div className='flex min-w-0 flex-1 flex-wrap items-center gap-2'>
         <Input
           placeholder={isCustomers ? 'Filter customers...' : 'Filter leads...'}
           value={(table.getColumn('client')?.getFilterValue() as string) ?? ''}
@@ -34,7 +34,7 @@ export function DataTableToolbar<TData>({
           }
           className='h-8 w-[150px] lg:w-[250px]'
         />
-        <div className='flex gap-x-2'>
+        <div className='flex flex-wrap gap-2'>
           {table.getColumn('status') && (
             <DataTableFacetedFilter
               column={table.getColumn('status')}
