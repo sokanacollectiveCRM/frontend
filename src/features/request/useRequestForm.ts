@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
-import { useForm, type Resolver } from 'react-hook-form';
+import { useForm, type FieldPath, type Resolver } from 'react-hook-form';
 import { z } from 'zod';
 import {
   REQUEST_FORM_PAYMENT_METHOD_OPTIONS,
@@ -448,6 +448,37 @@ export const stepFields: (keyof RequestFormInput)[][] = [
   ],
 ];
 
+export function getStepIssues(
+  values: RequestFormInput,
+  stepIndex: number
+): { path: (string | number)[]; message: string }[] {
+  const parsed = fullSchema.safeParse(values);
+  if (parsed.success) return [];
+
+  const allowedFields = new Set<string>(stepFields[stepIndex] ?? []);
+  return parsed.error.issues.filter((issue) => {
+    const pathRoot = issue.path[0];
+    return typeof pathRoot === 'string' && allowedFields.has(pathRoot);
+  });
+}
+
+export function applyIssuesToForm(
+  setError: (
+    name: FieldPath<RequestFormInput>,
+    error: { type: string; message: string }
+  ) => void,
+  issues: { path: (string | number)[]; message: string }[]
+) {
+  for (const issue of issues) {
+    const pathRoot = issue.path[0];
+    if (typeof pathRoot !== 'string') continue;
+    setError(pathRoot as FieldPath<RequestFormInput>, {
+      type: 'manual',
+      message: issue.message,
+    });
+  }
+}
+
 export function useRequestForm(
   onSubmit: (data: RequestFormValues) => Promise<void>
 ) {
@@ -538,12 +569,17 @@ export function useRequestForm(
   });
 
   const handleNextStep = async () => {
-    const valid = await form.trigger(stepFields[step], { shouldFocus: true });
-    if (!valid) {
+    const currentStepFields = stepFields[step];
+    form.clearErrors(currentStepFields);
+
+    const stepIssues = getStepIssues(form.getValues(), step);
+    if (stepIssues.length > 0) {
+      applyIssuesToForm(form.setError, stepIssues);
+
       // Optionally scroll to first error field for better UX
-      const firstErrorField = Object.keys(form.formState.errors)[0];
+      const firstErrorField = stepIssues[0]?.path[0];
       if (firstErrorField) {
-        const el = document.getElementById(firstErrorField);
+        const el = document.getElementById(String(firstErrorField));
         if (el && typeof el.scrollIntoView === 'function') {
           el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }

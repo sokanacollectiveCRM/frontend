@@ -651,6 +651,28 @@ describe('useRequestForm', () => {
 
       expect(result.current.step).toBe(0);
     });
+
+    it('blocks referral step progression when source is Other without details', async () => {
+      const mockOnSubmit = vi.fn();
+      const { result } = renderHook(() => useRequestForm(mockOnSubmit));
+
+      act(() => {
+        result.current.setStep(3);
+        result.current.form.setValue('referral_source', 'Other');
+        result.current.form.setValue('referral_source_other', '');
+      });
+
+      let advanced = false;
+      await act(async () => {
+        advanced = await result.current.handleNextStep();
+      });
+
+      expect(advanced).toBe(false);
+      expect(result.current.step).toBe(3);
+      expect(result.current.form.getFieldState('referral_source_other').error?.message).toBe(
+        'Please describe how you heard about Sokana.'
+      );
+    });
   });
 
   describe('Form Validation', () => {

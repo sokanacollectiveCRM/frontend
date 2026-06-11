@@ -1,4 +1,6 @@
 import {
+  applyIssuesToForm,
+  getStepIssues,
   RequestFormInput,
   RequestFormValues,
   fullSchema,
@@ -13,7 +15,7 @@ import {
   useEffect,
   useState,
 } from 'react';
-import { type UseFormReturn, useForm, type Resolver, type FieldPath } from 'react-hook-form';
+import { type UseFormReturn, useForm, type Resolver } from 'react-hook-form';
 
 interface RequestFormContextType {
   form: UseFormReturn<RequestFormInput, unknown, RequestFormValues>;
@@ -29,6 +31,7 @@ interface RequestFormContextType {
   setSubmitted: (submitted: boolean) => void;
   clearFormData: () => void;
   fillTestData: () => void;
+  isUsingTestData: boolean;
   isStepValid: (stepIndex: number) => boolean;
   showRefreshWarning: boolean;
   setShowRefreshWarning: (show: boolean) => void;
@@ -42,7 +45,10 @@ const RequestFormContext = createContext<RequestFormContextType | undefined>(
 
 interface RequestFormProviderProps {
   children: ReactNode;
-  onSubmit: (data: RequestFormValues) => Promise<void>;
+  onSubmit: (
+    data: RequestFormValues,
+    options?: { isUsingTestData: boolean }
+  ) => Promise<void>;
 }
 
 // Removed client-side storage for HIPAA compliance
@@ -54,6 +60,7 @@ export function RequestFormProvider({
   const [step, setStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [isUsingTestData, setIsUsingTestData] = useState(false);
   const [showRefreshWarning, setShowRefreshWarning] = useState(false);
   const [stepGateMessage, setStepGateMessage] = useState<string | null>(null);
   const totalSteps = 9;
@@ -170,15 +177,7 @@ export function RequestFormProvider({
   };
 
   const applyZodIssuesToForm = (issues: { path: (string | number)[]; message: string }[]) => {
-    for (const issue of issues) {
-      const p0 = issue.path[0];
-      if (typeof p0 === 'string') {
-        form.setError(p0 as FieldPath<RequestFormInput>, {
-          type: 'manual',
-          message: issue.message,
-        });
-      }
-    }
+    applyIssuesToForm(form.setError, issues);
   };
 
   // Refresh warning functionality
@@ -215,6 +214,7 @@ export function RequestFormProvider({
     form.reset();
     setStep(0);
     setSubmitted(false);
+    setIsUsingTestData(false);
     setStepGateMessage(null);
   };
 
@@ -222,99 +222,80 @@ export function RequestFormProvider({
     form.reset(DUMMY_TEST_LEAD);
     setStep(0);
     setSubmitted(false);
+    setIsUsingTestData(true);
     setStepGateMessage(null);
   };
 
   // Utility function to check if a step is valid, handling conditional fields
   const isStepValid = (stepIndex: number): boolean => {
-    const fields = stepFields[stepIndex];
     const values = form.getValues();
-    const errors = form.formState.errors;
-
-    return fields.every((field) => {
-      // Special handling for conditional fields
-      if (field === 'pronouns_other') {
-        // Only validate pronouns_other if pronouns is "Other"
-        return values.pronouns !== 'Other' || !errors[field];
-      }
-
-      if (field === 'referral_source') {
-        const selected = String(values.referral_source ?? '').trim();
-        return Boolean(selected) && !errors.referral_source;
-      }
-
-      if (field === 'referral_source_other') {
-        return (
-          values.referral_source !== 'Other' ||
-          (Boolean(String(values.referral_source_other ?? '').trim()) &&
-            !errors.referral_source_other)
-        );
-      }
-
-      if (field === 'home_type_other') {
-        const selected = values.home_type ?? [];
-        return (
-          !selected.includes('Other') ||
-          (Boolean(String(values.home_type_other ?? '').trim()) && !errors.home_type_other)
-        );
-      }
-
-      // For all other fields, just check if there's no error
-      return !errors[field];
-    });
+    return getStepIssues(values, stepIndex).length === 0;
   };
 
   const handleNextStep = async () => {
     setStepGateMessage(null);
 
-    const fieldsToValidate =
-      step === totalSteps - 1 ? undefined : stepFields[step];
-    const valid = await form.trigger(fieldsToValidate, {
-      shouldFocus: true,
-    });
+    if (step !== totalSteps - 1) {
+      const currentStepFields = stepFields[step];
+      form.clearErrors(currentStepFields);
+      const stepIssues = getStepIssues(form.getValues(), step);
 
-    if (!valid) {
+      if (stepIssues.length > 0) {
+        applyZodIssuesToForm(stepIssues);
+        setStepGateMessage(
+          'Some required information is missing or invalid. Please review the highlighted fields on this page before continuing.',
+        );
+        setTimeout(() => scrollFirstErroredFieldIntoView(), 0);
+        return false;
+      }
+    } else {
+      const valid = await form.trigger(undefined, {
+        shouldFocus: true,
+      });
+      if (!valid) {
+        setStepGateMessage(
+          'Some required information is missing or invalid. Please review the highlighted fields on this page before continuing.',
+        );
+        setTimeout(() => scrollFirstErroredFieldIntoView(), 0);
+        return false;
+      }
+    }
+
+    if (step !== totalSteps - 1) {
+      // Otherwise, move to next step
+      if (step < totalSteps - 1) {
+        setStep(step + 1);
+      }
+      return true;
+    }
+
+    // If this is the final step, submit the form
+    const parsed = fullSchema.safeParse(form.getValues());
+    if (!parsed.success) {
+      applyZodIssuesToForm(parsed.error.issues);
       setStepGateMessage(
-        'Some required information is missing or invalid. Please review the highlighted fields on this page before continuing.',
+        'Some required information is missing or invalid. Please review the highlighted fields before submitting.',
       );
       setTimeout(() => scrollFirstErroredFieldIntoView(), 0);
       return false;
     }
 
-    // If this is the final step, submit the form
-    if (step === totalSteps - 1) {
-      const parsed = fullSchema.safeParse(form.getValues());
-      if (!parsed.success) {
-        applyZodIssuesToForm(parsed.error.issues);
-        setStepGateMessage(
-          'Some required information is missing or invalid. Please review the highlighted fields before submitting.',
-        );
-        setTimeout(() => scrollFirstErroredFieldIntoView(), 0);
-        return false;
-      }
-
-      setIsSubmitting(true);
-      try {
-        await onSubmit(parsed.data);
-        setSubmitted(true);
-        setStepGateMessage(null);
-        return true;
-      } catch (error) {
-        console.error('Submission failed:', error);
-        setStepGateMessage(
-          'We could not submit your request. Please try again in a moment. If the problem continues, contact Sokana Collective for help.',
-        );
-        return false;
-      } finally {
-        setIsSubmitting(false);
-      }
+    setIsSubmitting(true);
+    try {
+      await onSubmit(parsed.data, { isUsingTestData });
+      setSubmitted(true);
+      setIsUsingTestData(false);
+      setStepGateMessage(null);
+      return true;
+    } catch (error) {
+      console.error('Submission failed:', error);
+      setStepGateMessage(
+        'We could not submit your request. Please try again in a moment. If the problem continues, contact Sokana Collective for help.',
+      );
+      return false;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // Otherwise, move to next step
-    if (step < totalSteps - 1) {
-      setStep(step + 1);
-    }
-    return true;
   };
 
   const handleBack = () => {
@@ -339,10 +320,10 @@ export function RequestFormProvider({
     // Jumping forward: validate each step up to (but not including) the target,
     // same bar as advancing with "Next" (no skipping incomplete steps).
     for (let i = 0; i < targetStep; i++) {
-      const ok = await form.trigger(stepFields[i], {
-        shouldFocus: i === step,
-      });
-      if (!ok) {
+      const stepIssues = getStepIssues(form.getValues(), i);
+      if (stepIssues.length > 0) {
+        form.clearErrors(stepFields[i]);
+        applyZodIssuesToForm(stepIssues);
         setStepGateMessage(
           'Please complete the earlier steps before jumping ahead. Some required information is missing or invalid.',
         );
@@ -369,6 +350,7 @@ export function RequestFormProvider({
     setSubmitted,
     clearFormData,
     fillTestData,
+    isUsingTestData,
     isStepValid,
     showRefreshWarning,
     setShowRefreshWarning,

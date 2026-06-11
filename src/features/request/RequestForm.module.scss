@@ -1,7 +1,7 @@
 .requestForm {
   font-family: 'Roboto', Arial, sans-serif;
   background: #fff;
-  max-width: 1050px;
+  max-width: 1140px;
   width: 100%;
   margin: 2rem auto;
   padding: 0;
@@ -304,6 +304,12 @@
     color: #00897b;
   }
 
+  .services-select-field {
+    .form-option-trigger-text {
+      padding-right: 2rem;
+    }
+  }
+
   .required {
     color: #d32f2f;
     margin-left: 0.2em;
@@ -525,6 +531,41 @@
       background: #fff;
       z-index: 2;
       letter-spacing: 0.01em;
+    }
+
+    .services-select-field {
+      gap: 0.35rem;
+
+      .form-floating-label {
+        position: static;
+        left: auto;
+        top: auto;
+        display: block;
+        margin: 0 0 0.35rem 0;
+        padding: 0;
+        background: transparent;
+        font-size: 1rem;
+        line-height: 1.3;
+        pointer-events: none;
+      }
+
+      .form-label--active {
+        position: static;
+        left: auto;
+        top: auto;
+        margin: 0 0 0.35rem 0;
+        padding: 0;
+        background: transparent;
+        font-size: 1rem;
+        color: #00897b;
+        letter-spacing: 0;
+      }
+
+      .form-option-trigger-text {
+        margin-top: 0;
+        min-height: 44px !important;
+        padding-top: 0.25rem;
+      }
     }
   }
 

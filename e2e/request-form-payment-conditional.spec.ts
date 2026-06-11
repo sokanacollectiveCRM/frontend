@@ -1,58 +1,11 @@
 import { test, expect } from '@playwright/test';
 import {
+  reachPaymentStep,
   clickFormNext,
-  fillPregnancyStepMinimum,
-  selectNoPastPregnancies,
 } from './helpers/requestForm';
 
 async function goToPaymentStep(page: import('@playwright/test').Page) {
-  await page.setViewportSize({ width: 500, height: 900 });
-  await page.goto('/request', { waitUntil: 'load' });
-  await page.getByRole('heading', { name: /Services Interested In/i }).waitFor({ state: 'visible', timeout: 20000 });
-
-  // Step 0 (services interested)
-  await page.getByRole('button', { name: 'Select' }).click();
-  await page.getByRole('checkbox', { name: 'Labor Support' }).check();
-  await page.locator('#service_support_details').fill('Support details for testing.');
-  await clickFormNext(page);
-
-  // Step 1 (client details)
-  await page.locator('#firstname').fill('Test');
-  await page.locator('#lastname').fill('User');
-  await page.locator('#email').fill('test.user@example.com');
-  await page.locator('#phone_number').fill('555-555-5555');
-  await page.locator('#preferred_contact_method').selectOption({ label: 'Email' });
-  await page.locator('#pronouns').selectOption({ label: 'They/Them' });
-  await page.locator('#age').fill('28');
-  await clickFormNext(page);
-
-  // Step 2 (home details)
-  await page.locator('#address').fill('123 Main St');
-  await page.locator('#city').fill('Chicago');
-  await page.locator('#state').fill('IL');
-  await page.locator('#zip_code').fill('60601');
-  await page.locator('#pets').fill('None');
-  await clickFormNext(page);
-
-  // Step 3 (family) optional
-  await clickFormNext(page);
-
-  // Step 4 (referral) required
-  await page.locator('#referral_source').selectOption({ label: 'Google' });
-  await clickFormNext(page);
-
-  // Step 5 (health) optional
-  await clickFormNext(page);
-
-  // Step 6 (pregnancy) required subset
-  await fillPregnancyStepMinimum(page);
-  await clickFormNext(page);
-
-  // Step 7 (past pregnancies) — explicit choice required
-  await selectNoPastPregnancies(page);
-  await clickFormNext(page);
-
-  await expect(page.getByRole('heading', { name: 'Payment' })).toBeVisible();
+  await reachPaymentStep(page);
 }
 
 test.describe('Request form — payment method selection (E2E)', () => {
@@ -103,4 +56,3 @@ test.describe('Request form — payment method selection (E2E)', () => {
     await expect(page.getByText('Medicaid', { exact: true })).toHaveCount(0);
   });
 });
-

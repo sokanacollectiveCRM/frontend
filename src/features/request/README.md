@@ -69,11 +69,14 @@ src/features/request/
 
 ### Running Tests
 ```bash
-# Run all request form tests
-npm run test:run -- src/features/request/__tests__/RequestForm.test.tsx
+# Run the full request form regression suite
+npm run test:request-form
 
-# Run with verbose output
-npm run test:run -- --reporter=verbose src/features/request/__tests__/RequestForm.test.tsx
+# Run unit/integration coverage only
+npm run test:request-form:unit
+
+# Run browser coverage only
+npm run test:request-form:e2e
 ```
 
 ### Test Coverage

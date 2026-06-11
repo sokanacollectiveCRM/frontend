@@ -983,7 +983,7 @@ export function Step8ServicesInterested({
       <div className={styles['form-grid']} style={{ alignItems: 'flex-start' }}>
         {/* Multi-select dropdown */}
         <div
-          className={styles['form-field']}
+          className={`${styles['form-field']} ${styles['services-select-field']}`}
           style={{ gridColumn: '1 / span 4' }}
         >
           <label
@@ -1017,39 +1017,56 @@ export function Step8ServicesInterested({
               align='start'
               side='bottom'
               sideOffset={4}
+              className={styles['services-popover']}
               style={{
-                minWidth: 'calc(100vw - 40px)',
-                maxWidth: '400px',
+                width: 'min(420px, calc(100vw - 32px))',
                 background: '#fff',
                 border: '1px solid #bdbdbd',
                 borderRadius: 4,
                 boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                padding: '12px 0',
+                padding: '8px 0',
                 zIndex: 10,
               }}
             >
-              {serviceOptions.map((opt) => (
-                <label
-                  key={opt}
-                  className={styles['form-option-label']}
-                  style={{ padding: '12px 16px' }}
-                >
-                  <input
-                    type='checkbox'
-                    checked={selected.includes(opt)}
-                    onChange={() => toggleService(opt)}
+              <div
+                data-testid='services-popover-list'
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  width: '100%',
+                }}
+              >
+                {serviceOptions.map((opt) => (
+                  <label
+                    key={opt}
+                    className={styles['form-option-label']}
+                    data-testid='services-popover-option'
                     style={{
-                      width: 20,
-                      height: 20,
-                      accentColor: selected.includes(opt)
-                        ? '#d32f2f'
-                        : '#bdbdbd',
-                      margin: 0,
+                      display: 'flex',
+                      width: '100%',
+                      padding: '10px 14px',
+                      boxSizing: 'border-box',
+                      alignItems: 'center',
+                      gap: '10px',
                     }}
-                  />
-                  <span className={styles['form-option-box']}>{opt}</span>
-                </label>
-              ))}
+                  >
+                    <input
+                      type='checkbox'
+                      checked={selected.includes(opt)}
+                      onChange={() => toggleService(opt)}
+                      style={{
+                        width: 20,
+                        height: 20,
+                        accentColor: selected.includes(opt)
+                          ? '#d32f2f'
+                          : '#bdbdbd',
+                        margin: 0,
+                      }}
+                    />
+                    <span className={styles['form-option-box']}>{opt}</span>
+                  </label>
+                ))}
+              </div>
             </PopoverContent>
           </Popover>
           {errors.services_interested && (

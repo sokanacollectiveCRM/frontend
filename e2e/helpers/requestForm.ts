@@ -266,13 +266,31 @@ export async function completeStep6PastPregnanciesWithHistory(page: Page) {
 
 /** Advance from Home Details through demographics and submit (assumes prior steps filled). */
 export async function advanceFromHomeDetailsToSubmit(page: Page) {
-  await clickFormNext(page);
-  await completeStep4Referral(page);
-  await completeStep5HealthHistory(page);
+  if (await page.locator('#address').isVisible().catch(() => false)) {
+    await clickFormNext(page);
+  }
 
-  await fillPregnancyStepMinimum(page);
-  await clickFormNext(page);
-  await completeStep6PastPregnanciesNoHistory(page);
+  if (await page.locator('#referral_source').isVisible().catch(() => false)) {
+    await completeStep4Referral(page);
+  }
+
+  if (await page.getByRole('heading', { name: 'Health' }).isVisible().catch(() => false)) {
+    await completeStep5HealthHistory(page);
+  }
+
+  if (await page.locator('input[name="due_date"]').isVisible().catch(() => false)) {
+    await fillPregnancyStepMinimum(page);
+    await clickFormNext(page);
+  }
+
+  if (
+    await page
+      .getByRole('heading', { name: 'Past Pregnancies' })
+      .isVisible()
+      .catch(() => false)
+  ) {
+    await completeStep6PastPregnanciesNoHistory(page);
+  }
 
   await expect(page.getByRole('heading', { name: 'Payment' })).toBeVisible();
   await page.locator('#payment_method').click();

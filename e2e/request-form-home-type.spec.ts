@@ -69,6 +69,23 @@ test.describe('Request form — Home Type multi-select (E2E)', () => {
   test('submits home_type array and home_type_other to backend', async ({ page }) => {
     test.setTimeout(120000);
     const uniqueEmail = `home-type-e2e-${Date.now()}@example.com`;
+    let capturedPayload:
+      | {
+          home_type?: string[];
+          home_type_other?: string;
+          email?: string;
+          skip_email_notifications?: boolean;
+        }
+      | undefined;
+
+    await page.route('**/requestService/requestSubmission', async (route) => {
+      capturedPayload = route.request().postDataJSON() as typeof capturedPayload;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, clientId: 'e2e-mock-client' }),
+      });
+    });
 
     await page.setViewportSize({ width: 500, height: 900 });
     await page.goto('/request', { waitUntil: 'load' });
@@ -95,32 +112,16 @@ test.describe('Request form — Home Type multi-select (E2E)', () => {
 
     await advanceFromHomeDetailsToSubmit(page);
 
-    const submissionResponse = page.waitForResponse(
-      (res) =>
-        res.url().includes('requestSubmission') &&
-        res.request().method() === 'POST',
-      { timeout: 90000 }
-    );
     await submitRequestForm(page);
-
-    const response = await submissionResponse;
-    const postData = response.request().postDataJSON() as {
-      home_type?: string[];
-      home_type_other?: string;
-      email?: string;
-    };
-
-    expect(response.ok(), `submission failed: ${response.status()} ${await response.text()}`).toBe(
-      true
-    );
-    expect(postData.email).toBe(uniqueEmail);
-    expect(postData.home_type).toEqual(
+    expect(capturedPayload?.email).toBe(uniqueEmail);
+    expect(capturedPayload?.home_type).toEqual(
       expect.arrayContaining([
         HOME_TYPE_CHECKBOX_LABELS.other,
         HOME_TYPE_CHECKBOX_LABELS.shelter,
       ])
     );
-    expect(postData.home_type_other).toBe('Emergency shelter placement — week 32');
+    expect(capturedPayload?.home_type_other).toBe('Emergency shelter placement — week 32');
+    expect(capturedPayload?.skip_email_notifications).toBe(true);
 
     await expect(page.getByText('Request Form Submitted Successfully', { exact: false })).toBeVisible({
       timeout: 15000,

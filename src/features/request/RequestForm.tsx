@@ -241,7 +241,7 @@ function RequestFormContent() {
           <button
             type="button"
             onClick={fillTestData}
-            title="Loads a complete sample (including age, provider type, primary + secondary insurance). Resets the form and returns to the first step. Submit still hits your backend URL from env."
+            title="Loads a complete sample (including age, provider type, primary + secondary insurance). Resets the form and returns to the first step. Test-data submissions are marked to skip email notifications."
             style={{
               marginTop: 10,
               padding: '5px 10px',
@@ -386,7 +386,10 @@ function RequestFormContent() {
 }
 
 export default function RequestForm() {
-  const onSubmit = async (formData: RequestFormValues) => {
+  const onSubmit = async (
+    formData: RequestFormValues,
+    options?: { isUsingTestData: boolean }
+  ) => {
     const babyCountMap: Record<string, number> = {
       Singleton: 1,
       Twins: 2,
@@ -407,6 +410,8 @@ export default function RequestForm() {
           : formData.number_of_babies,
       service_needed:
         servicesSummary || (formData.service_support_details || '').trim(),
+      skip_email_notifications: Boolean(options?.isUsingTestData),
+      submission_source: options?.isUsingTestData ? 'test_data' : 'manual',
     };
     // Use the same pattern as login endpoint (no /api prefix)
     // @ts-ignore - Vite environment variable

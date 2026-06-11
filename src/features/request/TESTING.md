@@ -3,14 +3,17 @@
 ## Quick Test Commands
 
 ```bash
-# Run all request form tests
-npm run test:run -- src/features/request/__tests__/RequestForm.test.tsx
+# Run the full request form suite (unit + Playwright)
+npm run test:request-form
 
-# Run with verbose output to see form state
-npm run test:run -- --reporter=verbose src/features/request/__tests__/RequestForm.test.tsx
+# Run request form unit/integration tests only
+npm run test:request-form:unit
 
-# Run specific test
-npm run test:run -- --grep "Form Fields" src/features/request/__tests__/RequestForm.test.tsx
+# Run request form browser tests only
+npm run test:request-form:e2e
+
+# Run a single request form test file
+npm run test:run -- src/features/request/__tests__/useRequestForm.test.tsx
 ```
 
 ## Manual Testing Checklist

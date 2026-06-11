@@ -237,3 +237,130 @@ test.describe('Ticket 6 — Option label word wrapping', () => {
     });
   }
 });
+
+test.describe('Ticket 7 — Step navigation card layout', () => {
+  test('desktop step cards keep equal heights and centered wrapped labels without overflow', async ({
+    page,
+  }) => {
+    await openRequestForm(page, VIEWPORT_PRESETS.desktop);
+
+    const metrics = await page.evaluate(() => {
+      const nav = document.querySelector('nav[aria-label="Form step navigation"]');
+      const buttons = Array.from(
+        document.querySelectorAll('nav[aria-label="Form step navigation"] button')
+      ) as HTMLButtonElement[];
+
+      return {
+        buttonCount: buttons.length,
+        navScrollWidth: nav?.scrollWidth ?? 0,
+        navClientWidth: nav?.clientWidth ?? 0,
+        heights: buttons.map((button) => Math.round(button.getBoundingClientRect().height)),
+        alignments: buttons.map((button) => {
+          const circle = button.querySelector('span') as HTMLElement | null;
+          const title = button.querySelectorAll('span')[1] as HTMLElement | null;
+          if (!circle || !title) return null;
+
+          const circleRect = circle.getBoundingClientRect();
+          const titleRect = title.getBoundingClientRect();
+          return {
+            circleCenterX: Math.round(circleRect.left + circleRect.width / 2),
+            titleCenterX: Math.round(titleRect.left + titleRect.width / 2),
+            titleBottom: Math.round(titleRect.bottom),
+            circleBottom: Math.round(circleRect.bottom),
+            titleLineHeight: parseFloat(window.getComputedStyle(title).lineHeight),
+            titleText: title.textContent?.trim() ?? '',
+            titleHeight: Math.round(titleRect.height),
+          };
+        }),
+      };
+    });
+
+    expect(metrics.buttonCount).toBe(9);
+    expect(new Set(metrics.heights).size).toBe(1);
+    expect(metrics.navScrollWidth).toBeLessThanOrEqual(metrics.navClientWidth + 1);
+
+    for (const alignment of metrics.alignments) {
+      expect(alignment).toBeTruthy();
+      expect(Math.abs(alignment!.circleCenterX - alignment!.titleCenterX)).toBeLessThanOrEqual(2);
+      expect(alignment!.titleBottom).toBeGreaterThan(alignment!.circleBottom);
+      expect(alignment!.titleLineHeight).toBeGreaterThan(0);
+    }
+
+    expect(new Set(metrics.alignments.map((alignment) => alignment?.titleLineHeight)).size).toBe(1);
+    const pregnancyTitle = metrics.alignments.find(
+      (alignment) => alignment?.titleText === 'Pregnancy/Baby'
+    );
+    expect(pregnancyTitle).toBeTruthy();
+    expect(pregnancyTitle!.titleHeight).toBeGreaterThan(pregnancyTitle!.titleLineHeight * 1.5);
+  });
+});
+
+test.describe('Ticket 8 — Services multi-select layout', () => {
+  test('services popover renders options as vertical rows', async ({ page }) => {
+    await openRequestForm(page, VIEWPORT_PRESETS.desktop);
+
+    await page.getByRole('button', { name: /select/i }).first().click();
+
+    const metrics = await page.evaluate(() => {
+      const list = document.querySelector('[data-testid="services-popover-list"]') as HTMLElement | null;
+      const labels = Array.from(
+        document.querySelectorAll('[data-testid="services-popover-option"]')
+      ) as HTMLElement[];
+
+      const listStyle = list ? window.getComputedStyle(list) : null;
+      const listRect = list?.getBoundingClientRect();
+      const optionRects = labels.slice(0, 2).map((label) => {
+        const rect = label.getBoundingClientRect();
+        return {
+          width: Math.round(rect.width),
+          left: Math.round(rect.left),
+        };
+      });
+
+      return {
+        optionCount: labels.length,
+        listDisplay: listStyle?.display ?? '',
+        listFlexDirection: listStyle?.flexDirection ?? '',
+        listWidth: Math.round(listRect?.width ?? 0),
+        optionRects,
+      };
+    });
+
+    expect(metrics.optionCount).toBeGreaterThanOrEqual(2);
+    expect(metrics.listDisplay).toBe('flex');
+    expect(metrics.listFlexDirection).toBe('column');
+    expect(metrics.optionRects[0].width).toBeGreaterThanOrEqual(metrics.listWidth - 2);
+    expect(metrics.optionRects[1].width).toBeGreaterThanOrEqual(metrics.listWidth - 2);
+    expect(Math.abs(metrics.optionRects[0].left - metrics.optionRects[1].left)).toBeLessThanOrEqual(2);
+  });
+
+  test('mobile services trigger keeps Select text visible below the label', async ({
+    page,
+  }) => {
+    await openRequestForm(page, VIEWPORT_PRESETS.mobile);
+
+    const metrics = await page.evaluate(() => {
+      const trigger = document.querySelector(
+        'button[class*="form-option-trigger-text"]'
+      ) as HTMLElement | null;
+      const label = document.querySelector(
+        '[class*="services-select-field"] label'
+      ) as HTMLElement | null;
+
+      if (!trigger || !label) return null;
+
+      const triggerRect = trigger.getBoundingClientRect();
+      const labelRect = label.getBoundingClientRect();
+
+      return {
+        triggerText: trigger.textContent?.trim() ?? '',
+        triggerTop: Math.round(triggerRect.top),
+        labelBottom: Math.round(labelRect.bottom),
+      };
+    });
+
+    expect(metrics).toBeTruthy();
+    expect(metrics!.triggerText).toContain('Select');
+    expect(metrics!.triggerTop).toBeGreaterThanOrEqual(metrics!.labelBottom);
+  });
+});

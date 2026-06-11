@@ -8,6 +8,17 @@ interface StepNavigationProps {
   isDesktop?: boolean;
 }
 
+function renderStepLabel(label: string) {
+  return label.split('/').flatMap((part, index, parts) => {
+    if (index === parts.length - 1) return [part];
+    return [
+      part,
+      '/',
+      <wbr key={`${label}-break-${index}`} />,
+    ];
+  });
+}
+
 export const StepNavigation: React.FC<StepNavigationProps> = ({ 
   currentStep, 
   isDesktop = false 
@@ -74,7 +85,7 @@ export const StepNavigation: React.FC<StepNavigationProps> = ({
                   }
                 >
                   <span className={styles.stepNumber}>{step.id + 1}</span>
-                  <span className={styles.stepTitle}>{desktopLabel}</span>
+                  <span className={styles.stepTitle}>{renderStepLabel(desktopLabel)}</span>
                 </button>
               </div>
             );

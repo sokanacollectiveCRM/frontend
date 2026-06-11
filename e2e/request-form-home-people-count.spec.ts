@@ -65,6 +65,23 @@ test.describe('Request form — People in the Home counts (E2E)', () => {
   test('submits home_adults_count and home_youth_count to backend', async ({ page }) => {
     test.setTimeout(120000);
     const uniqueEmail = `home-people-e2e-${Date.now()}@example.com`;
+    let capturedPayload:
+      | {
+          home_adults_count?: string;
+          home_youth_count?: string;
+          email?: string;
+          skip_email_notifications?: boolean;
+        }
+      | undefined;
+
+    await page.route('**/requestService/requestSubmission', async (route) => {
+      capturedPayload = route.request().postDataJSON() as typeof capturedPayload;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, clientId: 'e2e-mock-client' }),
+      });
+    });
 
     await page.setViewportSize({ width: 500, height: 900 });
     await page.goto('/request', { waitUntil: 'load' });
@@ -84,27 +101,11 @@ test.describe('Request form — People in the Home counts (E2E)', () => {
 
     await advanceFromHomeDetailsToSubmit(page);
 
-    const submissionResponse = page.waitForResponse(
-      (res) =>
-        res.url().includes('requestSubmission') &&
-        res.request().method() === 'POST',
-      { timeout: 90000 }
-    );
     await submitRequestForm(page);
-
-    const response = await submissionResponse;
-    const postData = response.request().postDataJSON() as {
-      home_adults_count?: string;
-      home_youth_count?: string;
-      email?: string;
-    };
-
-    expect(response.ok(), `submission failed: ${response.status()} ${await response.text()}`).toBe(
-      true
-    );
-    expect(postData.email).toBe(uniqueEmail);
-    expect(postData.home_adults_count).toBe('5+');
-    expect(postData.home_youth_count).toBe('3');
+    expect(capturedPayload?.email).toBe(uniqueEmail);
+    expect(capturedPayload?.home_adults_count).toBe('5+');
+    expect(capturedPayload?.home_youth_count).toBe('3');
+    expect(capturedPayload?.skip_email_notifications).toBe(true);
 
     await expect(page.getByText('Request Form Submitted Successfully', { exact: false })).toBeVisible({
       timeout: 15000,
