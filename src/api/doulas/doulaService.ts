@@ -1,10 +1,13 @@
 // API service functions for Doula Dashboard
 // Base URL: http://localhost:5050/api
 import { buildUrl, fetchWithAuth } from '@/api/http';
-import { normalizeHourType, type HourType } from '@/features/hours/data/hour-types';
+import { apiBaseUrl } from '@/config/env';
+import {
+  normalizeHourType,
+  type HourType,
+} from '@/features/hours/data/hour-types';
 
-const API_BASE =
-  (import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050') + '/api';
+const API_BASE = `${apiBaseUrl}/api`;
 
 // ============================================
 // 1. Doula Profile Management
@@ -26,6 +29,11 @@ export interface DoulaProfile {
   account_status: string;
   business: string;
   bio: string;
+  scheduling_url?: string;
+  availability_status?: string;
+  availability_note?: string;
+  unavailable_from?: string;
+  unavailable_until?: string;
   gender?: string;
   pronouns?: string;
   race_ethnicity?: string[];
@@ -49,7 +57,9 @@ export async function getDoulaProfile(): Promise<DoulaProfile> {
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to fetch profile' }));
+    const error = await response
+      .json()
+      .catch(() => ({ error: 'Failed to fetch profile' }));
     throw new Error(error.error || 'Failed to fetch profile');
   }
 
@@ -68,6 +78,11 @@ export interface UpdateProfileData {
   zip_code?: string;
   business?: string;
   bio?: string;
+  scheduling_url?: string;
+  availability_status?: string;
+  availability_note?: string;
+  unavailable_from?: string;
+  unavailable_until?: string;
   gender?: string;
   pronouns?: string;
   race_ethnicity?: string[];
@@ -76,11 +91,43 @@ export interface UpdateProfileData {
   other_demographic_details?: string;
 }
 
+export interface DoulaAvailabilityRecord {
+  id: string;
+  doulaId: string;
+  startAt: string;
+  endAt: string;
+  availabilityStatus: 'available' | 'unavailable';
+  reason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DoulaAvailabilitySummary {
+  status: 'available' | 'unavailable';
+  reason: string | null;
+  startAt: string | null;
+  endAt: string | null;
+}
+
+export interface DoulaAvailabilityResponse {
+  availabilityStatus: DoulaAvailabilitySummary;
+  records: DoulaAvailabilityRecord[];
+}
+
+export interface SaveDoulaAvailabilityData {
+  startAt: string;
+  endAt: string;
+  availabilityStatus: 'available' | 'unavailable';
+  reason?: string | null;
+}
+
 /**
  * Upload doula profile picture (headshot)
  * POST /api/doulas/profile/picture
  */
-export async function uploadDoulaProfilePicture(file: File): Promise<DoulaProfile> {
+export async function uploadDoulaProfilePicture(
+  file: File
+): Promise<DoulaProfile> {
   const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
   if (!allowedTypes.includes(file.type)) {
     throw new Error('Invalid file type. Allowed: JPEG, PNG, WebP');
@@ -100,7 +147,9 @@ export async function uploadDoulaProfilePicture(file: File): Promise<DoulaProfil
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ error: 'Failed to upload profile picture' }));
+    const errorData = await response
+      .json()
+      .catch(() => ({ error: 'Failed to upload profile picture' }));
     throw new Error(errorData.error || 'Failed to upload profile picture');
   }
 
@@ -112,8 +161,11 @@ export async function updateDoulaProfile(
   data: UpdateProfileData
 ): Promise<DoulaProfile> {
   // Log the payload being sent
-  console.log('updateDoulaProfile - Sending payload:', JSON.stringify(data, null, 2));
-  
+  console.log(
+    'updateDoulaProfile - Sending payload:',
+    JSON.stringify(data, null, 2)
+  );
+
   const response = await fetch(`${API_BASE}/doulas/profile`, {
     method: 'PUT',
     headers: {
@@ -136,13 +188,162 @@ export async function updateDoulaProfile(
   }
 
   const result = await response.json();
-  console.log('updateDoulaProfile - Response received:', JSON.stringify(result, null, 2));
-  
+  console.log(
+    'updateDoulaProfile - Response received:',
+    JSON.stringify(result, null, 2)
+  );
+
   // Handle both {success: true, profile: {...}} and direct profile object
   const profile = result.profile || result;
-  console.log('updateDoulaProfile - Returning profile:', JSON.stringify(profile, null, 2));
-  
+  console.log(
+    'updateDoulaProfile - Returning profile:',
+    JSON.stringify(profile, null, 2)
+  );
+
   return profile;
+}
+
+function mapDoulaAvailabilityRecord(
+  input: Record<string, unknown>
+): DoulaAvailabilityRecord {
+  return {
+    id: String(input.id ?? ''),
+    doulaId: String(input.doulaId ?? input.doula_id ?? ''),
+    startAt: String(input.startAt ?? input.start_at ?? ''),
+    endAt: String(input.endAt ?? input.end_at ?? ''),
+    availabilityStatus:
+      String(
+        input.availabilityStatus ?? input.availability_status ?? 'available'
+      ) === 'unavailable'
+        ? 'unavailable'
+        : 'available',
+    reason:
+      input.reason === null || input.reason === undefined
+        ? null
+        : String(input.reason),
+    createdAt: String(input.createdAt ?? input.created_at ?? ''),
+    updatedAt: String(input.updatedAt ?? input.updated_at ?? ''),
+  };
+}
+
+export async function getDoulaAvailability(): Promise<DoulaAvailabilityResponse> {
+  const response = await fetchWithAuth(buildUrl('/api/doulas/availability'), {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => '');
+    throw new Error(errorText || 'Failed to fetch availability');
+  }
+
+  const raw = (await response.json().catch(() => ({}))) as Record<
+    string,
+    unknown
+  >;
+  const summary =
+    raw.availabilityStatus && typeof raw.availabilityStatus === 'object'
+      ? (raw.availabilityStatus as Record<string, unknown>)
+      : {};
+  const records = Array.isArray(raw.records) ? raw.records : [];
+
+  return {
+    availabilityStatus: {
+      status:
+        String(summary.status ?? 'available') === 'unavailable'
+          ? 'unavailable'
+          : 'available',
+      reason:
+        summary.reason === null || summary.reason === undefined
+          ? null
+          : String(summary.reason),
+      startAt:
+        summary.startAt === null || summary.startAt === undefined
+          ? null
+          : String(summary.startAt),
+      endAt:
+        summary.endAt === null || summary.endAt === undefined
+          ? null
+          : String(summary.endAt),
+    },
+    records: records
+      .filter(
+        (entry): entry is Record<string, unknown> =>
+          !!entry && typeof entry === 'object'
+      )
+      .map(mapDoulaAvailabilityRecord),
+  };
+}
+
+export async function createDoulaAvailability(
+  data: SaveDoulaAvailabilityData
+): Promise<DoulaAvailabilityRecord> {
+  const response = await fetchWithAuth(buildUrl('/api/doulas/availability'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => '');
+    throw new Error(errorText || 'Failed to create availability');
+  }
+
+  const raw = (await response.json().catch(() => ({}))) as Record<
+    string,
+    unknown
+  >;
+  const record =
+    raw.record && typeof raw.record === 'object'
+      ? (raw.record as Record<string, unknown>)
+      : raw;
+  return mapDoulaAvailabilityRecord(record);
+}
+
+export async function updateDoulaAvailability(
+  availabilityId: string,
+  data: SaveDoulaAvailabilityData
+): Promise<DoulaAvailabilityRecord> {
+  const response = await fetchWithAuth(
+    buildUrl(`/api/doulas/availability/${encodeURIComponent(availabilityId)}`),
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => '');
+    throw new Error(errorText || 'Failed to update availability');
+  }
+
+  const raw = (await response.json().catch(() => ({}))) as Record<
+    string,
+    unknown
+  >;
+  const record =
+    raw.record && typeof raw.record === 'object'
+      ? (raw.record as Record<string, unknown>)
+      : raw;
+  return mapDoulaAvailabilityRecord(record);
+}
+
+export async function deleteDoulaAvailability(
+  availabilityId: string
+): Promise<void> {
+  const response = await fetchWithAuth(
+    buildUrl(`/api/doulas/availability/${encodeURIComponent(availabilityId)}`),
+    {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => '');
+    throw new Error(errorText || 'Failed to delete availability');
+  }
 }
 
 // ============================================
@@ -157,12 +358,10 @@ export const REQUIRED_DOULA_DOCUMENT_TYPES = [
   'direct_deposit_form',
 ] as const;
 
-export type RequiredDocumentType = (typeof REQUIRED_DOULA_DOCUMENT_TYPES)[number];
+export type RequiredDocumentType =
+  (typeof REQUIRED_DOULA_DOCUMENT_TYPES)[number];
 
-export type DocumentType =
-  | RequiredDocumentType
-  | 'license'
-  | 'other';
+export type DocumentType = RequiredDocumentType | 'license' | 'other';
 
 export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   background_check: 'Background Check',
@@ -255,12 +454,15 @@ export async function uploadDocument(
   if (notes && notes.trim()) {
     formData.append('notes', notes);
   }
-  
+
   // Debug: Log FormData contents
   console.log('Uploading document with FormData fields:');
-  for (const [key, value] of formData.entries()) {
-    console.log(`${key}:`, value instanceof File ? `${value.name} (${value.type})` : value);
-  }
+  formData.forEach((value, key) => {
+    console.log(
+      `${key}:`,
+      value instanceof File ? `${value.name} (${value.type})` : value
+    );
+  });
 
   const response = await fetch(`${API_BASE}/doulas/documents`, {
     method: 'POST',
@@ -269,9 +471,13 @@ export async function uploadDocument(
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ error: 'Failed to upload document' }));
+    const errorData = await response
+      .json()
+      .catch(() => ({ error: 'Failed to upload document' }));
     console.error('Upload error response:', errorData); // Debug log
-    throw new Error(errorData.error || errorData.message || 'Failed to upload document');
+    throw new Error(
+      errorData.error || errorData.message || 'Failed to upload document'
+    );
   }
 
   return response.json();
@@ -284,7 +490,9 @@ export async function getDoulaDocuments(): Promise<DocumentsResponse> {
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to fetch documents' }));
+    const error = await response
+      .json()
+      .catch(() => ({ error: 'Failed to fetch documents' }));
     throw new Error(error.error || 'Failed to fetch documents');
   }
 
@@ -292,8 +500,8 @@ export async function getDoulaDocuments(): Promise<DocumentsResponse> {
   const documents: DoulaDocument[] = Array.isArray(data.documents)
     ? data.documents
     : Array.isArray(data)
-    ? data
-    : data?.documents ?? data?.data ?? [];
+      ? data
+      : (data?.documents ?? data?.data ?? []);
   const completeness = data?.completeness ?? null;
 
   return {
@@ -305,7 +513,7 @@ export async function getDoulaDocuments(): Promise<DocumentsResponse> {
       fileSize: d.fileSize ?? d.file_size ?? 0,
       mimeType: d.mimeType ?? d.mime_type,
       uploadedAt: d.uploadedAt ?? d.uploaded_at ?? d.created_at,
-      status: d.status === 'pending' ? 'uploaded' : d.status ?? 'missing',
+      status: d.status === 'pending' ? 'uploaded' : (d.status ?? 'missing'),
       notes: d.notes ?? null,
       rejectionReason: d.rejectionReason ?? d.rejection_reason ?? null,
     })),
@@ -320,7 +528,9 @@ export async function deleteDoulaDocument(documentId: string): Promise<void> {
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to delete document' }));
+    const error = await response
+      .json()
+      .catch(() => ({ error: 'Failed to delete document' }));
     throw new Error(error.error || 'Failed to delete document');
   }
 }
@@ -351,7 +561,9 @@ export async function updateDoulaDocumentMetadata(
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to update document' }));
+    const error = await response
+      .json()
+      .catch(() => ({ error: 'Failed to update document' }));
     throw new Error(error.error || 'Failed to update document');
   }
 
@@ -364,22 +576,35 @@ export async function updateDoulaDocumentMetadata(
     fileUrl: document.fileUrl ?? document.file_url ?? null,
     fileSize: document.fileSize ?? document.file_size ?? 0,
     mimeType: document.mimeType ?? document.mime_type,
-    uploadedAt: document.uploadedAt ?? document.uploaded_at ?? document.created_at,
-    status: document.status === 'pending' ? 'uploaded' : document.status ?? 'missing',
+    uploadedAt:
+      document.uploadedAt ?? document.uploaded_at ?? document.created_at,
+    status:
+      document.status === 'pending'
+        ? 'uploaded'
+        : (document.status ?? 'missing'),
     notes: document.notes ?? null,
-    rejectionReason: document.rejectionReason ?? document.rejection_reason ?? null,
+    rejectionReason:
+      document.rejectionReason ?? document.rejection_reason ?? null,
   };
 }
 
 // Admin document APIs
-export async function getAdminDoulaDocuments(doulaId: string): Promise<DocumentsResponse> {
-  const url = buildUrl(`/api/admin/doulas/${encodeURIComponent(doulaId)}/documents`);
+export async function getAdminDoulaDocuments(
+  doulaId: string
+): Promise<DocumentsResponse> {
+  const url = buildUrl(
+    `/api/admin/doulas/${encodeURIComponent(doulaId)}/documents`
+  );
   const response = await fetchWithAuth(url, {
     headers: { 'Content-Type': 'application/json' },
   });
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to fetch documents' }));
-    throw new Error((error as { error?: string }).error || 'Failed to fetch documents');
+    const error = await response
+      .json()
+      .catch(() => ({ error: 'Failed to fetch documents' }));
+    throw new Error(
+      (error as { error?: string }).error || 'Failed to fetch documents'
+    );
   }
   const data = await response.json();
   return {
@@ -406,19 +631,30 @@ export async function reviewDoulaDocument(
     }),
   });
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to review document' }));
-    throw new Error((error as { error?: string }).error || 'Failed to review document');
+    const error = await response
+      .json()
+      .catch(() => ({ error: 'Failed to review document' }));
+    throw new Error(
+      (error as { error?: string }).error || 'Failed to review document'
+    );
   }
 }
 
-export async function getDoulaDocumentUrl(doulaId: string, documentId: string): Promise<string> {
+export async function getDoulaDocumentUrl(
+  doulaId: string,
+  documentId: string
+): Promise<string> {
   const url = buildUrl(
     `/api/admin/doulas/${encodeURIComponent(doulaId)}/documents/${encodeURIComponent(documentId)}/url`
   );
   const response = await fetchWithAuth(url);
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to get document URL' }));
-    throw new Error((error as { error?: string }).error || 'Failed to get document URL');
+    const error = await response
+      .json()
+      .catch(() => ({ error: 'Failed to get document URL' }));
+    throw new Error(
+      (error as { error?: string }).error || 'Failed to get document URL'
+    );
   }
   const data = await response.json();
   return data.url;
@@ -459,7 +695,7 @@ export async function getAssignedClients(
   const url = `${API_BASE}/doulas/clients?detailed=${detailed}`;
   console.log('getAssignedClients - Calling URL:', url);
   console.log('getAssignedClients - Detailed mode:', detailed);
-  
+
   const response = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
@@ -483,16 +719,22 @@ export async function getAssignedClients(
 
   const data = await response.json();
   console.log('getAssignedClients - Raw response:', data);
-  console.log('getAssignedClients - Full response structure:', JSON.stringify(data, null, 2));
+  console.log(
+    'getAssignedClients - Full response structure:',
+    JSON.stringify(data, null, 2)
+  );
   console.log('getAssignedClients - Is array?', Array.isArray(data));
   console.log('getAssignedClients - Has success?', data?.success);
   console.log('getAssignedClients - Has data?', data?.data);
   console.log('getAssignedClients - Has clients?', data?.clients);
-  console.log('getAssignedClients - Clients array length:', data?.clients?.length);
-  
+  console.log(
+    'getAssignedClients - Clients array length:',
+    data?.clients?.length
+  );
+
   // Handle multiple response formats
   let clientsArray: any[] = [];
-  
+
   if (data?.success && Array.isArray(data.data)) {
     console.log('Using format: {success: true, data: [...]}');
     clientsArray = data.data;
@@ -512,7 +754,7 @@ export async function getAssignedClients(
     console.warn('Unexpected response format:', data);
     return [];
   }
-  
+
   // Transform the response to match the expected interface
   // Backend returns {id, user: {firstname, lastname, email, ...}, status, ...}
   // We need to flatten it to {id, firstname, lastname, email, status, ...}
@@ -524,14 +766,17 @@ export async function getAssignedClients(
         firstname: client.user.firstname || client.user.firstName || '',
         lastname: client.user.lastname || client.user.lastName || '',
         email: client.user.email || '',
-        phone: client.user.phone || client.user.phoneNumber || client.phone || '',
-        dueDate: client.user.due_date || client.dueDate || client.due_date || '',
+        phone:
+          client.user.phone || client.user.phoneNumber || client.phone || '',
+        dueDate:
+          client.user.due_date || client.dueDate || client.due_date || '',
         status: client.status || client.user.status || 'matching',
         // Detailed fields
         address: client.user.address || client.address || '',
         city: client.user.city || client.city || '',
         state: client.user.state || client.state || '',
-        zipCode: client.user.zip_code || client.zipCode || client.zip_code || '',
+        zipCode:
+          client.user.zip_code || client.zipCode || client.zip_code || '',
         healthHistory: client.user.health_history || client.healthHistory || '',
         allergies: client.user.allergies || client.allergies || '',
         hospital: client.user.hospital || client.hospital || '',
@@ -580,15 +825,21 @@ export async function getAssignedClients(
       hospital: client.hospital || '',
       birthOutcomes: client.birthOutcomes || client.birth_outcomes || '',
       birthOutcomesInduction:
-        client.birthOutcomesInduction ?? client.birth_outcomes_induction ?? undefined,
+        client.birthOutcomesInduction ??
+        client.birth_outcomes_induction ??
+        undefined,
       birthOutcomesDeliveryType:
-        client.birthOutcomesDeliveryType || client.birth_outcomes_delivery_type || '',
+        client.birthOutcomesDeliveryType ||
+        client.birth_outcomes_delivery_type ||
+        '',
       birthOutcomesMedicationsUsed:
-        client.birthOutcomesMedicationsUsed || client.birth_outcomes_medications_used || [],
+        client.birthOutcomesMedicationsUsed ||
+        client.birth_outcomes_medications_used ||
+        [],
       serviceNeeded: client.serviceNeeded || client.service_needed || '',
     };
   });
-  
+
   console.log('getAssignedClients - Transformed clients:', transformedClients);
   return transformedClients;
 }
@@ -607,7 +858,9 @@ export async function getAssignedClientDetails(
   );
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to fetch client details' }));
+    const error = await response
+      .json()
+      .catch(() => ({ error: 'Failed to fetch client details' }));
     throw new Error(error.error || 'Failed to fetch client details');
   }
 
@@ -629,22 +882,29 @@ export async function getAssignedClientDetails(
     city: String(source?.city ?? ''),
     state: String(source?.state ?? ''),
     zipCode: String(source?.zipCode ?? source?.zip_code ?? ''),
-    healthHistory: String(source?.healthHistory ?? source?.health_history ?? ''),
+    healthHistory: String(
+      source?.healthHistory ?? source?.health_history ?? ''
+    ),
     allergies: String(source?.allergies ?? ''),
     hospital: String(source?.hospital ?? ''),
     birthOutcomes: String(
       source?.birthOutcomes ?? source?.birth_outcomes ?? ''
     ),
     birthOutcomesInduction:
-      source?.birthOutcomesInduction ?? source?.birth_outcomes_induction ?? undefined,
+      source?.birthOutcomesInduction ??
+      source?.birth_outcomes_induction ??
+      undefined,
     birthOutcomesDeliveryType: String(
-      source?.birthOutcomesDeliveryType ?? source?.birth_outcomes_delivery_type ?? ''
+      source?.birthOutcomesDeliveryType ??
+        source?.birth_outcomes_delivery_type ??
+        ''
     ),
     birthOutcomesMedicationsUsed: Array.isArray(
-      source?.birthOutcomesMedicationsUsed ?? source?.birth_outcomes_medications_used
+      source?.birthOutcomesMedicationsUsed ??
+        source?.birth_outcomes_medications_used
     )
-      ? (source?.birthOutcomesMedicationsUsed ??
-          source?.birth_outcomes_medications_used) as string[]
+      ? ((source?.birthOutcomesMedicationsUsed ??
+          source?.birth_outcomes_medications_used) as string[])
       : [],
   };
 }
@@ -688,7 +948,9 @@ export async function logHours(data: LogHoursData): Promise<HoursEntry> {
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to log hours' }));
+    const error = await response
+      .json()
+      .catch(() => ({ error: 'Failed to log hours' }));
     throw new Error(error.error || 'Failed to log hours');
   }
 
@@ -708,7 +970,9 @@ export async function updateHours(
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to update hours' }));
+    const error = await response
+      .json()
+      .catch(() => ({ error: 'Failed to update hours' }));
     throw new Error(error.error || 'Failed to update hours');
   }
 
@@ -727,7 +991,9 @@ export async function getDoulaHours(): Promise<HoursEntry[]> {
   }
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to fetch hours' }));
+    const error = await response
+      .json()
+      .catch(() => ({ error: 'Failed to fetch hours' }));
     throw new Error(error.error || 'Failed to fetch hours');
   }
 
@@ -751,19 +1017,30 @@ export async function getDoulaHours(): Promise<HoursEntry[]> {
   return hoursArray.map((entry) => {
     const startTime = entry.startTime || entry.start_time || '';
     const endTime = entry.endTime || entry.end_time || '';
-    const type = normalizeHourType(entry.type || entry.hour_type || entry.hourType);
+    const type = normalizeHourType(
+      entry.type || entry.hour_type || entry.hourType
+    );
     const start = startTime ? new Date(startTime) : null;
     const end = endTime ? new Date(endTime) : null;
     const computedHours =
-      start && end && !Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime())
-        ? Math.max(0, Math.round(((end.getTime() - start.getTime()) / (1000 * 60 * 60)) * 10) / 10)
+      start &&
+      end &&
+      !Number.isNaN(start.getTime()) &&
+      !Number.isNaN(end.getTime())
+        ? Math.max(
+            0,
+            Math.round(
+              ((end.getTime() - start.getTime()) / (1000 * 60 * 60)) * 10
+            ) / 10
+          )
         : 0;
 
     return {
       id: entry.id,
       client: {
         id: entry.client?.id || entry.client_id || '',
-        firstname: entry.client?.firstname || entry.client?.user?.firstname || '',
+        firstname:
+          entry.client?.firstname || entry.client?.user?.firstname || '',
         lastname: entry.client?.lastname || entry.client?.user?.lastname || '',
       },
       startTime,
@@ -771,7 +1048,12 @@ export async function getDoulaHours(): Promise<HoursEntry[]> {
       hours: typeof entry.hours === 'number' ? entry.hours : computedHours,
       type,
       note: entry.note || null,
-      createdAt: entry.createdAt || entry.created_at || entry.startTime || entry.start_time || new Date().toISOString(),
+      createdAt:
+        entry.createdAt ||
+        entry.created_at ||
+        entry.startTime ||
+        entry.start_time ||
+        new Date().toISOString(),
     } as HoursEntry;
   });
 }
@@ -811,7 +1093,11 @@ export function isClientActivityUuid(id: string | undefined | null): boolean {
   );
 }
 
-function messageFromBackendErrorBody(text: string, status: number, fallback: string): string {
+function messageFromBackendErrorBody(
+  text: string,
+  status: number,
+  fallback: string
+): string {
   if (!text.trim()) {
     return `${fallback} (HTTP ${status})`;
   }
@@ -820,14 +1106,21 @@ function messageFromBackendErrorBody(text: string, status: number, fallback: str
     return parsed.error || parsed.message || `${fallback} (HTTP ${status})`;
   } catch {
     const snippet = text.slice(0, 120).trim();
-    return snippet ? `${fallback} (HTTP ${status}): ${snippet}` : `${fallback} (HTTP ${status})`;
+    return snippet
+      ? `${fallback} (HTTP ${status}): ${snippet}`
+      : `${fallback} (HTTP ${status})`;
   }
 }
 
-async function readJsonResponse<T>(response: Response, errorFallback: string): Promise<T> {
+async function readJsonResponse<T>(
+  response: Response,
+  errorFallback: string
+): Promise<T> {
   const text = await response.text();
   if (!response.ok) {
-    throw new Error(messageFromBackendErrorBody(text, response.status, errorFallback));
+    throw new Error(
+      messageFromBackendErrorBody(text, response.status, errorFallback)
+    );
   }
   try {
     return JSON.parse(text) as T;
@@ -836,9 +1129,15 @@ async function readJsonResponse<T>(response: Response, errorFallback: string): P
   }
 }
 
-function normalizeClientActivity(activity: any, clientId: string, index: number): ClientActivity {
+function normalizeClientActivity(
+  activity: any,
+  clientId: string,
+  index: number
+): ClientActivity {
   const meta =
-    activity.metadata && typeof activity.metadata === 'object' && !Array.isArray(activity.metadata)
+    activity.metadata &&
+    typeof activity.metadata === 'object' &&
+    !Array.isArray(activity.metadata)
       ? activity.metadata
       : {};
   const formatName = (raw: unknown): string => {
@@ -846,8 +1145,12 @@ function normalizeClientActivity(activity: any, clientId: string, index: number)
     if (typeof raw === 'string') return raw.trim();
     if (typeof raw === 'object' && !Array.isArray(raw)) {
       const obj = raw as Record<string, unknown>;
-      const first = String(obj.first_name ?? obj.firstName ?? obj.firstname ?? '').trim();
-      const last = String(obj.last_name ?? obj.lastName ?? obj.lastname ?? '').trim();
+      const first = String(
+        obj.first_name ?? obj.firstName ?? obj.firstname ?? ''
+      ).trim();
+      const last = String(
+        obj.last_name ?? obj.lastName ?? obj.lastname ?? ''
+      ).trim();
       const full = `${first} ${last}`.trim();
       if (full) return full;
       const name = String(obj.name ?? '').trim();
@@ -937,7 +1240,10 @@ export async function addClientActivity(
     }),
   });
 
-  const raw = await readJsonResponse<Record<string, unknown>>(response, 'Failed to add activity');
+  const raw = await readJsonResponse<Record<string, unknown>>(
+    response,
+    'Failed to add activity'
+  );
   const rawData =
     raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data)
       ? (raw.data as Record<string, unknown>)
@@ -970,7 +1276,10 @@ export async function patchClientActivityVisibility(
     body: JSON.stringify({ visibleToClient }),
   });
 
-  const raw = await readJsonResponse<Record<string, unknown>>(response, 'Failed to update activity');
+  const raw = await readJsonResponse<Record<string, unknown>>(
+    response,
+    'Failed to update activity'
+  );
   const rawData =
     raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data)
       ? (raw.data as Record<string, unknown>)
@@ -982,10 +1291,15 @@ export async function patchClientActivityVisibility(
   return normalizeClientActivity(act, clientId, 0);
 }
 
-export async function getClientActivities(clientId: string): Promise<ClientActivity[]> {
-  const url = buildUrl(`/api/doulas/clients/${encodeURIComponent(clientId)}/activities`, {
-    _: Date.now(),
-  });
+export async function getClientActivities(
+  clientId: string
+): Promise<ClientActivity[]> {
+  const url = buildUrl(
+    `/api/doulas/clients/${encodeURIComponent(clientId)}/activities`,
+    {
+      _: Date.now(),
+    }
+  );
   const response = await fetchWithAuth(url, {
     cache: 'no-store',
   });
@@ -1000,27 +1314,39 @@ export async function getClientActivities(clientId: string): Promise<ClientActiv
       console.log('No activities found for client:', clientId);
       return [];
     }
-    const error = await response.json().catch(() => ({ error: 'Failed to fetch activities' }));
+    const error = await response
+      .json()
+      .catch(() => ({ error: 'Failed to fetch activities' }));
     throw new Error(error.error || 'Failed to fetch activities');
   }
 
   const data = await response.json();
   console.log('getClientActivities - Raw response:', data);
-  
+
   let activitiesArray: any[] = [];
-  
+
   // Handle different response formats
   if (Array.isArray(data)) {
-    console.log('getClientActivities - Returning array with', data.length, 'activities');
+    console.log(
+      'getClientActivities - Returning array with',
+      data.length,
+      'activities'
+    );
     activitiesArray = data;
   } else if (data?.success && Array.isArray(data.activities)) {
-    console.log('getClientActivities - Using format: {success: true, activities: [...]}');
+    console.log(
+      'getClientActivities - Using format: {success: true, activities: [...]}'
+    );
     activitiesArray = data.activities;
   } else if (data?.success && Array.isArray(data.data)) {
-    console.log('getClientActivities - Using format: {success: true, data: [...]}');
+    console.log(
+      'getClientActivities - Using format: {success: true, data: [...]}'
+    );
     activitiesArray = data.data;
   } else if (data?.data?.activities && Array.isArray(data.data.activities)) {
-    console.log('getClientActivities - Using format: {data: {activities: [...]}}');
+    console.log(
+      'getClientActivities - Using format: {data: {activities: [...]}}'
+    );
     activitiesArray = data.data.activities;
   } else if (data?.activities && Array.isArray(data.activities)) {
     console.log('getClientActivities - Using format: {activities: [...]}');
@@ -1032,11 +1358,14 @@ export async function getClientActivities(clientId: string): Promise<ClientActiv
     console.warn('getClientActivities - Unexpected response format:', data);
     return [];
   }
-  
+
   const normalizedActivities = activitiesArray.map((activity, index) =>
     normalizeClientActivity(activity, clientId, index)
   );
-  
-  console.log('getClientActivities - Normalized activities:', normalizedActivities);
+
+  console.log(
+    'getClientActivities - Normalized activities:',
+    normalizedActivities
+  );
   return normalizedActivities;
 }

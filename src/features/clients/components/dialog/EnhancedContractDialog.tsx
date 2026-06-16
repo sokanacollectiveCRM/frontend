@@ -99,6 +99,80 @@ interface Props {
   onOpenChange: (open: boolean) => void;
 }
 
+function roundToCents(amount: number): number {
+  return Math.round(amount * 100) / 100;
+}
+
+export function buildInstallmentAmounts(
+  balanceAmount: number,
+  installmentsCount: number
+): number[] {
+  if (installmentsCount <= 0) return [];
+
+  const balanceCents = Math.round(Math.max(balanceAmount, 0) * 100);
+  const baseInstallmentCents = Math.floor(balanceCents / installmentsCount);
+  const remainderCents = balanceCents - baseInstallmentCents * installmentsCount;
+
+  return Array.from({ length: installmentsCount }, (_, index) => {
+    const installmentCents =
+      baseInstallmentCents + (index === installmentsCount - 1 ? remainderCents : 0);
+    return installmentCents / 100;
+  });
+}
+
+export function calculateDepositAmount(
+  totalAmount: number,
+  depositType: 'percent' | 'flat',
+  depositValue: number
+): number {
+  if (depositValue <= 0) return 0;
+  if (depositType === 'percent') {
+    return roundToCents((totalAmount * depositValue) / 100);
+  }
+  return roundToCents(depositValue);
+}
+
+export function buildPaymentDates(
+  cadence: 'monthly' | 'biweekly',
+  installmentsCount: number,
+  startDate = new Date()
+) {
+  const dates = [];
+  const today = new Date(startDate);
+
+  dates.push({
+    label: 'Deposit',
+    date: today.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }),
+    amount: 0,
+  });
+
+  for (let i = 1; i <= installmentsCount; i++) {
+    const paymentDate = new Date(today);
+
+    if (cadence === 'monthly') {
+      paymentDate.setMonth(paymentDate.getMonth() + i);
+    } else {
+      paymentDate.setDate(paymentDate.getDate() + i * 14);
+    }
+
+    dates.push({
+      label: `Payment ${i}`,
+      date: paymentDate.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }),
+      amount: 0,
+    });
+  }
+
+  return dates;
+}
+
 export function EnhancedContractDialog({ open, onOpenChange }: Props) {
   const { clients, getClients, isLoading: clientsLoading } = useClients();
   const [step, setStep] = useState<Step>('services');
@@ -260,20 +334,21 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
           dataDepositValue: data.deposit_value,
         });
 
-        const depositAmount =
-          depositType === 'percent'
-            ? (totalAmount * depositValue) / 100
-            : depositValue;
-        const balanceAmount = Math.max(totalAmount - depositAmount, 0);
-        const installmentAmount =
-          installmentsCount > 0 ? balanceAmount / installmentsCount : 0;
+        const depositAmount = calculateDepositAmount(
+          totalAmount,
+          depositType,
+          depositValue
+        );
+        const balanceAmount = roundToCents(Math.max(totalAmount - depositAmount, 0));
 
         const localAmounts: CalculatedAmounts = {
           total_amount: totalAmount,
           deposit_amount: depositAmount,
           balance_amount: balanceAmount,
-          installments_amounts:
-            Array(installmentsCount).fill(installmentAmount),
+          installments_amounts: buildInstallmentAmounts(
+            balanceAmount,
+            installmentsCount
+          ),
         };
 
         const totalHoursSum = selectedServices
@@ -311,16 +386,15 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
 
         const depositAmount =
           depositValue > 0
-            ? depositType === 'percent'
-              ? (totalAmount * depositValue) / 100
-              : depositValue
+            ? calculateDepositAmount(totalAmount, depositType, depositValue)
             : 0;
+        const balanceAmount = roundToCents(Math.max(totalAmount - depositAmount, 0));
 
         const localAmounts: CalculatedAmounts = {
           total_amount: totalAmount,
           deposit_amount: depositAmount,
-          balance_amount: Math.max(totalAmount - depositAmount, 0),
-          installments_amounts: [Math.max(totalAmount - depositAmount, 0)],
+          balance_amount: balanceAmount,
+          installments_amounts: [balanceAmount],
         };
 
         const totalHoursSum = selectedServices
@@ -532,46 +606,6 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
     } else {
       return 'Subsequent payments will be charged bi-weekly after the first payment';
     }
-  };
-
-  // Calculate payment dates
-  const getPaymentDates = (cadence: string, installmentsCount: number) => {
-    const dates = [];
-    const today = new Date();
-
-    // First payment (deposit) is immediate
-    dates.push({
-      label: 'Deposit',
-      date: today.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      }),
-      amount: 0, // Will be calculated separately
-    });
-
-    // Calculate subsequent payment dates
-    for (let i = 1; i <= installmentsCount; i++) {
-      const paymentDate = new Date(today);
-
-      if (cadence === 'monthly') {
-        paymentDate.setMonth(paymentDate.getMonth() + i);
-      } else if (cadence === 'biweekly') {
-        paymentDate.setDate(paymentDate.getDate() + i * 14);
-      }
-
-      dates.push({
-        label: `Payment ${i}`,
-        date: paymentDate.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        }),
-        amount: 0, // Will be calculated separately
-      });
-    }
-
-    return dates;
   };
 
   // Get deposit charging information
@@ -1060,10 +1094,6 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                             )}
                           </p>
                           <p>
-                            • First payment (deposit) will be charged
-                            immediately upon contract signing
-                          </p>
-                          <p>
                             •{' '}
                             {getPaymentTiming(
                               contractForm.watch('cadence') || 'monthly'
@@ -1168,8 +1198,10 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                       </h4>
                       <div className='space-y-2'>
                         {calculatedAmounts &&
-                          getPaymentDates(
-                            contractForm.watch('cadence') || 'monthly',
+                          buildPaymentDates(
+                            (contractForm.watch('cadence') || 'monthly') as
+                              | 'monthly'
+                              | 'biweekly',
                             contractForm.watch('installments_count') || 3
                           ).map((payment, index) => (
                             <div
@@ -1251,10 +1283,6 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                             contractForm.watch('deposit_value') || 0,
                             calculatedAmounts.total_amount
                           )}
-                        </p>
-                        <p>
-                          • First payment (deposit) will be charged immediately
-                          upon contract signing
                         </p>
                         <p>
                           •{' '}

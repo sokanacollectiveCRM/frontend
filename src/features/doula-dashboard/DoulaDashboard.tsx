@@ -43,6 +43,21 @@ export default function DoulaDashboard() {
     fetchProfileCompletion();
   }, []);
 
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const previousHtmlOverflow = html.style.overflow;
+    const previousBodyOverflow = body.style.overflow;
+
+    html.style.overflow = 'hidden';
+    body.style.overflow = 'hidden';
+
+    return () => {
+      html.style.overflow = previousHtmlOverflow;
+      body.style.overflow = previousBodyOverflow;
+    };
+  }, []);
+
   const fetchProfileCompletion = async () => {
     try {
       const profile = await getDoulaProfile();
@@ -92,7 +107,7 @@ export default function DoulaDashboard() {
         <div className='flex h-full min-h-0 gap-6 p-6'>
           <DoulaDashboardSidebar />
 
-          <section className='min-w-0 flex-1 overflow-y-auto'>
+          <section className='min-h-0 min-w-0 flex-1 overflow-y-auto'>
             {!isProfileComplete && (
               <div className='mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-4'>
                 <div className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>

@@ -28,7 +28,15 @@ import {
 } from '@/api/clients/doulaAssignments';
 import { Badge } from '@/common/components/ui/badge';
 import { format, isValid, parseISO } from 'date-fns';
-import { Download, ExternalLink, FileImage, Loader2, MessageSquare, Trash2, Upload } from 'lucide-react';
+import {
+  Download,
+  ExternalLink,
+  FileImage,
+  Loader2,
+  MessageSquare,
+  Trash2,
+  Upload,
+} from 'lucide-react';
 import { buildUrl, fetchWithAuth } from '@/api/http';
 import {
   compareClientDocumentsByUploadedAtDesc,
@@ -44,6 +52,10 @@ import {
   type ClientDocument,
 } from '@/api/clients/clientDocuments';
 import { normalizeZipCode } from '@/common/utils/zipCode';
+import {
+  canClientViewDoulaScheduling,
+  getDoulaSchedulingInfo,
+} from '@/common/utils/doulaScheduling';
 import {
   ALL_PAYMENT_METHOD_OPTIONS,
   isMedicaidMethod,
@@ -86,14 +98,21 @@ export function getInsuranceCardDocumentForSide(
   side: InsuranceCardSide
 ): ClientDocument | null {
   const explicit = documents.find(
-    (document) => getInsuranceCardSide(document.documentType, document.fileName) === side
+    (document) =>
+      getInsuranceCardSide(document.documentType, document.fileName) === side
   );
   if (explicit) return explicit;
   const hasSideTaggedDocument = documents.some(
-    (document) => getInsuranceCardSide(document.documentType, document.fileName) !== null
+    (document) =>
+      getInsuranceCardSide(document.documentType, document.fileName) !== null
   );
   if (hasSideTaggedDocument) return null;
-  if (side === 'front') return documents.find((document) => document.documentType === 'insurance_card') ?? null;
+  if (side === 'front')
+    return (
+      documents.find(
+        (document) => document.documentType === 'insurance_card'
+      ) ?? null
+    );
   return null;
 }
 
@@ -131,7 +150,9 @@ interface ClientProfileTabProps {
   view?: ClientDashboardView;
 }
 
-export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps) {
+export default function ClientProfileTab({
+  view = 'all',
+}: ClientProfileTabProps) {
   const { client } = useClientAuth();
   const { user } = useUser();
   const userRecord = user as Record<string, unknown> | null;
@@ -150,9 +171,13 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [uploadingInsuranceCardSide, setUploadingInsuranceCardSide] =
     useState<InsuranceCardSide | null>(null);
-  const [deletingInsuranceCardId, setDeletingInsuranceCardId] = useState<string | null>(null);
+  const [deletingInsuranceCardId, setDeletingInsuranceCardId] = useState<
+    string | null
+  >(null);
   const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
-  const [documentPreviewUrls, setDocumentPreviewUrls] = useState<Record<string, string>>({});
+  const [documentPreviewUrls, setDocumentPreviewUrls] = useState<
+    Record<string, string>
+  >({});
   const [isProfileEditing, setIsProfileEditing] = useState(false);
   const [profileSnapshot, setProfileSnapshot] = useState({
     firstname: '',
@@ -163,7 +188,9 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
     state: '',
     zip_code: '',
   });
-  const [billingPaymentMethodDisplay, setBillingPaymentMethodDisplay] = useState('');
+  const [billingPaymentMethodDisplay, setBillingPaymentMethodDisplay] =
+    useState('');
+  const [canViewDoulaScheduling, setCanViewDoulaScheduling] = useState(false);
   const [isBillingEditing, setIsBillingEditing] = useState(false);
   const [billingSnapshot, setBillingSnapshot] = useState({
     payment_method: '',
@@ -219,7 +246,9 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
 
   const effectiveClientId = client?.id || user?.id || null;
   const effectiveClientFirstName =
-    client?.firstname || user?.firstname || String(userRecord?.first_name || '');
+    client?.firstname ||
+    user?.firstname ||
+    String(userRecord?.first_name || '');
   const effectiveClientLastName =
     client?.lastname || user?.lastname || String(userRecord?.last_name || '');
   const effectiveClientEmail = client?.email || user?.email || '';
@@ -323,7 +352,9 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
           id: String(row.id),
           activity_type: String(row.activity_type ?? row.type ?? 'note'),
           content: String(row.content ?? row.description ?? ''),
-          created_at: String(row.created_at ?? row.timestamp ?? row.createdAt ?? ''),
+          created_at: String(
+            row.created_at ?? row.timestamp ?? row.createdAt ?? ''
+          ),
         }))
       );
     } catch {
@@ -374,14 +405,19 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
           ? profilePaymentMethod
           : '',
         insurance_policy_holder_name:
-          profile?.insurance_policy_holder_name || profile?.insurancePolicyHolderName || '',
+          profile?.insurance_policy_holder_name ||
+          profile?.insurancePolicyHolderName ||
+          '',
         insurance_policy_holder_dob:
-          profile?.insurance_policy_holder_dob || profile?.insurancePolicyHolderDob || '',
+          profile?.insurance_policy_holder_dob ||
+          profile?.insurancePolicyHolderDob ||
+          '',
         insurance_policy_holder_relationship:
           profile?.insurance_policy_holder_relationship ||
           profile?.insurancePolicyHolderRelationship ||
           '',
-        insurance_plan_type: profile?.insurance_plan_type || profile?.insurancePlanType || '',
+        insurance_plan_type:
+          profile?.insurance_plan_type || profile?.insurancePlanType || '',
         insurance_provider:
           profile?.insurance_provider ||
           profile?.insuranceProvider ||
@@ -391,9 +427,13 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
           profile?.insurance_member_id || profile?.insuranceMemberId || '',
         policy_number: profile?.policy_number || profile?.policyNumber || '',
         insurance_phone_number:
-          profile?.insurance_phone_number || profile?.insurancePhoneNumber || '',
+          profile?.insurance_phone_number ||
+          profile?.insurancePhoneNumber ||
+          '',
         has_secondary_insurance:
-          profile?.has_secondary_insurance ?? profile?.hasSecondaryInsurance ?? false,
+          profile?.has_secondary_insurance ??
+          profile?.hasSecondaryInsurance ??
+          false,
         secondary_insurance_provider:
           profile?.secondary_insurance_provider ||
           profile?.secondaryInsuranceProvider ||
@@ -403,12 +443,16 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
           profile?.secondaryInsuranceMemberId ||
           '',
         secondary_policy_number:
-          profile?.secondary_policy_number || profile?.secondaryPolicyNumber || '',
+          profile?.secondary_policy_number ||
+          profile?.secondaryPolicyNumber ||
+          '',
       };
 
       setFormData({
-        firstname: profile?.firstname || profile?.first_name || effectiveClientFirstName,
-        lastname: profile?.lastname || profile?.last_name || effectiveClientLastName,
+        firstname:
+          profile?.firstname || profile?.first_name || effectiveClientFirstName,
+        lastname:
+          profile?.lastname || profile?.last_name || effectiveClientLastName,
         email: profile?.email || effectiveClientEmail,
         phone: profile?.phone || profile?.phone_number || '',
         address: profile?.address || profile?.address_line1 || '',
@@ -417,9 +461,12 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
         zip_code: normalizeZipCode(profile?.zip_code ?? profile?.zipCode),
         ...profileBillingState,
       });
+      setCanViewDoulaScheduling(canClientViewDoulaScheduling(profile));
       setProfileSnapshot({
-        firstname: profile?.firstname || profile?.first_name || effectiveClientFirstName,
-        lastname: profile?.lastname || profile?.last_name || effectiveClientLastName,
+        firstname:
+          profile?.firstname || profile?.first_name || effectiveClientFirstName,
+        lastname:
+          profile?.lastname || profile?.last_name || effectiveClientLastName,
         phone: profile?.phone || profile?.phone_number || '',
         address: profile?.address || profile?.address_line1 || '',
         city: profile?.city || '',
@@ -433,9 +480,12 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
 
       // Prefer dedicated billing endpoint when available; keep profile values as fallback.
       try {
-        const billingResponse = await fetchWithAuth(buildUrl('/api/clients/me/billing'), {
-          method: 'GET',
-        });
+        const billingResponse = await fetchWithAuth(
+          buildUrl('/api/clients/me/billing'),
+          {
+            method: 'GET',
+          }
+        );
         if (billingResponse.ok) {
           const billingRaw = await billingResponse.json().catch(() => ({}));
           const billing = extractBillingPayload(billingRaw);
@@ -539,8 +589,14 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
           }));
           setProfileSnapshot((prev) => ({
             ...prev,
-            firstname: profile?.firstname || profile?.first_name || effectiveClientFirstName,
-            lastname: profile?.lastname || profile?.last_name || effectiveClientLastName,
+            firstname:
+              profile?.firstname ||
+              profile?.first_name ||
+              effectiveClientFirstName,
+            lastname:
+              profile?.lastname ||
+              profile?.last_name ||
+              effectiveClientLastName,
             phone: profile?.phone || profile?.phone_number || '',
             address: profile?.address || profile?.address_line1 || '',
             city: profile?.city || '',
@@ -580,6 +636,7 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
         secondary_insurance_member_id: '',
         secondary_policy_number: '',
       });
+      setCanViewDoulaScheduling(false);
       setBillingPaymentMethodDisplay('');
     } finally {
       setIsLoading(false);
@@ -612,15 +669,20 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
     let cancelled = false;
 
     const populatePreviewUrls = async () => {
-      const imageDocs = clientDocuments.filter(isInsuranceCardDocument).filter(isImageDocument);
-      const missingDocs = imageDocs.filter((doc) => !documentPreviewUrls[doc.id]);
+      const imageDocs = clientDocuments
+        .filter(isInsuranceCardDocument)
+        .filter(isImageDocument);
+      const missingDocs = imageDocs.filter(
+        (doc) => !documentPreviewUrls[doc.id]
+      );
 
       if (missingDocs.length === 0) return;
 
       const entries = await Promise.all(
         missingDocs.map(async (doc) => {
           try {
-            const url = doc.url || (await getClientDocumentUrl('client-self', doc.id));
+            const url =
+              doc.url || (await getClientDocumentUrl('client-self', doc.id));
             return [doc.id, url] as const;
           } catch {
             return null;
@@ -739,8 +801,12 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
 
       if (view === 'billing') {
         const selectedPaymentMethod = formData.payment_method.trim();
-        const needsInsuranceDetails = requiresInsuranceDetails(selectedPaymentMethod);
-        const needsCommercialInsuranceCards = isInsuranceMethod(selectedPaymentMethod);
+        const needsInsuranceDetails = requiresInsuranceDetails(
+          selectedPaymentMethod
+        );
+        const needsCommercialInsuranceCards = isInsuranceMethod(
+          selectedPaymentMethod
+        );
 
         if (!selectedPaymentMethod) {
           toast.error('Please select a payment method.');
@@ -774,7 +840,12 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
             return;
           }
           const plan = formData.insurance_plan_type.trim();
-          if (!plan || !INSURANCE_PLAN_TYPE_OPTIONS.includes(plan as (typeof INSURANCE_PLAN_TYPE_OPTIONS)[number])) {
+          if (
+            !plan ||
+            !INSURANCE_PLAN_TYPE_OPTIONS.includes(
+              plan as (typeof INSURANCE_PLAN_TYPE_OPTIONS)[number]
+            )
+          ) {
             toast.error('Please select a plan type.');
             setIsSaving(false);
             return;
@@ -797,39 +868,69 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
             return;
           }
         }
-        if (needsCommercialInsuranceCards && (!frontInsuranceCard || !backInsuranceCard)) {
-          toast.error('Please upload both the front and back insurance cards before saving insurance billing.');
+        if (
+          needsCommercialInsuranceCards &&
+          (!frontInsuranceCard || !backInsuranceCard)
+        ) {
+          toast.error(
+            'Please upload both the front and back insurance cards before saving insurance billing.'
+          );
           setIsSaving(false);
           return;
         }
 
         const billingPayload = {
           payment_method: selectedPaymentMethod,
-          payment_authorization_status: derivePaymentAuthorizationStatus(selectedPaymentMethod),
-          insurance_policy_holder_name: needsInsuranceDetails ? formData.insurance_policy_holder_name : '',
-          insurance_policy_holder_dob: needsInsuranceDetails ? formData.insurance_policy_holder_dob : '',
+          payment_authorization_status: derivePaymentAuthorizationStatus(
+            selectedPaymentMethod
+          ),
+          insurance_policy_holder_name: needsInsuranceDetails
+            ? formData.insurance_policy_holder_name
+            : '',
+          insurance_policy_holder_dob: needsInsuranceDetails
+            ? formData.insurance_policy_holder_dob
+            : '',
           insurance_policy_holder_relationship: needsInsuranceDetails
             ? formData.insurance_policy_holder_relationship
             : '',
-          insurance_plan_type: needsInsuranceDetails ? formData.insurance_plan_type : '',
-          insurance_provider: needsInsuranceDetails ? formData.insurance_provider : '',
-          insurance_member_id: needsInsuranceDetails ? formData.insurance_member_id : '',
+          insurance_plan_type: needsInsuranceDetails
+            ? formData.insurance_plan_type
+            : '',
+          insurance_provider: needsInsuranceDetails
+            ? formData.insurance_provider
+            : '',
+          insurance_member_id: needsInsuranceDetails
+            ? formData.insurance_member_id
+            : '',
           policy_number: needsInsuranceDetails ? formData.policy_number : '',
-          insurance_phone_number: needsInsuranceDetails ? formData.insurance_phone_number : '',
-          has_secondary_insurance: needsInsuranceDetails ? formData.has_secondary_insurance : false,
-          secondary_insurance_provider: needsInsuranceDetails ? formData.secondary_insurance_provider : '',
-          secondary_insurance_member_id: needsInsuranceDetails ? formData.secondary_insurance_member_id : '',
-          secondary_policy_number: needsInsuranceDetails ? formData.secondary_policy_number : '',
+          insurance_phone_number: needsInsuranceDetails
+            ? formData.insurance_phone_number
+            : '',
+          has_secondary_insurance: needsInsuranceDetails
+            ? formData.has_secondary_insurance
+            : false,
+          secondary_insurance_provider: needsInsuranceDetails
+            ? formData.secondary_insurance_provider
+            : '',
+          secondary_insurance_member_id: needsInsuranceDetails
+            ? formData.secondary_insurance_member_id
+            : '',
+          secondary_policy_number: needsInsuranceDetails
+            ? formData.secondary_policy_number
+            : '',
           insurance: needsInsuranceDetails ? formData.insurance_provider : '',
         };
 
-        const billingResponse = await fetchWithAuth(buildUrl('/api/clients/me/billing'), {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(billingPayload),
-        });
+        const billingResponse = await fetchWithAuth(
+          buildUrl('/api/clients/me/billing'),
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(billingPayload),
+          }
+        );
 
         if (!billingResponse.ok) {
           if (isEndpointUnavailableStatus(billingResponse.status)) {
@@ -843,13 +944,17 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
               }
             );
             if (!legacyBillingResponse.ok) {
-              const legacyErrorText = await legacyBillingResponse.text().catch(() => '');
+              const legacyErrorText = await legacyBillingResponse
+                .text()
+                .catch(() => '');
               throw new Error(
                 `Failed to update billing (${legacyBillingResponse.status}) ${legacyErrorText}`.trim()
               );
             }
           } else {
-            const billingErrorText = await billingResponse.text().catch(() => '');
+            const billingErrorText = await billingResponse
+              .text()
+              .catch(() => '');
             throw new Error(
               `Failed to update billing (${billingResponse.status}) ${billingErrorText}`.trim()
             );
@@ -861,26 +966,46 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
         const persistIns = requiresInsuranceDetails(selectedPaymentMethod);
         setBillingSnapshot({
           payment_method: selectedPaymentMethod,
-          insurance_policy_holder_name: persistIns ? formData.insurance_policy_holder_name : '',
-          insurance_policy_holder_dob: persistIns ? formData.insurance_policy_holder_dob : '',
-          insurance_policy_holder_relationship: persistIns ? formData.insurance_policy_holder_relationship : '',
+          insurance_policy_holder_name: persistIns
+            ? formData.insurance_policy_holder_name
+            : '',
+          insurance_policy_holder_dob: persistIns
+            ? formData.insurance_policy_holder_dob
+            : '',
+          insurance_policy_holder_relationship: persistIns
+            ? formData.insurance_policy_holder_relationship
+            : '',
           insurance_plan_type: persistIns ? formData.insurance_plan_type : '',
           insurance_provider: persistIns ? formData.insurance_provider : '',
           insurance_member_id: persistIns ? formData.insurance_member_id : '',
           policy_number: persistIns ? formData.policy_number : '',
-          insurance_phone_number: persistIns ? formData.insurance_phone_number : '',
-          has_secondary_insurance: persistIns ? formData.has_secondary_insurance : false,
-          secondary_insurance_provider: persistIns ? formData.secondary_insurance_provider : '',
-          secondary_insurance_member_id: persistIns ? formData.secondary_insurance_member_id : '',
-          secondary_policy_number: persistIns ? formData.secondary_policy_number : '',
+          insurance_phone_number: persistIns
+            ? formData.insurance_phone_number
+            : '',
+          has_secondary_insurance: persistIns
+            ? formData.has_secondary_insurance
+            : false,
+          secondary_insurance_provider: persistIns
+            ? formData.secondary_insurance_provider
+            : '',
+          secondary_insurance_member_id: persistIns
+            ? formData.secondary_insurance_member_id
+            : '',
+          secondary_policy_number: persistIns
+            ? formData.secondary_policy_number
+            : '',
         });
         setIsBillingEditing(false);
         return;
       }
 
       const selectedPaymentMethod = formData.payment_method.trim();
-      const needsInsuranceDetails = requiresInsuranceDetails(selectedPaymentMethod);
-      const needsCommercialInsuranceCards = isInsuranceMethod(selectedPaymentMethod);
+      const needsInsuranceDetails = requiresInsuranceDetails(
+        selectedPaymentMethod
+      );
+      const needsCommercialInsuranceCards = isInsuranceMethod(
+        selectedPaymentMethod
+      );
 
       if (!selectedPaymentMethod) {
         toast.error('Please select a payment method.');
@@ -914,7 +1039,12 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
           return;
         }
         const planAll = formData.insurance_plan_type.trim();
-        if (!planAll || !INSURANCE_PLAN_TYPE_OPTIONS.includes(planAll as (typeof INSURANCE_PLAN_TYPE_OPTIONS)[number])) {
+        if (
+          !planAll ||
+          !INSURANCE_PLAN_TYPE_OPTIONS.includes(
+            planAll as (typeof INSURANCE_PLAN_TYPE_OPTIONS)[number]
+          )
+        ) {
           toast.error('Please select a plan type.');
           setIsSaving(false);
           return;
@@ -937,8 +1067,13 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
           return;
         }
       }
-      if (needsCommercialInsuranceCards && (!frontInsuranceCard || !backInsuranceCard)) {
-        toast.error('Please upload both the front and back insurance cards before saving insurance billing.');
+      if (
+        needsCommercialInsuranceCards &&
+        (!frontInsuranceCard || !backInsuranceCard)
+      ) {
+        toast.error(
+          'Please upload both the front and back insurance cards before saving insurance billing.'
+        );
         setIsSaving(false);
         return;
       }
@@ -962,32 +1097,57 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
 
       const billingPayload = {
         payment_method: selectedPaymentMethod,
-        payment_authorization_status: derivePaymentAuthorizationStatus(selectedPaymentMethod),
-        insurance_policy_holder_name: needsInsuranceDetails ? formData.insurance_policy_holder_name : '',
-        insurance_policy_holder_dob: needsInsuranceDetails ? formData.insurance_policy_holder_dob : '',
+        payment_authorization_status: derivePaymentAuthorizationStatus(
+          selectedPaymentMethod
+        ),
+        insurance_policy_holder_name: needsInsuranceDetails
+          ? formData.insurance_policy_holder_name
+          : '',
+        insurance_policy_holder_dob: needsInsuranceDetails
+          ? formData.insurance_policy_holder_dob
+          : '',
         insurance_policy_holder_relationship: needsInsuranceDetails
           ? formData.insurance_policy_holder_relationship
           : '',
-        insurance_plan_type: needsInsuranceDetails ? formData.insurance_plan_type : '',
-        insurance_provider: needsInsuranceDetails ? formData.insurance_provider : '',
-        insurance_member_id: needsInsuranceDetails ? formData.insurance_member_id : '',
+        insurance_plan_type: needsInsuranceDetails
+          ? formData.insurance_plan_type
+          : '',
+        insurance_provider: needsInsuranceDetails
+          ? formData.insurance_provider
+          : '',
+        insurance_member_id: needsInsuranceDetails
+          ? formData.insurance_member_id
+          : '',
         policy_number: needsInsuranceDetails ? formData.policy_number : '',
-        insurance_phone_number: needsInsuranceDetails ? formData.insurance_phone_number : '',
-        has_secondary_insurance: needsInsuranceDetails ? formData.has_secondary_insurance : false,
-        secondary_insurance_provider: needsInsuranceDetails ? formData.secondary_insurance_provider : '',
-        secondary_insurance_member_id: needsInsuranceDetails ? formData.secondary_insurance_member_id : '',
-        secondary_policy_number: needsInsuranceDetails ? formData.secondary_policy_number : '',
+        insurance_phone_number: needsInsuranceDetails
+          ? formData.insurance_phone_number
+          : '',
+        has_secondary_insurance: needsInsuranceDetails
+          ? formData.has_secondary_insurance
+          : false,
+        secondary_insurance_provider: needsInsuranceDetails
+          ? formData.secondary_insurance_provider
+          : '',
+        secondary_insurance_member_id: needsInsuranceDetails
+          ? formData.secondary_insurance_member_id
+          : '',
+        secondary_policy_number: needsInsuranceDetails
+          ? formData.secondary_policy_number
+          : '',
         // Keep legacy insurance field in sync where backend still uses it.
         insurance: needsInsuranceDetails ? formData.insurance_provider : '',
       };
 
-      const billingResponse = await fetchWithAuth(buildUrl('/api/clients/me/billing'), {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(billingPayload),
-      });
+      const billingResponse = await fetchWithAuth(
+        buildUrl('/api/clients/me/billing'),
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(billingPayload),
+        }
+      );
 
       if (!billingResponse.ok) {
         if (isEndpointUnavailableStatus(billingResponse.status)) {
@@ -1033,18 +1193,34 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
       const persistInsAll = requiresInsuranceDetails(selectedPaymentMethod);
       setBillingSnapshot({
         payment_method: selectedPaymentMethod,
-        insurance_policy_holder_name: persistInsAll ? formData.insurance_policy_holder_name : '',
-        insurance_policy_holder_dob: persistInsAll ? formData.insurance_policy_holder_dob : '',
-        insurance_policy_holder_relationship: persistInsAll ? formData.insurance_policy_holder_relationship : '',
+        insurance_policy_holder_name: persistInsAll
+          ? formData.insurance_policy_holder_name
+          : '',
+        insurance_policy_holder_dob: persistInsAll
+          ? formData.insurance_policy_holder_dob
+          : '',
+        insurance_policy_holder_relationship: persistInsAll
+          ? formData.insurance_policy_holder_relationship
+          : '',
         insurance_plan_type: persistInsAll ? formData.insurance_plan_type : '',
         insurance_provider: persistInsAll ? formData.insurance_provider : '',
         insurance_member_id: persistInsAll ? formData.insurance_member_id : '',
         policy_number: persistInsAll ? formData.policy_number : '',
-        insurance_phone_number: persistInsAll ? formData.insurance_phone_number : '',
-        has_secondary_insurance: persistInsAll ? formData.has_secondary_insurance : false,
-        secondary_insurance_provider: persistInsAll ? formData.secondary_insurance_provider : '',
-        secondary_insurance_member_id: persistInsAll ? formData.secondary_insurance_member_id : '',
-        secondary_policy_number: persistInsAll ? formData.secondary_policy_number : '',
+        insurance_phone_number: persistInsAll
+          ? formData.insurance_phone_number
+          : '',
+        has_secondary_insurance: persistInsAll
+          ? formData.has_secondary_insurance
+          : false,
+        secondary_insurance_provider: persistInsAll
+          ? formData.secondary_insurance_provider
+          : '',
+        secondary_insurance_member_id: persistInsAll
+          ? formData.secondary_insurance_member_id
+          : '',
+        secondary_policy_number: persistInsAll
+          ? formData.secondary_policy_number
+          : '',
       });
       setIsBillingEditing(false);
     } catch (error: any) {
@@ -1058,12 +1234,19 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
   const insuranceCardDocuments = clientDocuments
     .filter(isInsuranceCardDocument)
     .sort(compareClientDocumentsByUploadedAtDesc);
-  const frontInsuranceCard = getInsuranceCardDocumentForSide(insuranceCardDocuments, 'front');
-  const backInsuranceCard = getInsuranceCardDocumentForSide(insuranceCardDocuments, 'back');
+  const frontInsuranceCard = getInsuranceCardDocumentForSide(
+    insuranceCardDocuments,
+    'front'
+  );
+  const backInsuranceCard = getInsuranceCardDocumentForSide(
+    insuranceCardDocuments,
+    'back'
+  );
   const isProfileFormDisabled = isSaving || !isProfileEditing;
   /** Commercial / Private only: both card images required before save (Medicaid may save without). */
   const needsCommercialPrivateInsuranceCards =
-    isInsuranceMethod(formData.payment_method) && (!frontInsuranceCard || !backInsuranceCard);
+    isInsuranceMethod(formData.payment_method) &&
+    (!frontInsuranceCard || !backInsuranceCard);
   const isBillingFormDisabled = isSaving || !isBillingEditing;
   const isBillingSaveDisabled =
     isSaving || !isBillingEditing || needsCommercialPrivateInsuranceCards;
@@ -1096,21 +1279,22 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
   };
 
   const handleStartBillingEdit = () => {
-      setBillingSnapshot({
-        payment_method: formData.payment_method,
-        insurance_policy_holder_name: formData.insurance_policy_holder_name,
-        insurance_policy_holder_dob: formData.insurance_policy_holder_dob,
-        insurance_policy_holder_relationship: formData.insurance_policy_holder_relationship,
-        insurance_plan_type: formData.insurance_plan_type,
-        insurance_provider: formData.insurance_provider,
-        insurance_member_id: formData.insurance_member_id,
-        policy_number: formData.policy_number,
-        insurance_phone_number: formData.insurance_phone_number,
-        has_secondary_insurance: formData.has_secondary_insurance,
-        secondary_insurance_provider: formData.secondary_insurance_provider,
-        secondary_insurance_member_id: formData.secondary_insurance_member_id,
-        secondary_policy_number: formData.secondary_policy_number,
-      });
+    setBillingSnapshot({
+      payment_method: formData.payment_method,
+      insurance_policy_holder_name: formData.insurance_policy_holder_name,
+      insurance_policy_holder_dob: formData.insurance_policy_holder_dob,
+      insurance_policy_holder_relationship:
+        formData.insurance_policy_holder_relationship,
+      insurance_plan_type: formData.insurance_plan_type,
+      insurance_provider: formData.insurance_provider,
+      insurance_member_id: formData.insurance_member_id,
+      policy_number: formData.policy_number,
+      insurance_phone_number: formData.insurance_phone_number,
+      has_secondary_insurance: formData.has_secondary_insurance,
+      secondary_insurance_provider: formData.secondary_insurance_provider,
+      secondary_insurance_member_id: formData.secondary_insurance_member_id,
+      secondary_policy_number: formData.secondary_policy_number,
+    });
     setIsBillingEditing(true);
   };
 
@@ -1118,17 +1302,21 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
     setFormData((prev) => ({
       ...prev,
       payment_method: billingSnapshot.payment_method,
-      insurance_policy_holder_name: billingSnapshot.insurance_policy_holder_name,
+      insurance_policy_holder_name:
+        billingSnapshot.insurance_policy_holder_name,
       insurance_policy_holder_dob: billingSnapshot.insurance_policy_holder_dob,
-      insurance_policy_holder_relationship: billingSnapshot.insurance_policy_holder_relationship,
+      insurance_policy_holder_relationship:
+        billingSnapshot.insurance_policy_holder_relationship,
       insurance_plan_type: billingSnapshot.insurance_plan_type,
       insurance_provider: billingSnapshot.insurance_provider,
       insurance_member_id: billingSnapshot.insurance_member_id,
       policy_number: billingSnapshot.policy_number,
       insurance_phone_number: billingSnapshot.insurance_phone_number,
       has_secondary_insurance: billingSnapshot.has_secondary_insurance,
-      secondary_insurance_provider: billingSnapshot.secondary_insurance_provider,
-      secondary_insurance_member_id: billingSnapshot.secondary_insurance_member_id,
+      secondary_insurance_provider:
+        billingSnapshot.secondary_insurance_provider,
+      secondary_insurance_member_id:
+        billingSnapshot.secondary_insurance_member_id,
       secondary_policy_number: billingSnapshot.secondary_policy_number,
     }));
     setBillingPaymentMethodDisplay(billingSnapshot.payment_method);
@@ -1174,7 +1362,9 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
           : `Failed to upload insurance card ${side}`;
       toast.error(message);
     } finally {
-      setUploadingInsuranceCardSide((current) => (current === side ? null : current));
+      setUploadingInsuranceCardSide((current) =>
+        current === side ? null : current
+      );
     }
   };
 
@@ -1182,7 +1372,9 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
     setDeletingInsuranceCardId(documentItem.id);
     try {
       await deleteClientDocument(documentItem.id);
-      setClientDocuments((prev) => prev.filter((item) => item.id !== documentItem.id));
+      setClientDocuments((prev) =>
+        prev.filter((item) => item.id !== documentItem.id)
+      );
       setDocumentPreviewUrls((prev) => {
         const next = { ...prev };
         delete next[documentItem.id];
@@ -1255,14 +1447,19 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
   };
 
   const renderInsuranceCardDocument = (documentItem: ClientDocument) => {
-    const parsed = documentItem.uploadedAt ? parseISO(documentItem.uploadedAt) : null;
+    const parsed = documentItem.uploadedAt
+      ? parseISO(documentItem.uploadedAt)
+      : null;
     const uploadedAt =
-      parsed && isValid(parsed) ? format(parsed, 'MMM d, yyyy') : documentItem.uploadedAt || '';
+      parsed && isValid(parsed)
+        ? format(parsed, 'MMM d, yyyy')
+        : documentItem.uploadedAt || '';
     const isBusy =
       activeDocumentId === documentItem.id ||
       deletingInsuranceCardId === documentItem.id ||
       uploadingInsuranceCardSide !== null;
-    const previewUrl = documentPreviewUrls[documentItem.id] || documentItem.url || '';
+    const previewUrl =
+      documentPreviewUrls[documentItem.id] || documentItem.url || '';
     const showPreview = isImageDocument(documentItem) && previewUrl;
 
     return (
@@ -1273,9 +1470,14 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
         <div className='min-w-0 flex-1'>
           <div className='flex items-center gap-2'>
             <FileImage className='h-4 w-4 text-primary' />
-            <p className='truncate text-sm font-medium'>{documentItem.fileName}</p>
+            <p className='truncate text-sm font-medium'>
+              {documentItem.fileName}
+            </p>
             <Badge variant='secondary'>
-              {getClientDocumentLabel(documentItem.documentType, documentItem.fileName)}
+              {getClientDocumentLabel(
+                documentItem.documentType,
+                documentItem.fileName
+              )}
             </Badge>
           </div>
           <p className='mt-1 text-xs text-muted-foreground'>
@@ -1349,7 +1551,9 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
                 </div>
               ) : assignedDoulasError ? (
                 <div className='space-y-2'>
-                  <p className='text-sm text-destructive'>{assignedDoulasError}</p>
+                  <p className='text-sm text-destructive'>
+                    {assignedDoulasError}
+                  </p>
                   <Button
                     variant='outline'
                     size='sm'
@@ -1366,6 +1570,7 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
                 <div className='space-y-3'>
                   {assignedDoulas.map((assignment) => {
                     const doula = assignment.doula;
+                    const schedulingInfo = getDoulaSchedulingInfo(assignment);
                     const fullName =
                       `${doula.firstname || ''} ${doula.lastname || ''}`.trim() ||
                       doula.email;
@@ -1373,26 +1578,76 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
                       assignment.role ?? assignment.category
                     );
                     const roleLabel = role
-                      ? ASSIGNMENT_ROLE_OPTIONS.find((option) => option.value === role)
-                          ?.label || 'Unspecified'
+                      ? ASSIGNMENT_ROLE_OPTIONS.find(
+                          (option) => option.value === role
+                        )?.label || 'Unspecified'
                       : 'Unspecified';
                     return (
                       <div
                         key={assignment.id}
-                        className='flex items-center justify-between rounded-lg border p-3'
+                        className='rounded-lg border p-3'
                       >
-                        <div className='flex items-center gap-3'>
-                          <UserAvatar fullName={fullName} />
-                          <div>
-                            <p className='font-medium'>{fullName}</p>
-                            <p className='text-sm text-muted-foreground'>
-                              {doula.email}
-                            </p>
+                        <div className='flex items-start justify-between gap-3'>
+                          <div className='flex items-center gap-3'>
+                            <UserAvatar fullName={fullName} />
+                            <div>
+                              <p className='font-medium'>{fullName}</p>
+                              <p className='text-sm text-muted-foreground'>
+                                {doula.email}
+                              </p>
+                              {canViewDoulaScheduling ? (
+                                <p className='mt-1 text-xs text-muted-foreground'>
+                                  {schedulingInfo.availabilityLabel}
+                                </p>
+                              ) : null}
+                            </div>
+                          </div>
+                          <div className='flex items-center gap-2'>
+                            <Badge variant='secondary'>{roleLabel}</Badge>
+                            <Badge
+                              variant={
+                                schedulingInfo.availabilityStatus ===
+                                'unavailable'
+                                  ? 'destructive'
+                                  : 'outline'
+                              }
+                            >
+                              {canViewDoulaScheduling
+                                ? schedulingInfo.availabilityLabel
+                                : assignment.status}
+                            </Badge>
                           </div>
                         </div>
-                        <div className='flex items-center gap-2'>
-                          <Badge variant='secondary'>{roleLabel}</Badge>
-                          <Badge variant='outline'>{assignment.status}</Badge>
+                        <div className='mt-3 border-t pt-3'>
+                          {canViewDoulaScheduling ? (
+                            schedulingInfo.availabilityStatus ===
+                            'unavailable' ? (
+                              <div className='rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900'>
+                                {schedulingInfo.availabilityMessage ||
+                                  'This doula is currently unavailable, so scheduling is temporarily disabled.'}
+                              </div>
+                            ) : schedulingInfo.schedulingUrl ? (
+                              <a
+                                href={schedulingInfo.schedulingUrl}
+                                target='_blank'
+                                rel='noreferrer'
+                                className='inline-flex items-center gap-2 text-sm font-medium text-primary underline-offset-4 hover:underline'
+                              >
+                                <ExternalLink className='h-4 w-4' />
+                                Open scheduling link
+                              </a>
+                            ) : (
+                              <p className='text-sm text-muted-foreground'>
+                                Scheduling link not available yet. Contact your
+                                care team if you need help booking time.
+                              </p>
+                            )
+                          ) : (
+                            <p className='text-sm text-muted-foreground'>
+                              Scheduling becomes available once you reach the
+                              contract stage.
+                            </p>
+                          )}
                         </div>
                       </div>
                     );
@@ -1422,7 +1677,9 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
               ) : (
                 <ul className='space-y-4'>
                   {sharedNotes.map((note) => {
-                    const parsed = note.created_at ? parseISO(note.created_at) : null;
+                    const parsed = note.created_at
+                      ? parseISO(note.created_at)
+                      : null;
                     const when =
                       parsed && isValid(parsed)
                         ? format(parsed, 'MMM d, yyyy · h:mm a')
@@ -1433,14 +1690,21 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
                         className='rounded-lg border border-border p-3 text-sm'
                       >
                         <div className='mb-1 flex flex-wrap items-center gap-2'>
-                          <Badge variant='secondary' className='text-xs capitalize'>
+                          <Badge
+                            variant='secondary'
+                            className='text-xs capitalize'
+                          >
                             {note.activity_type}
                           </Badge>
                           {when ? (
-                            <span className='text-xs text-muted-foreground'>{when}</span>
+                            <span className='text-xs text-muted-foreground'>
+                              {when}
+                            </span>
                           ) : null}
                         </div>
-                        <p className='whitespace-pre-wrap text-foreground'>{note.content}</p>
+                        <p className='whitespace-pre-wrap text-foreground'>
+                          {note.content}
+                        </p>
                       </li>
                     );
                   })}
@@ -1452,576 +1716,669 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
       ) : null}
 
       {view !== 'billing' ? (
-      <Card>
-        <CardHeader>
-          <CardTitle>Profile Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className='space-y-4'>
-            <div className='mb-4 flex items-center justify-between gap-4'>
-              <div className='flex items-center gap-4'>
-              <UserAvatar
-                fullName={
-                  `${formData.firstname || ''} ${formData.lastname || ''}`.trim() ||
-                  formData.email ||
-                  'Client'
-                }
-                large
-              />
-              <div>
-                <h3 className='text-lg font-semibold'>
-                  {formData.firstname} {formData.lastname}
-                </h3>
-                <p className='text-sm text-muted-foreground'>
-                  {formData.email}
-                </p>
-              </div>
-              </div>
-              <div className='flex flex-wrap gap-2'>
-                {isProfileEditing ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Profile Information</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className='space-y-4'>
+              <div className='mb-4 flex items-center justify-between gap-4'>
+                <div className='flex items-center gap-4'>
+                  <UserAvatar
+                    fullName={
+                      `${formData.firstname || ''} ${formData.lastname || ''}`.trim() ||
+                      formData.email ||
+                      'Client'
+                    }
+                    large
+                  />
+                  <div>
+                    <h3 className='text-lg font-semibold'>
+                      {formData.firstname} {formData.lastname}
+                    </h3>
+                    <p className='text-sm text-muted-foreground'>
+                      {formData.email}
+                    </p>
+                  </div>
+                </div>
+                <div className='flex flex-wrap gap-2'>
+                  {isProfileEditing ? (
+                    <Button
+                      type='button'
+                      variant='outline'
+                      onClick={handleCancelProfileEdit}
+                      disabled={isSaving}
+                    >
+                      Cancel
+                    </Button>
+                  ) : null}
                   <Button
                     type='button'
-                    variant='outline'
-                    onClick={handleCancelProfileEdit}
-                    disabled={isSaving}
+                    variant={isProfileEditing ? 'secondary' : 'outline'}
+                    onClick={handleStartProfileEdit}
+                    disabled={isSaving || isProfileEditing}
                   >
-                    Cancel
+                    {isProfileEditing ? 'Editing Profile' : 'Edit Profile'}
                   </Button>
-                ) : null}
-                <Button
-                  type='button'
-                  variant={isProfileEditing ? 'secondary' : 'outline'}
-                  onClick={handleStartProfileEdit}
-                  disabled={isSaving || isProfileEditing}
-                >
-                  {isProfileEditing ? 'Editing Profile' : 'Edit Profile'}
+                </div>
+              </div>
+
+              <div className='grid grid-cols-2 gap-3'>
+                <div className='space-y-2'>
+                  <Label htmlFor='firstname'>First Name</Label>
+                  <Input
+                    id='firstname'
+                    value={formData.firstname}
+                    onChange={(e) =>
+                      setFormData({ ...formData, firstname: e.target.value })
+                    }
+                    disabled={isProfileFormDisabled}
+                  />
+                </div>
+
+                <div className='space-y-2'>
+                  <Label htmlFor='lastname'>Last Name</Label>
+                  <Input
+                    id='lastname'
+                    value={formData.lastname}
+                    onChange={(e) =>
+                      setFormData({ ...formData, lastname: e.target.value })
+                    }
+                    disabled={isProfileFormDisabled}
+                  />
+                </div>
+              </div>
+
+              <div className='space-y-2'>
+                <Label htmlFor='email'>Email</Label>
+                <Input
+                  id='email'
+                  type='email'
+                  value={formData.email}
+                  disabled
+                  className='bg-muted'
+                />
+                <p className='text-xs text-muted-foreground'>
+                  Email cannot be changed. Contact support if you need to update
+                  it.
+                </p>
+              </div>
+
+              <div className='space-y-2'>
+                <Label htmlFor='phone'>Phone</Label>
+                <Input
+                  id='phone'
+                  type='tel'
+                  value={formData.phone}
+                  onChange={(e) =>
+                    setFormData({ ...formData, phone: e.target.value })
+                  }
+                  disabled={isProfileFormDisabled}
+                />
+              </div>
+
+              <div className='space-y-2'>
+                <Label htmlFor='address'>Address</Label>
+                <Input
+                  id='address'
+                  value={formData.address}
+                  onChange={(e) =>
+                    setFormData({ ...formData, address: e.target.value })
+                  }
+                  disabled={isProfileFormDisabled}
+                />
+              </div>
+
+              <div className='grid grid-cols-3 gap-3'>
+                <div className='space-y-2'>
+                  <Label htmlFor='city'>City</Label>
+                  <Input
+                    id='city'
+                    value={formData.city}
+                    onChange={(e) =>
+                      setFormData({ ...formData, city: e.target.value })
+                    }
+                    disabled={isProfileFormDisabled}
+                  />
+                </div>
+
+                <div className='space-y-2'>
+                  <Label htmlFor='state'>State</Label>
+                  <Input
+                    id='state'
+                    value={formData.state}
+                    onChange={(e) =>
+                      setFormData({ ...formData, state: e.target.value })
+                    }
+                    disabled={isProfileFormDisabled}
+                  />
+                </div>
+
+                <div className='space-y-2'>
+                  <Label htmlFor='zip_code'>Zip Code</Label>
+                  <Input
+                    id='zip_code'
+                    value={formData.zip_code}
+                    onChange={(e) =>
+                      setFormData({ ...formData, zip_code: e.target.value })
+                    }
+                    disabled={isProfileFormDisabled}
+                  />
+                </div>
+              </div>
+
+              <div className='flex justify-end'>
+                <Button type='submit' disabled={isProfileFormDisabled}>
+                  {isSaving ? 'Saving...' : 'Save Profile Changes'}
                 </Button>
               </div>
-            </div>
-
-            <div className='grid grid-cols-2 gap-3'>
-              <div className='space-y-2'>
-                <Label htmlFor='firstname'>First Name</Label>
-                <Input
-                  id='firstname'
-                  value={formData.firstname}
-                  onChange={(e) =>
-                    setFormData({ ...formData, firstname: e.target.value })
-                  }
-                  disabled={isProfileFormDisabled}
-                />
-              </div>
-
-              <div className='space-y-2'>
-                <Label htmlFor='lastname'>Last Name</Label>
-                <Input
-                  id='lastname'
-                  value={formData.lastname}
-                  onChange={(e) =>
-                    setFormData({ ...formData, lastname: e.target.value })
-                  }
-                  disabled={isProfileFormDisabled}
-                />
-              </div>
-            </div>
-
-            <div className='space-y-2'>
-              <Label htmlFor='email'>Email</Label>
-              <Input
-                id='email'
-                type='email'
-                value={formData.email}
-                disabled
-                className='bg-muted'
-              />
-              <p className='text-xs text-muted-foreground'>
-                Email cannot be changed. Contact support if you need to update
-                it.
-              </p>
-            </div>
-
-            <div className='space-y-2'>
-              <Label htmlFor='phone'>Phone</Label>
-              <Input
-                id='phone'
-                type='tel'
-                value={formData.phone}
-                onChange={(e) =>
-                  setFormData({ ...formData, phone: e.target.value })
-                }
-                disabled={isProfileFormDisabled}
-              />
-            </div>
-
-            <div className='space-y-2'>
-              <Label htmlFor='address'>Address</Label>
-              <Input
-                id='address'
-                value={formData.address}
-                onChange={(e) =>
-                  setFormData({ ...formData, address: e.target.value })
-                }
-                disabled={isProfileFormDisabled}
-              />
-            </div>
-
-            <div className='grid grid-cols-3 gap-3'>
-              <div className='space-y-2'>
-                <Label htmlFor='city'>City</Label>
-                <Input
-                  id='city'
-                  value={formData.city}
-                  onChange={(e) =>
-                    setFormData({ ...formData, city: e.target.value })
-                  }
-                  disabled={isProfileFormDisabled}
-                />
-              </div>
-
-              <div className='space-y-2'>
-                <Label htmlFor='state'>State</Label>
-                <Input
-                  id='state'
-                  value={formData.state}
-                  onChange={(e) =>
-                    setFormData({ ...formData, state: e.target.value })
-                  }
-                  disabled={isProfileFormDisabled}
-                />
-              </div>
-
-              <div className='space-y-2'>
-                <Label htmlFor='zip_code'>Zip Code</Label>
-                <Input
-                  id='zip_code'
-                  value={formData.zip_code}
-                  onChange={(e) =>
-                    setFormData({ ...formData, zip_code: e.target.value })
-                  }
-                  disabled={isProfileFormDisabled}
-                />
-              </div>
-            </div>
-
-            <div className='flex justify-end'>
-              <Button type='submit' disabled={isProfileFormDisabled}>
-                {isSaving ? 'Saving...' : 'Save Profile Changes'}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+            </form>
+          </CardContent>
+        </Card>
       ) : null}
 
       {view !== 'profile' ? (
-      <Card>
-        <CardHeader>
-          <CardTitle>Billing Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className='space-y-4'>
-            <div className='flex flex-wrap items-center justify-between gap-3'>
-              <div className='space-y-1'>
-                <p className='text-sm text-muted-foreground'>
-                  Current payment method:{' '}
-                  <span className='font-medium text-foreground'>
-                    {billingPaymentMethodDisplay || 'Not set'}
-                  </span>
-                </p>
-              </div>
-              <div className='flex flex-wrap gap-2'>
-                {isBillingEditing ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Billing Information</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className='space-y-4'>
+              <div className='flex flex-wrap items-center justify-between gap-3'>
+                <div className='space-y-1'>
+                  <p className='text-sm text-muted-foreground'>
+                    Current payment method:{' '}
+                    <span className='font-medium text-foreground'>
+                      {billingPaymentMethodDisplay || 'Not set'}
+                    </span>
+                  </p>
+                </div>
+                <div className='flex flex-wrap gap-2'>
+                  {isBillingEditing ? (
+                    <Button
+                      type='button'
+                      variant='outline'
+                      onClick={handleCancelBillingEdit}
+                      disabled={isSaving}
+                    >
+                      Cancel
+                    </Button>
+                  ) : null}
                   <Button
                     type='button'
-                    variant='outline'
-                    onClick={handleCancelBillingEdit}
-                    disabled={isSaving}
+                    variant={isBillingEditing ? 'secondary' : 'outline'}
+                    onClick={handleStartBillingEdit}
+                    disabled={isSaving || isBillingEditing}
                   >
-                    Cancel
+                    {isBillingEditing ? 'Editing Billing' : 'Edit Billing'}
                   </Button>
-                ) : null}
-                <Button
-                  type='button'
-                  variant={isBillingEditing ? 'secondary' : 'outline'}
-                  onClick={handleStartBillingEdit}
-                  disabled={isSaving || isBillingEditing}
-                >
-                  {isBillingEditing ? 'Editing Billing' : 'Edit Billing'}
-                </Button>
+                </div>
               </div>
-            </div>
 
-            {(() => {
-              const msg = getPaymentMethodMessage(formData.payment_method);
-              if (!msg) return null;
-              const colors =
-                msg.variant === 'success'
-                  ? 'bg-green-50 border-green-200 text-green-800'
-                  : 'bg-blue-50 border-blue-200 text-blue-800';
-              return (
-                <div className={`rounded-lg border px-4 py-3 text-sm ${colors}`}>
-                  {msg.text}
-                </div>
-              );
-            })()}
-
-            {!isBillingEditing ? (
-              <p className='text-sm text-muted-foreground'>
-                Click <span className='font-medium text-foreground'>Edit Billing</span> to change your
-                payment method or add insurance or Medicaid card photos.
-              </p>
-            ) : (
-              <div className='space-y-6'>
-                <div className='space-y-1.5'>
-                  <Label>Payment method</Label>
-                  <Select
-                    value={formData.payment_method || undefined}
-                    onValueChange={(value) => {
-                      const clearInsurance =
-                        isSelfPayMethod(value) ||
-                        isFullSupportMethod(value) ||
-                        isNotSurePaymentMethod(value);
-                      setFormData((prev) => ({
-                        ...prev,
-                        payment_method: value,
-                        insurance_policy_holder_name: clearInsurance ? '' : prev.insurance_policy_holder_name,
-                        insurance_policy_holder_dob: clearInsurance ? '' : prev.insurance_policy_holder_dob,
-                        insurance_policy_holder_relationship: clearInsurance
-                          ? ''
-                          : prev.insurance_policy_holder_relationship,
-                        insurance_plan_type: clearInsurance ? '' : prev.insurance_plan_type,
-                        insurance_provider: clearInsurance ? '' : prev.insurance_provider,
-                        insurance_member_id: clearInsurance ? '' : prev.insurance_member_id,
-                        policy_number: clearInsurance ? '' : prev.policy_number,
-                        insurance_phone_number: clearInsurance ? '' : prev.insurance_phone_number,
-                        has_secondary_insurance: clearInsurance ? false : prev.has_secondary_insurance,
-                        secondary_insurance_provider: clearInsurance ? '' : prev.secondary_insurance_provider,
-                        secondary_insurance_member_id: clearInsurance ? '' : prev.secondary_insurance_member_id,
-                        secondary_policy_number: clearInsurance ? '' : prev.secondary_policy_number,
-                      }));
-                      setBillingPaymentMethodDisplay(value);
-                    }}
-                    disabled={isBillingFormDisabled}
+              {(() => {
+                const msg = getPaymentMethodMessage(formData.payment_method);
+                if (!msg) return null;
+                const colors =
+                  msg.variant === 'success'
+                    ? 'bg-green-50 border-green-200 text-green-800'
+                    : 'bg-blue-50 border-blue-200 text-blue-800';
+                return (
+                  <div
+                    className={`rounded-lg border px-4 py-3 text-sm ${colors}`}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder='Select payment method' />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ALL_PAYMENT_METHOD_OPTIONS.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                    {msg.text}
+                  </div>
+                );
+              })()}
 
-                {requiresInsuranceDetails(formData.payment_method) ? (
-                  <>
-                    <div className='grid gap-3 lg:grid-cols-2'>
-                      {[
-                        {
-                          side: 'front' as const,
-                          label: 'Front of Card',
-                          document: frontInsuranceCard,
-                        },
-                        {
-                          side: 'back' as const,
-                          label: 'Back of Card',
-                          document: backInsuranceCard,
-                        },
-                      ].map((slot) => (
-                        <div key={slot.side} className='rounded-lg border border-dashed p-3 space-y-3'>
-                          <div className='flex flex-col gap-2 md:flex-row md:items-center md:justify-between'>
-                            <div className='space-y-0.5'>
-                              <p className='font-medium'>
-                                Insurance {slot.label.toLowerCase()}
-                                {isInsuranceMethod(formData.payment_method) ? ' *' : ' (optional)'}
-                              </p>
+              {!isBillingEditing ? (
+                <p className='text-sm text-muted-foreground'>
+                  Click{' '}
+                  <span className='font-medium text-foreground'>
+                    Edit Billing
+                  </span>{' '}
+                  to change your payment method or add insurance or Medicaid
+                  card photos.
+                </p>
+              ) : (
+                <div className='space-y-6'>
+                  <div className='space-y-1.5'>
+                    <Label>Payment method</Label>
+                    <Select
+                      value={formData.payment_method || undefined}
+                      onValueChange={(value) => {
+                        const clearInsurance =
+                          isSelfPayMethod(value) ||
+                          isFullSupportMethod(value) ||
+                          isNotSurePaymentMethod(value);
+                        setFormData((prev) => ({
+                          ...prev,
+                          payment_method: value,
+                          insurance_policy_holder_name: clearInsurance
+                            ? ''
+                            : prev.insurance_policy_holder_name,
+                          insurance_policy_holder_dob: clearInsurance
+                            ? ''
+                            : prev.insurance_policy_holder_dob,
+                          insurance_policy_holder_relationship: clearInsurance
+                            ? ''
+                            : prev.insurance_policy_holder_relationship,
+                          insurance_plan_type: clearInsurance
+                            ? ''
+                            : prev.insurance_plan_type,
+                          insurance_provider: clearInsurance
+                            ? ''
+                            : prev.insurance_provider,
+                          insurance_member_id: clearInsurance
+                            ? ''
+                            : prev.insurance_member_id,
+                          policy_number: clearInsurance
+                            ? ''
+                            : prev.policy_number,
+                          insurance_phone_number: clearInsurance
+                            ? ''
+                            : prev.insurance_phone_number,
+                          has_secondary_insurance: clearInsurance
+                            ? false
+                            : prev.has_secondary_insurance,
+                          secondary_insurance_provider: clearInsurance
+                            ? ''
+                            : prev.secondary_insurance_provider,
+                          secondary_insurance_member_id: clearInsurance
+                            ? ''
+                            : prev.secondary_insurance_member_id,
+                          secondary_policy_number: clearInsurance
+                            ? ''
+                            : prev.secondary_policy_number,
+                        }));
+                        setBillingPaymentMethodDisplay(value);
+                      }}
+                      disabled={isBillingFormDisabled}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder='Select payment method' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ALL_PAYMENT_METHOD_OPTIONS.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {requiresInsuranceDetails(formData.payment_method) ? (
+                    <>
+                      <div className='grid gap-3 lg:grid-cols-2'>
+                        {[
+                          {
+                            side: 'front' as const,
+                            label: 'Front of Card',
+                            document: frontInsuranceCard,
+                          },
+                          {
+                            side: 'back' as const,
+                            label: 'Back of Card',
+                            document: backInsuranceCard,
+                          },
+                        ].map((slot) => (
+                          <div
+                            key={slot.side}
+                            className='rounded-lg border border-dashed p-3 space-y-3'
+                          >
+                            <div className='flex flex-col gap-2 md:flex-row md:items-center md:justify-between'>
+                              <div className='space-y-0.5'>
+                                <p className='font-medium'>
+                                  Insurance {slot.label.toLowerCase()}
+                                  {isInsuranceMethod(formData.payment_method)
+                                    ? ' *'
+                                    : ' (optional)'}
+                                </p>
+                                <p className='text-sm text-muted-foreground'>
+                                  Upload the {slot.label.toLowerCase()} of your
+                                  insurance or Medicaid ID card. Staff will be
+                                  able to view and download it from your client
+                                  profile.
+                                </p>
+                              </div>
+                              <div>
+                                <input
+                                  id={`insurance-card-${slot.side}-upload`}
+                                  type='file'
+                                  accept='.jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf'
+                                  className='hidden'
+                                  onChange={(event) =>
+                                    void handleInsuranceCardSelected(
+                                      slot.side,
+                                      event
+                                    )
+                                  }
+                                  disabled={
+                                    isBillingFormDisabled ||
+                                    uploadingInsuranceCardSide !== null ||
+                                    Boolean(deletingInsuranceCardId)
+                                  }
+                                />
+                                <Button
+                                  type='button'
+                                  onClick={() =>
+                                    document
+                                      .getElementById(
+                                        `insurance-card-${slot.side}-upload`
+                                      )
+                                      ?.click()
+                                  }
+                                  disabled={
+                                    isBillingFormDisabled ||
+                                    uploadingInsuranceCardSide !== null ||
+                                    Boolean(deletingInsuranceCardId)
+                                  }
+                                >
+                                  <Upload className='mr-2 h-4 w-4' />
+                                  {uploadingInsuranceCardSide === slot.side
+                                    ? 'Uploading...'
+                                    : slot.document
+                                      ? `Upload Another ${slot.side === 'front' ? 'Front' : 'Back'} Card`
+                                      : `Upload ${slot.side === 'front' ? 'Front' : 'Back'} Card`}
+                                </Button>
+                              </div>
+                            </div>
+
+                            {documentsLoading ? (
+                              <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+                                <Loader2 className='h-4 w-4 animate-spin' />
+                                Loading uploaded documents...
+                              </div>
+                            ) : slot.document ? (
+                              renderInsuranceCardDocument(slot.document)
+                            ) : (
                               <p className='text-sm text-muted-foreground'>
-                                Upload the {slot.label.toLowerCase()} of your insurance or Medicaid ID
-                                card. Staff will be able to view and download it from your client profile.
+                                No {slot.label.toLowerCase()} uploaded yet.
                               </p>
-                            </div>
-                            <div>
-                              <input
-                                id={`insurance-card-${slot.side}-upload`}
-                                type='file'
-                                accept='.jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf'
-                                className='hidden'
-                                onChange={(event) => void handleInsuranceCardSelected(slot.side, event)}
-                                disabled={
-                                  isBillingFormDisabled ||
-                                  uploadingInsuranceCardSide !== null ||
-                                  Boolean(deletingInsuranceCardId)
-                                }
-                              />
-                              <Button
-                                type='button'
-                                onClick={() =>
-                                  document.getElementById(`insurance-card-${slot.side}-upload`)?.click()
-                                }
-                                disabled={
-                                  isBillingFormDisabled ||
-                                  uploadingInsuranceCardSide !== null ||
-                                  Boolean(deletingInsuranceCardId)
-                                }
-                              >
-                                <Upload className='mr-2 h-4 w-4' />
-                                {uploadingInsuranceCardSide === slot.side
-                                  ? 'Uploading...'
-                                  : slot.document
-                                    ? `Upload Another ${slot.side === 'front' ? 'Front' : 'Back'} Card`
-                                    : `Upload ${slot.side === 'front' ? 'Front' : 'Back'} Card`}
-                              </Button>
-                            </div>
+                            )}
                           </div>
+                        ))}
+                      </div>
 
-                          {documentsLoading ? (
-                            <div className='flex items-center gap-2 text-sm text-muted-foreground'>
-                              <Loader2 className='h-4 w-4 animate-spin' />
-                              Loading uploaded documents...
-                            </div>
-                          ) : slot.document ? (
-                            renderInsuranceCardDocument(slot.document)
-                          ) : (
-                            <p className='text-sm text-muted-foreground'>
-                              No {slot.label.toLowerCase()} uploaded yet.
-                            </p>
-                          )}
+                      <div className='grid grid-cols-1 gap-3 md:grid-cols-2'>
+                        <div className='space-y-1.5'>
+                          <Label htmlFor='insurance_policy_holder_name'>
+                            Policy holder name *
+                          </Label>
+                          <Input
+                            id='insurance_policy_holder_name'
+                            value={formData.insurance_policy_holder_name}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                insurance_policy_holder_name: e.target.value,
+                              })
+                            }
+                            disabled={isBillingFormDisabled}
+                          />
                         </div>
-                      ))}
-                    </div>
-
-                    <div className='grid grid-cols-1 gap-3 md:grid-cols-2'>
-                      <div className='space-y-1.5'>
-                        <Label htmlFor='insurance_policy_holder_name'>Policy holder name *</Label>
-                        <Input
-                          id='insurance_policy_holder_name'
-                          value={formData.insurance_policy_holder_name}
-                          onChange={(e) =>
-                            setFormData({ ...formData, insurance_policy_holder_name: e.target.value })
-                          }
-                          disabled={isBillingFormDisabled}
-                        />
-                      </div>
-                      <div className='space-y-1.5'>
-                        <Label htmlFor='insurance_policy_holder_dob'>Policy holder date of birth *</Label>
-                        <Input
-                          id='insurance_policy_holder_dob'
-                          type='date'
-                          value={formData.insurance_policy_holder_dob}
-                          onChange={(e) =>
-                            setFormData({ ...formData, insurance_policy_holder_dob: e.target.value })
-                          }
-                          disabled={isBillingFormDisabled}
-                        />
-                      </div>
-                    </div>
-
-                    <div className='space-y-1.5'>
-                      <Label htmlFor='insurance_policy_holder_relationship'>
-                        Relationship of policy holder to you *
-                      </Label>
-                      <select
-                        id='insurance_policy_holder_relationship'
-                        className='flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
-                        value={formData.insurance_policy_holder_relationship}
-                        onChange={(e) =>
-                          setFormData({ ...formData, insurance_policy_holder_relationship: e.target.value })
-                        }
-                        disabled={isBillingFormDisabled}
-                      >
-                        <option value=''>Select relationship</option>
-                        {INSURANCE_POLICY_HOLDER_RELATIONSHIP_OPTIONS.map((opt) => (
-                          <option key={opt} value={opt}>
-                            {opt}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className='space-y-1.5'>
-                      <Label htmlFor='insurance_provider'>Insurance company name *</Label>
-                      <Input
-                        id='insurance_provider'
-                        value={formData.insurance_provider}
-                        onChange={(e) =>
-                          setFormData({ ...formData, insurance_provider: e.target.value })
-                        }
-                        disabled={isBillingFormDisabled}
-                      />
-                    </div>
-
-                    <div className='grid grid-cols-2 gap-3'>
-                      <div className='space-y-1.5'>
-                        <Label htmlFor='insurance_member_id'>Member ID / Subscriber ID *</Label>
-                        <Input
-                          id='insurance_member_id'
-                          value={formData.insurance_member_id}
-                          onChange={(e) =>
-                            setFormData({ ...formData, insurance_member_id: e.target.value })
-                          }
-                          disabled={isBillingFormDisabled}
-                        />
+                        <div className='space-y-1.5'>
+                          <Label htmlFor='insurance_policy_holder_dob'>
+                            Policy holder date of birth *
+                          </Label>
+                          <Input
+                            id='insurance_policy_holder_dob'
+                            type='date'
+                            value={formData.insurance_policy_holder_dob}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                insurance_policy_holder_dob: e.target.value,
+                              })
+                            }
+                            disabled={isBillingFormDisabled}
+                          />
+                        </div>
                       </div>
 
                       <div className='space-y-1.5'>
-                        <Label htmlFor='policy_number'>Group number (optional)</Label>
-                        <Input
-                          id='policy_number'
-                          value={formData.policy_number}
-                          onChange={(e) =>
-                            setFormData({ ...formData, policy_number: e.target.value })
-                          }
-                          disabled={isBillingFormDisabled}
-                        />
-                      </div>
-                    </div>
-
-                    <div className='space-y-1.5'>
-                      <Label htmlFor='insurance_plan_type'>Plan type *</Label>
-                      <select
-                        id='insurance_plan_type'
-                        className='flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
-                        value={formData.insurance_plan_type}
-                        onChange={(e) =>
-                          setFormData({ ...formData, insurance_plan_type: e.target.value })
-                        }
-                        disabled={isBillingFormDisabled}
-                      >
-                        <option value=''>Select plan type</option>
-                        {INSURANCE_PLAN_TYPE_OPTIONS.map((opt) => (
-                          <option key={opt} value={opt}>
-                            {opt}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className='space-y-1.5'>
-                      <Label htmlFor='insurance_phone_number'>Insurance Phone Number</Label>
-                      <Input
-                        id='insurance_phone_number'
-                        value={formData.insurance_phone_number}
-                        onChange={(e) =>
-                          setFormData({ ...formData, insurance_phone_number: e.target.value })
-                        }
-                        disabled={isBillingFormDisabled}
-                      />
-                    </div>
-
-                    <div className='space-y-2 rounded-lg border p-3'>
-                      <label className='flex items-center gap-2 text-sm font-medium'>
-                        <input
-                          type='checkbox'
-                          checked={formData.has_secondary_insurance}
+                        <Label htmlFor='insurance_policy_holder_relationship'>
+                          Relationship of policy holder to you *
+                        </Label>
+                        <select
+                          id='insurance_policy_holder_relationship'
+                          className='flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
+                          value={formData.insurance_policy_holder_relationship}
                           onChange={(e) =>
                             setFormData({
                               ...formData,
-                              has_secondary_insurance: e.target.checked,
-                              secondary_insurance_provider: e.target.checked
-                                ? formData.secondary_insurance_provider
-                                : '',
-                              secondary_insurance_member_id: e.target.checked
-                                ? formData.secondary_insurance_member_id
-                                : '',
-                              secondary_policy_number: e.target.checked
-                                ? formData.secondary_policy_number
-                                : '',
+                              insurance_policy_holder_relationship:
+                                e.target.value,
+                            })
+                          }
+                          disabled={isBillingFormDisabled}
+                        >
+                          <option value=''>Select relationship</option>
+                          {INSURANCE_POLICY_HOLDER_RELATIONSHIP_OPTIONS.map(
+                            (opt) => (
+                              <option key={opt} value={opt}>
+                                {opt}
+                              </option>
+                            )
+                          )}
+                        </select>
+                      </div>
+
+                      <div className='space-y-1.5'>
+                        <Label htmlFor='insurance_provider'>
+                          Insurance company name *
+                        </Label>
+                        <Input
+                          id='insurance_provider'
+                          value={formData.insurance_provider}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              insurance_provider: e.target.value,
                             })
                           }
                           disabled={isBillingFormDisabled}
                         />
-                        Secondary Insurance?
-                      </label>
+                      </div>
 
-                      {formData.has_secondary_insurance ? (
-                        <>
-                          <div className='space-y-1.5'>
-                            <Label htmlFor='secondary_insurance_provider'>Secondary Provider *</Label>
-                            <Input
-                              id='secondary_insurance_provider'
-                              value={formData.secondary_insurance_provider}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  secondary_insurance_provider: e.target.value,
-                                })
-                              }
-                              disabled={isBillingFormDisabled}
-                            />
-                          </div>
-                          <div className='grid grid-cols-2 gap-3'>
+                      <div className='grid grid-cols-2 gap-3'>
+                        <div className='space-y-1.5'>
+                          <Label htmlFor='insurance_member_id'>
+                            Member ID / Subscriber ID *
+                          </Label>
+                          <Input
+                            id='insurance_member_id'
+                            value={formData.insurance_member_id}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                insurance_member_id: e.target.value,
+                              })
+                            }
+                            disabled={isBillingFormDisabled}
+                          />
+                        </div>
+
+                        <div className='space-y-1.5'>
+                          <Label htmlFor='policy_number'>
+                            Group number (optional)
+                          </Label>
+                          <Input
+                            id='policy_number'
+                            value={formData.policy_number}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                policy_number: e.target.value,
+                              })
+                            }
+                            disabled={isBillingFormDisabled}
+                          />
+                        </div>
+                      </div>
+
+                      <div className='space-y-1.5'>
+                        <Label htmlFor='insurance_plan_type'>Plan type *</Label>
+                        <select
+                          id='insurance_plan_type'
+                          className='flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
+                          value={formData.insurance_plan_type}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              insurance_plan_type: e.target.value,
+                            })
+                          }
+                          disabled={isBillingFormDisabled}
+                        >
+                          <option value=''>Select plan type</option>
+                          {INSURANCE_PLAN_TYPE_OPTIONS.map((opt) => (
+                            <option key={opt} value={opt}>
+                              {opt}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className='space-y-1.5'>
+                        <Label htmlFor='insurance_phone_number'>
+                          Insurance Phone Number
+                        </Label>
+                        <Input
+                          id='insurance_phone_number'
+                          value={formData.insurance_phone_number}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              insurance_phone_number: e.target.value,
+                            })
+                          }
+                          disabled={isBillingFormDisabled}
+                        />
+                      </div>
+
+                      <div className='space-y-2 rounded-lg border p-3'>
+                        <label className='flex items-center gap-2 text-sm font-medium'>
+                          <input
+                            type='checkbox'
+                            checked={formData.has_secondary_insurance}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                has_secondary_insurance: e.target.checked,
+                                secondary_insurance_provider: e.target.checked
+                                  ? formData.secondary_insurance_provider
+                                  : '',
+                                secondary_insurance_member_id: e.target.checked
+                                  ? formData.secondary_insurance_member_id
+                                  : '',
+                                secondary_policy_number: e.target.checked
+                                  ? formData.secondary_policy_number
+                                  : '',
+                              })
+                            }
+                            disabled={isBillingFormDisabled}
+                          />
+                          Secondary Insurance?
+                        </label>
+
+                        {formData.has_secondary_insurance ? (
+                          <>
                             <div className='space-y-1.5'>
-                              <Label htmlFor='secondary_insurance_member_id'>Secondary Member ID *</Label>
+                              <Label htmlFor='secondary_insurance_provider'>
+                                Secondary Provider *
+                              </Label>
                               <Input
-                                id='secondary_insurance_member_id'
-                                value={formData.secondary_insurance_member_id}
+                                id='secondary_insurance_provider'
+                                value={formData.secondary_insurance_provider}
                                 onChange={(e) =>
                                   setFormData({
                                     ...formData,
-                                    secondary_insurance_member_id: e.target.value,
+                                    secondary_insurance_provider:
+                                      e.target.value,
                                   })
                                 }
                                 disabled={isBillingFormDisabled}
                               />
                             </div>
-                            <div className='space-y-1.5'>
-                              <Label htmlFor='secondary_policy_number'>Secondary Policy Number *</Label>
-                              <Input
-                                id='secondary_policy_number'
-                                value={formData.secondary_policy_number}
-                                onChange={(e) =>
-                                  setFormData({
-                                    ...formData,
-                                    secondary_policy_number: e.target.value,
-                                  })
-                                }
-                                disabled={isBillingFormDisabled}
-                              />
+                            <div className='grid grid-cols-2 gap-3'>
+                              <div className='space-y-1.5'>
+                                <Label htmlFor='secondary_insurance_member_id'>
+                                  Secondary Member ID *
+                                </Label>
+                                <Input
+                                  id='secondary_insurance_member_id'
+                                  value={formData.secondary_insurance_member_id}
+                                  onChange={(e) =>
+                                    setFormData({
+                                      ...formData,
+                                      secondary_insurance_member_id:
+                                        e.target.value,
+                                    })
+                                  }
+                                  disabled={isBillingFormDisabled}
+                                />
+                              </div>
+                              <div className='space-y-1.5'>
+                                <Label htmlFor='secondary_policy_number'>
+                                  Secondary Policy Number *
+                                </Label>
+                                <Input
+                                  id='secondary_policy_number'
+                                  value={formData.secondary_policy_number}
+                                  onChange={(e) =>
+                                    setFormData({
+                                      ...formData,
+                                      secondary_policy_number: e.target.value,
+                                    })
+                                  }
+                                  disabled={isBillingFormDisabled}
+                                />
+                              </div>
                             </div>
-                          </div>
-                        </>
-                      ) : null}
-                    </div>
-                  </>
-                ) : null}
+                          </>
+                        ) : null}
+                      </div>
+                    </>
+                  ) : null}
 
-                {isSelfPayMethod(formData.payment_method) ? (
-                  <p className='text-sm text-muted-foreground'>
-                    Self-pay billing is supported without storing credit card details in this portal.
-                  </p>
-                ) : null}
+                  {isSelfPayMethod(formData.payment_method) ? (
+                    <p className='text-sm text-muted-foreground'>
+                      Self-pay billing is supported without storing credit card
+                      details in this portal.
+                    </p>
+                  ) : null}
 
-                {!formData.payment_method.trim() ? (
-                  <p className='text-sm text-muted-foreground'>
-                    Choose a payment method above to configure the rest of your billing details.
-                  </p>
-                ) : null}
+                  {!formData.payment_method.trim() ? (
+                    <p className='text-sm text-muted-foreground'>
+                      Choose a payment method above to configure the rest of
+                      your billing details.
+                    </p>
+                  ) : null}
 
-                <div className='flex justify-end'>
-                  <Button
-                    type='submit'
-                    disabled={isBillingSaveDisabled}
-                    title={
-                      needsCommercialPrivateInsuranceCards
-                        ? 'Upload front and back insurance cards to enable saving'
-                        : undefined
-                    }
-                  >
-                    {isSaving
-                      ? 'Saving...'
-                      : needsCommercialPrivateInsuranceCards
-                        ? 'Upload Insurance Card'
-                        : 'Save Billing Changes'}
-                  </Button>
+                  <div className='flex justify-end'>
+                    <Button
+                      type='submit'
+                      disabled={isBillingSaveDisabled}
+                      title={
+                        needsCommercialPrivateInsuranceCards
+                          ? 'Upload front and back insurance cards to enable saving'
+                          : undefined
+                      }
+                    >
+                      {isSaving
+                        ? 'Saving...'
+                        : needsCommercialPrivateInsuranceCards
+                          ? 'Upload Insurance Card'
+                          : 'Save Billing Changes'}
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            )}
-          </form>
-        </CardContent>
-      </Card>
+              )}
+            </form>
+          </CardContent>
+        </Card>
       ) : null}
 
       {view !== 'profile' && !isMedicaidMethod(formData.payment_method) ? (
@@ -2031,11 +2388,15 @@ export default function ClientProfileTab({ view = 'all' }: ClientProfileTabProps
           </CardHeader>
           <CardContent className='space-y-4'>
             <p className='text-sm text-muted-foreground'>
-              For plans that require a card or bank payment on file, we collect that through a{' '}
-              <span className='font-medium text-foreground'>payment authorization form</span>—not by
-              entering card numbers in this portal. Download the form below, complete it, and return
-              it to your care team as they instruct. When we have your authorization on file, your
-              status will show in billing.
+              For plans that require a card or bank payment on file, we collect
+              that through a{' '}
+              <span className='font-medium text-foreground'>
+                payment authorization form
+              </span>
+              —not by entering card numbers in this portal. Download the form
+              below, complete it, and return it to your care team as they
+              instruct. When we have your authorization on file, your status
+              will show in billing.
             </p>
             <Button variant='outline' size='sm' className='w-fit' asChild>
               <a

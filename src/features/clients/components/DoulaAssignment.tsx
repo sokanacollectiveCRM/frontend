@@ -10,6 +10,7 @@ import {
   unassignDoula,
 } from '@/api/clients/doulaAssignments';
 import { Alert, AlertDescription } from '@/common/components/ui/alert';
+import { Badge } from '@/common/components/ui/badge';
 import { Button } from '@/common/components/ui/button';
 import {
   Command,
@@ -32,7 +33,16 @@ import {
   SelectValue,
 } from '@/common/components/ui/select';
 import { cn } from '@/lib/utils';
-import { Check, ChevronsUpDown, Loader2, UserPlus, Users, X } from 'lucide-react';
+import { getDoulaSchedulingInfo } from '@/common/utils/doulaScheduling';
+import {
+  Check,
+  ChevronsUpDown,
+  ExternalLink,
+  Loader2,
+  UserPlus,
+  Users,
+  X,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -45,9 +55,14 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
   const [availableDoulas, setAvailableDoulas] = useState<Doula[]>([]);
   const [assignedDoulas, setAssignedDoulas] = useState<AssignedDoula[]>([]);
   const [selectedDoulaId, setSelectedDoulaId] = useState<string>('');
-  const [selectedRole, setSelectedRole] = useState<DoulaAssignmentRole>('primary');
+  const [selectedRole, setSelectedRole] =
+    useState<DoulaAssignmentRole>('primary');
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState({ list: false, assign: false, remove: null as string | null });
+  const [loading, setLoading] = useState({
+    list: false,
+    assign: false,
+    remove: null as string | null,
+  });
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -73,7 +88,9 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
       setAssignedDoulas(assigned);
     } catch (err) {
       console.error('Error loading doula data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load doula data');
+      setError(
+        err instanceof Error ? err.message : 'Failed to load doula data'
+      );
     } finally {
       setLoading((prev) => ({ ...prev, list: false }));
     }
@@ -83,7 +100,9 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
     if (!selectedDoulaId) return;
 
     // Check if doula is already assigned
-    const isAlreadyAssigned = assignedDoulas.some((a) => a.doulaId === selectedDoulaId);
+    const isAlreadyAssigned = assignedDoulas.some(
+      (a) => a.doulaId === selectedDoulaId
+    );
     if (isAlreadyAssigned) {
       toast.error('This doula is already assigned to this client');
       return;
@@ -112,7 +131,8 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
       setAssignedDoulas(assigned);
     } catch (err) {
       console.error('Error assigning doula:', err);
-      const errorMsg = err instanceof Error ? err.message : 'Failed to assign doula';
+      const errorMsg =
+        err instanceof Error ? err.message : 'Failed to assign doula';
       setError(errorMsg);
       toast.error(errorMsg);
     } finally {
@@ -133,7 +153,8 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
       setAssignedDoulas(assigned);
     } catch (err) {
       console.error('Error removing doula:', err);
-      const errorMsg = err instanceof Error ? err.message : 'Failed to remove doula';
+      const errorMsg =
+        err instanceof Error ? err.message : 'Failed to remove doula';
       setError(errorMsg);
       toast.error(errorMsg);
     } finally {
@@ -147,6 +168,9 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
 
   // Get selected doula details
   const selectedDoula = availableDoulas.find((d) => d.id === selectedDoulaId);
+  const selectedDoulaScheduling = selectedDoula
+    ? getDoulaSchedulingInfo(selectedDoula)
+    : null;
   const getRole = (assignment: AssignedDoula): DoulaAssignmentRole | null =>
     normalizeAssignmentRole(assignment.role ?? assignment.category);
   const hasPrimaryAssigned = assignedDoulas.some(
@@ -164,65 +188,74 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
     (selectedRole === 'backup' && hasBackupAssigned);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 pb-2 border-b">
-        <Users className="h-5 w-5 text-muted-foreground" />
-        <h3 className="font-semibold text-base">Doula Assignment</h3>
+    <div className='space-y-4'>
+      <div className='flex items-center gap-2 pb-2 border-b'>
+        <Users className='h-5 w-5 text-muted-foreground' />
+        <h3 className='font-semibold text-base'>Doula Assignment</h3>
       </div>
 
       {error && (
-        <Alert variant="destructive">
+        <Alert variant='destructive'>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
       {/* Assign new doula section - only show if user has permission */}
       {canAssign && (
-        <div className="space-y-3">
+        <div className='space-y-3'>
           {/* Combobox with search and Assign Button */}
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-            <div className="flex-1 space-y-1">
-              <label className="text-sm font-medium text-muted-foreground">
-                Select Doula {availableDoulas.length > 0 && `(${availableDoulas.length} available)`}
+          <div className='flex flex-col gap-2 sm:flex-row sm:items-end'>
+            <div className='flex-1 space-y-1'>
+              <label className='text-sm font-medium text-muted-foreground'>
+                Select Doula{' '}
+                {availableDoulas.length > 0 &&
+                  `(${availableDoulas.length} available)`}
               </label>
               <Popover open={open} onOpenChange={setOpen}>
                 <PopoverTrigger asChild>
                   <Button
-                    variant="outline"
-                    role="combobox"
+                    variant='outline'
+                    role='combobox'
                     aria-expanded={open}
                     disabled={loading.list || availableDoulas.length === 0}
-                    className="w-full justify-between"
+                    className='w-full justify-between'
                   >
                     {loading.list ? (
                       <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        <Loader2 className='h-4 w-4 mr-2 animate-spin' />
                         Loading doulas...
                       </>
                     ) : selectedDoula ? (
-                      <span className="flex items-center gap-2">
-                        <div className="h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold">
-                          {getInitials(selectedDoula.firstname, selectedDoula.lastname)}
+                      <span className='flex items-center gap-2'>
+                        <div className='h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold'>
+                          {getInitials(
+                            selectedDoula.firstname,
+                            selectedDoula.lastname
+                          )}
                         </div>
-                        <span>{selectedDoula.firstname} {selectedDoula.lastname}</span>
-                        <span className="text-muted-foreground text-xs">({selectedDoula.email})</span>
+                        <span>
+                          {selectedDoula.firstname} {selectedDoula.lastname}
+                        </span>
+                        <span className='text-muted-foreground text-xs'>
+                          ({selectedDoula.email})
+                        </span>
                       </span>
                     ) : availableDoulas.length === 0 ? (
-                      "No doulas available"
+                      'No doulas available'
                     ) : (
-                      "Search and select a doula..."
+                      'Search and select a doula...'
                     )}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="w-full p-0 z-[10000]"
-                  align="start"
+                  className='w-full p-0 z-[10000]'
+                  align='start'
                   style={{ width: 'var(--radix-popover-trigger-width)' }}
                   sideOffset={5}
                 >
                   <Command>
-                    <CommandInput placeholder="Search by name or email..." />
+                    <CommandInput placeholder='Search by name or email...' />
                     <CommandList>
                       <CommandEmpty>No doulas found.</CommandEmpty>
                       <CommandGroup>
@@ -231,34 +264,54 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
                             key={doula.id}
                             value={`${doula.firstname} ${doula.lastname} ${doula.email}`}
                             onSelect={() => {
-                              setSelectedDoulaId(doula.id === selectedDoulaId ? '' : doula.id);
+                              setSelectedDoulaId(
+                                doula.id === selectedDoulaId ? '' : doula.id
+                              );
                               console.log('🔍 Selected doula ID:', doula.id);
                             }}
                           >
                             <Check
                               className={cn(
                                 'mr-2 h-4 w-4',
-                                selectedDoulaId === doula.id ? 'opacity-100' : 'opacity-0'
+                                selectedDoulaId === doula.id
+                                  ? 'opacity-100'
+                                  : 'opacity-0'
                               )}
                             />
-                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <div className='flex items-center gap-2 flex-1 min-w-0'>
                               {doula.profile_picture ? (
                                 <img
                                   src={doula.profile_picture}
                                   alt={`${doula.firstname} ${doula.lastname}`}
-                                  className="h-6 w-6 rounded-full object-cover flex-shrink-0"
+                                  className='h-6 w-6 rounded-full object-cover flex-shrink-0'
                                 />
                               ) : (
-                                <div className="h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold flex-shrink-0">
+                                <div className='h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold flex-shrink-0'>
                                   {getInitials(doula.firstname, doula.lastname)}
                                 </div>
                               )}
-                              <div className="flex-1 min-w-0">
-                                <div className="font-medium text-sm truncate">
+                              <div className='flex-1 min-w-0'>
+                                <div className='font-medium text-sm truncate'>
                                   {doula.firstname} {doula.lastname}
                                 </div>
-                                <div className="text-xs text-muted-foreground truncate">
-                                  {doula.email}
+                                <div className='flex items-center gap-2 text-xs text-muted-foreground'>
+                                  <span className='truncate'>
+                                    {doula.email}
+                                  </span>
+                                  <Badge
+                                    variant={
+                                      getDoulaSchedulingInfo(doula)
+                                        .availabilityStatus === 'unavailable'
+                                        ? 'destructive'
+                                        : 'outline'
+                                    }
+                                    className='h-5'
+                                  >
+                                    {
+                                      getDoulaSchedulingInfo(doula)
+                                        .availabilityLabel
+                                    }
+                                  </Badge>
                                 </div>
                               </div>
                             </div>
@@ -270,8 +323,8 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
                 </PopoverContent>
               </Popover>
             </div>
-            <div className="w-full space-y-1 sm:w-[160px]">
-              <label className="text-sm font-medium text-muted-foreground">
+            <div className='w-full space-y-1 sm:w-[160px]'>
+              <label className='text-sm font-medium text-muted-foreground'>
                 Role
               </label>
               <Select
@@ -281,7 +334,7 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select role" />
+                  <SelectValue placeholder='Select role' />
                 </SelectTrigger>
                 <SelectContent>
                   {ASSIGNMENT_ROLE_OPTIONS.map((option) => {
@@ -310,16 +363,16 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
                 availableDoulas.length === 0 ||
                 assignmentDisabledByRole
               }
-              size="default"
+              size='default'
             >
               {loading.assign ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className='h-4 w-4 mr-2 animate-spin' />
                   Assigning...
                 </>
               ) : (
                 <>
-                  <UserPlus className="h-4 w-4 mr-2" />
+                  <UserPlus className='h-4 w-4 mr-2' />
                   Assign
                 </>
               )}
@@ -329,31 +382,60 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
           {/* Clear selection button */}
           {selectedDoulaId && !loading.assign && (
             <Button
-              variant="ghost"
-              size="sm"
+              variant='ghost'
+              size='sm'
               onClick={() => {
                 setSelectedDoulaId('');
                 setOpen(false);
               }}
-              className="h-8 text-xs"
+              className='h-8 text-xs'
             >
-              <X className="h-3 w-3 mr-1" />
+              <X className='h-3 w-3 mr-1' />
               Clear selection
             </Button>
           )}
 
           {/* Helper text */}
           {!loading.list && (
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground">{roleAvailabilityText}</p>
+            <div className='space-y-1'>
+              <p className='text-xs text-muted-foreground'>
+                {roleAvailabilityText}
+              </p>
+              {selectedDoulaScheduling && (
+                <>
+                  {selectedDoulaScheduling.schedulingUrl ? (
+                    <a
+                      href={selectedDoulaScheduling.schedulingUrl}
+                      target='_blank'
+                      rel='noreferrer'
+                      className='inline-flex items-center gap-1 text-xs text-primary underline-offset-4 hover:underline'
+                    >
+                      <ExternalLink className='h-3 w-3' />
+                      View selected doula scheduling link
+                    </a>
+                  ) : (
+                    <p className='text-xs text-muted-foreground'>
+                      Selected doula has no scheduling link on file.
+                    </p>
+                  )}
+                  {selectedDoulaScheduling.availabilityStatus ===
+                    'unavailable' &&
+                    selectedDoulaScheduling.availabilityMessage && (
+                      <p className='text-xs text-amber-700'>
+                        {selectedDoulaScheduling.availabilityMessage}
+                      </p>
+                    )}
+                </>
+              )}
               {assignmentDisabledByRole && (
-                <p className="text-xs text-amber-600">
+                <p className='text-xs text-amber-600'>
                   The selected role is already taken for this client.
                 </p>
               )}
               {availableDoulas.length === 0 && (
-                <p className="text-xs text-muted-foreground">
-                  No doulas are currently available in the team. Please add doula team members first.
+                <p className='text-xs text-muted-foreground'>
+                  No doulas are currently available in the team. Please add
+                  doula team members first.
                 </p>
               )}
             </div>
@@ -362,22 +444,23 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
       )}
 
       {/* List of assigned doulas */}
-      <div className="space-y-2">
-        <h4 className="text-sm font-medium text-muted-foreground">
-          Assigned Doulas {loading.list && <span className="text-xs">(Loading...)</span>}
+      <div className='space-y-2'>
+        <h4 className='text-sm font-medium text-muted-foreground'>
+          Assigned Doulas{' '}
+          {loading.list && <span className='text-xs'>(Loading...)</span>}
         </h4>
 
         {loading.list && assignedDoulas.length === 0 ? (
-          <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          <div className='flex items-center justify-center py-8 text-sm text-muted-foreground'>
+            <Loader2 className='h-4 w-4 mr-2 animate-spin' />
             Loading doulas...
           </div>
         ) : assignedDoulas.length === 0 ? (
-          <div className="text-center py-8 text-sm text-muted-foreground border border-dashed rounded-lg">
+          <div className='text-center py-8 text-sm text-muted-foreground border border-dashed rounded-lg'>
             No doulas assigned yet
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className='space-y-2'>
             {assignedDoulas.map((assignment) => {
               const { doula } = assignment;
               const isRemoving = loading.remove === assignment.doulaId;
@@ -386,51 +469,81 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
               return (
                 <div
                   key={assignment.id}
-                  className="flex items-center gap-3 p-3 border rounded-lg bg-background hover:bg-muted/50 transition-colors"
+                  className='flex items-center gap-3 p-3 border rounded-lg bg-background hover:bg-muted/50 transition-colors'
                 >
                   {/* Avatar/Initials */}
-                  <div className="flex-shrink-0">
+                  <div className='flex-shrink-0'>
                     {doula.profile_picture ? (
                       <img
                         src={doula.profile_picture}
                         alt={`${doula.firstname} ${doula.lastname}`}
-                        className="h-10 w-10 rounded-full object-cover"
+                        className='h-10 w-10 rounded-full object-cover'
                       />
                     ) : (
-                      <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-sm">
+                      <div className='h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-sm'>
                         {getInitials(doula.firstname, doula.lastname)}
                       </div>
                     )}
                   </div>
 
                   {/* Doula Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm">
+                  <div className='flex-1 min-w-0'>
+                    <div className='font-medium text-sm'>
                       {doula.firstname} {doula.lastname}
                     </div>
-                    <div className="text-xs text-muted-foreground truncate">{doula.email}</div>
+                    <div className='text-xs text-muted-foreground truncate'>
+                      {doula.email}
+                    </div>
+                    {(() => {
+                      const scheduling = getDoulaSchedulingInfo(assignment);
+                      return (
+                        <div className='mt-1 flex flex-wrap items-center gap-2'>
+                          <Badge
+                            variant={
+                              scheduling.availabilityStatus === 'unavailable'
+                                ? 'destructive'
+                                : 'outline'
+                            }
+                            className='h-5'
+                          >
+                            {scheduling.availabilityLabel}
+                          </Badge>
+                          {scheduling.schedulingUrl ? (
+                            <a
+                              href={scheduling.schedulingUrl}
+                              target='_blank'
+                              rel='noreferrer'
+                              className='inline-flex items-center gap-1 text-xs text-primary underline-offset-4 hover:underline'
+                            >
+                              <ExternalLink className='h-3 w-3' />
+                              Scheduling link
+                            </a>
+                          ) : null}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Status & Actions */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                  <div className='flex items-center gap-2'>
+                    <span className='text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full'>
                       {role ? roleLabelByValue.get(role) : 'Unspecified'}
                     </span>
-                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                    <span className='text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full'>
                       {assignment.status}
                     </span>
                     {canAssign && (
                       <Button
-                        variant="ghost"
-                        size="sm"
+                        variant='ghost'
+                        size='sm'
                         onClick={() => handleRemove(assignment.doulaId)}
                         disabled={isRemoving}
-                        className="h-8 w-8 p-0"
+                        className='h-8 w-8 p-0'
                       >
                         {isRemoving ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <Loader2 className='h-4 w-4 animate-spin' />
                         ) : (
-                          <X className="h-4 w-4" />
+                          <X className='h-4 w-4' />
                         )}
                       </Button>
                     )}

@@ -20,7 +20,12 @@ import {
   AlertTriangle,
   CheckCircle2,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/common/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/common/components/ui/card';
 import { Button } from '@/common/components/ui/button';
 import { Badge } from '@/common/components/ui/badge';
 import { Header } from '@/common/layouts/Header';
@@ -28,7 +33,12 @@ import { Main } from '@/common/layouts/Main';
 import { ProfileDropdown } from '@/common/components/user/ProfileDropdown';
 import UserAvatar from '@/common/components/user/UserAvatar';
 import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
-import { getDoulaById, getDoulaVisits, getDoulaNotes, getActivityLog } from '@/api/doulas/doulaApi';
+import {
+  getDoulaById,
+  getDoulaVisits,
+  getDoulaNotes,
+  getActivityLog,
+} from '@/api/doulas/doulaApi';
 import { fetchDoulaAssignments } from '@/api/doulas/doulaDirectoryApi';
 import type {
   Doula,
@@ -42,6 +52,7 @@ import { STATUS_LABELS } from '@/features/clients/data/schema';
 import { format } from 'date-fns';
 import { EditDoulaDialog } from './EditDoulaDialog';
 import { AdminDoulaDocumentsSection } from './AdminDoulaDocumentsSection';
+import { getDoulaSchedulingInfo } from '@/common/utils/doulaScheduling';
 
 export default function DoulaDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -64,7 +75,7 @@ export default function DoulaDetailPage() {
   }, [authLoading, user, navigate]);
 
   useEffect(() => {
-    if (id && (!authLoading && user?.role === 'admin')) {
+    if (id && !authLoading && user?.role === 'admin') {
       fetchDoulaData();
     }
   }, [id, authLoading, user]);
@@ -113,10 +124,30 @@ export default function DoulaDetailPage() {
         specialties: null,
         certifications: null,
         bio: doulaMember.bio || null,
+        scheduling_url:
+          doulaMember.scheduling_url ??
+          doulaMember.schedulingUrl ??
+          doulaMember.calendar_url ??
+          doulaMember.calendarUrl ??
+          null,
+        availability_status:
+          doulaMember.availability_status ??
+          doulaMember.availabilityStatus ??
+          null,
+        availability_note:
+          doulaMember.availability_note ?? doulaMember.availabilityNote ?? null,
+        unavailable_from:
+          doulaMember.unavailable_from ?? doulaMember.unavailableFrom ?? null,
+        unavailable_until:
+          doulaMember.unavailable_until ?? doulaMember.unavailableUntil ?? null,
         pronouns: doulaMember.pronouns ?? null,
-        race_ethnicity: Array.isArray(doulaMember.race_ethnicity) ? doulaMember.race_ethnicity : null,
+        race_ethnicity: Array.isArray(doulaMember.race_ethnicity)
+          ? doulaMember.race_ethnicity
+          : null,
         race_ethnicity_other: doulaMember.race_ethnicity_other ?? null,
-        languages_other_than_english: Array.isArray(doulaMember.languages_other_than_english)
+        languages_other_than_english: Array.isArray(
+          doulaMember.languages_other_than_english
+        )
           ? doulaMember.languages_other_than_english
           : null,
         contract_status: 'not_sent',
@@ -129,38 +160,56 @@ export default function DoulaDetailPage() {
 
       // Fetch assigned clients via doula-assignments API (Cloud SQL doula_assignments)
       try {
-        const assignmentsRes = await fetchDoulaAssignments({ doulaId: id, limit: 200 });
-        const assignments = assignmentsRes?.data ?? [];
-        const clients: AssignedClient[] = assignments.map((a: Record<string, unknown>) => {
-          const induction =
-            a.birthOutcomesInduction ?? a.birth_outcomes_induction ??
-            (a.client as any)?.birthOutcomesInduction ?? (a.client as any)?.birth_outcomes_induction;
-          const deliveryType = String(
-            a.birthOutcomesDeliveryType ?? a.birth_outcomes_delivery_type ??
-            (a.client as any)?.birthOutcomesDeliveryType ?? (a.client as any)?.birth_outcomes_delivery_type ?? ''
-          ).trim();
-          const medsRaw =
-            a.birthOutcomesMedicationsUsed ?? a.birth_outcomes_medications_used ??
-            (a.client as any)?.birthOutcomesMedicationsUsed ?? (a.client as any)?.birth_outcomes_medications_used;
-          const medicationsUsed = Array.isArray(medsRaw)
-            ? (medsRaw as unknown[]).map(String).filter(Boolean)
-            : undefined;
-
-          return {
-            id: String(a.clientId ?? a.client_id ?? ''),
-            doula_id: String(a.doulaId ?? a.doula_id ?? id),
-            client_name: [a.clientFirstName, a.clientLastName].filter(Boolean).join(' ') ||
-              [a.client_first_name, a.client_last_name].filter(Boolean).join(' ') ||
-              '—',
-            due_date: String(a.assignedAt ?? a.assigned_at ?? '') || '—',
-            status: 'active',
-            last_note: undefined,
-            next_visit: undefined,
-            birth_outcomes_induction: typeof induction === 'boolean' ? induction : undefined,
-            birth_outcomes_delivery_type: deliveryType || undefined,
-            birth_outcomes_medications_used: medicationsUsed,
-          };
+        const assignmentsRes = await fetchDoulaAssignments({
+          doulaId: id,
+          limit: 200,
         });
+        const assignments = assignmentsRes?.data ?? [];
+        const clients: AssignedClient[] = assignments.map(
+          (a: Record<string, unknown>) => {
+            const induction =
+              a.birthOutcomesInduction ??
+              a.birth_outcomes_induction ??
+              (a.client as any)?.birthOutcomesInduction ??
+              (a.client as any)?.birth_outcomes_induction;
+            const deliveryType = String(
+              a.birthOutcomesDeliveryType ??
+                a.birth_outcomes_delivery_type ??
+                (a.client as any)?.birthOutcomesDeliveryType ??
+                (a.client as any)?.birth_outcomes_delivery_type ??
+                ''
+            ).trim();
+            const medsRaw =
+              a.birthOutcomesMedicationsUsed ??
+              a.birth_outcomes_medications_used ??
+              (a.client as any)?.birthOutcomesMedicationsUsed ??
+              (a.client as any)?.birth_outcomes_medications_used;
+            const medicationsUsed = Array.isArray(medsRaw)
+              ? (medsRaw as unknown[]).map(String).filter(Boolean)
+              : undefined;
+
+            return {
+              id: String(a.clientId ?? a.client_id ?? ''),
+              doula_id: String(a.doulaId ?? a.doula_id ?? id),
+              client_name:
+                [a.clientFirstName, a.clientLastName]
+                  .filter(Boolean)
+                  .join(' ') ||
+                [a.client_first_name, a.client_last_name]
+                  .filter(Boolean)
+                  .join(' ') ||
+                '—',
+              due_date: String(a.assignedAt ?? a.assigned_at ?? '') || '—',
+              status: 'active',
+              last_note: undefined,
+              next_visit: undefined,
+              birth_outcomes_induction:
+                typeof induction === 'boolean' ? induction : undefined,
+              birth_outcomes_delivery_type: deliveryType || undefined,
+              birth_outcomes_medications_used: medicationsUsed,
+            };
+          }
+        );
         setAssignedClients(clients);
       } catch (err) {
         console.warn('Could not fetch assigned clients:', err);
@@ -244,7 +293,7 @@ export default function DoulaDetailPage() {
             Completed
           </Badge>
         );
-      
+
       // Client statuses - use proper labels
       case 'lead':
       case 'contacted':
@@ -258,7 +307,7 @@ export default function DoulaDetailPage() {
             {STATUS_LABELS[status as keyof typeof STATUS_LABELS] || status}
           </Badge>
         );
-        
+
       default:
         return (
           <Badge className='bg-gray-100 text-gray-700 border-gray-200'>
@@ -282,6 +331,7 @@ export default function DoulaDetailPage() {
   const upcomingVisits = visits.filter(
     (v) => v.status === 'scheduled' && new Date(v.visit_date) >= new Date()
   );
+  const schedulingInfo = getDoulaSchedulingInfo(doula);
   const pastVisits = visits.filter(
     (v) => v.status === 'completed' || new Date(v.visit_date) < new Date()
   );
@@ -373,6 +423,48 @@ export default function DoulaDetailPage() {
                         <span>{doula.address}</span>
                       </div>
                     )}
+                    <div className='flex items-center gap-2'>
+                      <Calendar className='h-4 w-4 text-gray-400' />
+                      <Badge
+                        className={
+                          schedulingInfo.availabilityStatus === 'unavailable'
+                            ? 'bg-red-100 text-red-800 border-red-300'
+                            : schedulingInfo.availabilityStatus === 'available'
+                              ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                              : 'bg-amber-100 text-amber-800 border-amber-300'
+                        }
+                      >
+                        {schedulingInfo.availabilityLabel}
+                      </Badge>
+                    </div>
+                    <div className='flex items-start gap-2 sm:col-span-2'>
+                      <Calendar className='mt-0.5 h-4 w-4 text-gray-400' />
+                      <div className='text-sm'>
+                        <span className='font-medium text-gray-700'>
+                          Scheduling link:
+                        </span>{' '}
+                        {schedulingInfo.schedulingUrl ? (
+                          <a
+                            href={schedulingInfo.schedulingUrl}
+                            target='_blank'
+                            rel='noreferrer'
+                            className='break-all font-medium text-teal-700 underline decoration-teal-300 underline-offset-4 hover:text-teal-800'
+                          >
+                            {schedulingInfo.schedulingUrl}
+                          </a>
+                        ) : (
+                          <span className='font-medium text-amber-700'>
+                            Not provided
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {schedulingInfo.availabilityStatus === 'unavailable' &&
+                      schedulingInfo.availabilityMessage && (
+                        <div className='sm:col-span-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900'>
+                          {schedulingInfo.availabilityMessage}
+                        </div>
+                      )}
                   </div>
                 </div>
                 <div className='flex flex-col gap-2'>
@@ -430,7 +522,8 @@ export default function DoulaDetailPage() {
                         <div className='space-y-2'>
                           {doula.certifications_files.map((fileUrl, idx) => {
                             const fileName =
-                              fileUrl.split('/').pop() || `Certification ${idx + 1}`;
+                              fileUrl.split('/').pop() ||
+                              `Certification ${idx + 1}`;
                             return (
                               <a
                                 key={idx}
@@ -538,17 +631,20 @@ export default function DoulaDetailPage() {
                         </div>
                       )}
 
-                    {doula.race_ethnicity && doula.race_ethnicity.length > 0 && (
-                      <div>
-                        <p className='text-sm text-gray-500 mb-2'>Race / Ethnicity</p>
-                        <p className='text-gray-900'>
-                          {doula.race_ethnicity.join(', ')}
-                          {doula.race_ethnicity_other
-                            ? ` — ${doula.race_ethnicity_other}`
-                            : ''}
-                        </p>
-                      </div>
-                    )}
+                    {doula.race_ethnicity &&
+                      doula.race_ethnicity.length > 0 && (
+                        <div>
+                          <p className='text-sm text-gray-500 mb-2'>
+                            Race / Ethnicity
+                          </p>
+                          <p className='text-gray-900'>
+                            {doula.race_ethnicity.join(', ')}
+                            {doula.race_ethnicity_other
+                              ? ` — ${doula.race_ethnicity_other}`
+                              : ''}
+                          </p>
+                        </div>
+                      )}
                   </CardContent>
                 </Card>
               )}
@@ -568,14 +664,14 @@ export default function DoulaDetailPage() {
                 </CardHeader>
                 <CardContent className='space-y-4'>
                   <div>
-                    <p className='text-sm text-gray-500 mb-2'>Contract Status</p>
+                    <p className='text-sm text-gray-500 mb-2'>
+                      Contract Status
+                    </p>
                     {getStatusBadge(doula.contract_status)}
                   </div>
                   {doula.contract_signed_at && (
                     <div>
-                      <p className='text-sm text-gray-500 mb-1'>
-                        Date Signed
-                      </p>
+                      <p className='text-sm text-gray-500 mb-1'>Date Signed</p>
                       <p className='text-gray-900'>
                         {format(
                           new Date(doula.contract_signed_at),
@@ -632,7 +728,11 @@ export default function DoulaDetailPage() {
                     const needsAttention = assignedClients.filter(
                       (c) => getBirthOutcomesStatus(c) !== 'complete'
                     );
-                    if (assignedClients.length === 0 || needsAttention.length === 0) return null;
+                    if (
+                      assignedClients.length === 0 ||
+                      needsAttention.length === 0
+                    )
+                      return null;
                     return (
                       <div className='flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3'>
                         <AlertTriangle className='h-4 w-4 text-amber-600 mt-0.5 shrink-0' />
@@ -642,8 +742,10 @@ export default function DoulaDetailPage() {
                           </p>
                           <p className='text-xs text-amber-700 mt-0.5'>
                             {needsAttention.length} of {assignedClients.length}{' '}
-                            client{needsAttention.length === 1 ? '' : 's'} still need{needsAttention.length === 1 ? 's' : ''} birth outcomes recorded.
-                            Ask this doula to complete them from their Activities tab.
+                            client{needsAttention.length === 1 ? '' : 's'} still
+                            need{needsAttention.length === 1 ? 's' : ''} birth
+                            outcomes recorded. Ask this doula to complete them
+                            from their Activities tab.
                           </p>
                         </div>
                       </div>
@@ -680,13 +782,19 @@ export default function DoulaDetailPage() {
                         </thead>
                         <tbody>
                           {assignedClients.map((client) => (
-                            <tr key={client.id} className='border-b hover:bg-gray-50'>
+                            <tr
+                              key={client.id}
+                              className='border-b hover:bg-gray-50'
+                            >
                               <td className='py-3 text-sm text-gray-900'>
                                 {client.client_name}
                               </td>
                               <td className='py-3 text-sm text-gray-600'>
                                 {client.due_date && client.due_date !== '—'
-                                  ? format(new Date(client.due_date), 'MMM dd, yyyy')
+                                  ? format(
+                                      new Date(client.due_date),
+                                      'MMM dd, yyyy'
+                                    )
                                   : '—'}
                               </td>
                               <td className='py-3'>

@@ -6,6 +6,12 @@ export interface Doula {
   profile_picture?: string;
   bio?: string;
   phone_number?: string;
+  scheduling_url?: string;
+  availability_status?: string;
+  availability_note?: string;
+  unavailable_from?: string;
+  unavailable_until?: string;
+  is_available?: boolean;
 }
 
 export interface AssignedDoula {

@@ -12,6 +12,11 @@ export interface Doula {
   specialties: string[] | null;
   certifications: string[] | null;
   bio: string | null;
+  scheduling_url?: string | null;
+  availability_status?: string | null;
+  availability_note?: string | null;
+  unavailable_from?: string | null;
+  unavailable_until?: string | null;
   /** Optional demographics returned by admin/team endpoints. */
   pronouns?: string | null;
   race_ethnicity?: string[] | null;
@@ -60,4 +65,3 @@ export interface ActivityLog {
   action: string;
   created_at: string;
 }
-

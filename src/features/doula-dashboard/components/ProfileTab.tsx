@@ -1,5 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/common/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/common/components/ui/card';
 import { Button } from '@/common/components/ui/button';
 import { Input } from '@/common/components/ui/input';
 import { Label } from '@/common/components/ui/label';
@@ -8,7 +13,11 @@ import { Checkbox } from '@/common/components/ui/checkbox';
 import { Badge } from '@/common/components/ui/badge';
 import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
 import {
+  createDoulaAvailability,
+  deleteDoulaAvailability,
+  getDoulaAvailability,
   getDoulaProfile,
+  updateDoulaAvailability,
   updateDoulaProfile,
   uploadDoulaProfilePicture,
   type DoulaProfile,
@@ -26,6 +35,7 @@ import {
   toggleRaceEthnicitySelection,
 } from '../doulaDemographics';
 import type { ProfileCompletionStatus } from '../doulaDashboardTypes';
+import { getDoulaSchedulingInfo } from '@/common/utils/doulaScheduling';
 
 interface ProfileTabProps {
   onProfileStatusChange?: (status: ProfileCompletionStatus) => void;
@@ -59,7 +69,14 @@ const FIELD_LABELS: Record<RequiredTextField, string> = {
   pronouns: 'Pronouns',
 };
 
+function normalizeDateOnly(value: string | null | undefined): string {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+  return raw.includes('T') ? raw.slice(0, 10) : raw;
+}
+
 function profileToFormData(profile: DoulaProfile): UpdateProfileData {
+  const schedulingInfo = getDoulaSchedulingInfo(profile);
   return {
     firstname: profile.firstname || '',
     lastname: profile.lastname || '',
@@ -68,16 +85,34 @@ function profileToFormData(profile: DoulaProfile): UpdateProfileData {
     state: profile.state || '',
     country: profile.country || '',
     zip_code:
-      profile.zip_code !== undefined && profile.zip_code !== null && profile.zip_code !== -1
+      profile.zip_code !== undefined &&
+      profile.zip_code !== null &&
+      profile.zip_code !== -1
         ? typeof profile.zip_code === 'number'
           ? profile.zip_code.toString()
           : String(profile.zip_code)
         : '',
     bio: profile.bio || '',
+    scheduling_url: schedulingInfo.schedulingUrl || '',
+    availability_status:
+      profile.availability_status ||
+      (schedulingInfo.availabilityStatus !== 'unknown'
+        ? schedulingInfo.availabilityStatus
+        : 'available'),
+    availability_note:
+      profile.availability_note || schedulingInfo.availabilityMessage || '',
+    unavailable_from: normalizeDateOnly(
+      profile.unavailable_from || schedulingInfo.unavailableFrom
+    ),
+    unavailable_until: normalizeDateOnly(
+      profile.unavailable_until || schedulingInfo.unavailableUntil
+    ),
     gender: profile.gender || '',
     pronouns: profile.pronouns || '',
     race_ethnicity: normalizeRaceEthnicityFromApi(profile.race_ethnicity),
-    languages_other_than_english: Array.isArray(profile.languages_other_than_english)
+    languages_other_than_english: Array.isArray(
+      profile.languages_other_than_english
+    )
       ? profile.languages_other_than_english.filter(
           (l): l is string => typeof l === 'string' && l.trim().length > 0
         )
@@ -88,17 +123,27 @@ function profileToFormData(profile: DoulaProfile): UpdateProfileData {
 }
 
 const getMissingRequiredFields = (data: UpdateProfileData): string[] => {
-  const missing = REQUIRED_TEXT_FIELDS.filter((field) => !String(data[field] ?? '').trim()).map(
-    (field) => FIELD_LABELS[field]
-  );
+  const missing = REQUIRED_TEXT_FIELDS.filter(
+    (field) => !String(data[field] ?? '').trim()
+  ).map((field) => FIELD_LABELS[field]);
   const langs = Array.isArray(data.languages_other_than_english)
-    ? data.languages_other_than_english.filter((l) => String(l).trim().length > 0)
+    ? data.languages_other_than_english.filter(
+        (l) => String(l).trim().length > 0
+      )
     : [];
   if (langs.length === 0) {
     missing.push('Languages spoken (other than English)');
   }
-  if (!isDoulaRaceEthnicityComplete(data.race_ethnicity, data.race_ethnicity_other)) {
-    if (!Array.isArray(data.race_ethnicity) || data.race_ethnicity.length === 0) {
+  if (
+    !isDoulaRaceEthnicityComplete(
+      data.race_ethnicity,
+      data.race_ethnicity_other
+    )
+  ) {
+    if (
+      !Array.isArray(data.race_ethnicity) ||
+      data.race_ethnicity.length === 0
+    ) {
       missing.push(RACE_ETHNICITY_FIELD_LABEL);
     } else {
       missing.push('Another race or ethnicity (please specify)');
@@ -106,6 +151,14 @@ const getMissingRequiredFields = (data: UpdateProfileData): string[] => {
   }
   return missing;
 };
+
+function toStartOfDayIso(dateValue: string): string {
+  return new Date(`${normalizeDateOnly(dateValue)}T00:00:00`).toISOString();
+}
+
+function toEndOfDayIso(dateValue: string): string {
+  return new Date(`${normalizeDateOnly(dateValue)}T23:59:59.999`).toISOString();
+}
 
 export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
   const [profile, setProfile] = useState<DoulaProfile | null>(cachedProfile);
@@ -122,6 +175,11 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
     country: '',
     zip_code: '',
     bio: '',
+    scheduling_url: '',
+    availability_status: 'available',
+    availability_note: '',
+    unavailable_from: '',
+    unavailable_until: '',
     gender: '',
     pronouns: '',
     race_ethnicity: [],
@@ -162,7 +220,7 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
     }
     try {
       const data = await getDoulaProfile();
-      
+
       if (!data) {
         toast.error('No profile data found');
         if (showLoading) {
@@ -170,11 +228,11 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
         }
         return;
       }
-      
+
       // Set profile - this will trigger the useEffect to update formData
       setProfile(data);
       cachedProfile = data;
-      
+
       // Also set formData directly as a backup to ensure it's populated
       const newFormData = profileToFormData(data);
       setFormData(newFormData);
@@ -194,7 +252,9 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
   };
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -207,7 +267,9 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
       const current = Array.isArray(prev.languages_other_than_english)
         ? prev.languages_other_than_english
         : [];
-      const exists = current.some((l) => l.trim().toLowerCase() === next.toLowerCase());
+      const exists = current.some(
+        (l) => l.trim().toLowerCase() === next.toLowerCase()
+      );
       if (exists) return prev;
       return {
         ...prev,
@@ -228,7 +290,9 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
     });
   };
 
-  const handleProfilePictureChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProfilePictureChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setIsUploadingPicture(true);
@@ -239,7 +303,8 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
       cachedProfile = updated;
       toast.success('Profile picture updated');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to upload picture';
+      const message =
+        err instanceof Error ? err.message : 'Failed to upload picture';
       toast.error(message);
     } finally {
       setIsUploadingPicture(false);
@@ -256,7 +321,9 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
             ...formData,
             languages_other_than_english: [
               ...new Set([
-                ...((formData.languages_other_than_english ?? []).map((l) => String(l).trim()).filter(Boolean)),
+                ...(formData.languages_other_than_english ?? [])
+                  .map((l) => String(l).trim())
+                  .filter(Boolean),
                 pendingLanguage,
               ]),
             ],
@@ -276,29 +343,72 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
     }
 
     setIsSaving(true);
-    
+
     // Log the form data being submitted
-    console.log('ProfileTab - Submitting form data:', JSON.stringify(nextFormData, null, 2));
-    
+    console.log(
+      'ProfileTab - Submitting form data:',
+      JSON.stringify(nextFormData, null, 2)
+    );
+
     try {
-      const updated = await updateDoulaProfile(nextFormData);
-      console.log('ProfileTab - Update response received:', JSON.stringify(updated, null, 2));
-      
-      // Update profile state - this will trigger the useEffect to sync formData
-      setProfile(updated);
-      cachedProfile = updated;
-      
-      // Also update form data directly with the response to ensure consistency
-      const updatedFormData = profileToFormData(updated);
-      
-      console.log('ProfileTab - Setting form data to:', JSON.stringify(updatedFormData, null, 2));
-      setFormData(updatedFormData);
-      const stillMissing = getMissingRequiredFields(updatedFormData);
-      onProfileStatusChange?.({
-        isComplete: stillMissing.length === 0,
-        missingFields: stillMissing,
-      });
-      
+      const {
+        availability_status,
+        availability_note,
+        unavailable_from,
+        unavailable_until,
+        ...profilePayload
+      } = nextFormData;
+
+      const desiredStatus = availability_status || 'available';
+      if (desiredStatus === 'unavailable') {
+        if (!unavailable_from || !unavailable_until) {
+          throw new Error(
+            'Unavailable doulas must include both an unavailable start and end date.'
+          );
+        }
+      }
+
+      const updated = await updateDoulaProfile(profilePayload);
+      console.log(
+        'ProfileTab - Update response received:',
+        JSON.stringify(updated, null, 2)
+      );
+
+      const availabilitySnapshot = await getDoulaAvailability();
+      const unavailableRecords = availabilitySnapshot.records.filter(
+        (record) => record.availabilityStatus === 'unavailable'
+      );
+
+      if (desiredStatus === 'unavailable') {
+        if (!unavailable_from || !unavailable_until) {
+          throw new Error(
+            'Unavailable doulas must include both an unavailable start and end date.'
+          );
+        }
+
+        const availabilityPayload = {
+          startAt: toStartOfDayIso(String(unavailable_from)),
+          endAt: toEndOfDayIso(String(unavailable_until)),
+          availabilityStatus: 'unavailable' as const,
+          reason: availability_note || null,
+        };
+
+        if (unavailableRecords.length > 0) {
+          await updateDoulaAvailability(
+            unavailableRecords[0].id,
+            availabilityPayload
+          );
+        } else {
+          await createDoulaAvailability(availabilityPayload);
+        }
+      } else if (unavailableRecords.length > 0) {
+        await Promise.all(
+          unavailableRecords.map((record) => deleteDoulaAvailability(record.id))
+        );
+      }
+
+      await fetchProfile(false);
+
       toast.success('Profile updated successfully');
     } catch (error: any) {
       console.error('ProfileTab - Failed to update profile:', error);
@@ -346,18 +456,24 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
                   }`}
                 >
                   {isUploadingPicture ? (
-                    <span className='text-white text-xs font-medium'>Uploading...</span>
+                    <span className='text-white text-xs font-medium'>
+                      Uploading...
+                    </span>
                   ) : (
                     <Camera
                       className={`h-8 w-8 text-white ${
-                        profile.profile_picture ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'
+                        profile.profile_picture
+                          ? 'opacity-0 group-hover:opacity-100'
+                          : 'opacity-100'
                       }`}
                     />
                   )}
                 </div>
               </div>
               <span className='text-sm font-medium text-primary group-hover:underline'>
-                {profile.profile_picture ? 'Change photo' : 'Click to upload photo'}
+                {profile.profile_picture
+                  ? 'Change photo'
+                  : 'Click to upload photo'}
               </span>
               <input
                 id='profile-picture-upload'
@@ -374,7 +490,8 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
               </CardTitle>
               <p className='text-sm text-gray-600 mt-1'>{profile.email}</p>
               <p className='text-xs text-gray-500 mt-1'>
-                Account Status: <span className='font-medium'>{profile.account_status}</span>
+                Account Status:{' '}
+                <span className='font-medium'>{profile.account_status}</span>
               </p>
             </div>
           </div>
@@ -459,9 +576,97 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
               />
             </div>
 
+            <div className='rounded-lg border border-border bg-muted/30 p-4 space-y-4'>
+              <div>
+                <h3 className='text-sm font-semibold text-foreground'>
+                  Scheduling
+                </h3>
+                <p className='text-xs text-muted-foreground mt-1'>
+                  Families in the contract stage will use this information to
+                  book time with you.
+                </p>
+              </div>
+
+              <div className='space-y-2'>
+                <Label htmlFor='scheduling_url'>Scheduling Link</Label>
+                <Input
+                  id='scheduling_url'
+                  name='scheduling_url'
+                  type='url'
+                  value={formData.scheduling_url || ''}
+                  onChange={handleInputChange}
+                  placeholder='https://calendly.com/your-link'
+                />
+              </div>
+
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                <div className='space-y-2'>
+                  <Label htmlFor='availability_status'>
+                    Availability Status
+                  </Label>
+                  <select
+                    id='availability_status'
+                    name='availability_status'
+                    value={formData.availability_status || 'available'}
+                    onChange={handleInputChange}
+                    className='flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
+                  >
+                    <option value='available'>Available</option>
+                    <option value='unavailable'>Unavailable</option>
+                  </select>
+                </div>
+                <div className='space-y-2'>
+                  <Label htmlFor='availability_note'>Availability Note</Label>
+                  <Input
+                    id='availability_note'
+                    name='availability_note'
+                    value={formData.availability_note || ''}
+                    onChange={handleInputChange}
+                    placeholder='Optional note for admins and families'
+                  />
+                </div>
+              </div>
+
+              {(formData.availability_status || 'available') ===
+                'unavailable' && (
+                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                  <div className='space-y-2'>
+                    <Label htmlFor='unavailable_from'>Unavailable From</Label>
+                    <Input
+                      id='unavailable_from'
+                      name='unavailable_from'
+                      type='date'
+                      value={
+                        formData.unavailable_from
+                          ? String(formData.unavailable_from).slice(0, 10)
+                          : ''
+                      }
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className='space-y-2'>
+                    <Label htmlFor='unavailable_until'>Unavailable Until</Label>
+                    <Input
+                      id='unavailable_until'
+                      name='unavailable_until'
+                      type='date'
+                      value={
+                        formData.unavailable_until
+                          ? String(formData.unavailable_until).slice(0, 10)
+                          : ''
+                      }
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className='space-y-4 rounded-lg border border-border bg-muted/30 p-4'>
               <div>
-                <h3 className='text-sm font-semibold text-foreground'>Demographics</h3>
+                <h3 className='text-sm font-semibold text-foreground'>
+                  Demographics
+                </h3>
                 <p className='text-xs text-muted-foreground mt-1'>
                   All fields in this section are required unless noted.
                 </p>
@@ -500,7 +705,8 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
                   <span className='text-destructive'> *</span>
                 </Label>
                 <p className='text-xs text-muted-foreground'>
-                  Add at least one language. Press Enter or click Add after typing.
+                  Add at least one language. Press Enter or click Add after
+                  typing.
                 </p>
                 <div className='flex flex-col gap-2 sm:flex-row sm:items-center'>
                   <Input
@@ -528,7 +734,11 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
                 </div>
                 <div className='flex flex-wrap gap-2'>
                   {(formData.languages_other_than_english ?? []).map((lang) => (
-                    <Badge key={lang} variant='secondary' className='flex items-center gap-1'>
+                    <Badge
+                      key={lang}
+                      variant='secondary'
+                      className='flex items-center gap-1'
+                    >
                       <span>{lang}</span>
                       <button
                         type='button'
@@ -548,10 +758,14 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
                   {RACE_ETHNICITY_FIELD_LABEL}
                   <span className='text-destructive'> *</span>
                 </Label>
-                <p className='text-xs text-muted-foreground'>Select all that apply.</p>
+                <p className='text-xs text-muted-foreground'>
+                  Select all that apply.
+                </p>
                 <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
                   {DOULA_RACE_ETHNICITY_OPTIONS.map((opt) => {
-                    const checked = (formData.race_ethnicity ?? []).includes(opt.value);
+                    const checked = (formData.race_ethnicity ?? []).includes(
+                      opt.value
+                    );
                     return (
                       <label
                         key={opt.value}
@@ -570,12 +784,16 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
                           }}
                           className='mt-0.5'
                         />
-                        <span className='text-sm leading-tight'>{opt.label}</span>
+                        <span className='text-sm leading-tight'>
+                          {opt.label}
+                        </span>
                       </label>
                     );
                   })}
                 </div>
-                {(formData.race_ethnicity ?? []).includes(ANOTHER_RACE_ETHNICITY) && (
+                {(formData.race_ethnicity ?? []).includes(
+                  ANOTHER_RACE_ETHNICITY
+                ) && (
                   <div className='space-y-2 pt-1'>
                     <Label htmlFor='race_ethnicity_other'>Please specify</Label>
                     <Input
@@ -590,7 +808,9 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
               </div>
 
               <div className='space-y-2'>
-                <Label htmlFor='other_demographic_details'>Other demographic details</Label>
+                <Label htmlFor='other_demographic_details'>
+                  Other demographic details
+                </Label>
                 <Textarea
                   id='other_demographic_details'
                   name='other_demographic_details'
@@ -616,7 +836,11 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
             </div>
 
             <div className='flex justify-end gap-2'>
-              <Button type='button' variant='outline' onClick={() => void fetchProfile(false)}>
+              <Button
+                type='button'
+                variant='outline'
+                onClick={() => void fetchProfile(false)}
+              >
                 Cancel
               </Button>
               <Button type='submit' disabled={isSaving}>
