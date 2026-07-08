@@ -1,5 +1,7 @@
 # Contract Creation and Payment Processing Instructions
 
+> **Superseded for operations.** Payment sections here describe a deprecated Stripe checkout flow. For the current SOP, use **[`docs/FAMILY_ONBOARDING_SOP.md`](docs/FAMILY_ONBOARDING_SOP.md)**. Contract creation steps in Phase 3 of that doc remain accurate; ignore Stripe payment processing sections below.
+
 ## Overview
 This guide explains how to use the contract creation feature and the subsequent payment processing workflow in the Sokana CRM system.
 

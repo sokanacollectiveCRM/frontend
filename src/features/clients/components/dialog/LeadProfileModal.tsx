@@ -24,7 +24,7 @@ import { useClients } from '@/common/hooks/clients/useClients';
 import { UserContext } from '@/common/contexts/UserContext';
 import updateClient from '@/common/utils/updateClient';
 import updateClientStatus from '@/common/utils/updateClientStatus';
-import { updateClientPhi } from '@/api/services/clients.service';
+import { updateClientPhi, sendVerificationInvoice } from '@/api/services/clients.service';
 import { buildUrl, fetchWithAuth } from '@/api/http';
 import { PHI_KEYS } from '@/config/phi';
 import { Client } from '@/features/clients/data/schema';
@@ -78,6 +78,14 @@ import {
   INSURANCE_POLICY_HOLDER_RELATIONSHIP_OPTIONS,
   type PaymentAuthorizationStatus,
 } from '@/lib/paymentRules';
+import {
+  formatYesNo,
+  getBillingPathLabel,
+  getPortalBlockerDescription,
+  getPortalBlockerLabel,
+  getReadinessGateSummary,
+  shouldShowVerificationInvoiceAction,
+} from '@/lib/portalEligibility';
 import { PREGNANCY_BABY_POSTPARTUM_QUESTION_LABEL } from '@/features/request/stepConfig';
 import {
   normalizeReferralSourceStoredValue,
@@ -261,6 +269,8 @@ export function LeadProfileModal({
   const [editedData, setEditedData] = useState<Partial<Client>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [isRecordingPaymentAuth, setIsRecordingPaymentAuth] = useState(false);
+  const [isSendingVerificationInvoice, setIsSendingVerificationInvoice] = useState(false);
+  const [verificationInvoiceLink, setVerificationInvoiceLink] = useState<string | null>(null);
   const [isSavingBirthOutcomes, setIsSavingBirthOutcomes] = useState(false);
   // Primary source for display: full detail from GET /clients/:id (authorized users get PHI).
   const [fetchedDetail, setFetchedDetail] = useState<ClientDetail | null>(null);
@@ -1368,6 +1378,48 @@ export function LeadProfileModal({
     }
   };
 
+  const handleSendVerificationInvoice = async () => {
+    if (!client?.id) return;
+    setIsSendingVerificationInvoice(true);
+    try {
+      const result = await sendVerificationInvoice(String(client.id));
+      const link =
+        result.payment_link ??
+        result.invoice_link ??
+        result.data?.payment_link ??
+        result.data?.invoice_link ??
+        null;
+
+      if (link) {
+        setVerificationInvoiceLink(link);
+      }
+
+      toast.success(result.message ?? result.data?.message ?? 'Verification invoice sent.');
+      detailFetchRef.current = null;
+      const refreshed = await getClientById(String(client.id));
+      if (refreshed) {
+        setFetchedDetail(refreshed);
+      }
+      refreshClients?.();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to send verification invoice.'
+      );
+    } finally {
+      setIsSendingVerificationInvoice(false);
+    }
+  };
+
+  const eligibilitySource = React.useMemo(
+    () => ({ ...((client as Record<string, unknown> | null) ?? {}), ...(detailSource ?? {}) }),
+    [detailSource, client]
+  );
+  const readinessSummary = React.useMemo(
+    () => getReadinessGateSummary(eligibilitySource),
+    [eligibilitySource]
+  );
+  const showVerificationInvoiceAction = shouldShowVerificationInvoiceAction(eligibilitySource);
+
   const renderEditableField = (
     label: string,
     fieldKey: string,
@@ -1818,6 +1870,112 @@ export function LeadProfileModal({
                 );
               })(),
               <>
+                <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+                  <p className="text-sm font-medium text-foreground">Portal onboarding readiness</p>
+                  <div className="grid gap-2 sm:grid-cols-2 text-sm">
+                    <div className="flex justify-between gap-2">
+                      <span className="text-muted-foreground">Contract signed</span>
+                      <span>{formatYesNo(readinessSummary.contractSigned)}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-muted-foreground">Deposit paid</span>
+                      <span>{formatYesNo(readinessSummary.depositPaid)}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-muted-foreground">Billing path</span>
+                      <span>{getBillingPathLabel(readinessSummary.billingPath)}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-muted-foreground">Payment authorization required</span>
+                      <span>{formatYesNo(readinessSummary.paymentAuthorizationRequired)}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-muted-foreground">Payment authorization satisfied</span>
+                      <span>{formatYesNo(readinessSummary.paymentAuthorizationSatisfied)}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-muted-foreground">Card on file</span>
+                      <span>{formatYesNo(readinessSummary.cardOnFile)}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-muted-foreground">Portal eligibility</span>
+                      <span>
+                        {readinessSummary.portalEligibility === 'eligible'
+                          ? 'Eligible'
+                          : readinessSummary.portalEligibility === 'locked'
+                            ? 'Locked'
+                            : '—'}
+                      </span>
+                    </div>
+                    {readinessSummary.primaryBlocker ? (
+                      <div className="flex justify-between gap-2 sm:col-span-2">
+                        <span className="text-muted-foreground">Primary blocker</span>
+                        <span>{getPortalBlockerLabel(readinessSummary.primaryBlocker)}</span>
+                      </div>
+                    ) : null}
+                    {readinessSummary.verificationInvoiceStatus ? (
+                      <div className="flex justify-between gap-2 sm:col-span-2">
+                        <span className="text-muted-foreground">Verification invoice</span>
+                        <span className="text-right">{readinessSummary.verificationInvoiceStatus}</span>
+                      </div>
+                    ) : null}
+                  </div>
+                  {readinessSummary.primaryBlocker ? (
+                    <p className="text-xs text-muted-foreground">
+                      {getPortalBlockerDescription(readinessSummary.primaryBlocker)}
+                    </p>
+                  ) : null}
+                  {showVerificationInvoiceAction ? (
+                    <div className="space-y-2 pt-1">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => void handleSendVerificationInvoice()}
+                        disabled={isSendingVerificationInvoice}
+                        className="w-fit"
+                      >
+                        {isSendingVerificationInvoice ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Sending…
+                          </>
+                        ) : (
+                          'Send $1 verification invoice'
+                        )}
+                      </Button>
+                      {verificationInvoiceLink ? (
+                        <p className="text-xs">
+                          <a
+                            href={verificationInvoiceLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary underline-offset-2 hover:underline inline-flex items-center gap-1"
+                          >
+                            Open invoice / payment link
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+                {(() => {
+                  const legacyAuth = String(
+                    getDisplayValue('payment_authorization_status', 'paymentAuthorizationStatus') || ''
+                  ).trim();
+                  if (!legacyAuth) return null;
+                  return (
+                    <div className="rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground">
+                      Legacy PDF authorization status:{' '}
+                      <span className="font-medium text-foreground">
+                        {PAYMENT_AUTHORIZATION_STATUS_LABELS[
+                          legacyAuth as PaymentAuthorizationStatus
+                        ] ?? legacyAuth}
+                      </span>
+                      {' '}(historical display only)
+                    </div>
+                  );
+                })()}
                 {renderEditableField('Payment Method', 'payment_method', undefined, 'select', [...ALL_PAYMENT_METHOD_OPTIONS])}
                 {(() => {
                   const pm = String(getDisplayValue('payment_method', 'paymentMethod') || '');

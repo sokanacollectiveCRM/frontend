@@ -1,6 +1,50 @@
 import { API_CONFIG } from '../config';
 import type { ClientListItemDTO, ClientDetailDTO } from '../dto/client.dto';
-import type { Client, ClientDetail, ClientStatus } from '@/domain/client';
+import type { Client, ClientDetail, ClientStatus, PortalBlocker, BillingPath } from '@/domain/client';
+import type { PortalAllowedActions } from '@/lib/portalEligibility';
+
+function mapPortalBlockers(raw: string[] | undefined): PortalBlocker[] | undefined {
+  if (!raw?.length) return undefined;
+  const valid: PortalBlocker[] = [
+    'contract_unsigned',
+    'deposit_unpaid',
+    'missing_card_on_file',
+    'payment_authorization_required',
+    'billing_path_unknown',
+  ];
+  return raw.filter((item): item is PortalBlocker => valid.includes(item as PortalBlocker));
+}
+
+function mapEligibilityFromDto(
+  dto: ClientListItemDTO | ClientDetailDTO,
+  user?: ClientListItemDTO['user']
+) {
+  const source = dto as Record<string, unknown>;
+  const nested = (user ?? {}) as Record<string, unknown>;
+
+  const pick = <T>(snakeKey: string): T | undefined =>
+    (source[snakeKey] as T | undefined) ?? (nested[snakeKey] as T | undefined);
+
+  const primaryBlocker = pick<string>('primary_portal_blocker');
+  const billingPath = pick<string>('billing_path');
+
+  return {
+    portalBlockers: mapPortalBlockers(pick<string[]>('portal_blockers')),
+    primaryPortalBlocker: primaryBlocker as PortalBlocker | null | undefined,
+    billingPath: billingPath as BillingPath | undefined,
+    paymentAuthorizationRequired: pick<boolean>('payment_authorization_required'),
+    paymentAuthorizationSatisfied: pick<boolean>('payment_authorization_satisfied'),
+    cardOnFile: pick<boolean>('card_on_file'),
+    qbCustomerId: pick<string | null>('qb_customer_id'),
+    qbStoredPaymentMethodId: pick<string | null>('qb_stored_payment_method_id'),
+    verificationInvoiceId: pick<string | null>('verification_invoice_id'),
+    verificationInvoiceSentAt: pick<string | null>('verification_invoice_sent_at'),
+    verificationInvoicePaidAt: pick<string | null>('verification_invoice_paid_at'),
+    allowedActions: pick<PortalAllowedActions>('allowed_actions'),
+    paymentMethod: pick<string>('payment_method'),
+    paymentAuthorizationStatus: pick<string>('payment_authorization_status'),
+  };
+}
 
 /**
  * Extract client list from legacy response formats.
@@ -110,6 +154,7 @@ export function mapClient(dto: ClientListItemDTO): Client {
     hasSignedContract: dto.has_signed_contract ?? user?.has_signed_contract,
     paymentStatus: dto.payment_status || user?.payment_status,
     hasCompletedPayment: dto.has_completed_payment ?? user?.has_completed_payment,
+    ...mapEligibilityFromDto(dto, user),
   };
 }
 
@@ -135,6 +180,11 @@ export function mapClientDetail(dto: ClientDetailDTO): ClientDetail {
     requestedAt: dto.requested_at,
     updatedAt: dto.updated_at,
     isEligible: dto.is_eligible,
+    contractStatus: dto.contract_status,
+    hasSignedContract: dto.has_signed_contract,
+    paymentStatus: dto.payment_status,
+    hasCompletedPayment: dto.has_completed_payment,
+    ...mapEligibilityFromDto(dto),
     // PHI fields - pass through only if present, keep undefined if omitted
     dueDate: dto.due_date,
     healthHistory: dto.health_history,

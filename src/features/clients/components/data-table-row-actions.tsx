@@ -9,7 +9,11 @@ import {
 } from '@/common/components/ui/dropdown-menu';
 import { useUsers } from '@/features/clients/context/users-context';
 import { User } from '@/features/clients/data/schema';
-import { derivePortalStatus, isPortalEligible } from '@/features/clients/utils/portalStatus';
+import { derivePortalStatus, canInviteToPortal } from '@/features/clients/utils/portalStatus';
+import {
+  getPortalBlockerDescription,
+  normalizeClientEligibility,
+} from '@/lib/portalEligibility';
 import { DotsHorizontalIcon } from '@radix-ui/react-icons';
 import { Row } from '@tanstack/react-table';
 import { Archive, Mail, Trash2, XCircle } from 'lucide-react';
@@ -33,8 +37,12 @@ export function DataTableRowActions({
   const lead = row.original;
   // Get portal_status (invitation state) from backend
   const portalStatus = derivePortalStatus(lead);
-  // Check eligibility separately (contract signed + payment succeeded)
-  const eligible = isPortalEligible(lead);
+  const eligible = canInviteToPortal(lead);
+  const eligibility = normalizeClientEligibility(lead);
+  const inviteBlockedReason =
+    eligibility.primary_portal_blocker != null
+      ? getPortalBlockerDescription(eligibility.primary_portal_blocker)
+      : 'Portal invite is locked until onboarding requirements are met.';
 
   const handleInviteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -98,11 +106,7 @@ export function DataTableRowActions({
                 onClick={handleInviteClick}
                 disabled={!isInviteEnabled}
                 className={!isInviteEnabled ? 'opacity-50 cursor-not-allowed' : ''}
-                title={
-                  !isInviteEnabled
-                    ? 'Invite available after contract signed + first payment completed'
-                    : undefined
-                }
+                title={!isInviteEnabled ? inviteBlockedReason : undefined}
               >
                 <Mail size={16} className='mr-2' />
                 Invite to portal

@@ -38,4 +38,38 @@ Implement the following corrections based on feedback:
 - `src/features/request/Step3Home.tsx` - Make referral email optional
 - `src/features/request/Step4Service.tsx` - Fix double typing issue
 
---- 
+---
+
+## 📘 Task 17: Create Platform SOP
+
+**Area:** Operations / Documentation  
+**Priority Rank:** 1  
+**Status:** Complete  
+**Notes:** Staff-facing SOP created at `docs/PLATFORM_SOP.md`
+
+### Description
+Create a Standard Operating Procedure for the platform so staff know how to use the CRM consistently during launch and daily operations.
+
+### Acceptance Criteria
+- [x] Platform overview
+- [x] Staff roles and responsibilities
+- [x] Daily admin checklist
+- [x] New request form / lead intake workflow
+- [x] Pipeline status workflow
+- [x] Client management workflow
+- [x] Contract workflow
+- [x] Billing and payment schedule workflow
+- [x] Doula assignment workflow
+- [x] Team coordination workflow
+- [x] Exception handling
+- [x] Launch review checklist
+
+### Updated Priority Order
+- [x] 1. Create platform SOP
+- [ ] 2. Update internal/admin contract email copy
+- [ ] 3. Update client-facing contract email copy
+- [ ] 4. Add contract templates
+- [ ] 5. PFSC teenager request form
+- [ ] 6. Doula/team profile updates
+
+---

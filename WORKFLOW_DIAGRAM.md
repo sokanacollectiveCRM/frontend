@@ -1,5 +1,7 @@
 # Contract & Payment Workflow Diagram
 
+> **Superseded for operations.** This diagram includes deprecated Stripe checkout steps. For the current family lifecycle (staff-coordinated billing, no Stripe), use **[`docs/FAMILY_ONBOARDING_SOP.md`](docs/FAMILY_ONBOARDING_SOP.md)**.
+
 ## Complete Process Flow
 
 ```

@@ -15,6 +15,7 @@
     "test:coverage": "vitest run --coverage",
     "test:request-form:unit": "vitest run src/features/request/__tests__/RequestForm.test.tsx src/features/request/__tests__/useRequestForm.test.tsx src/features/request/__tests__/requestFormPaymentValidation.test.ts",
     "test:request-form:e2e": "playwright test e2e/request-form-*.spec.ts",
+    "test:portal-eligibility:e2e": "playwright test e2e/portal-eligibility-actions.spec.ts",
     "test:request-form": "npm run test:request-form:unit && npm run test:request-form:e2e",
     "check:prod": "node scripts/check-production-readiness.mjs",
     "smoke:api": "node scripts/smoke-api.mjs",

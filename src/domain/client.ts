@@ -3,6 +3,15 @@
  * Field names are camelCase (frontend convention).
  */
 
+import type {
+  BillingPath,
+  ClientEligibilityFields,
+  PortalAllowedActions,
+  PortalBlocker,
+} from '@/lib/portalEligibility';
+
+export type { BillingPath, ClientEligibilityFields, PortalAllowedActions, PortalBlocker };
+
 export type ClientStatus =
   | 'lead'
   | 'contacted'
@@ -58,6 +67,20 @@ export interface ClientLite {
   hasSignedContract?: boolean;
   paymentStatus?: string;
   hasCompletedPayment?: boolean;
+  portalBlockers?: PortalBlocker[];
+  primaryPortalBlocker?: PortalBlocker | null;
+  billingPath?: BillingPath;
+  paymentAuthorizationRequired?: boolean;
+  paymentAuthorizationSatisfied?: boolean;
+  cardOnFile?: boolean;
+  qbCustomerId?: string | null;
+  qbStoredPaymentMethodId?: string | null;
+  verificationInvoiceId?: string | null;
+  verificationInvoiceSentAt?: string | null;
+  verificationInvoicePaidAt?: string | null;
+  allowedActions?: PortalAllowedActions;
+  paymentMethod?: string;
+  paymentAuthorizationStatus?: string;
 }
 
 /**
@@ -89,6 +112,22 @@ export interface ClientDetail {
   requestedAt?: string;
   updatedAt?: string;
   isEligible?: boolean;
+  portalBlockers?: PortalBlocker[];
+  primaryPortalBlocker?: PortalBlocker | null;
+  billingPath?: BillingPath;
+  paymentAuthorizationRequired?: boolean;
+  paymentAuthorizationSatisfied?: boolean;
+  cardOnFile?: boolean;
+  qbCustomerId?: string | null;
+  qbStoredPaymentMethodId?: string | null;
+  verificationInvoiceId?: string | null;
+  verificationInvoiceSentAt?: string | null;
+  verificationInvoicePaidAt?: string | null;
+  allowedActions?: PortalAllowedActions;
+  contractStatus?: string;
+  hasSignedContract?: boolean;
+  paymentStatus?: string;
+  hasCompletedPayment?: boolean;
   // PHI fields - optional, only present when authorized
   dueDate?: string;
   healthHistory?: string;

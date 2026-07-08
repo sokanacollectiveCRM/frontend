@@ -728,7 +728,50 @@ function mergeDetailFieldsIntoResult(result: UserSummary & Record<string, any>, 
     invite_sent_count: raw.invite_sent_count,
     requested_at: raw.requested_at,
     updated_at: raw.updated_at,
-    is_eligible: raw.is_eligible,
+    is_eligible: raw.is_eligible ?? raw.isEligible,
+    isEligible: raw.isEligible ?? raw.is_eligible,
+    portal_blockers: raw.portal_blockers ?? raw.portalBlockers,
+    portalBlockers: raw.portalBlockers ?? raw.portal_blockers,
+    primary_portal_blocker: raw.primary_portal_blocker ?? raw.primaryPortalBlocker,
+    primaryPortalBlocker: raw.primaryPortalBlocker ?? raw.primary_portal_blocker,
+    billing_path: raw.billing_path ?? raw.billingPath,
+    billingPath: raw.billingPath ?? raw.billing_path,
+    payment_authorization_required:
+      raw.payment_authorization_required ?? raw.paymentAuthorizationRequired,
+    paymentAuthorizationRequired:
+      raw.paymentAuthorizationRequired ?? raw.payment_authorization_required,
+    payment_authorization_satisfied:
+      raw.payment_authorization_satisfied ?? raw.paymentAuthorizationSatisfied,
+    paymentAuthorizationSatisfied:
+      raw.paymentAuthorizationSatisfied ?? raw.payment_authorization_satisfied,
+    card_on_file: raw.card_on_file ?? raw.cardOnFile,
+    cardOnFile: raw.cardOnFile ?? raw.card_on_file,
+    qb_customer_id: raw.qb_customer_id ?? raw.qbCustomerId,
+    qbCustomerId: raw.qbCustomerId ?? raw.qb_customer_id,
+    qb_stored_payment_method_id:
+      raw.qb_stored_payment_method_id ?? raw.qbStoredPaymentMethodId,
+    qbStoredPaymentMethodId:
+      raw.qbStoredPaymentMethodId ?? raw.qb_stored_payment_method_id,
+    verification_invoice_id: raw.verification_invoice_id ?? raw.verificationInvoiceId,
+    verificationInvoiceId: raw.verificationInvoiceId ?? raw.verification_invoice_id,
+    verification_invoice_sent_at:
+      raw.verification_invoice_sent_at ?? raw.verificationInvoiceSentAt,
+    verificationInvoiceSentAt:
+      raw.verificationInvoiceSentAt ?? raw.verification_invoice_sent_at,
+    verification_invoice_paid_at:
+      raw.verification_invoice_paid_at ?? raw.verificationInvoicePaidAt,
+    verificationInvoicePaidAt:
+      raw.verificationInvoicePaidAt ?? raw.verification_invoice_paid_at,
+    allowed_actions: raw.allowed_actions ?? raw.allowedActions,
+    allowedActions: raw.allowedActions ?? raw.allowed_actions,
+    contract_status: raw.contract_status ?? raw.contractStatus,
+    contractStatus: raw.contractStatus ?? raw.contract_status,
+    has_signed_contract: raw.has_signed_contract ?? raw.hasSignedContract,
+    hasSignedContract: raw.hasSignedContract ?? raw.has_signed_contract,
+    payment_status: raw.payment_status ?? raw.paymentStatus,
+    paymentStatus: raw.paymentStatus ?? raw.payment_status,
+    has_completed_payment: raw.has_completed_payment ?? raw.hasCompletedPayment,
+    hasCompletedPayment: raw.hasCompletedPayment ?? raw.has_completed_payment,
   };
 }
 

@@ -1,4 +1,4 @@
-import { get, put } from '../http';
+import { get, post, put } from '../http';
 import { API_CONFIG } from '../config';
 import { ApiError } from '../errors';
 import { extractClientList, mapClient, mapClientDetail } from '../mappers/client.mapper';
@@ -166,6 +166,41 @@ export interface PhiUpdateResponse {
  * @returns Promise with success/error response
  * @throws ApiError if update fails or non-PHI fields are included
  */
+export interface SendVerificationInvoiceResponse {
+  success?: boolean;
+  message?: string;
+  invoice_id?: string;
+  payment_link?: string;
+  invoice_link?: string;
+  data?: {
+    invoice_id?: string;
+    payment_link?: string;
+    invoice_link?: string;
+    message?: string;
+  };
+}
+
+/**
+ * Send a $1 verification invoice so the client can save a reusable QuickBooks payment method.
+ */
+export async function sendVerificationInvoice(
+  clientId: string
+): Promise<SendVerificationInvoiceResponse> {
+  if (API_CONFIG.useLegacyApi) {
+    throw new Error('Legacy mode disabled. Set VITE_USE_LEGACY_API=false.');
+  }
+
+  const response = await post<
+    SendVerificationInvoiceResponse | { data?: SendVerificationInvoiceResponse }
+  >(`/clients/${clientId}/billing/send-verification-invoice`);
+
+  if (response && typeof response === 'object' && 'data' in response && response.data) {
+    return response.data;
+  }
+
+  return response as SendVerificationInvoiceResponse;
+}
+
 export async function updateClientPhi(
   clientId: string,
   phiData: PhiUpdatePayload

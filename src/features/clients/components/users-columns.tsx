@@ -21,7 +21,14 @@ import {
   User,
   type PortalStatus,
 } from '@/features/clients/data/schema';
-import { derivePortalStatus, isPortalEligible } from '@/features/clients/utils/portalStatus';
+import { derivePortalStatus, canInviteToPortal } from '@/features/clients/utils/portalStatus';
+import {
+  getMissingCardPortalTooltip,
+  getPortalBlockerDescription,
+  getPortalBlockerLabel,
+  normalizeClientEligibility,
+  readIsEligible,
+} from '@/lib/portalEligibility';
 import { getAdminPaymentCardColumn } from '@/lib/paymentRules';
 import { cn } from '@/lib/utils';
 import { ColumnDef } from '@tanstack/react-table';
@@ -272,10 +279,17 @@ export const columns = (
     ),
     cell: ({ row }) => {
       const lead = row.original;
-      // Get portal_status (invitation state) from backend
       const portalStatus = derivePortalStatus(lead);
-      // Check eligibility separately (contract signed + payment succeeded)
-      const eligible = isPortalEligible(lead);
+      const eligible = canInviteToPortal(lead);
+      const eligibility = normalizeClientEligibility(lead);
+      const backendEligible = readIsEligible(lead);
+      const primaryBlocker = eligibility.primary_portal_blocker;
+      const blockerLabel = primaryBlocker ? getPortalBlockerLabel(primaryBlocker) : 'Blocked';
+      const blockerDescription = primaryBlocker
+        ? primaryBlocker === 'missing_card_on_file'
+          ? getMissingCardPortalTooltip()
+          : getPortalBlockerDescription(primaryBlocker)
+        : 'Portal invite is locked until onboarding requirements are met.';
 
       const handleInviteClick = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -284,40 +298,64 @@ export const columns = (
         }
       };
 
-      // If not eligible, always show "Not eligible" badge
       if (!eligible) {
         return (
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Badge
-                  variant='outline'
-                  className='bg-gray-100 text-gray-700 border-gray-200'
-                >
-                  Not eligible
-                </Badge>
+                <div className='flex max-w-[160px] flex-col gap-1'>
+                  <Badge
+                    variant='outline'
+                    className='bg-gray-100 text-gray-700 border-gray-200 justify-start'
+                  >
+                    {backendEligible === false ? blockerLabel : 'Not eligible'}
+                  </Badge>
+                  {primaryBlocker === 'missing_card_on_file' ? (
+                    <Badge
+                      variant='outline'
+                      className='bg-amber-50 text-amber-800 border-amber-200 justify-start text-[11px]'
+                    >
+                      Missing card on file
+                    </Badge>
+                  ) : null}
+                </div>
               </TooltipTrigger>
-              <TooltipContent>
-                <p>Available after contract signed + first payment completed</p>
+              <TooltipContent className='max-w-xs'>
+                <p className='text-sm'>{blockerDescription}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
         );
       }
 
-      // If eligible, show appropriate UI based on portal_status
       switch (portalStatus) {
         case 'not_invited':
-          // Eligible and not invited yet - show invite button
           return (
-            <Button
-              size='sm'
-              variant='default'
-              onClick={handleInviteClick}
-              className='h-7'
-            >
-              Invite
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className='flex flex-col gap-1'>
+                    <Badge
+                      variant='outline'
+                      className='bg-green-100 text-green-700 border-green-200 w-fit'
+                    >
+                      Eligible
+                    </Badge>
+                    <Button
+                      size='sm'
+                      variant='default'
+                      onClick={handleInviteClick}
+                      className='h-7'
+                    >
+                      Invite
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className='text-sm'>Ready for portal invite</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
 
         case 'invited':
@@ -351,20 +389,27 @@ export const columns = (
           );
 
         default:
-          // Fallback: if portal_status is missing but eligible, show invite button
           return (
-            <Button
-              size='sm'
-              variant='default'
-              onClick={handleInviteClick}
-              className='h-7'
-            >
-              Invite
-            </Button>
+            <div className='flex flex-col gap-1'>
+              <Badge
+                variant='outline'
+                className='bg-green-100 text-green-700 border-green-200 w-fit'
+              >
+                Eligible
+              </Badge>
+              <Button
+                size='sm'
+                variant='default'
+                onClick={handleInviteClick}
+                className='h-7'
+              >
+                Invite
+              </Button>
+            </div>
           );
       }
     },
-    meta: { className: 'w-[132px]' },
+    meta: { className: 'w-[160px]' },
     enableHiding: false,
   },
   {
