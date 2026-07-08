@@ -19,7 +19,7 @@ function mapEligibilityFromDto(
   dto: ClientListItemDTO | ClientDetailDTO,
   user?: ClientListItemDTO['user']
 ) {
-  const source = dto as Record<string, unknown>;
+  const source = dto as unknown as Record<string, unknown>;
   const nested = (user ?? {}) as Record<string, unknown>;
 
   const pick = <T>(snakeKey: string): T | undefined =>
