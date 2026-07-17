@@ -1,4 +1,5 @@
 import { User } from '@/common/utils/User';
+import { apiBaseUrl } from '@/config/env';
 
 export default async function useSaveUser(userData: User) {
   console.assert(
@@ -6,9 +7,8 @@ export default async function useSaveUser(userData: User) {
     `in useSaveUser, no userData.id provided. the userData is ${JSON.stringify(userData)}`
   );
   try {
-    const baseUrl = import.meta.env.VITE_APP_BACKEND_URL;
     const response = await fetch(
-      `${baseUrl}/users/update`,
+      `${apiBaseUrl}/users/update`,
       {
         method: 'PUT',
         credentials: 'include',
