@@ -1,8 +1,14 @@
 import { test, expect } from '@playwright/test';
-import { installCorsPreflightStub, stubAuthMe, defaultCorsHeaders } from './fixtures/httpStubs';
+import {
+  installCorsPreflightStub,
+  stubAuthMe,
+  defaultCorsHeaders,
+} from './fixtures/httpStubs';
 
 test.describe('Doulas — Assignments birth outcomes filter (E2E)', () => {
-  test('filters rows by Complete / Incomplete / Not recorded', async ({ page }) => {
+  test('filters rows by Complete / Incomplete / Not recorded', async ({
+    page,
+  }) => {
     const corsHeaders = defaultCorsHeaders();
     await installCorsPreflightStub(page, corsHeaders);
     await stubAuthMe(
@@ -27,7 +33,12 @@ test.describe('Doulas — Assignments birth outcomes filter (E2E)', () => {
           success: true,
           data: {
             data: [
-              { id: 'doula-1', first_name: 'Dana', last_name: 'Doula', email: 'dana@example.com' },
+              {
+                id: 'doula-1',
+                first_name: 'Dana',
+                last_name: 'Doula',
+                email: 'dana@example.com',
+              },
             ],
             meta: { limit: 200, offset: 0, count: 1 },
           },
@@ -115,33 +126,48 @@ test.describe('Doulas — Assignments birth outcomes filter (E2E)', () => {
     await page.getByRole('tab', { name: 'Assignments' }).click();
 
     // Baseline: all 3 clients are listed
-    await expect(page.getByText('Complete Client')).toBeVisible();
-    await expect(page.getByText('Incomplete Client')).toBeVisible();
-    await expect(page.getByText('No Record')).toBeVisible();
+    await expect(
+      page.getByText('Complete Client', { exact: true })
+    ).toBeVisible();
+    await expect(
+      page.getByText('Incomplete Client', { exact: true })
+    ).toBeVisible();
+    await expect(page.getByText('No Record', { exact: true })).toBeVisible();
 
     // Filter to Complete
-    await page.getByRole('combobox', { name: /Birth outcomes/i }).click().catch(async () => {
-      // If the Select isn't exposing accessible combobox name, fall back to clicking the trigger by text.
-      await page.getByText('All birth outcomes').click();
-    });
-    await page.getByText('Complete', { exact: true }).click();
-    await expect(page.getByText('Complete Client')).toBeVisible();
-    await expect(page.getByText('Incomplete Client')).toHaveCount(0);
-    await expect(page.getByText('No Record')).toHaveCount(0);
+    const birthOutcomesFilter = page.getByRole('combobox').nth(4);
+    await birthOutcomesFilter.click();
+    await page.getByRole('option', { name: 'Complete', exact: true }).click();
+    await expect(
+      page.getByText('Complete Client', { exact: true })
+    ).toBeVisible();
+    await expect(
+      page.getByText('Incomplete Client', { exact: true })
+    ).toHaveCount(0);
+    await expect(page.getByText('No Record', { exact: true })).toHaveCount(0);
 
     // Filter to Incomplete
-    await page.getByText('Complete', { exact: true }).click();
-    await page.getByText('Incomplete', { exact: true }).click();
-    await expect(page.getByText('Incomplete Client')).toBeVisible();
-    await expect(page.getByText('Complete Client')).toHaveCount(0);
-    await expect(page.getByText('No Record')).toHaveCount(0);
+    await birthOutcomesFilter.click();
+    await page.getByRole('option', { name: 'Incomplete', exact: true }).click();
+    await expect(
+      page.getByText('Incomplete Client', { exact: true })
+    ).toBeVisible();
+    await expect(
+      page.getByText('Complete Client', { exact: true })
+    ).toHaveCount(0);
+    await expect(page.getByText('No Record', { exact: true })).toHaveCount(0);
 
     // Filter to Not recorded
-    await page.getByText('Incomplete', { exact: true }).click();
-    await page.getByText('Not recorded', { exact: true }).click();
-    await expect(page.getByText('No Record')).toBeVisible();
-    await expect(page.getByText('Complete Client')).toHaveCount(0);
-    await expect(page.getByText('Incomplete Client')).toHaveCount(0);
+    await birthOutcomesFilter.click();
+    await page
+      .getByRole('option', { name: 'Not recorded', exact: true })
+      .click();
+    await expect(page.getByText('No Record', { exact: true })).toBeVisible();
+    await expect(
+      page.getByText('Complete Client', { exact: true })
+    ).toHaveCount(0);
+    await expect(
+      page.getByText('Incomplete Client', { exact: true })
+    ).toHaveCount(0);
   });
 });
-

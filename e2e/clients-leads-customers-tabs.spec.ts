@@ -1,8 +1,14 @@
 import { test, expect } from '@playwright/test';
-import { installCorsPreflightStub, stubAuthMe, defaultCorsHeaders } from './fixtures/httpStubs';
+import {
+  installCorsPreflightStub,
+  stubAuthMe,
+  defaultCorsHeaders,
+} from './fixtures/httpStubs';
 
 test.describe('Clients — Leads vs Customers tabs (E2E)', () => {
-  test('matched clients appear only in Customers tab and counts update', async ({ page }) => {
+  test('matched clients appear only in Customers tab and counts update', async ({
+    page,
+  }) => {
     const corsHeaders = defaultCorsHeaders();
     await installCorsPreflightStub(page, corsHeaders);
     await stubAuthMe(
@@ -18,7 +24,7 @@ test.describe('Clients — Leads vs Customers tabs (E2E)', () => {
     );
 
     // Client list (canonical ApiResponse wrapper)
-    await page.route('**/clients', (route) => {
+    await page.route('http://localhost:5050/clients', (route) => {
       if (route.request().method() !== 'GET') return route.continue();
       route.fulfill({
         status: 200,
@@ -70,4 +76,3 @@ test.describe('Clients — Leads vs Customers tabs (E2E)', () => {
     await expect(page.getByText('Lead One')).toHaveCount(0);
   });
 });
-

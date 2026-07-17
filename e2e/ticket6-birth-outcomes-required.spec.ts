@@ -13,7 +13,9 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Ticket 6 — Birth Outcomes mandatory reminder (E2E)', () => {
-  test('doula sees reminder until birth outcomes are completed and saved', async ({ page }) => {
+  test('doula sees reminder until birth outcomes are completed and saved', async ({
+    page,
+  }) => {
     const clientId = 'client-1';
     const corsHeaders = {
       // Credentials requests (credentials: 'include') cannot use wildcard origin.
@@ -34,7 +36,11 @@ test.describe('Ticket 6 — Birth Outcomes mandatory reminder (E2E)', () => {
     });
 
     // ---- In-memory state for stubbed endpoints
-    let savedBirthOutcomes: { induction?: boolean; deliveryType?: string; meds?: string[] } = {};
+    let savedBirthOutcomes: {
+      induction?: boolean;
+      deliveryType?: string;
+      meds?: string[];
+    } = {};
     let activities: any[] = [];
 
     // ---- Auth: make PrivateRoute allow access (backend auth mode)
@@ -99,7 +105,10 @@ test.describe('Ticket 6 — Birth Outcomes mandatory reminder (E2E)', () => {
                 ? { birth_outcomes_induction: savedBirthOutcomes.induction }
                 : {}),
               ...(savedBirthOutcomes.deliveryType
-                ? { birth_outcomes_delivery_type: savedBirthOutcomes.deliveryType }
+                ? {
+                    birth_outcomes_delivery_type:
+                      savedBirthOutcomes.deliveryType,
+                  }
                 : {}),
               ...(Array.isArray(savedBirthOutcomes.meds)
                 ? { birth_outcomes_medications_used: savedBirthOutcomes.meds }
@@ -154,34 +163,41 @@ test.describe('Ticket 6 — Birth Outcomes mandatory reminder (E2E)', () => {
       return route.continue();
     });
 
-    // ---- Birth outcomes save endpoint (backend canonical)
-    await page.route('**/clients/*/birth-outcomes', async (route) => {
-      const req = route.request();
-      if (req.method() !== 'PUT') return route.continue();
+    // ---- Client update endpoint used to save structured birth outcomes
+    await page.route(
+      `http://localhost:5050/clients/${clientId}`,
+      async (route) => {
+        const req = route.request();
+        if (req.method() !== 'PUT') return route.continue();
 
-      const bodyText = req.postData() || '{}';
-      const body = JSON.parse(bodyText) as Record<string, unknown>;
-      savedBirthOutcomes = {
-        induction: body.birth_outcomes_induction as boolean,
-        deliveryType: String(body.birth_outcomes_delivery_type || ''),
-        meds: Array.isArray(body.birth_outcomes_medications_used)
-          ? (body.birth_outcomes_medications_used as unknown[]).map((v) => String(v))
-          : [],
-      };
+        const bodyText = req.postData() || '{}';
+        const body = JSON.parse(bodyText) as Record<string, unknown>;
+        savedBirthOutcomes = {
+          induction: body.birth_outcomes_induction as boolean,
+          deliveryType: String(body.birth_outcomes_delivery_type || ''),
+          meds: Array.isArray(body.birth_outcomes_medications_used)
+            ? (body.birth_outcomes_medications_used as unknown[]).map((v) =>
+                String(v)
+              )
+            : [],
+        };
 
-      return route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        headers: corsHeaders,
-        body: JSON.stringify({ success: true, data: savedBirthOutcomes }),
-      });
-    });
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          headers: corsHeaders,
+          body: JSON.stringify({ success: true, data: savedBirthOutcomes }),
+        });
+      }
+    );
 
     // ---- Go to protected route (should work due to /auth/me stub)
     await page.goto(`/doula-dashboard/activities/${clientId}`, {
       waitUntil: 'domcontentloaded',
     });
-    await expect(page.getByRole('heading', { name: 'Birth Outcomes', exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Birth Outcomes', exact: true })
+    ).toBeVisible();
 
     // Reminder banner should show (mandatory)
     const reminder = page.getByRole('alert');
@@ -192,7 +208,10 @@ test.describe('Ticket 6 — Birth Outcomes mandatory reminder (E2E)', () => {
 
     // Complete structured fields
     await page.getByLabel('Yes').first().check(); // Induction radio yes
-    await page.locator('select').nth(0).selectOption({ label: 'Vaginal with pain medication/epidural' });
+    await page
+      .locator('select')
+      .nth(0)
+      .selectOption({ label: 'Vaginal with pain medication/epidural' });
     await page.getByLabel('Pitocin').check();
 
     // Save
@@ -214,8 +233,13 @@ test.describe('Ticket 6 — Birth Outcomes mandatory reminder (E2E)', () => {
     // Record displayed under Birth Outcomes
     await expect(recordsSection.getByText('1 record')).toBeVisible();
     await expect(recordsSection.getByText('Induction: Yes')).toBeVisible();
-    await expect(recordsSection.getByText('Delivery type: Vaginal with pain medication/epidural')).toBeVisible();
-    await expect(recordsSection.getByText('Medications used: Pitocin')).toBeVisible();
+    await expect(
+      recordsSection.getByText(
+        'Delivery type: Vaginal with pain medication/epidural'
+      )
+    ).toBeVisible();
+    await expect(
+      recordsSection.getByText('Medications used: Pitocin')
+    ).toBeVisible();
   });
 });
-
