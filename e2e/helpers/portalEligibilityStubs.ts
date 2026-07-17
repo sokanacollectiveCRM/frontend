@@ -42,6 +42,24 @@ export const SCENARIOS = {
       can_mark_deposit_paid: false,
     },
   }),
+  insuranceMissingCard: buildJordanClient({
+    billing_path: 'insurance',
+    payment_method: 'Insurance',
+    is_eligible: false,
+    portal_blockers: ['missing_card_on_file'],
+    primary_portal_blocker: 'missing_card_on_file',
+    payment_authorization_required: true,
+    payment_authorization_satisfied: false,
+    card_on_file: false,
+    contract_signed: true,
+    deposit_paid: true,
+    allowed_actions: {
+      can_invite_to_portal: false,
+      can_send_verification_invoice: true,
+      can_mark_contract_signed: false,
+      can_mark_deposit_paid: false,
+    },
+  }),
   selfPayEligibleWithCard: buildJordanClient({
     billing_path: 'self_pay',
     is_eligible: true,
@@ -204,4 +222,64 @@ export async function stubJordanScenario(
   await stubClientDetail(page, client, headers);
   await stubAuxiliaryClientRoutes(page, clientId, headers);
   await stubClientsList(page, [client], headers);
+}
+
+/**
+ * Stub the real missing-card workflow:
+ * - initial GET responses are blocked by missing_card_on_file
+ * - POST send-verification-invoice returns a payment link
+ * - subsequent GET list/detail responses become eligible with card on file
+ */
+export async function stubVerificationInvoiceTransition(
+  page: Page,
+  options: {
+    initialClient: Record<string, unknown>;
+    refreshedClient: Record<string, unknown>;
+    paymentLink?: string;
+    headers?: CorsHeaders;
+  }
+) {
+  const headers = options.headers ?? defaultCorsHeaders();
+  const clientId = String(options.initialClient.id ?? JORDAN_CLIENT_ID);
+  let invoiceSent = false;
+
+  await stubAuxiliaryClientRoutes(page, clientId, headers);
+
+  await page.route(`${BACKEND_ORIGIN}/clients`, (route) => {
+    if (route.request().method() !== 'GET') return route.continue();
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers,
+      body: apiEnvelope([invoiceSent ? options.refreshedClient : options.initialClient]),
+    });
+  });
+
+  await page.route(`${BACKEND_ORIGIN}/clients/${clientId}`, (route) => {
+    if (route.request().method() !== 'GET') return route.continue();
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers,
+      body: apiEnvelope(invoiceSent ? options.refreshedClient : options.initialClient),
+    });
+  });
+
+  await page.route(`${BACKEND_ORIGIN}/clients/${clientId}/billing/send-verification-invoice`, (route) => {
+    if (route.request().method() !== 'POST') return route.continue();
+    invoiceSent = true;
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers,
+      body: JSON.stringify({
+        success: true,
+        data: {
+          message: 'Verification invoice sent.',
+          invoice_id: 'invoice_123',
+          payment_link: options.paymentLink ?? 'https://pay.example.com/invoice_123',
+        },
+      }),
+    });
+  });
 }

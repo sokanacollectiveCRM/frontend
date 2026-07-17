@@ -22,7 +22,6 @@ export type BillingPath =
 
 export type PortalAllowedActions = {
   can_invite_to_portal?: boolean;
-  can_send_verification_invoice?: boolean;
   can_mark_contract_signed?: boolean;
   can_mark_deposit_paid?: boolean;
 };
@@ -64,7 +63,6 @@ export type ReadinessGateSummary = {
 
 export type PrimaryPortalAction =
   | { type: 'invite' }
-  | { type: 'send_verification_invoice'; label: string }
   | { type: 'blocked'; label: string; description: string }
   | { type: 'none' };
 
@@ -223,16 +221,16 @@ export function readIsEligible(client: unknown): boolean | undefined {
 }
 
 /**
- * Portal invite gate — true only when backend reports is_eligible === true.
- * When the backend field is absent (legacy records), falls back to contract + deposit hints.
+ * Portal invite gate driven by backend action flags when present.
+ * Falls back to backend is_eligible, then legacy contract + deposit hints.
  */
 export function canInviteToPortal(client: unknown): boolean {
   const eligibility = normalizeClientEligibility(client);
-  if (eligibility.is_eligible === true) return true;
-  if (eligibility.is_eligible === false) return false;
-
   const allowed = eligibility.allowed_actions?.can_invite_to_portal;
   if (typeof allowed === 'boolean') return allowed;
+
+  if (eligibility.is_eligible === true) return true;
+  if (eligibility.is_eligible === false) return false;
 
   return legacyPortalEligibleFallback(eligibility);
 }
@@ -240,12 +238,12 @@ export function canInviteToPortal(client: unknown): boolean {
 function inferPortalEligibilityState(
   eligibility: ClientEligibilityFields
 ): ReadinessGateSummary['portalEligibility'] {
-  if (eligibility.is_eligible === true) return 'eligible';
-  if (eligibility.is_eligible === false) return 'locked';
-
   const allowed = eligibility.allowed_actions?.can_invite_to_portal;
   if (allowed === true) return 'eligible';
   if (allowed === false) return 'locked';
+
+  if (eligibility.is_eligible === true) return 'eligible';
+  if (eligibility.is_eligible === false) return 'locked';
 
   return legacyPortalEligibleFallback(eligibility) ? 'eligible' : 'unknown';
 }
@@ -331,28 +329,11 @@ export function getReadinessGateSummary(client: unknown): ReadinessGateSummary {
   };
 }
 
-export function shouldShowVerificationInvoiceAction(client: unknown): boolean {
-  const eligibility = normalizeClientEligibility(client);
-
-  const allowed = eligibility.allowed_actions?.can_send_verification_invoice;
-  if (typeof allowed === 'boolean') return allowed;
-
-  if (eligibility.primary_portal_blocker !== 'missing_card_on_file') return false;
-  if (eligibility.payment_authorization_required !== true) return false;
-  if (eligibility.card_on_file === true) return false;
-
-  return true;
-}
-
 export function getPrimaryPortalAction(client: unknown): PrimaryPortalAction {
   const eligibility = normalizeClientEligibility(client);
 
-  if (eligibility.is_eligible === true) {
+  if (canInviteToPortal(client)) {
     return { type: 'invite' };
-  }
-
-  if (shouldShowVerificationInvoiceAction(client)) {
-    return { type: 'send_verification_invoice', label: 'Send $1 verification invoice' };
   }
 
   const blocker = eligibility.primary_portal_blocker;
@@ -377,7 +358,7 @@ export function getPrimaryPortalAction(client: unknown): PrimaryPortalAction {
 
 /** Tooltip copy for portal column when blocked by missing card. */
 export function getMissingCardPortalTooltip(): string {
-  return 'Portal locked: deposit paid, but no reusable payment method was saved. Send verification invoice before inviting client.';
+  return 'Portal locked: deposit paid, but no reusable payment method is currently saved.';
 }
 
 export function formatYesNo(value: boolean | null | undefined): string {

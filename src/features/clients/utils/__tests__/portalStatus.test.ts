@@ -13,6 +13,15 @@ describe('portalStatus invite gating', () => {
     expect(isPortalEligible({ is_eligible: true } as any)).toBe(true);
   });
 
+  it('blocks portal invite when backend allowed_actions explicitly says no', () => {
+    expect(
+      canInviteToPortal({
+        is_eligible: true,
+        allowed_actions: { can_invite_to_portal: false },
+      })
+    ).toBe(false);
+  });
+
   it('does not allow invite when backend explicitly blocks despite legacy hints', () => {
     expect(
       canInviteToPortal({

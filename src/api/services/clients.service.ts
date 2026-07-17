@@ -166,40 +166,73 @@ export interface PhiUpdateResponse {
  * @returns Promise with success/error response
  * @throws ApiError if update fails or non-PHI fields are included
  */
-export interface SendVerificationInvoiceResponse {
-  success?: boolean;
-  message?: string;
-  invoice_id?: string;
-  payment_link?: string;
-  invoice_link?: string;
-  data?: {
-    invoice_id?: string;
-    payment_link?: string;
-    invoice_link?: string;
-    message?: string;
-  };
+export interface PaymentInstallment {
+  id: string; installment_number: number; payment_type: string; amount: number; due_date: string | null;
+  payment_status: 'upcoming' | 'pending' | 'invoiced' | 'paid' | 'overdue' | 'failed' | 'cancelled';
+  qbo_invoice_status: string | null; qbo_invoice_id: string | null; payment_link: string | null;
+  paid_date: string | null; is_overdue: boolean; available_action: { enabled: boolean; reason: string | null };
 }
 
-/**
- * Send a $1 verification invoice so the client can save a reusable QuickBooks payment method.
- */
-export async function sendVerificationInvoice(
-  clientId: string
-): Promise<SendVerificationInvoiceResponse> {
-  if (API_CONFIG.useLegacyApi) {
-    throw new Error('Legacy mode disabled. Set VITE_USE_LEGACY_API=false.');
-  }
-
-  const response = await post<
-    SendVerificationInvoiceResponse | { data?: SendVerificationInvoiceResponse }
-  >(`/clients/${clientId}/billing/send-verification-invoice`);
-
-  if (response && typeof response === 'object' && 'data' in response && response.data) {
-    return response.data;
-  }
-
-  return response as SendVerificationInvoiceResponse;
+export interface CardOnFileStatus {
+  required: boolean; on_file: boolean; status: 'active' | 'missing' | 'expired' | 'inactive' | 'not_required';
+  quickbooks_customer_id: string | null; payment_method_reference: string | null; card_brand: string | null;
+  last4: string | null; exp_month: number | null; exp_year: number | null; last_verified_at: string | null;
 }
+
+export interface GenerateInstallmentInvoiceResponse {
+  installment_id: string; installment_number: number; payment_type: string; amount: number; due_date: string | null;
+  qbo_invoice_id: string; payment_link: string | null; card_on_file: boolean; card_warning_included: boolean; invoice_status: string;
+}
+
+const LOCAL_BILLING_FIXTURE_CLIENT_ID = '1d981375-beeb-46e7-bf22-5d7a750eb391';
+const useLocalBillingFixture = (clientId: string) =>
+  import.meta.env.DEV &&
+  import.meta.env.VITE_MOCK_BILLING_WORKFLOW === 'true' &&
+  clientId === LOCAL_BILLING_FIXTURE_CLIENT_ID;
+
+let localFixtureInstallments: PaymentInstallment[] = [
+  {
+    id: '10000000-0000-4000-8000-000000000001', installment_number: 1, payment_type: 'deposit',
+    amount: 100, due_date: '2026-07-01', payment_status: 'paid', qbo_invoice_status: 'paid',
+    qbo_invoice_id: 'LOCAL-DEPOSIT-001', payment_link: null, paid_date: '2026-07-01T12:00:00.000Z',
+    is_overdue: false, available_action: { enabled: false, reason: 'Installment is already paid' },
+  },
+  {
+    id: '10000000-0000-4000-8000-000000000002', installment_number: 2, payment_type: 'installment',
+    amount: 450, due_date: '2026-08-15', payment_status: 'pending', qbo_invoice_status: null,
+    qbo_invoice_id: null, payment_link: null, paid_date: null, is_overdue: false,
+    available_action: { enabled: true, reason: null },
+  },
+  {
+    id: '10000000-0000-4000-8000-000000000003', installment_number: 3, payment_type: 'installment',
+    amount: 450, due_date: '2026-09-15', payment_status: 'upcoming', qbo_invoice_status: null,
+    qbo_invoice_id: null, payment_link: null, paid_date: null, is_overdue: false,
+    available_action: { enabled: false, reason: 'A prior required installment remains unpaid' },
+  },
+];
+
+export const fetchClientPaymentSchedule = (clientId: string) =>
+  useLocalBillingFixture(clientId)
+    ? Promise.resolve(localFixtureInstallments.map((item) => ({ ...item, available_action: { ...item.available_action } })))
+    : get<PaymentInstallment[]>(`/clients/${clientId}/billing/payment-schedule`);
+
+export const fetchCardOnFileStatus = (clientId: string) =>
+  useLocalBillingFixture(clientId)
+    ? Promise.resolve<CardOnFileStatus>({ required: true, on_file: false, status: 'missing', quickbooks_customer_id: 'LOCAL-QBO-CUSTOMER', payment_method_reference: null, card_brand: null, last4: null, exp_month: null, exp_year: null, last_verified_at: null })
+    : get<CardOnFileStatus>(`/api/payment-methods/${clientId}`);
+
+export const generateInstallmentInvoice = (clientId: string, installmentId: string) => {
+  if (useLocalBillingFixture(clientId)) {
+    const installment = localFixtureInstallments.find((item) => item.id === installmentId);
+    if (!installment || !installment.available_action.enabled) return Promise.reject(new Error(installment?.available_action.reason || 'Installment is not eligible'));
+    const paymentLink = 'https://app.qbo.intuit.com/app/invoice';
+    localFixtureInstallments = localFixtureInstallments.map((item) => item.id === installmentId
+      ? { ...item, payment_status: 'invoiced', qbo_invoice_status: 'sent', qbo_invoice_id: 'LOCAL-INVOICE-002', payment_link: paymentLink, available_action: { enabled: false, reason: 'Installment is already invoiced' } }
+      : item);
+    return Promise.resolve({ installment_id: installment.id, installment_number: installment.installment_number, payment_type: installment.payment_type, amount: installment.amount, due_date: installment.due_date, qbo_invoice_id: 'LOCAL-INVOICE-002', payment_link: paymentLink, card_on_file: false, card_warning_included: true, invoice_status: 'sent' });
+  }
+  return post<GenerateInstallmentInvoiceResponse>(`/clients/${clientId}/billing/installments/${installmentId}/invoice`);
+};
 
 export async function updateClientPhi(
   clientId: string,

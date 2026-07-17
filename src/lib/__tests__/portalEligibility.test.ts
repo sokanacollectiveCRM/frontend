@@ -8,7 +8,6 @@ import {
   getPortalBlockerLabel,
   getReadinessGateSummary,
   normalizeClientEligibility,
-  shouldShowVerificationInvoiceAction,
 } from '../portalEligibility';
 
 describe('portalEligibility display helpers', () => {
@@ -48,11 +47,27 @@ describe('portalEligibility display helpers', () => {
     expect(normalized.card_on_file).toBe(false);
   });
 
-  it('allows portal invite only when backend is_eligible is true', () => {
+  it('allows portal invite when backend is_eligible is true', () => {
     expect(canInviteToPortal({ is_eligible: true })).toBe(true);
     expect(canInviteToPortal({ isEligible: true })).toBe(true);
     expect(canInviteToPortal({ is_eligible: false })).toBe(false);
     expect(canInviteToPortal({ isEligible: false })).toBe(false);
+  });
+
+  it('treats backend invite allowed_actions as authoritative when present', () => {
+    expect(
+      canInviteToPortal({
+        is_eligible: true,
+        allowed_actions: { can_invite_to_portal: false },
+      })
+    ).toBe(false);
+
+    expect(
+      canInviteToPortal({
+        is_eligible: false,
+        allowed_actions: { can_invite_to_portal: true },
+      })
+    ).toBe(true);
   });
 
   it('uses legacy contract + deposit fallback when is_eligible is absent', () => {
@@ -69,54 +84,6 @@ describe('portalEligibility display helpers', () => {
       })
     ).toBe(false);
     expect(canInviteToPortal({})).toBe(false);
-  });
-
-  it('shows verification invoice action for missing card when allowed', () => {
-    expect(
-      shouldShowVerificationInvoiceAction({
-        primary_portal_blocker: 'missing_card_on_file',
-        payment_authorization_required: true,
-        card_on_file: false,
-        allowed_actions: { can_send_verification_invoice: true },
-      })
-    ).toBe(true);
-
-    expect(
-      shouldShowVerificationInvoiceAction({
-        primary_portal_blocker: 'missing_card_on_file',
-        payment_authorization_required: true,
-        card_on_file: false,
-        allowed_actions: { can_send_verification_invoice: false },
-      })
-    ).toBe(false);
-
-    expect(
-      shouldShowVerificationInvoiceAction({
-        primary_portal_blocker: 'deposit_unpaid',
-        payment_authorization_required: true,
-        card_on_file: false,
-      })
-    ).toBe(false);
-  });
-
-  it('treats backend verification invoice allowed_actions as authoritative', () => {
-    expect(
-      shouldShowVerificationInvoiceAction({
-        primary_portal_blocker: 'deposit_unpaid',
-        payment_authorization_required: false,
-        card_on_file: true,
-        allowed_actions: { can_send_verification_invoice: true },
-      })
-    ).toBe(true);
-
-    expect(
-      shouldShowVerificationInvoiceAction({
-        primary_portal_blocker: 'missing_card_on_file',
-        payment_authorization_required: true,
-        card_on_file: false,
-        allowed_actions: { can_send_verification_invoice: false },
-      })
-    ).toBe(false);
   });
 
   it('renders readiness gate summary from backend fields', () => {
@@ -161,6 +128,15 @@ describe('portalEligibility display helpers', () => {
     ).toBe('locked');
   });
 
+  it('uses backend invite allowed_actions first in readiness summary', () => {
+    expect(
+      getReadinessGateSummary({
+        is_eligible: true,
+        allowed_actions: { can_invite_to_portal: false },
+      }).portalEligibility
+    ).toBe('locked');
+  });
+
   it('formats yes/no with null-safe fallback', () => {
     expect(formatYesNo(true)).toBe('Yes');
     expect(formatYesNo(false)).toBe('No');
@@ -169,8 +145,8 @@ describe('portalEligibility display helpers', () => {
   });
 });
 
-describe('sendVerificationInvoice API', () => {
-  it('posts to the backend verification invoice endpoint', async () => {
+describe('generateInstallmentInvoice API', () => {
+  it('posts only the client and installment identifiers', async () => {
     vi.resetModules();
 
     vi.doMock('@/api/config', () => ({
@@ -187,10 +163,10 @@ describe('sendVerificationInvoice API', () => {
       syncQuickBooksCustomerFromClient: vi.fn(),
     }));
 
-    const { sendVerificationInvoice } = await import('@/api/services/clients.service');
-    const result = await sendVerificationInvoice('client-123');
+    const { generateInstallmentInvoice } = await import('@/api/services/clients.service');
+    const result = await generateInstallmentInvoice('client-123', 'installment-2');
 
-    expect(post).toHaveBeenCalledWith('/clients/client-123/billing/send-verification-invoice');
+    expect(post).toHaveBeenCalledWith('/clients/client-123/billing/installments/installment-2/invoice');
     expect(result.payment_link).toBe('https://pay.example/invoice/1');
   });
 });

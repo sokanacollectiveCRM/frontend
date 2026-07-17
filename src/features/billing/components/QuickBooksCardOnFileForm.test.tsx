@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 
 import QuickBooksCardOnFileForm from './QuickBooksCardOnFileForm';
+import { PaymentMethodApiError } from './quickbooksPayments';
 
 const { tokenizeIntuitCard, savePaymentMethod, getPaymentMethod } = vi.hoisted(() => ({
   tokenizeIntuitCard: vi.fn(),
@@ -24,6 +25,29 @@ describe('QuickBooksCardOnFileForm', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getPaymentMethod.mockResolvedValue(null);
+  });
+
+  it('loads and displays the existing QuickBooks stored card metadata', async () => {
+    getPaymentMethod.mockResolvedValue({
+      client_id: 'client_123',
+      quickbooks_customer_id: 'qb_456',
+      provider_payment_method_reference: 'pm_789',
+      card_brand: 'Visa',
+      last4: '1111',
+      exp_month: 7,
+      exp_year: 2028,
+      status: 'saved',
+      created_at: '2026-04-23T10:00:00Z',
+      updated_at: '2026-04-23T10:00:00Z',
+    });
+
+    render(<QuickBooksCardOnFileForm clientId='client_123' />);
+
+    await waitFor(() => expect(getPaymentMethod).toHaveBeenCalledTimes(1));
+    expect(screen.getByText('Visa')).toBeInTheDocument();
+    expect(screen.getByText('1111')).toBeInTheDocument();
+    expect(screen.getByText('07/28')).toBeInTheDocument();
+    expect(screen.getByText('saved')).toBeInTheDocument();
   });
 
   it('tokenizes card details and saves only the token with the client id', async () => {
@@ -98,6 +122,56 @@ describe('QuickBooksCardOnFileForm', () => {
         quickbooks_customer_id: 'qb_456',
         provider_payment_method_reference: 'pm_789',
         card_brand: 'Visa',
+        last4: '1111',
+      })
+    );
+    expect(screen.getByText(/card saved/i)).toBeInTheDocument();
+    expect(screen.getByText(/visa ending in 1111/i)).toBeInTheDocument();
+  });
+
+  it('recovers from a duplicate save request by reloading the stored QuickBooks card', async () => {
+    tokenizeIntuitCard.mockResolvedValue('tok_123');
+    savePaymentMethod.mockRejectedValue(
+      new PaymentMethodApiError('Duplicate request', 409, 'duplicate_request')
+    );
+    getPaymentMethod
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        client_id: 'client_123',
+        quickbooks_customer_id: 'qb_456',
+        provider_payment_method_reference: 'pm_789',
+        card_brand: 'Visa',
+        last4: '1111',
+        exp_month: 7,
+        exp_year: 2028,
+        status: 'saved',
+        created_at: '2026-04-23T10:00:00Z',
+        updated_at: '2026-04-23T10:00:00Z',
+      });
+
+    const onSuccess = vi.fn();
+    const user = userEvent.setup();
+
+    render(<QuickBooksCardOnFileForm clientId='client_123' onSuccess={onSuccess} />);
+
+    await waitFor(() => expect(getPaymentMethod).toHaveBeenCalledTimes(1));
+    await user.type(screen.getByLabelText(/name on card/i), 'Jane Doe');
+    await user.type(screen.getByLabelText(/card number/i), '4111111111111111');
+    await user.type(screen.getByLabelText(/expiration/i), '07/28');
+    await user.type(screen.getByLabelText(/security code/i), '123');
+    await user.type(screen.getByLabelText(/^billing address$/i), '123 Main St');
+    await user.type(screen.getByLabelText(/^city$/i), 'Boston');
+    await user.type(screen.getByLabelText(/^state$/i), 'MA');
+    await user.type(screen.getByLabelText(/postal code/i), '02118');
+
+    await user.click(screen.getByRole('button', { name: /save card/i }));
+
+    await waitFor(() => expect(savePaymentMethod).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(getPaymentMethod).toHaveBeenCalledTimes(2));
+    expect(onSuccess).toHaveBeenCalledWith(
+      expect.objectContaining({
+        quickbooks_customer_id: 'qb_456',
+        provider_payment_method_reference: 'pm_789',
         last4: '1111',
       })
     );

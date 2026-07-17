@@ -92,7 +92,6 @@ export interface ClientListItemDTO {
   verification_invoice_paid_at?: string | null;
   allowed_actions?: {
     can_invite_to_portal?: boolean;
-    can_send_verification_invoice?: boolean;
     can_mark_contract_signed?: boolean;
     can_mark_deposit_paid?: boolean;
   };
@@ -174,7 +173,6 @@ export interface ClientDetailDTO {
   verification_invoice_paid_at?: string | null;
   allowed_actions?: {
     can_invite_to_portal?: boolean;
-    can_send_verification_invoice?: boolean;
     can_mark_contract_signed?: boolean;
     can_mark_deposit_paid?: boolean;
   };

@@ -13,6 +13,7 @@ import {
   JORDAN_CLIENT_ID,
   SCENARIOS,
   stubJordanScenario,
+  stubVerificationInvoiceTransition,
 } from './helpers/portalEligibilityStubs';
 
 const ADMIN_USER = {
@@ -103,10 +104,14 @@ async function openProfileModal(page: Page) {
 
 async function expandBillingReadinessSection(page: Page) {
   const dialog = page.getByTestId(`lead-profile-dialog-${JORDAN_CLIENT_ID}`);
+  const readinessHeading = dialog.getByText('Portal onboarding readiness');
+  if (await readinessHeading.isVisible().catch(() => false)) {
+    return;
+  }
   const billingButton = dialog.getByRole('button', { name: /Billing Information/i });
   await billingButton.scrollIntoViewIfNeeded();
   await billingButton.click({ force: true });
-  await expect(dialog.getByText('Portal onboarding readiness')).toBeVisible();
+  await expect(readinessHeading).toBeVisible();
 }
 
 async function assertProfilePortalReadiness(
@@ -140,6 +145,29 @@ async function assertProfilePortalReadiness(
   }
 }
 
+async function clickVerificationInvoiceAndWaitForRefresh(page: Page) {
+  const sendResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      response.url().includes(`/clients/${JORDAN_CLIENT_ID}/billing/send-verification-invoice`) &&
+      response.ok()
+  );
+  const refreshResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'GET' &&
+      response.url().includes(`/clients/${JORDAN_CLIENT_ID}`) &&
+      response.ok()
+  );
+
+  await page
+    .getByTestId(`lead-profile-dialog-${JORDAN_CLIENT_ID}`)
+    .getByRole('button', { name: /Send \$1 verification invoice/i })
+    .click();
+
+  await sendResponse;
+  await refreshResponse;
+}
+
 test.describe('Portal eligibility — invite & verification actions', () => {
   test.describe.configure({ mode: 'serial' });
   test.setTimeout(60_000);
@@ -165,7 +193,29 @@ test.describe('Portal eligibility — invite & verification actions', () => {
     });
   });
 
-  test('Scenario 2 — Self-Pay + card: eligible, invite enabled', async ({ page }) => {
+  test('Scenario 2 — Insurance missing card: invite blocked, verification visible', async ({ page }) => {
+    await setupAdminClientsPage(page, SCENARIOS.insuranceMissingCard);
+    await openCustomersTab(page);
+
+    await assertInviteButtonInPortalColumn(page, false);
+    await assertEligibleBadge(page, false);
+    await assertBlockerBadge(page, /Missing card on file/i);
+
+    await assertRowMenuInvite(
+      page,
+      false,
+      /Deposit paid, but no reusable payment method was saved in QuickBooks/i
+    );
+
+    await openProfileModal(page);
+    await assertProfilePortalReadiness(page, {
+      eligibility: 'Locked',
+      verificationVisible: true,
+      primaryBlocker: /Missing card on file/i,
+    });
+  });
+
+  test('Scenario 3 — Self-Pay + card: eligible, invite enabled', async ({ page }) => {
     await setupAdminClientsPage(page, SCENARIOS.selfPayEligibleWithCard);
     await openCustomersTab(page);
 
@@ -181,7 +231,7 @@ test.describe('Portal eligibility — invite & verification actions', () => {
     });
   });
 
-  test('Scenario 3 — Medicaid, no card: eligible, invite enabled', async ({ page }) => {
+  test('Scenario 4 — Medicaid, no card: eligible, invite enabled', async ({ page }) => {
     await setupAdminClientsPage(page, SCENARIOS.medicaidEligibleNoCard);
     await openCustomersTab(page);
 
@@ -197,7 +247,7 @@ test.describe('Portal eligibility — invite & verification actions', () => {
     });
   });
 
-  test('Scenario 4 — Unsigned contract: invite blocked, verification hidden', async ({ page }) => {
+  test('Scenario 5 — Unsigned contract: invite blocked, verification hidden', async ({ page }) => {
     await setupAdminClientsPage(page, SCENARIOS.unsignedContract);
     await openCustomersTab(page);
 
@@ -215,7 +265,7 @@ test.describe('Portal eligibility — invite & verification actions', () => {
     });
   });
 
-  test('Scenario 5 — Unknown billing path: invite blocked, verification hidden', async ({ page }) => {
+  test('Scenario 6 — Unknown billing path: invite blocked, verification hidden', async ({ page }) => {
     await setupAdminClientsPage(page, SCENARIOS.billingPathUnknown);
     await openCustomersTab(page);
 
@@ -231,5 +281,87 @@ test.describe('Portal eligibility — invite & verification actions', () => {
       verificationVisible: false,
       primaryBlocker: /Billing path unknown/i,
     });
+  });
+
+  test('Scenario 7 — Verification invoice shows payment link while backend still reports missing card', async ({
+    page,
+  }) => {
+    const paymentLink = 'https://pay.example.com/invoice_123';
+    const sentButStillBlocked = {
+      ...SCENARIOS.selfPayMissingCard,
+      verification_invoice_id: 'invoice_123',
+      verification_invoice_sent_at: '2026-01-02T12:00:00.000Z',
+    };
+
+    await installCorsPreflightStub(page, defaultCorsHeaders());
+    await stubAuthMe(page, ADMIN_USER, defaultCorsHeaders());
+    await stubVerificationInvoiceTransition(page, {
+      initialClient: SCENARIOS.selfPayMissingCard,
+      refreshedClient: sentButStillBlocked,
+      paymentLink,
+      headers: defaultCorsHeaders(),
+    });
+
+    await openProfileModal(page);
+    await assertProfilePortalReadiness(page, {
+      eligibility: 'Locked',
+      verificationVisible: true,
+      primaryBlocker: /Missing card on file/i,
+    });
+
+    await clickVerificationInvoiceAndWaitForRefresh(page);
+
+    const dialog = page.getByTestId(`lead-profile-dialog-${JORDAN_CLIENT_ID}`);
+    await expect(dialog.getByRole('link', { name: /Open invoice \/ payment link/i })).toHaveAttribute(
+      'href',
+      paymentLink
+    );
+    await assertProfilePortalReadiness(page, {
+      eligibility: 'Locked',
+      verificationVisible: true,
+      primaryBlocker: /Missing card on file/i,
+    });
+  });
+
+  test('Scenario 8 — Verification invoice refresh unlocks invite after backend reports card on file', async ({
+    page,
+  }) => {
+    const paymentLink = 'https://pay.example.com/invoice_123';
+    await installCorsPreflightStub(page, defaultCorsHeaders());
+    await stubAuthMe(page, ADMIN_USER, defaultCorsHeaders());
+    await stubVerificationInvoiceTransition(page, {
+      initialClient: SCENARIOS.selfPayMissingCard,
+      refreshedClient: {
+        ...SCENARIOS.selfPayEligibleWithCard,
+        verification_invoice_id: 'invoice_123',
+        verification_invoice_sent_at: '2026-01-02T12:00:00.000Z',
+        qb_stored_payment_method_id: 'pm_123',
+      },
+      paymentLink,
+      headers: defaultCorsHeaders(),
+    });
+
+    await openCustomersTab(page);
+    await assertInviteButtonInPortalColumn(page, false);
+
+    await openProfileModal(page);
+    await assertProfilePortalReadiness(page, {
+      eligibility: 'Locked',
+      verificationVisible: true,
+      primaryBlocker: /Missing card on file/i,
+    });
+
+    await clickVerificationInvoiceAndWaitForRefresh(page);
+
+    await assertProfilePortalReadiness(page, {
+      eligibility: 'Eligible',
+      verificationVisible: false,
+    });
+
+    const dialog = page.getByTestId(`lead-profile-dialog-${JORDAN_CLIENT_ID}`);
+    await dialog.getByRole('button', { name: 'Close' }).first().click();
+    await openCustomersTab(page);
+    await assertEligibleBadge(page, true);
+    await assertInviteButtonInPortalColumn(page, true);
   });
 });

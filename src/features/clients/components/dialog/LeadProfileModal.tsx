@@ -24,7 +24,7 @@ import { useClients } from '@/common/hooks/clients/useClients';
 import { UserContext } from '@/common/contexts/UserContext';
 import updateClient from '@/common/utils/updateClient';
 import updateClientStatus from '@/common/utils/updateClientStatus';
-import { updateClientPhi, sendVerificationInvoice } from '@/api/services/clients.service';
+import { updateClientPhi, fetchClientPaymentSchedule, fetchCardOnFileStatus, generateInstallmentInvoice, type PaymentInstallment, type CardOnFileStatus } from '@/api/services/clients.service';
 import { buildUrl, fetchWithAuth } from '@/api/http';
 import { PHI_KEYS } from '@/config/phi';
 import { Client } from '@/features/clients/data/schema';
@@ -84,7 +84,6 @@ import {
   getPortalBlockerDescription,
   getPortalBlockerLabel,
   getReadinessGateSummary,
-  shouldShowVerificationInvoiceAction,
 } from '@/lib/portalEligibility';
 import { PREGNANCY_BABY_POSTPARTUM_QUESTION_LABEL } from '@/features/request/stepConfig';
 import {
@@ -269,8 +268,12 @@ export function LeadProfileModal({
   const [editedData, setEditedData] = useState<Partial<Client>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [isRecordingPaymentAuth, setIsRecordingPaymentAuth] = useState(false);
-  const [isSendingVerificationInvoice, setIsSendingVerificationInvoice] = useState(false);
-  const [verificationInvoiceLink, setVerificationInvoiceLink] = useState<string | null>(null);
+  const [installments, setInstallments] = useState<PaymentInstallment[]>([]);
+  const [cardStatus, setCardStatus] = useState<CardOnFileStatus | null>(null);
+  const [billingLoading, setBillingLoading] = useState(false);
+  const [billingError, setBillingError] = useState<string | null>(null);
+  const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false);
+  const [generatedInvoiceLink, setGeneratedInvoiceLink] = useState<string | null>(null);
   const [isSavingBirthOutcomes, setIsSavingBirthOutcomes] = useState(false);
   // Primary source for display: full detail from GET /clients/:id (authorized users get PHI).
   const [fetchedDetail, setFetchedDetail] = useState<ClientDetail | null>(null);
@@ -376,6 +379,24 @@ export function LeadProfileModal({
       cancelled = true;
     };
   }, [open, client?.id, getClientById]);
+
+  const loadBillingWorkflow = React.useCallback(async () => {
+    if (!client?.id) return;
+    setBillingLoading(true); setBillingError(null);
+    try {
+      const [schedule, card] = await Promise.all([
+        fetchClientPaymentSchedule(String(client.id)), fetchCardOnFileStatus(String(client.id)),
+      ]);
+      setInstallments(Array.isArray(schedule) ? schedule : []); setCardStatus(card);
+    } catch (error) {
+      setBillingError(error instanceof Error ? error.message : 'Unable to load billing information.');
+    } finally { setBillingLoading(false); }
+  }, [client?.id]);
+
+  React.useEffect(() => {
+    if (open && client?.id) void loadBillingWorkflow();
+    else { setInstallments([]); setCardStatus(null); setBillingError(null); setGeneratedInvoiceLink(null); }
+  }, [open, client?.id, loadBillingWorkflow]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -1378,47 +1399,36 @@ export function LeadProfileModal({
     }
   };
 
-  const handleSendVerificationInvoice = async () => {
-    if (!client?.id) return;
-    setIsSendingVerificationInvoice(true);
+  const handleGenerateInstallmentInvoice = async (installment: PaymentInstallment) => {
+    if (!client?.id || isGeneratingInvoice) return;
+    const amount = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(installment.amount);
+    const due = installment.due_date ? format(parseISO(installment.due_date), 'MMMM d, yyyy') : 'the scheduled date';
+    const label = installment.payment_type === 'deposit' ? 'Deposit' : `Installment ${installment.installment_number}`;
+    const warning = cardStatus?.required && cardStatus.status !== 'active' ? '\n\nThis client does not currently have an active card on file. The invoice email will include the required card-on-file warning.' : '';
+    if (!window.confirm(`Generate an invoice for ${label} in the amount of ${amount}, due ${due}?${warning}`)) return;
+    setIsGeneratingInvoice(true);
     try {
-      const result = await sendVerificationInvoice(String(client.id));
-      const link =
-        result.payment_link ??
-        result.invoice_link ??
-        result.data?.payment_link ??
-        result.data?.invoice_link ??
-        null;
-
-      if (link) {
-        setVerificationInvoiceLink(link);
-      }
-
-      toast.success(result.message ?? result.data?.message ?? 'Verification invoice sent.');
+      const result = await generateInstallmentInvoice(String(client.id), installment.id);
+      setGeneratedInvoiceLink(result.payment_link);
+      toast.success('Installment invoice generated.');
+      await loadBillingWorkflow();
       detailFetchRef.current = null;
       const refreshed = await getClientById(String(client.id));
-      if (refreshed) {
-        setFetchedDetail(refreshed);
-      }
+      if (refreshed) setFetchedDetail(refreshed);
       refreshClients?.();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Failed to send verification invoice.'
-      );
-    } finally {
-      setIsSendingVerificationInvoice(false);
-    }
+      toast.error(error instanceof Error ? error.message : 'Failed to generate installment invoice.');
+    } finally { setIsGeneratingInvoice(false); }
   };
 
   const eligibilitySource = React.useMemo(
-    () => ({ ...((client as Record<string, unknown> | null) ?? {}), ...(detailSource ?? {}) }),
+    () => detailSource ?? ((client as Record<string, unknown> | null) ?? {}),
     [detailSource, client]
   );
   const readinessSummary = React.useMemo(
     () => getReadinessGateSummary(eligibilitySource),
     [eligibilitySource]
   );
-  const showVerificationInvoiceAction = shouldShowVerificationInvoiceAction(eligibilitySource);
 
   const renderEditableField = (
     label: string,
@@ -1913,51 +1923,68 @@ export function LeadProfileModal({
                         <span>{getPortalBlockerLabel(readinessSummary.primaryBlocker)}</span>
                       </div>
                     ) : null}
-                    {readinessSummary.verificationInvoiceStatus ? (
-                      <div className="flex justify-between gap-2 sm:col-span-2">
-                        <span className="text-muted-foreground">Verification invoice</span>
-                        <span className="text-right">{readinessSummary.verificationInvoiceStatus}</span>
-                      </div>
-                    ) : null}
                   </div>
                   {readinessSummary.primaryBlocker ? (
                     <p className="text-xs text-muted-foreground">
                       {getPortalBlockerDescription(readinessSummary.primaryBlocker)}
                     </p>
                   ) : null}
-                  {showVerificationInvoiceAction ? (
-                    <div className="space-y-2 pt-1">
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={() => void handleSendVerificationInvoice()}
-                        disabled={isSendingVerificationInvoice}
-                        className="w-fit"
-                      >
-                        {isSendingVerificationInvoice ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Sending…
-                          </>
-                        ) : (
-                          'Send $1 verification invoice'
-                        )}
-                      </Button>
-                      {verificationInvoiceLink ? (
-                        <p className="text-xs">
-                          <a
-                            href={verificationInvoiceLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary underline-offset-2 hover:underline inline-flex items-center gap-1"
-                          >
-                            Open invoice / payment link
-                            <ExternalLink className="h-3 w-3" />
-                          </a>
-                        </p>
-                      ) : null}
+                </div>
+                <div className="rounded-lg border p-4 space-y-3" aria-label="Card on file status">
+                  <p className="text-sm font-medium">Card on file: {cardStatus ? cardStatus.status.replace('_', ' ').replace(/^./, c => c.toUpperCase()) : '—'}</p>
+                  {cardStatus?.status === 'active' && cardStatus.last4 ? (
+                    <div className="text-sm text-muted-foreground">
+                      <p>{cardStatus.card_brand || 'Card'} ending in {cardStatus.last4}</p>
+                      {cardStatus.exp_month && cardStatus.exp_year ? <p>Expires {String(cardStatus.exp_month).padStart(2, '0')}/{cardStatus.exp_year}</p> : null}
                     </div>
                   ) : null}
+                </div>
+                <div className="rounded-lg border p-4 space-y-3" aria-label="Payment Schedule">
+                  <p className="text-sm font-medium">Payment Schedule</p>
+                  {billingLoading ? <p className="text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Loading payment schedule…</p> : null}
+                  {billingError ? <p role="alert" className="text-sm text-destructive">{billingError}</p> : null}
+                  {!billingLoading && !billingError && installments.length === 0 ? <p className="text-sm text-muted-foreground">No payment schedule has been created for this client.</p> : null}
+                  {!billingLoading && !billingError && installments.length > 0 ? (
+                    <div className="space-y-3">
+                      {installments.map(item => {
+                          const label = item.payment_type === 'deposit' ? 'Deposit' : `Installment ${item.installment_number}`;
+                          const detail = (name: string, value: React.ReactNode) => (
+                            <div className="min-w-0">
+                              <dt className="text-xs font-medium text-muted-foreground">{name}</dt>
+                              <dd className="mt-0.5 break-words text-sm text-foreground">{value || '—'}</dd>
+                            </div>
+                          );
+                          return (
+                            <article key={item.id} className="rounded-lg border bg-background p-4">
+                              <div className="flex flex-wrap items-start justify-between gap-3 border-b pb-3">
+                                <div>
+                                  <h4 className="font-medium text-foreground">{label}</h4>
+                                  <p className="mt-1 break-all font-mono text-xs text-muted-foreground">{item.id}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-lg font-semibold text-foreground">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(item.amount)}</p>
+                                  <Badge variant="outline" className="mt-1 capitalize">{item.payment_status}</Badge>
+                                </div>
+                              </div>
+                              <dl className="grid grid-cols-2 gap-x-5 gap-y-3 py-4 sm:grid-cols-3 lg:grid-cols-4">
+                                {detail('Payment type', <span className="capitalize">{item.payment_type}</span>)}
+                                {detail('Due date', item.due_date ? format(parseISO(item.due_date), 'MMM d, yyyy') : '—')}
+                                {detail('Paid date', item.paid_date ? format(parseISO(item.paid_date), 'MMM d, yyyy') : '—')}
+                                {detail('Overdue', item.is_overdue ? 'Yes' : 'No')}
+                                {detail('QBO status', item.qbo_invoice_status || '—')}
+                                {detail('QBO invoice ID', item.qbo_invoice_id || '—')}
+                                {detail('Payment link', item.payment_link ? <a href={item.payment_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary underline underline-offset-2">Open invoice <ExternalLink className="h-3 w-3" /></a> : '—')}
+                              </dl>
+                              <div className="flex flex-col items-start gap-2 border-t pt-3 sm:flex-row sm:items-center sm:justify-between">
+                                {!item.available_action.enabled && item.available_action.reason ? <p className="text-xs text-muted-foreground">{item.available_action.reason}</p> : <span />}
+                                <Button className="w-full sm:w-auto" type="button" size="sm" disabled={!item.available_action.enabled || isGeneratingInvoice} title={item.available_action.reason || undefined} onClick={() => void handleGenerateInstallmentInvoice(item)}>{isGeneratingInvoice ? 'Generating…' : 'Generate Next Installment Invoice'}</Button>
+                              </div>
+                            </article>
+                          );
+                        })}
+                    </div>
+                  ) : null}
+                  {generatedInvoiceLink ? <a href={generatedInvoiceLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-primary underline">Open invoice <ExternalLink className="h-3 w-3" /></a> : null}
                 </div>
                 {(() => {
                   const legacyAuth = String(
