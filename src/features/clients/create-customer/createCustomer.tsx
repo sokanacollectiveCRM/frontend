@@ -22,6 +22,11 @@ import { useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import { ChevronLeft, ChevronRight, Filter, Loader2, RefreshCw, Search } from 'lucide-react';
 import 'react-toastify/dist/ReactToastify.css';
+import {
+  normalizeQuickBooksSyncStatus,
+  QUICKBOOKS_SYNC_STATUS_META,
+  type QuickBooksSyncStatus,
+} from './quickBooksSyncStatus';
 
 const STATUS_FILTER_OPTIONS = [
   { value: 'all', label: 'All statuses' },
@@ -41,6 +46,7 @@ type CombinedCustomer = {
   balance?: number;
   active?: boolean;
   source: CustomerSource;
+  quickBooksSyncStatus: QuickBooksSyncStatus;
 };
 
 function makeCustomerKey(name?: string, email?: string): string {
@@ -66,6 +72,7 @@ function mergeCustomers(
       balance: customer.Balance,
       active: customer.Active,
       source: 'quickbooks',
+      quickBooksSyncStatus: 'linked',
     });
   }
 
@@ -75,6 +82,13 @@ function mergeCustomers(
 
     if (existing) {
       existing.source = existing.source === 'quickbooks' ? 'both' : existing.source;
+      existing.quickBooksSyncStatus = normalizeQuickBooksSyncStatus(
+        customer.quickbooksSyncStatus ??
+          customer.syncStatus ??
+          customer.qboSyncStatus ??
+          customer.quickbooks_sync_status,
+        customer.qboCustomerId
+      );
       if (!existing.email) existing.email = customer.email;
       continue;
     }
@@ -84,6 +98,13 @@ function mergeCustomers(
       displayName: customer.name,
       email: customer.email,
       source: 'crm',
+      quickBooksSyncStatus: normalizeQuickBooksSyncStatus(
+        customer.quickbooksSyncStatus ??
+          customer.syncStatus ??
+          customer.qboSyncStatus ??
+          customer.quickbooks_sync_status,
+        customer.qboCustomerId
+      ),
     });
   }
 
@@ -176,19 +197,6 @@ export default function CreateCustomerPage() {
   };
 
   const hasActiveFilters = searchQuery.trim() !== '' || statusFilter !== 'all';
-
-  const renderSourceLabel = (source: CustomerSource) => {
-    switch (source) {
-      case 'quickbooks':
-        return 'QuickBooks';
-      case 'crm':
-        return 'CRM only';
-      case 'both':
-        return 'CRM + QuickBooks';
-      default:
-        return '—';
-    }
-  };
 
   return (
     <div className='flex flex-col h-full min-h-0 overflow-hidden p-4'>
@@ -360,8 +368,8 @@ export default function CreateCustomerPage() {
                     <th className='px-4 py-3 text-left font-semibold'>Email</th>
                     <th className='px-4 py-3 text-left font-semibold'>Phone</th>
                     <th className='px-4 py-3 text-right font-semibold'>Balance</th>
-                    <th className='px-4 py-3 text-left font-semibold'>Status</th>
-                    <th className='px-4 py-3 text-left font-semibold'>Source</th>
+                    <th className='px-4 py-3 text-left font-semibold'>Account status</th>
+                    <th className='px-4 py-3 text-left font-semibold'>QuickBooks sync</th>
                   </tr>
                 </thead>
               <tbody>
@@ -381,11 +389,7 @@ export default function CreateCustomerPage() {
                       {formatCurrency(customer.balance)}
                     </td>
                     <td className='px-4 py-3'>
-                      {customer.source === 'crm' ? (
-                        <span className='inline-flex rounded-md px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'>
-                          CRM only
-                        </span>
-                      ) : (
+                      {customer.source !== 'crm' ? (
                         <span
                           className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${
                             customer.active
@@ -395,19 +399,17 @@ export default function CreateCustomerPage() {
                         >
                           {customer.active ? 'Active' : 'Inactive'}
                         </span>
+                      ) : (
+                        <span className='text-muted-foreground'>—</span>
                       )}
                     </td>
                     <td className='px-4 py-3'>
                       <span
                         className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${
-                          customer.source === 'both'
-                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
-                            : customer.source === 'quickbooks'
-                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
-                              : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                          QUICKBOOKS_SYNC_STATUS_META[customer.quickBooksSyncStatus].className
                         }`}
                       >
-                        {renderSourceLabel(customer.source)}
+                        {QUICKBOOKS_SYNC_STATUS_META[customer.quickBooksSyncStatus].label}
                       </span>
                     </td>
                   </tr>

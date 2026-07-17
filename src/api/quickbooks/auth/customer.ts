@@ -13,7 +13,13 @@ export interface CreateCustomerParams {
 
 export interface InvoiceableCustomer {
   id: string;
-  qboCustomerId: string; // ← drop the `?`
+  qboCustomerId: string | null;
+  /** Backend-owned QuickBooks synchronization state. */
+  quickbooksSyncStatus?: string | null;
+  // Accepted during the backend rollout; the UI normalizer handles each spelling.
+  syncStatus?: string | null;
+  qboSyncStatus?: string | null;
+  quickbooks_sync_status?: string | null;
   name: string;
   email: string;
 }

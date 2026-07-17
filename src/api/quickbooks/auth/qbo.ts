@@ -6,7 +6,20 @@ const API_BASE = API_CONFIG.baseUrl.replace(/\/$/, '');
  * Check QuickBooks connection status using the global token.
  * @returns Promise<{ connected: boolean }>
  */
-export async function getQuickBooksStatus(): Promise<{ connected: boolean }> {
+export interface QuickBooksCompany {
+  name: string;
+  legalName: string | null;
+  email: string | null;
+  country: string | null;
+}
+
+export interface QuickBooksStatus {
+  connected: boolean;
+  company: QuickBooksCompany | null;
+  companyDetailsUnavailable?: boolean;
+}
+
+export async function getQuickBooksStatus(): Promise<QuickBooksStatus> {
   const res = await fetch(`${API_BASE}/quickbooks/status`, {
     method: 'GET',
     headers: {
