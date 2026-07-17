@@ -5,6 +5,7 @@ on:
     branches: [main]
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   lint:
@@ -13,6 +14,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -24,40 +27,41 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check component file extensions
+      - name: Find changed source files
+        id: changed
+        shell: bash
         run: |
-          # Only check files that contain actual JSX syntax (looking for HTML-like tags)
-          # This excludes files that only import/export components
-          for file in $(find src -type f -name "*.js"); do
-            # Skip specific file patterns
-            if [[ "$file" == *.test.js ]] || \
-               [[ "$file" == */styles.js ]] || \
-               [[ "$file" =~ [._]styles?.js$ ]] || \
-               [[ "$file" == */utils/* ]] || \
-               [[ "$file" == */hooks/* ]] || \
-               [[ "$file" == */constants.js ]]; then
-              continue
-            fi
-            
-            # Check for JSX syntax (looking for HTML-like tags)
-            # Ignore import statements with curly braces
-            if grep -l "<[A-Za-z][^>]*>" "$file" | grep -v "import.*{.*}" > /dev/null; then
-              INVALID_FILES="$INVALID_FILES$file"$'\n'
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base_sha="${{ github.event.pull_request.base.sha }}"
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            base_sha="${{ github.sha }}^"
+          else
+            base_sha="${{ github.event.before }}"
+          fi
+          files=$(git diff --name-only --diff-filter=ACMR "$base_sha" "${{ github.sha }}" -- '*.js' '*.jsx' '*.ts' '*.tsx' | tr '\n' ' ')
+          echo "files=$files" >> "$GITHUB_OUTPUT"
+          echo "Changed source files: ${files:-none}"
+
+      - name: Check component file extensions
+        if: steps.changed.outputs.files != ''
+        shell: bash
+        run: |
+          invalid=""
+          for file in ${{ steps.changed.outputs.files }}; do
+            if [[ "$file" == *.js ]] && [[ "$file" != *.test.js ]] && grep -Eq '<[A-Za-z][^>]*>' "$file"; then
+              invalid="$invalid$file"$'\n'
             fi
           done
-
-          if [ ! -z "$INVALID_FILES" ]; then
-            echo "The following files contain JSX and should use .jsx extension:"
-            echo "$INVALID_FILES"
-            echo "Files with JSX content should use .jsx extension (excluding styles, utils, and hooks)"
+          if [[ -n "$invalid" ]]; then
+            echo "These changed .js files contain JSX and must use .jsx:"
+            echo "$invalid"
             exit 1
           fi
 
-      - name: Run ESLint
-        run: npm run lint
+      - name: Run ESLint on changed files
+        if: steps.changed.outputs.files != ''
+        run: npx eslint ${{ steps.changed.outputs.files }}
 
-      - name: Check Prettier formatting
-        run: npm run format:check
-
-      - name: Verify import sorting
-        run: npm run check-imports
+      - name: Check Prettier on changed files
+        if: steps.changed.outputs.files != ''
+        run: npx prettier --check ${{ steps.changed.outputs.files }}

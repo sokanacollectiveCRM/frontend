@@ -7,17 +7,14 @@ export default async function useSaveUser(userData: User) {
     `in useSaveUser, no userData.id provided. the userData is ${JSON.stringify(userData)}`
   );
   try {
-    const response = await fetch(
-      `${apiBaseUrl}/users/update`,
-      {
-        method: 'PUT',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      }
-    );
+    const response = await fetch(`${apiBaseUrl}/users/update`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
+    });
 
     if (!response.ok) {
       throw new Error('Failed to save user');
