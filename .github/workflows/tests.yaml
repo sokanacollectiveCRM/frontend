@@ -13,9 +13,6 @@ jobs:
   frontend-unit:
     name: Frontend unit tests (Vitest)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend-crm
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,7 +22,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: frontend-crm/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install
         run: npm ci
@@ -38,9 +35,6 @@ jobs:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    defaults:
-      run:
-        working-directory: frontend-crm
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -50,7 +44,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: frontend-crm/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install
         run: npm ci
@@ -74,16 +68,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-smoke
-          path: frontend-crm/playwright-report
+          path: playwright-report
 
   playwright-full:
     name: Playwright full (nightly)
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 40
-    defaults:
-      run:
-        working-directory: frontend-crm
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -93,7 +84,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: frontend-crm/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install
         run: npm ci
@@ -109,5 +100,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-full
-          path: frontend-crm/playwright-report
-
+          path: playwright-report
