@@ -15,6 +15,7 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/common/components/ui/alert';
 import { cn } from '@/lib/utils';
+import { consumeSensitiveHash } from './consumeSensitiveHash';
 
 export default function SetPassword() {
   const navigate = useNavigate();
@@ -33,22 +34,13 @@ export default function SetPassword() {
 
     const initializeSessionFromHash = async () => {
       try {
-        const hash = window.location.hash.substring(1);
-        const hashParams = new URLSearchParams(hash);
+        const hashParams = consumeSensitiveHash(
+          window.location,
+          window.history
+        );
         const token = hashParams.get('access_token');
         const refreshToken = hashParams.get('refresh_token');
         const type = hashParams.get('type');
-
-        console.log('SetPassword - Hash:', hash);
-        console.log(
-          'SetPassword - Access token:',
-          token ? 'present' : 'missing'
-        );
-        console.log(
-          'SetPassword - Refresh token:',
-          refreshToken ? 'present' : 'missing'
-        );
-        console.log('SetPassword - Type:', type);
 
         // If hash tokens exist, establish session explicitly.
         if (token && refreshToken) {
@@ -79,9 +71,6 @@ export default function SetPassword() {
             setError(null);
           }
 
-          // Remove sensitive tokens from URL after session is established.
-          const cleanUrl = `${window.location.pathname}${window.location.search}`;
-          window.history.replaceState({}, document.title, cleanUrl);
           return;
         }
 
@@ -181,9 +170,6 @@ export default function SetPassword() {
       const { data: sessionData, error: sessionError } =
         await supabase.auth.getSession();
 
-      console.log('SetPassword - Session data:', sessionData);
-      console.log('SetPassword - Session error:', sessionError);
-
       if (sessionError) {
         throw new Error(
           sessionError.message ||
@@ -204,7 +190,6 @@ export default function SetPassword() {
       });
 
       if (updateError) {
-        console.error('SetPassword - Update error:', updateError);
         throw new Error(
           updateError.message || 'Failed to set password. Please try again.'
         );
@@ -218,7 +203,6 @@ export default function SetPassword() {
         navigate('/auth/client-login', { replace: true });
       }, 3000);
     } catch (err: any) {
-      console.error('Set password error:', err);
       const errorMessage =
         err instanceof Error
           ? err.message

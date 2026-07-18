@@ -5,24 +5,15 @@
 
 import { isProd } from '@/config/env';
 
-function noop(_?: unknown, ..._args: unknown[]): void {}
+const noop: (...args: unknown[]) => void = () => {};
 
 export const logger = isProd
   ? {
       log: noop,
       debug: noop,
       info: noop,
-      warn: (...args: unknown[]) => {
-        /* Only allow minimal, non-PHI warnings in prod if needed */
-        if (typeof args[0] === 'string' && !args[0].includes('phone') && !args[0].includes('email') && !args[0].includes('address')) {
-          console.warn(args[0]);
-        }
-      },
-      error: (...args: unknown[]) => {
-        /* Log error type/message only, never full payloads */
-        const msg = args[0] instanceof Error ? args[0].message : String(args[0]);
-        console.error(msg);
-      },
+      warn: noop,
+      error: noop,
     }
   : {
       log: (...args: unknown[]) => console.log(...args),
