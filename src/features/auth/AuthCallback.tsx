@@ -5,6 +5,7 @@ import styled from 'styled-components';
 
 import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
 import { useUser } from '@/common/hooks/user/useUser';
+import { consumeSensitiveHash } from './consumeSensitiveHash';
 
 const Container = styled.div`
   display: flex;
@@ -20,12 +21,8 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        console.log('AuthCallback mounted');
-        const hash = window.location.hash.substring(1);
-        const params = new URLSearchParams(hash);
+        const params = consumeSensitiveHash(window.location, window.history);
         const access_token = params.get('access_token');
-
-        console.log('Token status:', access_token ? 'present' : 'missing');
 
         if (!access_token) {
           throw new Error('No access token received');
@@ -57,7 +54,6 @@ export default function AuthCallback() {
           throw new Error('Authentication verification failed');
         }
       } catch (error) {
-        console.error('Auth callback error:', error);
         navigate('/login', {
           state: { error: error instanceof Error ? error.message : error },
           replace: true,

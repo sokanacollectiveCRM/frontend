@@ -4,6 +4,11 @@ import { defineConfig } from 'vite';
 
 // https://vite.dev/config/
 export default defineConfig({
+  // SEC-01-FE: browser consoles are not an operational log sink. Strip every
+  // console call (including legacy diagnostics) from production bundles.
+  esbuild: {
+    drop: ['console', 'debugger'],
+  },
   plugins: [
     react(),
     {
@@ -14,7 +19,9 @@ export default defineConfig({
           const time = new Date().toISOString();
           // Log API and page requests (skip noisy static assets like .js, .css, favicon)
           const isApi = url.startsWith('/api');
-          const isPage = url === '/' || (url.startsWith('/') && !/\.[a-z0-9]+$/i.test(url.split('?')[0]));
+          const isPage =
+            url === '/' ||
+            (url.startsWith('/') && !/\.[a-z0-9]+$/i.test(url.split('?')[0]));
           if (isApi || isPage) {
             console.log(`[${time}] ${req.method} ${url}`);
           }
@@ -36,8 +43,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src')
-    }
+      '@': path.resolve(__dirname, './src'),
+    },
   },
-  base: '/'
-})
+  base: '/',
+});
