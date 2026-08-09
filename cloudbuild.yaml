@@ -1,0 +1,68 @@
+# Build with Docker and deploy to Cloud Run on push to main.
+substitutions:
+  _SERVICE_NAME: sokana-front-end
+  _DEPLOY_REGION: us-central1
+  _AR_HOSTNAME: us-central1-docker.pkg.dev
+  _AR_REPOSITORY: cloud-run-source-deploy
+  _VITE_APP_BACKEND_URL: ''
+  _VITE_APP_FRONTEND_URL: ''
+  _VITE_SUPABASE_URL: ''
+  _VITE_SUPABASE_ANON_KEY: ''
+  _VITE_AUTH_MODE: ''
+  _VITE_QUICKBOOKS_PAYMENTS_TOKEN_ENDPOINT: ''
+  _VITE_QUICKBOOKS_PAYMENTS_SAVE_ENDPOINT: ''
+  _VITE_PAYMENT_AUTHORIZATION_FORM_URL: ''
+  _VITE_CLIENT_PORTAL_SERVICE_OUTCOMES_URL: ''
+
+steps:
+  - name: gcr.io/cloud-builders/docker
+    id: Build
+    args:
+      - build
+      - --no-cache
+      - -t
+      - ${_AR_HOSTNAME}/$PROJECT_ID/${_AR_REPOSITORY}/frontend/${_SERVICE_NAME}:$COMMIT_SHA
+      - --build-arg
+      - VITE_APP_BACKEND_URL=${_VITE_APP_BACKEND_URL}
+      - --build-arg
+      - VITE_APP_FRONTEND_URL=${_VITE_APP_FRONTEND_URL}
+      - --build-arg
+      - VITE_SUPABASE_URL=${_VITE_SUPABASE_URL}
+      - --build-arg
+      - VITE_SUPABASE_ANON_KEY=${_VITE_SUPABASE_ANON_KEY}
+      - --build-arg
+      - VITE_AUTH_MODE=${_VITE_AUTH_MODE}
+      - --build-arg
+      - VITE_QUICKBOOKS_PAYMENTS_TOKEN_ENDPOINT=${_VITE_QUICKBOOKS_PAYMENTS_TOKEN_ENDPOINT}
+      - --build-arg
+      - VITE_QUICKBOOKS_PAYMENTS_SAVE_ENDPOINT=${_VITE_QUICKBOOKS_PAYMENTS_SAVE_ENDPOINT}
+      - --build-arg
+      - VITE_PAYMENT_AUTHORIZATION_FORM_URL=${_VITE_PAYMENT_AUTHORIZATION_FORM_URL}
+      - --build-arg
+      - VITE_CLIENT_PORTAL_SERVICE_OUTCOMES_URL=${_VITE_CLIENT_PORTAL_SERVICE_OUTCOMES_URL}
+      - .
+
+  - name: gcr.io/cloud-builders/docker
+    id: Push
+    args:
+      - push
+      - ${_AR_HOSTNAME}/$PROJECT_ID/${_AR_REPOSITORY}/frontend/${_SERVICE_NAME}:$COMMIT_SHA
+
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    id: Deploy
+    entrypoint: gcloud
+    args:
+      - run
+      - services
+      - update
+      - ${_SERVICE_NAME}
+      - --platform=managed
+      - --image=${_AR_HOSTNAME}/$PROJECT_ID/${_AR_REPOSITORY}/frontend/${_SERVICE_NAME}:$COMMIT_SHA
+      - --region=${_DEPLOY_REGION}
+      - --quiet
+
+images:
+  - ${_AR_HOSTNAME}/$PROJECT_ID/${_AR_REPOSITORY}/frontend/${_SERVICE_NAME}:$COMMIT_SHA
+
+options:
+  logging: CLOUD_LOGGING_ONLY
