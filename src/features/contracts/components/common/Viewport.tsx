@@ -24,7 +24,7 @@ export function Viewport() {
 
   useEffect(() => {
     getTemplates();
-  }, []);
+  }, [getTemplates]);
 
   return (
     <div>

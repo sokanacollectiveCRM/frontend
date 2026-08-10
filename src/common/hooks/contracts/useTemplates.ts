@@ -1,5 +1,5 @@
 import { Template } from '@/common/types/template';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { fetchWithAuth, buildUrl } from '@/api/http';
 
 export function useTemplates() {
@@ -7,7 +7,7 @@ export function useTemplates() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const getTemplates = async (): Promise<Template[]> => {
+  const getTemplates = useCallback(async (): Promise<Template[]> => {
     setIsLoading(true);
     setError(null);
 
@@ -40,7 +40,7 @@ export function useTemplates() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   return {
     templates,

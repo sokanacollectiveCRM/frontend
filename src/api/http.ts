@@ -42,7 +42,7 @@ export function buildUrl(path: string, params?: QueryParams): string {
 }
 
 /** Throw if production build is using localhost (env not set in Vercel). */
-function assertProductionBackendUrl(_path: string): void {
+function assertProductionBackendUrl(): void {
   const isProductionBuild = import.meta.env.MODE === 'production';
   const base = API_CONFIG.baseUrl;
   const isLocalhost =
@@ -158,7 +158,7 @@ async function requestLegacy<T>(
   path: string,
   options?: RequestOptions
 ): Promise<T> {
-  assertProductionBackendUrl(path);
+  assertProductionBackendUrl();
   const { params, body, ...fetchOptions } = options ?? {};
   const hasBody = body !== undefined;
   const auth = await getRequestAuth();
@@ -201,7 +201,7 @@ async function requestCanonical<T>(
   path: string,
   options?: RequestOptions
 ): Promise<T> {
-  assertProductionBackendUrl(path);
+  assertProductionBackendUrl();
   const { params, body, ...fetchOptions } = options ?? {};
   const hasBody = body !== undefined;
   const auth = await getRequestAuth();
