@@ -1,106 +1,105 @@
 import { useTemplatesContext } from '@/features/contracts/contexts/TemplatesContext';
-import { useEffect, useState } from 'react';
-import { Document, Page, pdfjs } from 'react-pdf';
+import { useMemo, useState } from 'react';
 
-import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
 import { Badge } from '@/common/components/ui/badge';
-import { ScrollArea } from '@/common/components/ui/scroll-area';
+import { Button } from '@/common/components/ui/button';
 import { Separator } from '@/common/components/ui/separator';
+import { ExternalLink } from 'lucide-react';
 
-import 'react-pdf/dist/Page/AnnotationLayer.css';
-import 'react-pdf/dist/Page/TextLayer.css';
-import { fetchWithAuth, buildUrl } from '@/api/http';
-
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+function buildPublicStorageUrl(storagePath: string): string {
+  const base = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.replace(
+    /\/+$/,
+    ''
+  );
+  if (!base) {
+    throw new Error('VITE_SUPABASE_URL is not configured');
+  }
+  const encodedPath = storagePath
+    .split('/')
+    .map((part) => encodeURIComponent(part))
+    .join('/');
+  return `${base}/storage/v1/object/public/contract-templates/${encodedPath}`;
+}
 
 export function PdfPreview() {
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [numPages, setNumPages] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const { selectedTemplateName } = useTemplatesContext();
+  const { selectedTemplateName, templates } = useTemplatesContext();
+  const [embedFailed, setEmbedFailed] = useState(false);
 
-  useEffect(() => {
-    const fetchPdf = async () => {
-      setIsLoading(true);
-      try {
-        console.log(selectedTemplateName);
-        const res = await fetchWithAuth(
-          buildUrl('/contracts/templates/generate'),
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              name: selectedTemplateName,
-              fields: {
-                clientname: 'CLIENT_NAME',
-                deposit: 'DEPOSIT',
-              },
-            }),
-          }
-        );
+  const selected = useMemo(
+    () => templates.find((t) => t.name === selectedTemplateName) ?? null,
+    [templates, selectedTemplateName]
+  );
 
-        if (!res.ok) throw new Error('PDF preview fetch failed');
+  const storagePath =
+    selected?.storagePath ||
+    (selectedTemplateName ? `${selectedTemplateName}.docx` : null);
 
-        const blob = await res.blob();
-        const objectUrl = URL.createObjectURL(blob);
-        setPdfUrl(objectUrl);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const publicUrl = useMemo(() => {
+    if (!storagePath) return null;
+    try {
+      return buildPublicStorageUrl(storagePath);
+    } catch {
+      return null;
+    }
+  }, [storagePath]);
 
-    fetchPdf();
-  }, [selectedTemplateName]);
+  const isPdf = !!storagePath?.toLowerCase().endsWith('.pdf');
+
+  const viewerUrl = useMemo(() => {
+    if (!publicUrl) return null;
+    if (isPdf) return publicUrl;
+    // Microsoft Office Online viewer for public DOCX URLs
+    return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(publicUrl)}`;
+  }, [publicUrl, isPdf]);
+
+  if (!selectedTemplateName || !viewerUrl || !publicUrl) {
+    return (
+      <div className='flex items-center justify-center h-[min(70vh,720px)] border rounded-lg'>
+        <p className='text-muted-foreground'>Select a template to preview.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className='relative w-full'>
-      <LoadingOverlay isLoading={isLoading} />
-
-      <div className='flex items-center justify-between px-4 py-2 bg-white border rounded-t-md'>
-        <div className='flex items-center gap-2 text-sm font-medium'>
-          <span className='text-muted-foreground'>Template:</span>
-          <Badge variant='outline'>{selectedTemplateName}</Badge>
+    <div className='relative w-full min-w-0'>
+      <div className='flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-white border rounded-t-md'>
+        <div className='flex items-center gap-2 text-sm font-medium min-w-0'>
+          <span className='text-muted-foreground shrink-0'>Template:</span>
+          <Badge variant='outline' className='truncate max-w-[min(100%,28rem)]'>
+            {selectedTemplateName}
+          </Badge>
         </div>
-        {numPages && (
-          <div className='text-muted-foreground text-sm'>
-            Pages: <span className='font-semibold'>{numPages}</span>
-          </div>
-        )}
+        <Button variant='outline' size='sm' asChild>
+          <a href={publicUrl} target='_blank' rel='noreferrer'>
+            <ExternalLink className='h-4 w-4 mr-2' />
+            Open file
+          </a>
+        </Button>
       </div>
 
       <Separator />
 
-      <div className='border border-t-0 rounded-b-md max-h-[600px] h-[600px] w-full overflow-hidden bg-muted'>
-        <ScrollArea className='h-full w-full px-4 py-2'>
-          {pdfUrl ? (
-            <Document
-              file={pdfUrl}
-              onLoadSuccess={({ numPages }: { numPages: number }) =>
-                setNumPages(numPages)
-              }
-              loading=''
-            >
-              <div className='flex flex-col items-center gap-6 py-4'>
-                {Array.from({ length: numPages || 0 }, (_, i) => (
-                  <Page
-                    key={i}
-                    pageNumber={i + 1}
-                    width={480}
-                    className='shadow rounded'
-                    renderAnnotationLayer={false}
-                    renderTextLayer={true}
-                  />
-                ))}
-              </div>
-            </Document>
-          ) : (
-            <p className='text-muted-foreground'>No PDF to show</p>
-          )}
-        </ScrollArea>
+      <div className='border border-t-0 rounded-b-md h-[min(70vh,720px)] w-full overflow-hidden bg-muted'>
+        {embedFailed ? (
+          <div className='flex flex-col items-center justify-center h-full gap-3 px-6 text-center'>
+            <p className='text-sm text-muted-foreground'>
+              Inline preview could not load. Open the file in a new tab instead.
+            </p>
+            <Button asChild>
+              <a href={publicUrl} target='_blank' rel='noreferrer'>
+                Open template
+              </a>
+            </Button>
+          </div>
+        ) : (
+          <iframe
+            key={viewerUrl}
+            title={`Preview ${selectedTemplateName}`}
+            src={viewerUrl}
+            className='h-full w-full bg-white'
+            onError={() => setEmbedFailed(true)}
+          />
+        )}
       </div>
     </div>
   );

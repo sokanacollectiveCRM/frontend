@@ -16,7 +16,7 @@ describe('getVisibleSidebarSections', () => {
 
     expect(sections).toHaveLength(1);
     expect(sections[0]?.label).toBe('Billing');
-    expect(flattenTitles(sections)).toEqual(['Payment Schedules', 'Contracts']);
+    expect(flattenTitles(sections)).toEqual(['Payment Schedules']);
   });
 
   it('keeps admin CRM navigation intact', () => {
@@ -39,5 +39,15 @@ describe('getVisibleSidebarSections', () => {
     expect(titles).toContain('Demographics');
     expect(titles).toContain('Payment Schedules');
     expect(titles).toContain('Contracts');
+
+    const contractsItem = getVisibleSidebarSections({
+      isAdmin: true,
+      isDoula: false,
+      isClient: false,
+      isBillingOnly: false,
+    })
+      .flatMap((s) => s.items)
+      .find((i) => i.title === 'Contracts');
+    expect(contractsItem?.url).toBe('/contracts');
   });
 });

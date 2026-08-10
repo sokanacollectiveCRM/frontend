@@ -16,6 +16,7 @@ export function Viewport() {
   const {
     templates,
     isLoading,
+    error,
     getTemplates,
     selectedTemplateName,
     setSelectedTemplateName,
@@ -29,12 +30,12 @@ export function Viewport() {
     <div>
       <LoadingOverlay isLoading={isLoading} />
 
-      <div className='flex flex-row lg:flex-row w-full flex-1 overflow-hidden px-4 py-10 gap-6'>
-        <div className='flex-1 overflow-y-auto'>
+      <div className='flex flex-col-reverse xl:flex-row w-full flex-1 overflow-hidden px-2 sm:px-4 py-6 gap-6'>
+        <div className='flex-1 min-w-0 overflow-y-auto'>
           {selectedTemplateName ? (
             <PdfPreview />
           ) : (
-            <div className='flex items-center justify-center h-[500px] border rounded-lg'>
+            <div className='flex items-center justify-center h-[min(70vh,720px)] border rounded-lg bg-muted/20'>
               <p className='text-muted-foreground'>
                 Select a template to preview.
               </p>
@@ -42,20 +43,25 @@ export function Viewport() {
           )}
         </div>
 
-        <Card className='w-60 flex-shrink-0'>
-          <CardHeader className='flex flex-row items-center justify-between  pb-2'>
-            <div>
-              <CardTitle className='text-l pb-1'> Templates </CardTitle>
+        <Card className='w-full xl:w-[22rem] 2xl:w-96 shrink-0'>
+          <CardHeader className='flex flex-row items-start justify-between gap-3 pb-3'>
+            <div className='min-w-0'>
+              <CardTitle className='text-lg pb-1'>Templates</CardTitle>
               <CardDescription>
-                {' '}
-                Click on a template to view or edit{' '}
+                Click a template to preview or edit.
               </CardDescription>
             </div>
             <NewTemplateDialog onUploadSuccess={getTemplates} />
           </CardHeader>
 
           <CardContent className='p-4 pt-0'>
-            <div className='flex flex-col gap-2'>
+            <div className='flex flex-col gap-3'>
+              {error && <p className='text-sm text-destructive'>{error}</p>}
+              {!isLoading && !error && templates.length === 0 && (
+                <p className='text-sm text-muted-foreground'>
+                  No templates found.
+                </p>
+              )}
               {templates.map((template) => (
                 <TemplateItem
                   key={template.id}

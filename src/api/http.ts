@@ -1,5 +1,4 @@
 import { API_CONFIG } from './config';
-import { getAuthToken } from './authToken';
 import { ApiError } from './errors';
 import { logger } from '@/utils/logger';
 
@@ -81,18 +80,31 @@ function buildBaseHeaders(hasBody: boolean, fetchHeaders: HeadersInit | undefine
   return { ...base, ...(fetchHeaders as Record<string, string>) };
 }
 
-/** Resolve credentials and Authorization. Send Supabase token when available (Bearer + X-Session-Token). */
+/** Resolve credentials and Authorization. Always attach Supabase Bearer when available
+ * (cookie mode still includes credentials; Bearer covers cases where sb-access-token cookie is missing). */
 export async function getRequestAuth(): Promise<{ credentials: RequestCredentials; headers: Record<string, string> }> {
-  if (API_CONFIG.authMode === 'cookie') {
-    return { credentials: 'include', headers: {} };
-  }
-  const token = await getAuthToken();
+  const token = await getSupabaseTokenSafe();
   const headers: Record<string, string> = {};
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
     headers['X-Session-Token'] = token;
   }
+  if (API_CONFIG.authMode === 'cookie') {
+    return { credentials: 'include', headers };
+  }
   return { credentials: 'omit', headers };
+}
+
+async function getSupabaseTokenSafe(): Promise<string | null> {
+  try {
+    const { supabase } = await import('@/lib/supabase');
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    return session?.access_token ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /**

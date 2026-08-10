@@ -8,6 +8,7 @@ import {
   type InvoiceableCustomer,
   type QuickBooksCustomer,
 } from '@/api/quickbooks/auth/customer';
+import { getQuickBooksStatus } from '@/api/quickbooks/auth/qbo';
 import { Button } from '@/common/components/ui/button';
 import { Input } from '@/common/components/ui/input';
 import {
@@ -119,6 +120,7 @@ export default function CreateCustomerPage() {
   const [crmCustomers, setCrmCustomers] = useState<InvoiceableCustomer[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notConnected, setNotConnected] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [pageSize, setPageSize] = useState(25);
@@ -136,17 +138,43 @@ export default function CreateCustomerPage() {
   const fetchCustomers = async () => {
     setLoading(true);
     setError(null);
+    setNotConnected(false);
     try {
+      let connected = false;
+      try {
+        const status = await getQuickBooksStatus();
+        connected = Boolean(status?.connected);
+      } catch {
+        // Status route may be unavailable when QB isn't wired; treat as disconnected.
+        connected = false;
+      }
+
+      if (!connected) {
+        setNotConnected(true);
+        setQuickbooksCustomers([]);
+        setCrmCustomers([]);
+        return;
+      }
+
       const [quickbooks, crm] = await Promise.all([
         getQuickBooksCustomers(),
         getInvoiceableCustomers(),
       ]);
       setQuickbooksCustomers(quickbooks);
       setCrmCustomers(crm);
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage =
-        err.message || 'Failed to load customers from QuickBooks and CRM';
-      setError(errorMessage);
+        err instanceof Error
+          ? err.message
+          : 'Failed to load customers from QuickBooks and CRM';
+      if (/not connected/i.test(errorMessage)) {
+        setNotConnected(true);
+        setQuickbooksCustomers([]);
+        setCrmCustomers([]);
+        setError(null);
+      } else {
+        setError(errorMessage);
+      }
       console.error('Error fetching customers:', err);
     } finally {
       setLoading(false);
@@ -302,20 +330,49 @@ export default function CreateCustomerPage() {
           </div>
         )}
 
-        {error && (
+        {!loading && notConnected && (
+          <div className='flex-1 flex items-center justify-center p-8'>
+            <div className='text-center max-w-md'>
+              <div className='mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground'>
+                <svg
+                  fill='none'
+                  viewBox='0 0 24 24'
+                  stroke='currentColor'
+                  className='h-7 w-7'
+                  aria-hidden
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1'
+                  />
+                </svg>
+              </div>
+              <h3 className='text-lg font-medium mb-2'>
+                No customers from QuickBooks right now
+              </h3>
+              <p className='text-sm text-muted-foreground mb-4'>
+                Connect your QuickBooks account to see customers here.
+              </p>
+              <div className='flex items-center justify-center gap-2'>
+                <Button onClick={() => navigate('/integrations/quickbooks')}>
+                  Connect QuickBooks
+                </Button>
+                <Button variant='outline' onClick={fetchCustomers}>
+                  Retry
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {error && !notConnected && (
           <div className='flex-1 flex flex-col items-center justify-center p-8'>
             <div className='rounded-lg border border-destructive/50 bg-destructive/10 p-4 max-w-md text-destructive'>
               <p className='font-medium'>Error</p>
               <p className='text-sm mt-1'>{error}</p>
               <div className='mt-3 flex gap-2'>
-                {error.includes('not connected') && (
-                  <Button
-                    size='sm'
-                    onClick={() => navigate('/integrations/quickbooks')}
-                  >
-                    Connect QuickBooks
-                  </Button>
-                )}
                 <Button variant='outline' size='sm' onClick={fetchCustomers}>
                   Retry
                 </Button>
@@ -324,7 +381,7 @@ export default function CreateCustomerPage() {
           </div>
         )}
 
-        {!loading && !error && customers.length === 0 && (
+        {!loading && !error && !notConnected && customers.length === 0 && (
           <div className='flex-1 flex items-center justify-center p-8'>
             <div className='text-center max-w-md'>
               <div className='mx-auto mb-4 h-12 w-12 text-muted-foreground'>
@@ -344,21 +401,20 @@ export default function CreateCustomerPage() {
               </div>
               <h3 className='text-lg font-medium mb-2'>No customers found</h3>
               <p className='text-sm text-muted-foreground mb-4'>
-                There are no customers in your QuickBooks account yet, or the
-                endpoint is not available.
+                There are no customers in your QuickBooks account yet.
               </p>
               <Button onClick={fetchCustomers}>Refresh</Button>
             </div>
           </div>
         )}
 
-        {!loading && !error && customers.length > 0 && filteredCustomers.length === 0 && (
+        {!loading && !error && !notConnected && customers.length > 0 && filteredCustomers.length === 0 && (
           <div className='flex-1 flex items-center justify-center p-8 text-muted-foreground'>
             No customers match the current filters.
           </div>
         )}
 
-        {!loading && !error && filteredCustomers.length > 0 && (
+        {!loading && !error && !notConnected && filteredCustomers.length > 0 && (
           <>
             <div className='overflow-auto flex-1 min-h-0'>
               <table className='min-w-full text-sm'>
