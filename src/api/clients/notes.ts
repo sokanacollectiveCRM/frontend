@@ -81,8 +81,6 @@ const normalizeNotes = (raw: any, clientId: string): ClientNote[] => {
   return rawList.map((row: any) => normalizeNoteRow(row, clientId));
 };
 
-import { apiBaseUrl } from '@/config/env';
-
 const getNotesUrl = (clientId: string, role?: NotesViewerRole): string[] => {
   const base = apiBaseUrl;
   const clientIdSafe = encodeURIComponent(clientId);
