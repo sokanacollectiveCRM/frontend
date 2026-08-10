@@ -25,7 +25,7 @@ export function useTemplates() {
       const list = Array.isArray(data)
         ? (data as Template[])
         : Array.isArray((data as { data?: Template[] })?.data)
-          ? ((data as { data: Template[] }).data)
+          ? (data as { data: Template[] }).data
           : [];
       console.log('templates response count', list.length);
       setTemplates(list);

@@ -38,7 +38,12 @@ export const sidebarSections = [
       { title: 'Dashboard', url: '/', icon: Home },
       { title: 'Inbox', url: '/inbox', icon: Inbox, clientOnly: false },
       { title: 'Leads', url: '/clients', icon: Search, adminOnly: true },
-      { title: 'Customers', url: '/clients/new', icon: UserPlus, adminOnly: true },
+      {
+        title: 'Customers',
+        url: '/clients/new',
+        icon: UserPlus,
+        adminOnly: true,
+      },
     ],
   },
   {
@@ -62,7 +67,12 @@ export const sidebarSections = [
   {
     label: 'Client Portal',
     items: [
-      { title: 'Profile Information', url: '/profile', icon: User, clientOnly: true },
+      {
+        title: 'Profile Information',
+        url: '/profile',
+        icon: User,
+        clientOnly: true,
+      },
       {
         title: 'Billing Information',
         url: '/billing',
@@ -139,7 +149,12 @@ export const sidebarSections = [
   {
     label: 'Analytics',
     items: [
-      { title: 'Demographics', url: '/demographics', icon: LucideChartColumnIncreasing, adminOnly: true },
+      {
+        title: 'Demographics',
+        url: '/demographics',
+        icon: LucideChartColumnIncreasing,
+        adminOnly: true,
+      },
     ],
   },
 ];

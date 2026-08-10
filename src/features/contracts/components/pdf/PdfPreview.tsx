@@ -7,10 +7,9 @@ import { Separator } from '@/common/components/ui/separator';
 import { ExternalLink } from 'lucide-react';
 
 function buildPublicStorageUrl(storagePath: string): string {
-  const base = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.replace(
-    /\/+$/,
-    ''
-  );
+  const base = (
+    import.meta.env.VITE_SUPABASE_URL as string | undefined
+  )?.replace(/\/+$/, '');
   if (!base) {
     throw new Error('VITE_SUPABASE_URL is not configured');
   }

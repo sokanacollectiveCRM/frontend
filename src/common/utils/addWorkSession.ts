@@ -14,7 +14,6 @@ export default async function addWorkSession(
 
   async function addSession() {
     try {
-
       const response = await fetchWithAuth(
         buildUrl(`/users/${doula_id}/addhours`),
         {
@@ -49,5 +48,5 @@ export default async function addWorkSession(
       );
     }
   }
-  addSession();
+  await addSession();
 }

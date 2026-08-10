@@ -29,7 +29,6 @@ export interface InvoiceableCustomer {
 export async function createQuickBooksCustomer(
   params: CreateCustomerParams
 ): Promise<{ qbCustomerId: string }> {
-
   return withTokenRefresh(async () => {
     const res = await fetch(`${API_BASE}/quickbooks/customer`, {
       method: 'POST',
@@ -64,7 +63,6 @@ function isQuickBooksUnavailableError(status: number, body: string): boolean {
 export async function getInvoiceableCustomers(): Promise<
   InvoiceableCustomer[]
 > {
-
   return withTokenRefresh(async () => {
     const res = await fetch(`${API_BASE}/quickbooks/customers/invoiceable`, {
       method: 'GET',
@@ -116,7 +114,6 @@ export interface QuickBooksCustomer {
 export async function getQuickBooksCustomers(
   maxResults?: number
 ): Promise<QuickBooksCustomer[]> {
-
   return withTokenRefresh(async () => {
     const url = maxResults
       ? `${API_BASE}/quickbooks/customers?maxResults=${maxResults}`
