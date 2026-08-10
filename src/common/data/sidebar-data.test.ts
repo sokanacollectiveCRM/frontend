@@ -1,7 +1,9 @@
 import { getVisibleSidebarSections } from '@/common/data/sidebar-data';
 import { describe, expect, it } from 'vitest';
 
-function flattenTitles(labels: ReturnType<typeof getVisibleSidebarSections>): string[] {
+function flattenTitles(
+  labels: ReturnType<typeof getVisibleSidebarSections>
+): string[] {
   return labels.flatMap((section) => section.items.map((item) => item.title));
 }
 

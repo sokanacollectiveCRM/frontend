@@ -14,8 +14,12 @@ export type ApiResponseMeta = {
 };
 
 type QueryParams = Record<string, string | number | boolean | undefined>;
+/** Derived from fetch so ESLint no-undef does not flag DOM lib type names. */
+type FetchInit = NonNullable<Parameters<typeof fetch>[1]>;
+type FetchHeaders = NonNullable<FetchInit['headers']>;
+type FetchCredentials = NonNullable<FetchInit['credentials']>;
 
-interface RequestOptions extends Omit<RequestInit, 'body'> {
+interface RequestOptions extends Omit<FetchInit, 'body'> {
   params?: QueryParams;
   body?: unknown;
 }
@@ -94,8 +98,8 @@ function normalizeError(
 
 function buildBaseHeaders(
   hasBody: boolean,
-  fetchHeaders: HeadersInit | undefined
-): HeadersInit {
+  fetchHeaders: FetchHeaders | undefined
+): Record<string, string> {
   const base: Record<string, string> = hasBody
     ? { 'Content-Type': 'application/json' }
     : {};
@@ -105,7 +109,7 @@ function buildBaseHeaders(
 /** Resolve credentials and Authorization. Always attach Supabase Bearer when available
  * (cookie mode still includes credentials; Bearer covers cases where sb-access-token cookie is missing). */
 export async function getRequestAuth(): Promise<{
-  credentials: RequestCredentials;
+  credentials: FetchCredentials;
   headers: Record<string, string>;
 }> {
   const token = await getSupabaseTokenSafe();
@@ -138,7 +142,7 @@ async function getSupabaseTokenSafe(): Promise<string | null> {
  */
 export async function fetchWithAuth(
   url: string,
-  init?: RequestInit
+  init?: FetchInit
 ): Promise<Response> {
   const auth = await getRequestAuth();
   const headers = new Headers(init?.headers);
