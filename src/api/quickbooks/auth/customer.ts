@@ -29,7 +29,6 @@ export interface InvoiceableCustomer {
 export async function createQuickBooksCustomer(
   params: CreateCustomerParams
 ): Promise<{ qbCustomerId: string }> {
-
   return withTokenRefresh(async () => {
     const res = await fetch(`${API_BASE}/quickbooks/customer`, {
       method: 'POST',
@@ -51,10 +50,19 @@ export async function createQuickBooksCustomer(
 /**
  * Fetch all invoiceable customers (status = 'customer').
  */
+function isQuickBooksUnavailableError(status: number, body: string): boolean {
+  if (status === 404 || status === 503) return true;
+  const text = body || '';
+  return (
+    text.includes('<!DOCTYPE html>') ||
+    text.includes('Cannot GET') ||
+    /not connected|no tokens|quickbooks.*(unavailable|disabled)/i.test(text)
+  );
+}
+
 export async function getInvoiceableCustomers(): Promise<
   InvoiceableCustomer[]
 > {
-
   return withTokenRefresh(async () => {
     const res = await fetch(`${API_BASE}/quickbooks/customers/invoiceable`, {
       method: 'GET',
@@ -65,8 +73,19 @@ export async function getInvoiceableCustomers(): Promise<
     });
 
     if (!res.ok) {
-      const err = await res.text();
-      throw new Error(`Failed to fetch customers: ${err}`);
+      const err = await res.text().catch(() => '');
+      if (isQuickBooksUnavailableError(res.status, err)) {
+        // Route missing / QB not connected — let the page show a connect CTA.
+        throw new Error('QuickBooks is not connected');
+      }
+      let message = 'Failed to fetch customers';
+      try {
+        const parsed = JSON.parse(err) as { error?: string; message?: string };
+        message = parsed.error || parsed.message || message;
+      } catch {
+        if (err && !err.includes('<html')) message = err;
+      }
+      throw new Error(message);
     }
     return res.json();
   });
@@ -95,7 +114,6 @@ export interface QuickBooksCustomer {
 export async function getQuickBooksCustomers(
   maxResults?: number
 ): Promise<QuickBooksCustomer[]> {
-
   return withTokenRefresh(async () => {
     const url = maxResults
       ? `${API_BASE}/quickbooks/customers?maxResults=${maxResults}`

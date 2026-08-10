@@ -8,6 +8,7 @@ import {
   type InvoiceableCustomer,
   type QuickBooksCustomer,
 } from '@/api/quickbooks/auth/customer';
+import { getQuickBooksStatus } from '@/api/quickbooks/auth/qbo';
 import { Button } from '@/common/components/ui/button';
 import { Input } from '@/common/components/ui/input';
 import {
@@ -20,7 +21,14 @@ import {
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
-import { ChevronLeft, ChevronRight, Filter, Loader2, RefreshCw, Search } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  Loader2,
+  RefreshCw,
+  Search,
+} from 'lucide-react';
 import 'react-toastify/dist/ReactToastify.css';
 import {
   normalizeQuickBooksSyncStatus,
@@ -81,7 +89,8 @@ function mergeCustomers(
     const existing = merged.get(key);
 
     if (existing) {
-      existing.source = existing.source === 'quickbooks' ? 'both' : existing.source;
+      existing.source =
+        existing.source === 'quickbooks' ? 'both' : existing.source;
       existing.quickBooksSyncStatus = normalizeQuickBooksSyncStatus(
         customer.quickbooksSyncStatus ??
           customer.syncStatus ??
@@ -115,10 +124,13 @@ export default function CreateCustomerPage() {
   const { user, isLoading: authLoading } = useContext(UserContext);
   const navigate = useNavigate();
 
-  const [quickbooksCustomers, setQuickbooksCustomers] = useState<QuickBooksCustomer[]>([]);
+  const [quickbooksCustomers, setQuickbooksCustomers] = useState<
+    QuickBooksCustomer[]
+  >([]);
   const [crmCustomers, setCrmCustomers] = useState<InvoiceableCustomer[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notConnected, setNotConnected] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [pageSize, setPageSize] = useState(25);
@@ -136,17 +148,43 @@ export default function CreateCustomerPage() {
   const fetchCustomers = async () => {
     setLoading(true);
     setError(null);
+    setNotConnected(false);
     try {
+      let connected = false;
+      try {
+        const status = await getQuickBooksStatus();
+        connected = Boolean(status?.connected);
+      } catch {
+        // Status route may be unavailable when QB isn't wired; treat as disconnected.
+        connected = false;
+      }
+
+      if (!connected) {
+        setNotConnected(true);
+        setQuickbooksCustomers([]);
+        setCrmCustomers([]);
+        return;
+      }
+
       const [quickbooks, crm] = await Promise.all([
         getQuickBooksCustomers(),
         getInvoiceableCustomers(),
       ]);
       setQuickbooksCustomers(quickbooks);
       setCrmCustomers(crm);
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage =
-        err.message || 'Failed to load customers from QuickBooks and CRM';
-      setError(errorMessage);
+        err instanceof Error
+          ? err.message
+          : 'Failed to load customers from QuickBooks and CRM';
+      if (/not connected/i.test(errorMessage)) {
+        setNotConnected(true);
+        setQuickbooksCustomers([]);
+        setCrmCustomers([]);
+        setError(null);
+      } else {
+        setError(errorMessage);
+      }
       console.error('Error fetching customers:', err);
     } finally {
       setLoading(false);
@@ -170,8 +208,14 @@ export default function CreateCustomerPage() {
       const nameMatch = !q || (c.displayName?.toLowerCase() ?? '').includes(q);
       const emailMatch = !q || (c.email?.toLowerCase() ?? '').includes(q);
       if (!nameMatch && !emailMatch) return false;
-      if (statusFilter === 'active' && c.source !== 'crm' && !c.active) return false;
-      if (statusFilter === 'inactive' && c.source !== 'crm' && c.active !== false) return false;
+      if (statusFilter === 'active' && c.source !== 'crm' && !c.active)
+        return false;
+      if (
+        statusFilter === 'inactive' &&
+        c.source !== 'crm' &&
+        c.active !== false
+      )
+        return false;
       return true;
     });
   }, [customers, searchQuery, statusFilter]);
@@ -181,7 +225,10 @@ export default function CreateCustomerPage() {
     setCurrentPage(1);
   }, [searchQuery, statusFilter]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredCustomers.length / pageSize));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredCustomers.length / pageSize)
+  );
   const startItem = (currentPage - 1) * pageSize;
   const paginatedCustomers = useMemo(
     () => filteredCustomers.slice(startItem, startItem + pageSize),
@@ -302,20 +349,49 @@ export default function CreateCustomerPage() {
           </div>
         )}
 
-        {error && (
+        {!loading && notConnected && (
+          <div className='flex-1 flex items-center justify-center p-8'>
+            <div className='text-center max-w-md'>
+              <div className='mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground'>
+                <svg
+                  fill='none'
+                  viewBox='0 0 24 24'
+                  stroke='currentColor'
+                  className='h-7 w-7'
+                  aria-hidden
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1'
+                  />
+                </svg>
+              </div>
+              <h3 className='text-lg font-medium mb-2'>
+                No customers from QuickBooks right now
+              </h3>
+              <p className='text-sm text-muted-foreground mb-4'>
+                Connect your QuickBooks account to see customers here.
+              </p>
+              <div className='flex items-center justify-center gap-2'>
+                <Button onClick={() => navigate('/integrations/quickbooks')}>
+                  Connect QuickBooks
+                </Button>
+                <Button variant='outline' onClick={fetchCustomers}>
+                  Retry
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {error && !notConnected && (
           <div className='flex-1 flex flex-col items-center justify-center p-8'>
             <div className='rounded-lg border border-destructive/50 bg-destructive/10 p-4 max-w-md text-destructive'>
               <p className='font-medium'>Error</p>
               <p className='text-sm mt-1'>{error}</p>
               <div className='mt-3 flex gap-2'>
-                {error.includes('not connected') && (
-                  <Button
-                    size='sm'
-                    onClick={() => navigate('/integrations/quickbooks')}
-                  >
-                    Connect QuickBooks
-                  </Button>
-                )}
                 <Button variant='outline' size='sm' onClick={fetchCustomers}>
                   Retry
                 </Button>
@@ -324,7 +400,7 @@ export default function CreateCustomerPage() {
           </div>
         )}
 
-        {!loading && !error && customers.length === 0 && (
+        {!loading && !error && !notConnected && customers.length === 0 && (
           <div className='flex-1 flex items-center justify-center p-8'>
             <div className='text-center max-w-md'>
               <div className='mx-auto mb-4 h-12 w-12 text-muted-foreground'>
@@ -344,115 +420,139 @@ export default function CreateCustomerPage() {
               </div>
               <h3 className='text-lg font-medium mb-2'>No customers found</h3>
               <p className='text-sm text-muted-foreground mb-4'>
-                There are no customers in your QuickBooks account yet, or the
-                endpoint is not available.
+                There are no customers in your QuickBooks account yet.
               </p>
               <Button onClick={fetchCustomers}>Refresh</Button>
             </div>
           </div>
         )}
 
-        {!loading && !error && customers.length > 0 && filteredCustomers.length === 0 && (
-          <div className='flex-1 flex items-center justify-center p-8 text-muted-foreground'>
-            No customers match the current filters.
-          </div>
-        )}
-
-        {!loading && !error && filteredCustomers.length > 0 && (
-          <>
-            <div className='overflow-auto flex-1 min-h-0'>
-              <table className='min-w-full text-sm'>
-                <thead className='sticky top-0 bg-muted/80 backdrop-blur z-10'>
-                  <tr className='border-b'>
-                    <th className='px-4 py-3 text-left font-semibold'>Name</th>
-                    <th className='px-4 py-3 text-left font-semibold'>Email</th>
-                    <th className='px-4 py-3 text-left font-semibold'>Phone</th>
-                    <th className='px-4 py-3 text-right font-semibold'>Balance</th>
-                    <th className='px-4 py-3 text-left font-semibold'>Account status</th>
-                    <th className='px-4 py-3 text-left font-semibold'>QuickBooks sync</th>
-                  </tr>
-                </thead>
-              <tbody>
-                {paginatedCustomers.map((customer) => (
-                  <tr
-                    key={customer.key}
-                    className='border-b border-border/50 last:border-0 hover:bg-muted/30'
-                  >
-                    <td className='px-4 py-3'>{customer.displayName}</td>
-                    <td className='px-4 py-3 text-muted-foreground'>
-                      {customer.email || '—'}
-                    </td>
-                    <td className='px-4 py-3 text-muted-foreground'>
-                      {customer.phone || '—'}
-                    </td>
-                    <td className='px-4 py-3 text-right'>
-                      {formatCurrency(customer.balance)}
-                    </td>
-                    <td className='px-4 py-3'>
-                      {customer.source !== 'crm' ? (
-                        <span
-                          className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${
-                            customer.active
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                              : 'bg-muted text-muted-foreground'
-                          }`}
-                        >
-                          {customer.active ? 'Active' : 'Inactive'}
-                        </span>
-                      ) : (
-                        <span className='text-muted-foreground'>—</span>
-                      )}
-                    </td>
-                    <td className='px-4 py-3'>
-                      <span
-                        className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${
-                          QUICKBOOKS_SYNC_STATUS_META[customer.quickBooksSyncStatus].className
-                        }`}
-                      >
-                        {QUICKBOOKS_SYNC_STATUS_META[customer.quickBooksSyncStatus].label}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination bar */}
-          <div className='shrink-0 flex items-center justify-between gap-4 px-4 py-3 border-t bg-muted/30'>
-            <p className='text-sm text-muted-foreground'>
-              Showing {startItem + 1}–
-              {Math.min(startItem + pageSize, filteredCustomers.length)} of{' '}
-              {filteredCustomers.length}
-            </p>
-            <div className='flex items-center gap-2'>
-              <Button
-                variant='outline'
-                size='sm'
-                className='h-8 w-8 p-0'
-                disabled={currentPage <= 1}
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              >
-                <ChevronLeft className='h-4 w-4' />
-              </Button>
-              <span className='text-sm font-medium min-w-[80px] text-center'>
-                Page {currentPage} of {totalPages}
-              </span>
-              <Button
-                variant='outline'
-                size='sm'
-                className='h-8 w-8 p-0'
-                disabled={currentPage >= totalPages}
-                onClick={() =>
-                  setCurrentPage((p) => Math.min(totalPages, p + 1))
-                }
-              >
-                <ChevronRight className='h-4 w-4' />
-              </Button>
+        {!loading &&
+          !error &&
+          !notConnected &&
+          customers.length > 0 &&
+          filteredCustomers.length === 0 && (
+            <div className='flex-1 flex items-center justify-center p-8 text-muted-foreground'>
+              No customers match the current filters.
             </div>
-          </div>
-        </>
-        )}
+          )}
+
+        {!loading &&
+          !error &&
+          !notConnected &&
+          filteredCustomers.length > 0 && (
+            <>
+              <div className='overflow-auto flex-1 min-h-0'>
+                <table className='min-w-full text-sm'>
+                  <thead className='sticky top-0 bg-muted/80 backdrop-blur z-10'>
+                    <tr className='border-b'>
+                      <th className='px-4 py-3 text-left font-semibold'>
+                        Name
+                      </th>
+                      <th className='px-4 py-3 text-left font-semibold'>
+                        Email
+                      </th>
+                      <th className='px-4 py-3 text-left font-semibold'>
+                        Phone
+                      </th>
+                      <th className='px-4 py-3 text-right font-semibold'>
+                        Balance
+                      </th>
+                      <th className='px-4 py-3 text-left font-semibold'>
+                        Account status
+                      </th>
+                      <th className='px-4 py-3 text-left font-semibold'>
+                        QuickBooks sync
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedCustomers.map((customer) => (
+                      <tr
+                        key={customer.key}
+                        className='border-b border-border/50 last:border-0 hover:bg-muted/30'
+                      >
+                        <td className='px-4 py-3'>{customer.displayName}</td>
+                        <td className='px-4 py-3 text-muted-foreground'>
+                          {customer.email || '—'}
+                        </td>
+                        <td className='px-4 py-3 text-muted-foreground'>
+                          {customer.phone || '—'}
+                        </td>
+                        <td className='px-4 py-3 text-right'>
+                          {formatCurrency(customer.balance)}
+                        </td>
+                        <td className='px-4 py-3'>
+                          {customer.source !== 'crm' ? (
+                            <span
+                              className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${
+                                customer.active
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                  : 'bg-muted text-muted-foreground'
+                              }`}
+                            >
+                              {customer.active ? 'Active' : 'Inactive'}
+                            </span>
+                          ) : (
+                            <span className='text-muted-foreground'>—</span>
+                          )}
+                        </td>
+                        <td className='px-4 py-3'>
+                          <span
+                            className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${
+                              QUICKBOOKS_SYNC_STATUS_META[
+                                customer.quickBooksSyncStatus
+                              ].className
+                            }`}
+                          >
+                            {
+                              QUICKBOOKS_SYNC_STATUS_META[
+                                customer.quickBooksSyncStatus
+                              ].label
+                            }
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination bar */}
+              <div className='shrink-0 flex items-center justify-between gap-4 px-4 py-3 border-t bg-muted/30'>
+                <p className='text-sm text-muted-foreground'>
+                  Showing {startItem + 1}–
+                  {Math.min(startItem + pageSize, filteredCustomers.length)} of{' '}
+                  {filteredCustomers.length}
+                </p>
+                <div className='flex items-center gap-2'>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    className='h-8 w-8 p-0'
+                    disabled={currentPage <= 1}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  >
+                    <ChevronLeft className='h-4 w-4' />
+                  </Button>
+                  <span className='text-sm font-medium min-w-[80px] text-center'>
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    className='h-8 w-8 p-0'
+                    disabled={currentPage >= totalPages}
+                    onClick={() =>
+                      setCurrentPage((p) => Math.min(totalPages, p + 1))
+                    }
+                  >
+                    <ChevronRight className='h-4 w-4' />
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
       </div>
 
       <ToastContainer position='top-right' newestOnTop closeOnClick />

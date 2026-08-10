@@ -1,5 +1,4 @@
 import { API_CONFIG } from './config';
-import { getAuthToken } from './authToken';
 import { ApiError } from './errors';
 import { logger } from '@/utils/logger';
 
@@ -15,8 +14,12 @@ export type ApiResponseMeta = {
 };
 
 type QueryParams = Record<string, string | number | boolean | undefined>;
+/** Derived from fetch so ESLint no-undef does not flag DOM lib type names. */
+type FetchInit = NonNullable<Parameters<typeof fetch>[1]>;
+type FetchHeaders = NonNullable<FetchInit['headers']>;
+type FetchCredentials = NonNullable<FetchInit['credentials']>;
 
-interface RequestOptions extends Omit<RequestInit, 'body'> {
+interface RequestOptions extends Omit<FetchInit, 'body'> {
   params?: QueryParams;
   body?: unknown;
 }
@@ -42,7 +45,8 @@ export function buildUrl(path: string, params?: QueryParams): string {
 function assertProductionBackendUrl(_path: string): void {
   const isProductionBuild = import.meta.env.MODE === 'production';
   const base = API_CONFIG.baseUrl;
-  const isLocalhost = base.includes('localhost') || base.startsWith('http://127.');
+  const isLocalhost =
+    base.includes('localhost') || base.startsWith('http://127.');
   if (isProductionBuild && isLocalhost) {
     throw new ApiError(
       'Backend URL is not set for production. Set VITE_APP_BACKEND_URL or VITE_API_BASE_URL in Vercel to your backend, e.g. https://your-backend.run.app',
@@ -53,7 +57,10 @@ function assertProductionBackendUrl(_path: string): void {
 }
 
 function isNetworkError(err: unknown): err is TypeError {
-  return err instanceof TypeError && (err.message === 'Failed to fetch' || err.message === 'Load failed');
+  return (
+    err instanceof TypeError &&
+    (err.message === 'Failed to fetch' || err.message === 'Load failed')
+  );
 }
 
 async function parseResponseBody(response: Response): Promise<unknown> {
@@ -67,39 +74,76 @@ async function parseResponseBody(response: Response): Promise<unknown> {
 }
 
 /** Normalize error for callers: never log full payloads in production. */
-function normalizeError(parsed: unknown, response: Response): { ok: false; status: number; message: string; code?: string } {
+function normalizeError(
+  parsed: unknown,
+  response: Response
+): { ok: false; status: number; message: string; code?: string } {
   const message =
     typeof parsed === 'string'
       ? parsed
-      : (parsed as Record<string, unknown>)?.error ?? (parsed as Record<string, unknown>)?.message ?? response.statusText;
-  const code = typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>)?.code : undefined;
-  return { ok: false, status: response.status, message: String(message), code: code as string | undefined };
+      : ((parsed as Record<string, unknown>)?.error ??
+        (parsed as Record<string, unknown>)?.message ??
+        response.statusText);
+  const code =
+    typeof parsed === 'object' && parsed !== null
+      ? (parsed as Record<string, unknown>)?.code
+      : undefined;
+  return {
+    ok: false,
+    status: response.status,
+    message: String(message),
+    code: code as string | undefined,
+  };
 }
 
-function buildBaseHeaders(hasBody: boolean, fetchHeaders: HeadersInit | undefined): HeadersInit {
-  const base: Record<string, string> = hasBody ? { 'Content-Type': 'application/json' } : {};
+function buildBaseHeaders(
+  hasBody: boolean,
+  fetchHeaders: FetchHeaders | undefined
+): Record<string, string> {
+  const base: Record<string, string> = hasBody
+    ? { 'Content-Type': 'application/json' }
+    : {};
   return { ...base, ...(fetchHeaders as Record<string, string>) };
 }
 
-/** Resolve credentials and Authorization. Send Supabase token when available (Bearer + X-Session-Token). */
-export async function getRequestAuth(): Promise<{ credentials: RequestCredentials; headers: Record<string, string> }> {
-  if (API_CONFIG.authMode === 'cookie') {
-    return { credentials: 'include', headers: {} };
-  }
-  const token = await getAuthToken();
+/** Resolve credentials and Authorization. Always attach Supabase Bearer when available
+ * (cookie mode still includes credentials; Bearer covers cases where sb-access-token cookie is missing). */
+export async function getRequestAuth(): Promise<{
+  credentials: FetchCredentials;
+  headers: Record<string, string>;
+}> {
+  const token = await getSupabaseTokenSafe();
   const headers: Record<string, string> = {};
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
     headers['X-Session-Token'] = token;
   }
+  if (API_CONFIG.authMode === 'cookie') {
+    return { credentials: 'include', headers };
+  }
   return { credentials: 'omit', headers };
+}
+
+async function getSupabaseTokenSafe(): Promise<string | null> {
+  try {
+    const { supabase } = await import('@/lib/supabase');
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    return session?.access_token ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /**
  * Fetch with auth applied: cookie mode sends credentials; supabase mode sends Bearer + X-Session-Token.
  * Use for any direct fetch to the backend so session is always sent. Prefer get/post/put/del when possible.
  */
-export async function fetchWithAuth(url: string, init?: RequestInit): Promise<Response> {
+export async function fetchWithAuth(
+  url: string,
+  init?: FetchInit
+): Promise<Response> {
   const auth = await getRequestAuth();
   const headers = new Headers(init?.headers);
   Object.entries(auth.headers).forEach(([k, v]) => headers.set(k, v));
@@ -110,12 +154,18 @@ export async function fetchWithAuth(url: string, init?: RequestInit): Promise<Re
   });
 }
 
-async function requestLegacy<T>(path: string, options?: RequestOptions): Promise<T> {
+async function requestLegacy<T>(
+  path: string,
+  options?: RequestOptions
+): Promise<T> {
   assertProductionBackendUrl(path);
   const { params, body, ...fetchOptions } = options ?? {};
   const hasBody = body !== undefined;
   const auth = await getRequestAuth();
-  const headers = { ...buildBaseHeaders(hasBody, fetchOptions.headers), ...auth.headers };
+  const headers = {
+    ...buildBaseHeaders(hasBody, fetchOptions.headers),
+    ...auth.headers,
+  };
   const url = buildUrl(path, params);
 
   let response: Response;
@@ -147,12 +197,18 @@ async function requestLegacy<T>(path: string, options?: RequestOptions): Promise
   return parsed as T;
 }
 
-async function requestCanonical<T>(path: string, options?: RequestOptions): Promise<T> {
+async function requestCanonical<T>(
+  path: string,
+  options?: RequestOptions
+): Promise<T> {
   assertProductionBackendUrl(path);
   const { params, body, ...fetchOptions } = options ?? {};
   const hasBody = body !== undefined;
   const auth = await getRequestAuth();
-  const headers = { ...buildBaseHeaders(hasBody, fetchOptions.headers), ...auth.headers };
+  const headers = {
+    ...buildBaseHeaders(hasBody, fetchOptions.headers),
+    ...auth.headers,
+  };
   const url = buildUrl(path, params);
 
   let response: Response;
@@ -183,7 +239,11 @@ async function requestCanonical<T>(path: string, options?: RequestOptions): Prom
     throw new ApiError(err.message, response.status, { code: err.code });
   }
 
-  if (typeof parsed !== 'object' || parsed === null || typeof (parsed as ApiResponse<unknown>).success !== 'boolean') {
+  if (
+    typeof parsed !== 'object' ||
+    parsed === null ||
+    typeof (parsed as ApiResponse<unknown>).success !== 'boolean'
+  ) {
     throw new ApiError(
       'Invalid API response: missing boolean success field. Backend must return ApiResponse wrapper.',
       response.status,
@@ -193,12 +253,17 @@ async function requestCanonical<T>(path: string, options?: RequestOptions): Prom
 
   const apiResponse = parsed as ApiResponse<T>;
   if (!apiResponse.success) {
-    throw new ApiError(apiResponse.error || 'Unknown error', response.status, { code: apiResponse.code });
+    throw new ApiError(apiResponse.error || 'Unknown error', response.status, {
+      code: apiResponse.code,
+    });
   }
   return apiResponse.data;
 }
 
-export async function get<T>(path: string, options?: Omit<RequestOptions, 'body'>): Promise<T> {
+export async function get<T>(
+  path: string,
+  options?: Omit<RequestOptions, 'body'>
+): Promise<T> {
   const request = API_CONFIG.useLegacyApi ? requestLegacy : requestCanonical;
   return request<T>(path, { method: 'GET', ...options });
 }
@@ -221,7 +286,10 @@ export async function put<T, B = unknown>(
   return request<T>(path, { method: 'PUT', body, ...options });
 }
 
-export async function del<T>(path: string, options?: Omit<RequestOptions, 'body'>): Promise<T> {
+export async function del<T>(
+  path: string,
+  options?: Omit<RequestOptions, 'body'>
+): Promise<T> {
   const request = API_CONFIG.useLegacyApi ? requestLegacy : requestCanonical;
   return request<T>(path, { method: 'DELETE', ...options });
 }

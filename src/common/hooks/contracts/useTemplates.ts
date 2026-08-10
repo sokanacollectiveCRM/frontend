@@ -12,20 +12,24 @@ export function useTemplates() {
     setError(null);
 
     try {
-      const response = await fetchWithAuth(
-        buildUrl('/contracts/templates'),
-        {
-          headers: {
-          },
-        }
-      );
+      const response = await fetchWithAuth(buildUrl('/contracts/templates'), {
+        cache: 'no-store',
+        headers: {},
+      });
 
-      if (!response.ok) throw new Error('Could not fetch templates');
+      if (!response.ok) {
+        throw new Error(`Could not fetch templates (${response.status})`);
+      }
 
       const data = await response.json();
-      console.log('template', data);
-      setTemplates(data as Template[]);
-      return data as Template[];
+      const list = Array.isArray(data)
+        ? (data as Template[])
+        : Array.isArray((data as { data?: Template[] })?.data)
+          ? (data as { data: Template[] }).data
+          : [];
+      console.log('templates response count', list.length);
+      setTemplates(list);
+      return list;
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Error fetching templates';
