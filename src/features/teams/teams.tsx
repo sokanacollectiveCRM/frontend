@@ -35,6 +35,7 @@ import {
   getDoulaDocumentUrl,
   type DocumentCompletenessItem,
 } from '@/api/doulas/doulaService';
+import { buildUrl, fetchWithAuth } from '@/api/http';
 import UserAvatar from '@/common/components/user/UserAvatar';
 import {
   Download,
@@ -121,10 +122,9 @@ export default function Teams() {
     //function to fetch all team members
     setIsLoading(true);
     try {
-      const baseUrl = import.meta.env.VITE_APP_BACKEND_URL;
-      const teamResponse = await fetch(`${baseUrl}/clients/team/all`, {
+      // Use shared API base (honors VITE_USE_CLOUD_RUN) + cookie/Bearer auth helpers.
+      const teamResponse = await fetchWithAuth(buildUrl('/clients/team/all'), {
         method: 'GET',
-        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -369,11 +369,10 @@ export default function Teams() {
 
     setIsUpdating(true);
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_BACKEND_URL}/clients/team/${editingMember.id}`,
+      const response = await fetchWithAuth(
+        buildUrl(`/clients/team/${editingMember.id}`),
         {
           method: 'PUT',
-          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
           },
@@ -426,11 +425,10 @@ export default function Teams() {
     const timeoutId = setTimeout(() => abortController.abort(), 30000); // 30 second timeout
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_BACKEND_URL}/clients/team/${memberToDelete}`,
+      const response = await fetchWithAuth(
+        buildUrl(`/clients/team/${memberToDelete}`),
         {
           method: 'DELETE',
-          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
           },
@@ -558,23 +556,19 @@ export default function Teams() {
 
     setIsInviting(true);
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_BACKEND_URL}/clients/team/add`,
-        {
-          //create new user in users table to allow them to sign in
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            firstname: `${inviteForm.firstname}`,
-            lastname: `${inviteForm.lastname}`,
-            email: `${inviteForm.email}`,
-            role: `${inviteForm.role}`,
-          }),
-        }
-      );
+      const response = await fetchWithAuth(buildUrl('/clients/team/add'), {
+        //create new user in users table to allow them to sign in
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          firstname: `${inviteForm.firstname}`,
+          lastname: `${inviteForm.lastname}`,
+          email: `${inviteForm.email}`,
+          role: `${inviteForm.role}`,
+        }),
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -583,23 +577,19 @@ export default function Teams() {
         throw new Error(errorMessage);
       }
 
-      const emailResponse = await fetch(
-        `${import.meta.env.VITE_APP_BACKEND_URL}/email/team-invite`,
-        {
-          //send the email invite after user is created
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: inviteForm.email,
-            firstname: inviteForm.firstname,
-            lastname: inviteForm.lastname,
-            role: inviteForm.role,
-          }),
-        }
-      );
+      const emailResponse = await fetchWithAuth(buildUrl('/email/team-invite'), {
+        //send the email invite after user is created
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: inviteForm.email,
+          firstname: inviteForm.firstname,
+          lastname: inviteForm.lastname,
+          role: inviteForm.role,
+        }),
+      });
 
       if (!emailResponse.ok) {
         const errorData = await emailResponse.json();

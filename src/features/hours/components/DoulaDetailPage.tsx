@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { UserContext } from '@/common/contexts/UserContext';
+import { fetchWithAuth, buildUrl } from '@/api/http';
 import {
   Mail,
   Phone,
@@ -87,11 +88,10 @@ export default function DoulaDetailPage() {
     try {
       // For now, fetch from team members API (replace with real doula endpoints when available)
 
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_BACKEND_URL}/clients/team/all`,
+      const response = await fetchWithAuth(
+        buildUrl('/clients/team/all'),
         {
           method: 'GET',
-          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
           },

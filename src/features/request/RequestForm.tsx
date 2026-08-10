@@ -18,6 +18,7 @@ import {
 import { RequestFormValues } from './useRequestForm';
 import { StepNavigation } from './components/StepNavigation';
 import { StepHeader } from './components/StepHeader';
+import { apiBaseUrl } from '@/config/env';
 
 function RefreshWarningModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   if (!isOpen) return null;
@@ -414,8 +415,7 @@ export default function RequestForm() {
       submission_source: options?.isUsingTestData ? 'test_data' : 'manual',
     };
     // Use the same pattern as login endpoint (no /api prefix)
-    // @ts-ignore - Vite environment variable
-    const backendUrl = import.meta.env.VITE_APP_BACKEND_URL?.replace(/\/$/, '') || 'http://localhost:5050';
+    const backendUrl = apiBaseUrl;
 
     try {
       const response = await fetch(

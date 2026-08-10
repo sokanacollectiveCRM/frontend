@@ -4,6 +4,8 @@ import {
 } from './sessionUtils';
 import { PHI_KEYS } from '@/config/phi';
 import { normalizeZipCode } from './zipCode';
+import { apiBaseUrl } from '@/config/env';
+import { fetchWithAuth } from '@/api/http';
 
 /**
  * Columns that cannot be updated via PUT /clients/:id to Supabase client_info table.
@@ -53,16 +55,12 @@ export default async function updateClient(
   console.log('🚨 Update Data:', payload);
   console.log(
     '🚨 Full request URL:',
-    `${import.meta.env.VITE_APP_BACKEND_URL}/clients/${clientId}`
+    `${apiBaseUrl}/clients/${clientId}`
   );
 
   try {
-    const baseUrl =
-      import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050';
-    const cleanBaseUrl = baseUrl.replace(/\/+$/, ''); // Remove trailing slashes
-    const response = await fetch(`${cleanBaseUrl}/clients/${clientId}`, {
+    const response = await fetchWithAuth(`${apiBaseUrl}/clients/${clientId}`, {
       method: 'PUT',
-      credentials: 'include',
       headers: {
         'Content-type': 'application/json',
       },

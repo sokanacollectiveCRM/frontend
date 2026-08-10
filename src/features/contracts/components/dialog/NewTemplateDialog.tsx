@@ -14,6 +14,7 @@ import { Label } from '@/common/components/ui/label';
 import { Loader2, Plus } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { fetchWithAuth, buildUrl } from '@/api/http';
 
 type Props = {
   onUploadSuccess: () => void;
@@ -44,8 +45,8 @@ export function NewTemplateDialog({ onUploadSuccess }: Props) {
 
 
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_APP_BACKEND_URL}/contracts/templates`,
+      const res = await fetchWithAuth(
+        buildUrl('/contracts/templates'),
         {
           method: 'POST',
           headers: {

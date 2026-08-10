@@ -5,6 +5,7 @@ import styled from 'styled-components';
 
 import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
 import { useUser } from '@/common/hooks/user/useUser';
+import { fetchWithAuth, buildUrl } from '@/api/http';
 import { consumeSensitiveHash } from './consumeSensitiveHash';
 
 const Container = styled.div`
@@ -28,11 +29,10 @@ export default function AuthCallback() {
           throw new Error('No access token received');
         }
 
-        const response = await fetch(
-          `${import.meta.env.VITE_APP_BACKEND_URL}/auth/callback`,
+        const response = await fetchWithAuth(
+          buildUrl('/auth/callback'),
           {
             method: 'POST',
-            credentials: 'include',
             headers: {
               'Content-Type': 'application/json',
             },

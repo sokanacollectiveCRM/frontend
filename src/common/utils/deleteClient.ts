@@ -2,6 +2,8 @@ import {
   getSessionExpirationMessage,
   isSessionExpiredError,
 } from './sessionUtils';
+import { apiBaseUrl } from '@/config/env';
+import { fetchWithAuth } from '@/api/http';
 
 export default async function deleteClient(
   clientId: string
@@ -13,17 +15,13 @@ export default async function deleteClient(
   console.log('🚨 Client ID type:', typeof clientId);
   console.log(
     '🚨 Full request URL:',
-    `${import.meta.env.VITE_APP_BACKEND_URL}/clients/delete`
+    `${apiBaseUrl}/clients/delete`
   );
 
   try {
-    const baseUrl =
-      import.meta.env.VITE_APP_BACKEND_URL || '';
-    const cleanBaseUrl = baseUrl.replace(/\/+$/, ''); // Remove trailing slashes
-    const url = `${cleanBaseUrl}/clients/delete`;
-    const response = await fetch(url, {
+    const url = `${apiBaseUrl}/clients/delete`;
+    const response = await fetchWithAuth(url, {
       method: 'DELETE',
-      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
       },

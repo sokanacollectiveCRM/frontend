@@ -19,6 +19,7 @@ import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
 import { toast } from 'sonner';
 import { useClientAuth } from '@/common/hooks/auth/useClientAuth';
 import { useUser } from '@/common/hooks/user/useUser';
+import { apiBaseUrl } from '@/config/env';
 import { supabase } from '@/lib/supabase';
 import UserAvatar from '@/common/components/user/UserAvatar';
 import {
@@ -231,8 +232,7 @@ export default function ClientProfileTab({
     secondary_policy_number: '',
   });
 
-  const getClientApiBase = () =>
-    (import.meta.env.VITE_APP_BACKEND_URL || '').replace(/\/+$/, '');
+  const getClientApiBase = () => apiBaseUrl;
 
   const getClientAuthHeaders = (token?: string) => ({
     'Content-Type': 'application/json',

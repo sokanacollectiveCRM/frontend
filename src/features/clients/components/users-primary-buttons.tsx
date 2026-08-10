@@ -3,6 +3,7 @@ import { Template } from '@/common/types/template';
 import { Send, SquarePlus } from 'lucide-react';
 import { useState } from 'react';
 import { EnhancedContractDialog } from './dialog/EnhancedContractDialog';
+import { fetchWithAuth, buildUrl } from '@/api/http';
 
 interface Props {
   draggedTemplate: Template | null;
@@ -16,11 +17,8 @@ export function UsersPrimaryButtons({
   const [isEnhancedContractDialogOpen, setIsEnhancedContractDialogOpen] = useState(false);
 
   const fetchCSV = async () => {
-    const baseUrl =
-      import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050';
     try {
-      const data = await fetch(`${baseUrl}/clients/fetchCSV`, {
-        credentials: 'include',
+      const data = await fetchWithAuth(buildUrl('/clients/fetchCSV'), {
         headers: {
         },
       });

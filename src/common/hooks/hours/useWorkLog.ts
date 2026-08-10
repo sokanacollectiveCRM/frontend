@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { normalizeHourType, type HourType } from '@/features/hours/data/hour-types';
+import { fetchWithAuth, buildUrl } from '@/api/http';
 
 type WorkLogEntry = {
   id: string;
@@ -33,8 +34,8 @@ export default function useWorkLog(userId?: string) {
     async function fetchWorkLog() {
       try {
 
-        const response = await fetch(
-          `${import.meta.env.VITE_APP_BACKEND_URL}/users/${userId}/hours`,
+        const response = await fetchWithAuth(
+          buildUrl(`/users/${userId}/hours`),
           {
             headers: {
             },

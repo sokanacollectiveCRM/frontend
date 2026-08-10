@@ -1,8 +1,9 @@
 import type { DoulaAssignmentRole } from '@/api/clients/doulaAssignments';
+import { fetchWithAuth } from '@/api/http';
+import { apiBaseUrl } from '@/config/env';
 
 // Admin API service functions
-const API_BASE =
-  (import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050') + '/api';
+const API_BASE = `${apiBaseUrl}/api`;
 
 export interface MatchingClient {
   id: string;
@@ -54,8 +55,7 @@ export interface MatchingClientsResponse {
  * Get clients in matching phase
  */
 export async function getMatchingClients(): Promise<MatchingClientsResponse> {
-  const response = await fetch(`${API_BASE}/admin/clients/matching`, {
-    credentials: 'include',
+  const response = await fetchWithAuth(`${API_BASE}/admin/clients/matching`, {
     headers: {
       'Content-Type': 'application/json',
     },
@@ -101,9 +101,8 @@ export async function matchDoulaWithClient(
     body.role = role;
   }
 
-  const response = await fetch(`${API_BASE}/admin/assignments/match`, {
+  const response = await fetchWithAuth(`${API_BASE}/admin/assignments/match`, {
     method: 'POST',
-    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
     },

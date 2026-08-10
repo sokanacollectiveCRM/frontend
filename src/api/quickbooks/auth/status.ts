@@ -1,7 +1,7 @@
 // src/api/quickbooks/status.ts
+import { apiBaseUrl } from '@/config/env';
 
-const API_BASE =
-  import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050';
+const API_BASE = apiBaseUrl;
 /**
  * Check whether the current user is connected to QuickBooks.
  * @returns true if connected, false otherwise

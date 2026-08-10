@@ -9,6 +9,7 @@ import { Separator } from '@/common/components/ui/separator';
 
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
+import { fetchWithAuth, buildUrl } from '@/api/http';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 
@@ -23,8 +24,8 @@ export function PdfPreview() {
       setIsLoading(true);
       try {
         console.log(selectedTemplateName);
-        const res = await fetch(
-          `${import.meta.env.VITE_APP_BACKEND_URL}/contracts/templates/generate`,
+        const res = await fetchWithAuth(
+          buildUrl('/contracts/templates/generate'),
           {
             method: 'POST',
             headers: {

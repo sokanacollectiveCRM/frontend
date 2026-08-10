@@ -59,15 +59,12 @@ describe('Admin Notes with Audit Log - createClientNote', () => {
 
     const result = await createClientNote(clientId, mockNoteData);
 
-    // Verify API call format
+    // Verify API call format (fetchWithAuth may normalize headers to Headers)
     expect(mockFetch).toHaveBeenCalledWith(
       'http://localhost:5050/api/clients/client-123/activity',
       expect.objectContaining({
         method: 'POST',
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           activity_type: 'note',
           content: mockNoteData.description,

@@ -1,3 +1,5 @@
+import { fetchWithAuth, buildUrl } from '@/api/http';
+
 export default async function addWorkSession(
   doula_id: string | undefined,
   client_id: string | undefined,
@@ -13,8 +15,8 @@ export default async function addWorkSession(
   async function addSession() {
     try {
 
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_BACKEND_URL}/users/${doula_id}/addhours`,
+      const response = await fetchWithAuth(
+        buildUrl(`/users/${doula_id}/addhours`),
         {
           method: 'POST',
           headers: {

@@ -14,6 +14,7 @@ import { Label } from '@/common/components/ui/label';
 import { useToast } from '@/common/hooks/toast/use-toast';
 import { Loader2, Pencil } from 'lucide-react';
 import { useRef, useState } from 'react';
+import { fetchWithAuth, buildUrl } from '@/api/http';
 
 interface Props {
   templateId: string;
@@ -72,8 +73,8 @@ export function EditTemplateDialog({
 
 
             try {
-              const res = await fetch(
-                `${import.meta.env.VITE_APP_BACKEND_URL}/contracts/templates/${templateName}`,
+              const res = await fetchWithAuth(
+                buildUrl(`/contracts/templates/${templateName}`),
                 {
                   method: 'PUT',
                   headers: {

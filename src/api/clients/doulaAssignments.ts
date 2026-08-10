@@ -45,12 +45,9 @@ export function normalizeAssignmentRole(
   return null;
 }
 
-const getBaseUrl = (): string => {
-  return (
-    import.meta.env.VITE_APP_BACKEND_URL?.replace(/\/$/, '') ||
-    'http://localhost:5050'
-  );
-};
+import { apiBaseUrl } from '@/config/env';
+
+const getBaseUrl = (): string => apiBaseUrl;
 
 /**
  * Fetch all available doulas (team members with doula role)

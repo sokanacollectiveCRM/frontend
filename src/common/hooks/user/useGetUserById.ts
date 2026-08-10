@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { fetchWithAuth, buildUrl } from '@/api/http';
 
 export default function useUserData(userId: string) {
   const [user, setUser] = useState<any>(null);
@@ -18,8 +19,8 @@ export default function useUserData(userId: string) {
 
       try {
 
-        const response = await fetch(
-          `${import.meta.env.VITE_APP_BACKEND_URL}/users/${userId}`,
+        const response = await fetchWithAuth(
+          buildUrl(`/users/${userId}`),
           {
             headers: {
               'Content-Type': 'application/json',
