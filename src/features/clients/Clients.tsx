@@ -25,6 +25,7 @@ import { TemplatesProvider } from './contexts/TemplatesContext';
 import { userListSchema, UserSummary, type UserWithPortal } from './data/schema';
 import { derivePortalStatus } from './utils/portalStatus';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/common/components/ui/tabs';
+import { fetchWithAuth, buildUrl } from '@/api/http';
 
 type RouteParams = {
   clientId?: string;
@@ -171,11 +172,10 @@ export default function Users() {
       // Get the frontend URL (production or current origin)
       const frontendUrl = import.meta.env.VITE_APP_FRONTEND_URL || window.location.origin;
       
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_BACKEND_URL}/api/admin/clients/${selectedLeadForPortal.id}/portal/invite`,
+      const response = await fetchWithAuth(
+        buildUrl(`/api/admin/clients/${selectedLeadForPortal.id}/portal/invite`),
         {
           method: 'POST',
-          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
           },
@@ -229,11 +229,10 @@ export default function Users() {
       // Get the frontend URL (production or current origin)
       const frontendUrl = import.meta.env.VITE_APP_FRONTEND_URL || window.location.origin;
 
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_BACKEND_URL}/api/admin/clients/${lead.id}/portal/resend`,
+      const response = await fetchWithAuth(
+        buildUrl(`/api/admin/clients/${lead.id}/portal/resend`),
         {
           method: 'POST',
-          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
           },
@@ -278,11 +277,10 @@ export default function Users() {
     
     try {
 
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_BACKEND_URL}/api/admin/clients/${lead.id}/portal/disable`,
+      const response = await fetchWithAuth(
+        buildUrl(`/api/admin/clients/${lead.id}/portal/disable`),
         {
           method: 'POST',
-          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
           },

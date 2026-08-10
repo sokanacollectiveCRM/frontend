@@ -1,4 +1,5 @@
 import { API_CONFIG } from '@/api/config';
+import { apiBaseUrl } from '@/config/env';
 import { getQuickBooksStatus, type QuickBooksCompany } from '@/api/quickbooks/auth/qbo';
 import { withTokenRefresh } from '@/api/quickbooks/auth/utils';
 import SubmitButton from '@/common/components/form/SubmitButton';
@@ -91,9 +92,7 @@ export default function QuickBooksConnectPage() {
       const frontendOrigin = new URL(
         import.meta.env.VITE_APP_FRONTEND_URL || window.location.origin
       ).origin;
-      const backendOrigin = new URL(
-        import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050'
-      ).origin;
+      const backendOrigin = new URL(apiBaseUrl).origin;
       if (event.origin !== frontendOrigin && event.origin !== backendOrigin) return;
       if (event.data?.success) {
         if (successHandledRef.current) return;

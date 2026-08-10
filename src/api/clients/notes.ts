@@ -1,3 +1,6 @@
+import { apiBaseUrl } from '@/config/env';
+import { fetchWithAuth } from '@/api/http';
+
 export interface ClientNote {
   id: string;
   clientId: string;
@@ -78,8 +81,10 @@ const normalizeNotes = (raw: any, clientId: string): ClientNote[] => {
   return rawList.map((row: any) => normalizeNoteRow(row, clientId));
 };
 
+import { apiBaseUrl } from '@/config/env';
+
 const getNotesUrl = (clientId: string, role?: NotesViewerRole): string[] => {
-  const base = (import.meta.env.VITE_APP_BACKEND_URL || '').replace(/\/+$/, '');
+  const base = apiBaseUrl;
   const clientIdSafe = encodeURIComponent(clientId);
 
   // Doulas must use doula-scoped activities endpoint to reliably fetch
@@ -102,9 +107,8 @@ export const getClientNotes = async (
     const urls = getNotesUrl(clientId, role);
     const settled = await Promise.allSettled(
       urls.map(async (url) => {
-        const response = await fetch(url, {
+        const response = await fetchWithAuth(url, {
           method: 'GET',
-          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
           },
@@ -161,11 +165,10 @@ export const createClientNote = async (
       ...(noteData.metadata ? { metadata: noteData.metadata } : {}),
     };
 
-    const response = await fetch(
-      `${import.meta.env.VITE_APP_BACKEND_URL}/api/clients/${clientId}/activity`,
+    const response = await fetchWithAuth(
+      `${apiBaseUrl}/api/clients/${clientId}/activity`,
       {
         method: 'POST',
-        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },

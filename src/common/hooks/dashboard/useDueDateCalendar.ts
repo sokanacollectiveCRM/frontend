@@ -1,5 +1,7 @@
 // src/common/hooks/dashboard/useDueDateCalendar.ts
 import useSWR from 'swr';
+import { apiBaseUrl } from '@/config/env';
+import { fetchWithAuth } from '@/api/http';
 
 export interface DueDateEvent {
   id: string;
@@ -19,12 +21,11 @@ export interface DueDateCalendarResponse {
  * @returns {object} - { events, loading, error }
  */
 export function useDueDateCalendar() {
-  const BASE = import.meta.env.VITE_APP_BACKEND_URL;
+  const BASE = apiBaseUrl;
 
   const fetcher = async (url: string): Promise<DueDateCalendarResponse> => {
     try {
-      const response = await fetch(url, {
-        credentials: 'include',
+      const response = await fetchWithAuth(url, {
         headers: {
           'Content-Type': 'application/json',
         },

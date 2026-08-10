@@ -6,9 +6,9 @@ import type {
   DoulaNote,
   Visit,
 } from '@/features/hours/types/doula';
+import { apiBaseUrl } from '@/config/env';
 
-const API_BASE =
-  import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050';
+const API_BASE = apiBaseUrl;
 
 // Get all doulas (for list page)
 export async function getAllDoulas(): Promise<Doula[]> {

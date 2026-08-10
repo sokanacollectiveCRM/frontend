@@ -3,6 +3,7 @@ import {
   isSessionExpiredError,
 } from './sessionUtils';
 import { syncQuickBooksCustomerFromClient } from './syncQuickBooksCustomer';
+import { fetchWithAuth, buildUrl } from '@/api/http';
 
 type QuickBooksSyncSource = {
   id?: string;
@@ -22,11 +23,8 @@ export default async function updateClientStatus(
 ): Promise<{ success: boolean; client?: any; error?: string }> {
 
   try {
-    const response = await fetch(
-      `${import.meta.env.VITE_APP_BACKEND_URL}/clients/status`,
-      {
+    const response = await fetchWithAuth(buildUrl('/clients/status'), {
         method: 'PUT',
-        credentials: 'include',
         headers: {
           'Content-type': 'application/json',
         },
@@ -34,8 +32,7 @@ export default async function updateClientStatus(
           clientId: clientId,
           status: status,
         }),
-      }
-    );
+      });
 
     if (!response.ok) {
       const errorText = await response.text();

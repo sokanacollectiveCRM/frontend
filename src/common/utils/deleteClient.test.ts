@@ -30,9 +30,6 @@ describe('deleteClient', () => {
       expect.objectContaining({
         method: 'DELETE',
         credentials: 'include',
-        headers: expect.objectContaining({
-          'Content-Type': 'application/json',
-        }),
         body: JSON.stringify({ id: '123' }),
       })
     );

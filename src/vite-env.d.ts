@@ -7,6 +7,10 @@ interface ImportMetaEnv {
   readonly VITE_API_BASE_URL?: string
   /** Same as VITE_API_BASE_URL (alias for backend URL) */
   readonly VITE_API_URL?: string
+  /** Gradual cutover: when "true", use VITE_CLOUD_RUN_API_URL as API base */
+  readonly VITE_USE_CLOUD_RUN?: string
+  /** Cloud Run private API URL used when VITE_USE_CLOUD_RUN=true */
+  readonly VITE_CLOUD_RUN_API_URL?: string
   /** "production" | "staging" | "development" */
   readonly VITE_APP_ENV?: string
   /** "supabase" (Bearer token) | "cookie" (credentials: include) */

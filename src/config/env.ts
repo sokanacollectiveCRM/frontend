@@ -19,11 +19,29 @@ const appEnv: AppEnv =
     ? rawAppEnv
     : 'development';
 
-/** API base URL: VITE_API_BASE_URL, VITE_API_URL, or VITE_APP_BACKEND_URL, no trailing slash. */
-export const apiBaseUrl = (
-  (getEnv('VITE_API_BASE_URL') ?? getEnv('VITE_API_URL') ?? getEnv('VITE_APP_BACKEND_URL'))?.replace(/\/+$/, '') ||
-  'http://localhost:5050'
-);
+const DEFAULT_CLOUD_RUN_API_URL =
+  'https://sokana-private-api-634744984887.us-central1.run.app';
+
+/**
+ * Gradual cutover flag: when VITE_USE_CLOUD_RUN=true, use Cloud Run API
+ * (VITE_CLOUD_RUN_API_URL or default) instead of local/Vercel backend URL.
+ */
+const useCloudRun = (getEnv('VITE_USE_CLOUD_RUN') ?? '').toLowerCase() === 'true';
+const cloudRunApiUrl = (
+  getEnv('VITE_CLOUD_RUN_API_URL') ?? DEFAULT_CLOUD_RUN_API_URL
+).replace(/\/+$/, '');
+
+/** API base URL: Cloud Run (if flagged), else VITE_API_BASE_URL / VITE_API_URL / VITE_APP_BACKEND_URL. */
+export const apiBaseUrl = useCloudRun
+  ? cloudRunApiUrl
+  : (
+      (getEnv('VITE_API_BASE_URL') ?? getEnv('VITE_API_URL') ?? getEnv('VITE_APP_BACKEND_URL'))?.replace(
+        /\/+$/,
+        ''
+      ) || 'http://localhost:5050'
+    );
+
+export const isCloudRunApi = useCloudRun;
 
 export const isProd = appEnv === 'production';
 export const isDev = appEnv === 'development';

@@ -13,6 +13,7 @@ import { Dialog, DialogTrigger } from '@radix-ui/react-dialog';
 import { Loader2, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { fetchWithAuth, buildUrl } from '@/api/http';
 
 type Props = {
   templateName: string;
@@ -30,10 +31,8 @@ export function DeleteTemplateDialog({ templateName, onDelete }: Props) {
   const handleDelete = async () => {
     setIsLoading(true);
     try {
-      const baseUrl =
-        import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050';
-      const res = await fetch(
-        `${baseUrl}/contracts/templates/${encodeURIComponent(templateName)}`,
+      const res = await fetchWithAuth(
+        buildUrl(`/contracts/templates/${encodeURIComponent(templateName)}`),
         {
           method: 'DELETE',
           headers: {

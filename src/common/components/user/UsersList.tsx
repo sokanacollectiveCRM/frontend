@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
 import { useUser } from '@/common/hooks/user/useUser';
 import { User } from '@/common/types/user';
+import { fetchWithAuth, buildUrl } from '@/api/http';
 import styled from 'styled-components';
 
 const UsersContainer = styled.div`
@@ -56,11 +57,9 @@ export default function UsersList() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const baseUrl = import.meta.env.VITE_APP_BACKEND_URL;
-        const response = await fetch(
-          `${baseUrl}/auth/users`,
+        const response = await fetchWithAuth(
+          buildUrl('/auth/users'),
           {
-            credentials: 'include',
             headers: {
             },
           }

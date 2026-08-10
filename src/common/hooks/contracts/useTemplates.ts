@@ -1,5 +1,6 @@
 import { Template } from '@/common/types/template';
 import { useState } from 'react';
+import { fetchWithAuth, buildUrl } from '@/api/http';
 
 export function useTemplates() {
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -11,10 +12,9 @@ export function useTemplates() {
     setError(null);
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_BACKEND_URL}/contracts/templates`,
+      const response = await fetchWithAuth(
+        buildUrl('/contracts/templates'),
         {
-          credentials: 'include',
           headers: {
           },
         }

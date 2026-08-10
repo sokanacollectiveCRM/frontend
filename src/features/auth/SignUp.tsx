@@ -19,6 +19,7 @@ import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { fetchWithAuth, buildUrl } from '@/api/http';
 
 export default function SignUp() {
   const [error, setError] = useState<string>('');
@@ -57,8 +58,8 @@ export default function SignUp() {
     setError('');
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_BACKEND_URL}/auth/signup`,
+      const response = await fetchWithAuth(
+        buildUrl('/auth/signup'),
         {
           method: 'POST',
           headers: {

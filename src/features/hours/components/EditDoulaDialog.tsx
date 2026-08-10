@@ -15,6 +15,7 @@ import { Badge } from '@/common/components/ui/badge';
 import { X, Upload, FileText, Trash2 } from 'lucide-react';
 import type { Doula } from '@/features/hours/types/doula';
 import { toast } from 'sonner';
+import { fetchWithAuth, buildUrl } from '@/api/http';
 
 interface EditDoulaDialogProps {
   open: boolean;
@@ -138,11 +139,10 @@ export function EditDoulaDialog({
       });
 
       // Update via team member endpoint (will be replaced with doula-specific endpoint)
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_BACKEND_URL}/clients/team/${doula.id}`,
+      const response = await fetchWithAuth(
+        buildUrl(`/clients/team/${doula.id}`),
         {
           method: 'PUT',
-          credentials: 'include',
           headers: {
             // Don't set Content-Type header - browser will set it with boundary for FormData
           },

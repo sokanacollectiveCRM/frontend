@@ -18,8 +18,9 @@ export interface SignNowResponse {
 }
 
 // services/signNowService.ts
-// @ts-ignore - Vite environment variable
-const BACKEND_URL = import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:5050';
+import { apiBaseUrl } from '@/config/env';
+
+const BACKEND_URL = apiBaseUrl;
 
 export const signNowService = {
   async sendInvitation(client: SignNowClient): Promise<SignNowResponse> {
