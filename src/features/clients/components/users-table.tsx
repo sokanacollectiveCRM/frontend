@@ -84,8 +84,8 @@ export function UsersTable({ columns, data, clients, viewMode = 'leads' }: DataT
   return (
     <div className='space-y-4'>
       <DataTableToolbar table={table} clients={clients} viewMode={viewMode} />
-      <div className='rounded-md border'>
-        <Table className='table-fixed w-full'>
+      <div className='min-w-0 overflow-x-auto rounded-md border'>
+        <Table className='w-full min-w-[720px]'>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className='group/row'>

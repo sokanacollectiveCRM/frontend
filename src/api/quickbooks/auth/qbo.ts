@@ -1,4 +1,5 @@
 import { API_CONFIG } from '@/api/config';
+import { fetchWithAuth } from '@/api/http';
 
 const API_BASE = API_CONFIG.baseUrl.replace(/\/$/, '');
 
@@ -20,7 +21,7 @@ export interface QuickBooksStatus {
 }
 
 export async function getQuickBooksStatus(): Promise<QuickBooksStatus> {
-  const res = await fetch(`${API_BASE}/quickbooks/status`, {
+  const res = await fetchWithAuth(`${API_BASE}/quickbooks/status`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -43,7 +44,7 @@ export async function getQuickBooksStatus(): Promise<QuickBooksStatus> {
 export async function refreshQuickBooksToken(): Promise<{
   connected: boolean;
 }> {
-  const res = await fetch(`${API_BASE}/quickbooks/refresh`, {
+  const res = await fetchWithAuth(`${API_BASE}/quickbooks/refresh`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

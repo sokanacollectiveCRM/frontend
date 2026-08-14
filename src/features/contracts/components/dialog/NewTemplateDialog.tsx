@@ -97,7 +97,7 @@ export function NewTemplateDialog({ onUploadSuccess }: Props) {
             <Input type='file' name='file' id='file' accept='.docx' required />
           </div>
 
-          <div className='flex gap-4'>
+          <div className='flex flex-col gap-4 sm:flex-row'>
             <div className='flex-1 space-y-2'>
               <Label htmlFor='deposit'>Deposit Fee</Label>
               <Input name='deposit' id='deposit' type='number' required />

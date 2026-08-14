@@ -1705,7 +1705,7 @@ export function LeadProfileModal({
   if (!client) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className='max-w-lg'>
+        <DialogContent className='max-h-[100dvh] w-full max-w-full translate-x-0 translate-y-0 left-0 top-0 h-[100dvh] rounded-none overflow-y-auto sm:left-[50%] sm:top-[50%] sm:h-auto sm:max-h-[90vh] sm:max-w-lg sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg'>
           <DialogHeader>
             <DialogTitle>Client Not Found</DialogTitle>
           </DialogHeader>
@@ -1737,12 +1737,12 @@ export function LeadProfileModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-w-4xl max-h-[90vh] overflow-y-auto"
+        className="left-0 top-0 h-[100dvh] max-h-[100dvh] w-full max-w-full translate-x-0 translate-y-0 overflow-y-auto rounded-none sm:left-[50%] sm:top-[50%] sm:h-auto sm:max-h-[90vh] sm:max-w-4xl sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg"
         data-testid={`lead-profile-dialog-${String(client.id)}`}
       >
         <DialogHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-2">
+          <div className="flex flex-col gap-3 pr-8 sm:flex-row sm:items-center sm:justify-between">
+            <DialogTitle className="flex min-w-0 items-center gap-2">
               <User className="h-5 w-5" />
               {(() => {
                 const c = detailSource ?? (client as Record<string, unknown>);

@@ -15,7 +15,7 @@ export interface UserContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
-  checkAuth: () => Promise<boolean>;
+  checkAuth: (options?: { silent?: boolean }) => Promise<boolean>;
   googleAuth: () => Promise<void>;
   requestPasswordReset: (email: string) => Promise<boolean>;
   updatePassword: (password: string, token: string) => Promise<boolean>;

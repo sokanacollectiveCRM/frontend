@@ -60,7 +60,7 @@ function SummaryBlock({ summary }: { summary: ReconciliationSummary }) {
   return (
     <div className="mb-4">
       <h2 className="text-sm font-semibold text-muted-foreground mb-2">Invoice totals</h2>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
         <div className="rounded-lg border bg-card p-4 shadow-sm">
           <p className="text-xs font-medium text-muted-foreground">Pending amount</p>
           <p className="text-xl font-semibold mt-1">

@@ -3,6 +3,14 @@
 @tailwind utilities;
 
 @layer base {
+  html,
+  body,
+  #root {
+    min-height: 100dvh;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
   button, 
   [role="button"],
   [type="button"], 

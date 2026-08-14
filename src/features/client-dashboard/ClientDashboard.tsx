@@ -67,10 +67,10 @@ export default function ClientDashboard({ view = 'profile' }: ClientDashboardPro
 
   return (
     <>
-      <main className='w-full max-w-screen overflow-x-hidden px-4 py-6'>
-        <div className='p-6'>
+      <main className='w-full min-w-0 max-w-screen overflow-x-hidden px-4 py-6'>
+        <div className='min-w-0'>
           <div className='mb-6'>
-            <h1 className='text-3xl font-bold text-gray-900'>
+            <h1 className='text-2xl font-bold text-gray-900 sm:text-3xl'>
               {view === 'billing' ? 'Billing information' : 'Profile information'}
             </h1>
             <p className='mt-1 text-gray-600'>

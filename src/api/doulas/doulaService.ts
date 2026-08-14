@@ -49,7 +49,7 @@ export interface DoulaProfile {
 }
 
 export async function getDoulaProfile(): Promise<DoulaProfile> {
-  const response = await fetch(`${API_BASE}/doulas/profile`, {
+  const response = await fetchWithAuth(`${API_BASE}/doulas/profile`, {
     headers: {
       'Content-Type': 'application/json',
     },
@@ -140,7 +140,7 @@ export async function uploadDoulaProfilePicture(
   const formData = new FormData();
   formData.append('profile_picture', file);
 
-  const response = await fetch(`${API_BASE}/doulas/profile/picture`, {
+  const response = await fetchWithAuth(`${API_BASE}/doulas/profile/picture`, {
     method: 'POST',
     credentials: 'include',
     body: formData,
@@ -166,7 +166,7 @@ export async function updateDoulaProfile(
     JSON.stringify(data, null, 2)
   );
 
-  const response = await fetch(`${API_BASE}/doulas/profile`, {
+  const response = await fetchWithAuth(`${API_BASE}/doulas/profile`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -464,7 +464,7 @@ export async function uploadDocument(
     );
   });
 
-  const response = await fetch(`${API_BASE}/doulas/documents`, {
+  const response = await fetchWithAuth(`${API_BASE}/doulas/documents`, {
     method: 'POST',
     credentials: 'include',
     body: formData,
@@ -484,7 +484,7 @@ export async function uploadDocument(
 }
 
 export async function getDoulaDocuments(): Promise<DocumentsResponse> {
-  const response = await fetch(`${API_BASE}/doulas/documents`, {
+  const response = await fetchWithAuth(`${API_BASE}/doulas/documents`, {
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
   });
@@ -522,7 +522,7 @@ export async function getDoulaDocuments(): Promise<DocumentsResponse> {
 }
 
 export async function deleteDoulaDocument(documentId: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/doulas/documents/${documentId}`, {
+  const response = await fetchWithAuth(`${API_BASE}/doulas/documents/${documentId}`, {
     method: 'DELETE',
     credentials: 'include',
   });
@@ -553,7 +553,7 @@ export async function updateDoulaDocumentMetadata(
   if (Object.keys(payload).length === 0) {
     throw new Error('No document metadata changes provided');
   }
-  const response = await fetch(`${API_BASE}/doulas/documents/${documentId}`, {
+  const response = await fetchWithAuth(`${API_BASE}/doulas/documents/${documentId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
@@ -696,7 +696,7 @@ export async function getAssignedClients(
   console.log('getAssignedClients - Calling URL:', url);
   console.log('getAssignedClients - Detailed mode:', detailed);
 
-  const response = await fetch(url, {
+  const response = await fetchWithAuth(url, {
     headers: {
       'Content-Type': 'application/json',
     },
@@ -848,7 +848,7 @@ export async function getAssignedClientDetails(
   clientId: string,
   detailed = false
 ): Promise<AssignedClientLite | AssignedClientDetailed> {
-  const response = await fetch(
+  const response = await fetchWithAuth(
     `${API_BASE}/doulas/clients/${clientId}?detailed=${detailed}`,
     {
       headers: {
@@ -939,7 +939,7 @@ export interface LogHoursData {
 export interface UpdateHoursData extends Partial<LogHoursData> {}
 
 export async function logHours(data: LogHoursData): Promise<HoursEntry> {
-  const response = await fetch(`${API_BASE}/doulas/hours`, {
+  const response = await fetchWithAuth(`${API_BASE}/doulas/hours`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -961,7 +961,7 @@ export async function updateHours(
   hourId: string,
   data: UpdateHoursData
 ): Promise<HoursEntry> {
-  const response = await fetch(`${API_BASE}/doulas/hours/${hourId}`, {
+  const response = await fetchWithAuth(`${API_BASE}/doulas/hours/${hourId}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -982,7 +982,7 @@ export async function updateHours(
 export async function getDoulaHours(): Promise<HoursEntry[]> {
   // Bust browser conditional caching to avoid 304 + empty-body parsing issues.
   const url = `${API_BASE}/doulas/hours?_=${Date.now()}`;
-  const response = await fetch(url, {
+  const response = await fetchWithAuth(url, {
     cache: 'no-store',
   });
 

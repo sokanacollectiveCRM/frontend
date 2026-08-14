@@ -139,7 +139,7 @@ export default function BillingContractDetailPage() {
   }
 
   return (
-    <div className='p-6 space-y-6 overflow-y-auto'>
+    <div className='min-w-0 space-y-6 overflow-y-auto p-4 sm:p-6'>
       <div className='flex flex-wrap items-start justify-between gap-4'>
         <div className='space-y-2'>
           <Button asChild variant='outline' size='sm'>
@@ -252,7 +252,8 @@ export default function BillingContractDetailPage() {
         {contract.installments.length === 0 ? (
           <div className='p-6 text-sm text-muted-foreground'>No installments available.</div>
         ) : (
-          <table className='min-w-full text-sm'>
+          <div className='overflow-x-auto'>
+          <table className='min-w-[640px] w-full text-sm'>
             <thead className='bg-muted/60'>
               <tr className='border-b'>
                 <th className='px-4 py-3 text-left font-semibold'>Installment</th>
@@ -312,6 +313,7 @@ export default function BillingContractDetailPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { API_CONFIG } from '@/api/config';
+import { fetchWithAuth } from '@/api/http';
 
 const API_BASE = API_CONFIG.baseUrl.replace(/\/$/, '');
 
@@ -19,7 +20,7 @@ export async function getQuickBooksAuthUrl(): Promise<string> {
 
   for (const path of candidates) {
     const endpoint = `${API_BASE}${path}`;
-    const res = await fetch(endpoint, {
+    const res = await fetchWithAuth(endpoint, {
       method: 'GET',
       credentials: 'include',
       headers: {

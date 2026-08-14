@@ -346,7 +346,7 @@ export default function DoulaDetailPage() {
       </Header>
 
       <Main>
-        <div className='flex-1 overflow-auto p-6'>
+        <div className='min-w-0 flex-1 overflow-auto p-4 sm:p-6'>
           {/* Back Button */}
           <Button
             variant='ghost'

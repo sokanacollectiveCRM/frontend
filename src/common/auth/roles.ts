@@ -20,8 +20,17 @@ export function canAccessBillingPortal(role: string | null | undefined): boolean
   return isAdminRole(role) || isBillingRole(role);
 }
 
+export function isClientRole(role: string | null | undefined): boolean {
+  return role === 'client';
+}
+
+/** Authoritative staff roles from /auth/me — never inferred from Supabase metadata. */
+export function isStaffRole(role: string | null | undefined): boolean {
+  return isAdminRole(role) || isDoulaRole(role) || isBillingRole(role);
+}
+
 export function canAccessFullCrm(role: string | null | undefined, isClientPortalUser: boolean): boolean {
-  if (isClientPortalUser) return true;
+  if (isClientPortalUser || isClientRole(role)) return false;
   if (isBillingOnlyRole(role)) return false;
   return true;
 }

@@ -70,7 +70,7 @@ test.describe('Request form — People in the Home counts (E2E)', () => {
           home_adults_count?: string;
           home_youth_count?: string;
           email?: string;
-          skip_email_notifications?: boolean;
+          submission_source?: string;
         }
       | undefined;
 
@@ -105,7 +105,7 @@ test.describe('Request form — People in the Home counts (E2E)', () => {
     expect(capturedPayload?.email).toBe(uniqueEmail);
     expect(capturedPayload?.home_adults_count).toBe('5+');
     expect(capturedPayload?.home_youth_count).toBe('3');
-    expect(capturedPayload?.skip_email_notifications).toBe(true);
+    expect(capturedPayload).not.toHaveProperty('skip_email_notifications');
 
     await expect(page.getByText('Request Form Submitted Successfully', { exact: false })).toBeVisible({
       timeout: 15000,

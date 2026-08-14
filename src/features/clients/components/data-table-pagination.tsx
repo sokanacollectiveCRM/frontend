@@ -24,8 +24,7 @@ export function DataTablePagination<TData>({
 }: DataTablePaginationProps<TData>) {
   return (
     <div
-      className='flex items-center justify-between overflow-clip px-2'
-      style={{ overflowClipMargin: 1 }}
+      className='flex flex-wrap items-center justify-between gap-2 px-2'
     >
       <div className='hidden flex-1 text-sm text-muted-foreground sm:block'>
         {table.getFilteredSelectedRowModel().rows.length} of{' '}

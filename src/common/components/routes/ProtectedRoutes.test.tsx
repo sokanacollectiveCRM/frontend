@@ -1,5 +1,9 @@
 import { UserContext } from '@/common/contexts/UserContext';
-import { BillingPortalRoute, NonBillingOnlyRoute } from '@/common/components/routes/ProtectedRoutes';
+import {
+  BillingPortalRoute,
+  NonBillingOnlyRoute,
+  StaffCrmRoute,
+} from '@/common/components/routes/ProtectedRoutes';
 import { render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -65,5 +69,30 @@ describe('billing route guards', () => {
 
     expect(await screen.findByText('Access denied')).toBeInTheDocument();
     expect(screen.queryByText('Billing contracts')).not.toBeInTheDocument();
+  });
+
+  it('denies client portal users CRM routes', async () => {
+    renderWithUser(
+      'client',
+      '/clients',
+      <Route element={<StaffCrmRoute />}>
+        <Route path='/clients' element={<div>Clients</div>} />
+      </Route>
+    );
+
+    expect(await screen.findByText('Access denied')).toBeInTheDocument();
+    expect(screen.queryByText('Clients')).not.toBeInTheDocument();
+  });
+
+  it('allows admin users on CRM routes', async () => {
+    renderWithUser(
+      'admin',
+      '/clients',
+      <Route element={<StaffCrmRoute />}>
+        <Route path='/clients' element={<div>Clients</div>} />
+      </Route>
+    );
+
+    expect(await screen.findByText('Clients')).toBeInTheDocument();
   });
 });

@@ -71,9 +71,7 @@ const normalizeTeamRole = (value: unknown): string =>
 const toTeamMember = (member: any): TeamMember => ({
   firstname: String(member?.firstname ?? member?.first_name ?? '').trim(),
   lastname: String(member?.lastname ?? member?.last_name ?? '').trim(),
-  role: normalizeTeamRole(
-    member?.role ?? member?.user_metadata?.role ?? member?.app_metadata?.role
-  ),
+  role: normalizeTeamRole(member?.role),
   email: String(member?.email ?? '').trim().toLowerCase(),
   id: String(member?.id ?? member?.user_id ?? member?.email ?? ''),
   bio: String(member?.bio ?? ''),
@@ -646,7 +644,7 @@ export default function Teams() {
   }, [currentPage, totalPages]);
 
   return (
-    <div className='flex flex-col h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden'>
+    <div className='flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100'>
       {/* Header Section */}
       <div className='bg-white border-b border-gray-200 shadow-sm flex-shrink-0'>
         <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6'>
@@ -716,7 +714,7 @@ export default function Teams() {
                           className='h-10'
                         />
                       </div>
-                      <div className='grid grid-cols-2 gap-3'>
+                      <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
                         <div className='space-y-2'>
                           <Label
                             htmlFor='firstname'
@@ -1036,7 +1034,7 @@ export default function Teams() {
                           className='h-10'
                         />
                       </div>
-                      <div className='grid grid-cols-2 gap-3'>
+                      <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
                         <div className='space-y-2'>
                           <Label
                             htmlFor='firstname-empty'

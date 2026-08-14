@@ -21,6 +21,8 @@ interface ImportMetaEnv {
   readonly VITE_CLIENT_PORTAL_SERVICE_OUTCOMES_URL?: string
   /** Optional: URL to payment authorization form PDF (same-origin path or absolute URL) */
   readonly VITE_PAYMENT_AUTHORIZATION_FORM_URL?: string
+  /** Optional: show public request "Fill with test data" in production builds */
+  readonly VITE_ENABLE_REQUEST_TEST_DATA?: string
 }
 
 interface ImportMeta {

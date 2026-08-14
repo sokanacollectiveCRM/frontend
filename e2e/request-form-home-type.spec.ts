@@ -74,7 +74,7 @@ test.describe('Request form — Home Type multi-select (E2E)', () => {
           home_type?: string[];
           home_type_other?: string;
           email?: string;
-          skip_email_notifications?: boolean;
+          submission_source?: string;
         }
       | undefined;
 
@@ -121,7 +121,7 @@ test.describe('Request form — Home Type multi-select (E2E)', () => {
       ])
     );
     expect(capturedPayload?.home_type_other).toBe('Emergency shelter placement — week 32');
-    expect(capturedPayload?.skip_email_notifications).toBe(true);
+    expect(capturedPayload).not.toHaveProperty('skip_email_notifications');
 
     await expect(page.getByText('Request Form Submitted Successfully', { exact: false })).toBeVisible({
       timeout: 15000,

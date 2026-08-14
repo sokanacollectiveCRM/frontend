@@ -126,7 +126,7 @@ export default function FinancialPage() {
 
   return (
     <div className="flex flex-col p-4 min-h-0 overflow-auto">
-      <div className="mb-4 flex items-center justify-between shrink-0">
+      <div className="mb-4 flex min-w-0 shrink-0 items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Payments</h1>
           <p className="text-muted-foreground mt-1">
@@ -136,7 +136,7 @@ export default function FinancialPage() {
       </div>
 
       {/* Summary stats at top */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+      <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-lg border bg-card p-4 shadow-sm">
           <p className="text-xs font-medium text-muted-foreground">Total amount</p>
           <p className="text-xl font-semibold mt-1">{formatAmount(totalAmount)}</p>

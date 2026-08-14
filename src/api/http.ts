@@ -1,5 +1,6 @@
 import { API_CONFIG } from './config';
 import { ApiError } from './errors';
+import { getSessionAccessToken } from './sessionAccessToken';
 import { logger } from '@/utils/logger';
 
 export type ApiResponse<T> =
@@ -41,15 +42,17 @@ export function buildUrl(path: string, params?: QueryParams): string {
   return url.toString();
 }
 
-/** Throw if production build is using localhost (env not set in Vercel). */
+/** Throw if production build is using localhost or has no API URL (env not set in Vercel). */
 function assertProductionBackendUrl(_path: string): void {
   const isProductionBuild = import.meta.env.MODE === 'production';
   const base = API_CONFIG.baseUrl;
   const isLocalhost =
-    base.includes('localhost') || base.startsWith('http://127.');
+    !base ||
+    base.includes('localhost') ||
+    base.startsWith('http://127.');
   if (isProductionBuild && isLocalhost) {
     throw new ApiError(
-      'Backend URL is not set for production. Set VITE_APP_BACKEND_URL or VITE_API_BASE_URL in Vercel to your backend, e.g. https://your-backend.run.app',
+      'Backend URL is not set for production. Set VITE_APP_BACKEND_URL, VITE_API_BASE_URL, or VITE_CLOUD_RUN_API_URL in Vercel to your backend, e.g. https://your-backend.run.app',
       0,
       { code: 'MISSING_BACKEND_URL' }
     );
@@ -106,13 +109,14 @@ function buildBaseHeaders(
   return { ...base, ...(fetchHeaders as Record<string, string>) };
 }
 
-/** Resolve credentials and Authorization. Always attach Supabase Bearer when available
- * (cookie mode still includes credentials; Bearer covers cases where sb-access-token cookie is missing). */
+/** Resolve credentials and Authorization.
+ * Prefer the login JSON token (needed when cross-site cookies are blocked on mobile),
+ * then a Supabase session. Cookie mode still sends credentials: include. */
 export async function getRequestAuth(): Promise<{
   credentials: FetchCredentials;
   headers: Record<string, string>;
 }> {
-  const token = await getSupabaseTokenSafe();
+  const token = getSessionAccessToken() ?? (await getSupabaseTokenSafe());
   const headers: Record<string, string> = {};
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
@@ -127,10 +131,15 @@ export async function getRequestAuth(): Promise<{
 async function getSupabaseTokenSafe(): Promise<string | null> {
   try {
     const { supabase } = await import('@/lib/supabase');
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    return session?.access_token ?? null;
+    const timedOut = Symbol('timeout');
+    const result = await Promise.race([
+      supabase.auth.getSession(),
+      new Promise<typeof timedOut>((resolve) => {
+        setTimeout(() => resolve(timedOut), 1500);
+      }),
+    ]);
+    if (result === timedOut) return null;
+    return result.data?.session?.access_token ?? null;
   } catch {
     return null;
   }

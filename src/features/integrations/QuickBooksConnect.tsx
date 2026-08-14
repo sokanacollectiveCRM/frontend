@@ -1,4 +1,5 @@
 import { API_CONFIG } from '@/api/config';
+import { fetchWithAuth } from '@/api/http';
 import { apiBaseUrl } from '@/config/env';
 import { getQuickBooksStatus, type QuickBooksCompany } from '@/api/quickbooks/auth/qbo';
 import { withTokenRefresh } from '@/api/quickbooks/auth/utils';
@@ -114,7 +115,7 @@ export default function QuickBooksConnectPage() {
       return;
     }
     try {
-      const response = await fetch(`${API_BASE}/quickbooks/disconnect`, {
+      const response = await fetchWithAuth(`${API_BASE}/quickbooks/disconnect`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -180,7 +181,7 @@ export default function QuickBooksConnectPage() {
         <Card className='overflow-hidden border-slate-200 shadow-sm'>
           <div className={`h-1.5 ${connected ? 'bg-[#2ca01c]' : 'bg-slate-300'}`} />
           <CardContent className='p-0'>
-            <div className='grid lg:grid-cols-[1.35fr_0.65fr]'>
+            <div className='grid min-w-0 lg:grid-cols-[1.35fr_0.65fr]'>
               <div className='p-6 sm:p-8'>
                 <div className='flex flex-col gap-5 sm:flex-row sm:items-start'>
                   <div className='flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#2ca01c] text-2xl font-bold text-white shadow-sm'>qb</div>

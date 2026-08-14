@@ -269,7 +269,7 @@ export default function ClientProfileTab({
         token = undefined;
       }
 
-      const response = await fetch(
+      const response = await fetchWithAuth(
         `${getClientApiBase()}/clients/${effectiveClientId}/assigned-doulas`,
         {
           method: 'GET',
@@ -326,7 +326,7 @@ export default function ClientProfileTab({
         token = undefined;
       }
 
-      const response = await fetch(
+      const response = await fetchWithAuth(
         `${getClientApiBase()}/clients/${effectiveClientId}/activities`,
         {
           method: 'GET',
@@ -382,7 +382,7 @@ export default function ClientProfileTab({
         token = undefined;
       }
 
-      const response = await fetch(
+      const response = await fetchWithAuth(
         `${getClientApiBase()}/clients/${effectiveClientId}?detailed=true`,
         {
           method: 'GET',
@@ -748,7 +748,7 @@ export default function ClientProfileTab({
       }
 
       if (view === 'profile') {
-        const response = await fetch(
+        const response = await fetchWithAuth(
           `${getClientApiBase()}/clients/${effectiveClientId}`,
           {
             method: 'PUT',
@@ -934,7 +934,7 @@ export default function ClientProfileTab({
 
         if (!billingResponse.ok) {
           if (isEndpointUnavailableStatus(billingResponse.status)) {
-            const legacyBillingResponse = await fetch(
+            const legacyBillingResponse = await fetchWithAuth(
               `${getClientApiBase()}/clients/${effectiveClientId}`,
               {
                 method: 'PUT',
@@ -1078,7 +1078,7 @@ export default function ClientProfileTab({
         return;
       }
 
-      const response = await fetch(
+      const response = await fetchWithAuth(
         `${getClientApiBase()}/clients/${effectiveClientId}`,
         {
           method: 'PUT',
@@ -1152,7 +1152,7 @@ export default function ClientProfileTab({
       if (!billingResponse.ok) {
         if (isEndpointUnavailableStatus(billingResponse.status)) {
           // Backward compatibility fallback to existing profile endpoint.
-          const legacyBillingResponse = await fetch(
+          const legacyBillingResponse = await fetchWithAuth(
             `${getClientApiBase()}/clients/${effectiveClientId}`,
             {
               method: 'PUT',
@@ -1417,7 +1417,7 @@ export default function ClientProfileTab({
       const url =
         documentItem.url ||
         (await getClientDocumentUrl('client-self', documentItem.id));
-      const response = await fetch(url, {
+      const response = await fetchWithAuth(url, {
         credentials: 'omit',
         mode: 'cors',
       });
@@ -1763,7 +1763,7 @@ export default function ClientProfileTab({
                 </div>
               </div>
 
-              <div className='grid grid-cols-2 gap-3'>
+              <div className='grid grid-cols-1 gap-3 md:grid-cols-2'>
                 <div className='space-y-2'>
                   <Label htmlFor='firstname'>First Name</Label>
                   <Input
@@ -1829,7 +1829,7 @@ export default function ClientProfileTab({
                 />
               </div>
 
-              <div className='grid grid-cols-3 gap-3'>
+              <div className='grid grid-cols-1 gap-3 md:grid-cols-3'>
                 <div className='space-y-2'>
                   <Label htmlFor='city'>City</Label>
                   <Input
@@ -2182,7 +2182,7 @@ export default function ClientProfileTab({
                         />
                       </div>
 
-                      <div className='grid grid-cols-2 gap-3'>
+                      <div className='grid grid-cols-1 gap-3 md:grid-cols-2'>
                         <div className='space-y-1.5'>
                           <Label htmlFor='insurance_member_id'>
                             Member ID / Subscriber ID *
@@ -2302,7 +2302,7 @@ export default function ClientProfileTab({
                                 disabled={isBillingFormDisabled}
                               />
                             </div>
-                            <div className='grid grid-cols-2 gap-3'>
+                            <div className='grid grid-cols-1 gap-3 md:grid-cols-2'>
                               <div className='space-y-1.5'>
                                 <Label htmlFor='secondary_insurance_member_id'>
                                   Secondary Member ID *

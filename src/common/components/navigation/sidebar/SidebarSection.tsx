@@ -5,6 +5,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from '@/common/components/ui/sidebar';
 import { Link, useLocation } from 'react-router-dom';
 
@@ -20,6 +21,7 @@ interface SidebarSectionProps {
 
 export function SidebarSection({ label, items }: SidebarSectionProps) {
   const location = useLocation();
+  const { isMobile, setOpenMobile } = useSidebar();
 
   return (
     <SidebarGroup>
@@ -39,7 +41,12 @@ export function SidebarSection({ label, items }: SidebarSectionProps) {
                   asChild
                   className={isActive ? 'bg-gray-200/50' : ''}
                 >
-                  <Link to={item.url}>
+                  <Link
+                    to={item.url}
+                    onClick={() => {
+                      if (isMobile) setOpenMobile(false);
+                    }}
+                  >
                     <item.icon />
                     <span>{item.title}</span>
                   </Link>

@@ -94,7 +94,7 @@ export function UsersTable({ columns, data }: DataTableProps) {
         </div>
         <UsersPrimaryButtons />
       </div>
-      <div className='rounded-md border'>
+      <div className='min-w-0 overflow-x-auto rounded-md border'>
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

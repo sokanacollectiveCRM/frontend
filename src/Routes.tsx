@@ -11,9 +11,11 @@ import RequestRoutes from '@/features/request/RequestRoutes';
 import { Route, Routes } from 'react-router-dom';
 import {
   BillingPortalRoute,
+  ClientPortalRoute,
   NonBillingOnlyRoute,
   PrivateRoute,
   PublicOnlyRoute,
+  StaffCrmRoute,
 } from './common/components/routes/ProtectedRoutes';
 import DashboardLayout from './common/layouts/DashboardLayout';
 import { DemographicsRoute } from './features/demographics/DemographicsRoute';
@@ -63,23 +65,27 @@ const AppRoutes = () => (
           </Route>
           <Route element={<NonBillingOnlyRoute />}>
             <Route index element={<Home />} />
-            <Route path='/profile' element={<ClientDashboard view='profile' />} />
-            <Route path='/billing' element={<ClientDashboard view='billing' />} />
-            {ContractRoutes()}
-            {PipelineRoutes()}
-            {ClientRoutes()}
-            {PaymentsRoute()}
-            {HoursRoutes()}
-            {ProfileRoutes()}
             {MyAccountRoutes()}
-            {TeamRoutes()}
-            {InboxRoutes()}
-            {QuickBooksRoutes()}
-            {CreateCustomerRoutes()}
-            {InvoiceRoute()}
-            {FinancialRoute()}
-            {DemographicsRoute()}
-            {DoulaDashboardRoutes()}
+            <Route element={<ClientPortalRoute />}>
+              <Route path='/profile' element={<ClientDashboard view='profile' />} />
+              <Route path='/billing' element={<ClientDashboard view='billing' />} />
+            </Route>
+            <Route element={<StaffCrmRoute />}>
+              {ContractRoutes()}
+              {PipelineRoutes()}
+              {ClientRoutes()}
+              {PaymentsRoute()}
+              {HoursRoutes()}
+              {ProfileRoutes()}
+              {TeamRoutes()}
+              {InboxRoutes()}
+              {QuickBooksRoutes()}
+              {CreateCustomerRoutes()}
+              {InvoiceRoute()}
+              {FinancialRoute()}
+              {DemographicsRoute()}
+              {DoulaDashboardRoutes()}
+            </Route>
           </Route>
         </Route>
       </Route>

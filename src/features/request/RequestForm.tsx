@@ -1,5 +1,5 @@
 import { Form } from '@/common/components/ui/form';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { RequestFormProvider, useRequestFormContext } from './contexts/RequestFormContext';
 import styles from './RequestForm.module.scss';
@@ -18,7 +18,14 @@ import {
 import { RequestFormValues } from './useRequestForm';
 import { StepNavigation } from './components/StepNavigation';
 import { StepHeader } from './components/StepHeader';
-import { apiBaseUrl } from '@/config/env';
+import { apiBaseUrl, isRequestTestDataEnabled } from '@/config/env';
+import { IntakeHoneypotFields } from './IntakeHoneypotFields';
+import {
+  createIntakeIdempotencyKey,
+  formatIntakeRateLimitError,
+  intakeHoneypotValues,
+  resetIntakeHoneypotValues,
+} from './intakeAbuse';
 
 function RefreshWarningModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   if (!isOpen) return null;
@@ -239,10 +246,11 @@ function RequestFormContent() {
             Please complete this form as thoroughly as possible so we can match
             you with a doula according to your needs.
           </div>
+          {isRequestTestDataEnabled() && (
           <button
             type="button"
             onClick={fillTestData}
-            title="Loads a complete sample (including age, provider type, primary + secondary insurance). Resets the form and returns to the first step. Test-data submissions are marked to skip email notifications."
+            title="Loads a complete sample (including age, provider type, primary + secondary insurance). Resets the form and returns to the first step. Dev/QA only."
             style={{
               marginTop: 10,
               padding: '5px 10px',
@@ -256,6 +264,7 @@ function RequestFormContent() {
           >
             Fill with test data
           </button>
+          )}
         </div>
 
         {/* Combined Progress and Navigation Section */}
@@ -297,6 +306,7 @@ function RequestFormContent() {
           </div>
         ) : null}
         <Form {...form}>
+          <IntakeHoneypotFields />
           {step === 0 && (
             <Step8ServicesInterested
               form={form}
@@ -387,6 +397,8 @@ function RequestFormContent() {
 }
 
 export default function RequestForm() {
+  const idempotencyKeyRef = useRef(createIntakeIdempotencyKey());
+
   const onSubmit = async (
     formData: RequestFormValues,
     options?: { isUsingTestData: boolean }
@@ -411,10 +423,9 @@ export default function RequestForm() {
           : formData.number_of_babies,
       service_needed:
         servicesSummary || (formData.service_support_details || '').trim(),
-      skip_email_notifications: Boolean(options?.isUsingTestData),
       submission_source: options?.isUsingTestData ? 'test_data' : 'manual',
+      ...intakeHoneypotValues,
     };
-    // Use the same pattern as login endpoint (no /api prefix)
     const backendUrl = apiBaseUrl;
 
     try {
@@ -422,21 +433,39 @@ export default function RequestForm() {
         `${backendUrl}/requestService/requestSubmission`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          credentials: 'omit',
+          headers: {
+            'Content-Type': 'application/json',
+            'Idempotency-Key': idempotencyKeyRef.current,
+          },
           body: JSON.stringify(payload),
         }
       );
 
-      const responseData = await response.json();
+      const responseData = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        code?: string;
+      };
+
+      const rateLimitMessage = formatIntakeRateLimitError(
+        response.status,
+        responseData,
+        response.headers.get('Retry-After')
+      );
+      if (rateLimitMessage) {
+        throw new Error(rateLimitMessage);
+      }
 
       if (!response.ok || responseData.error) {
         throw new Error(responseData.error || 'Server returned an error.');
       }
+      idempotencyKeyRef.current = createIntakeIdempotencyKey();
+      resetIntakeHoneypotValues();
       toast.success('Request Form Submitted Successfully!');
     } catch (error) {
       console.error('Request submission error:', error);
       toast.error(error instanceof Error ? error.message : 'Submission failed');
-      throw error; // Re-throw to let the context handle the state
+      throw error;
     }
   };
 

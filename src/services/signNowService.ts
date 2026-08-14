@@ -1,4 +1,5 @@
 // types/signnow.ts
+import { fetchWithAuth } from '@/api/http';
 export interface SignNowClient {
   email: string;
   name: string;
@@ -25,7 +26,7 @@ const BACKEND_URL = apiBaseUrl;
 export const signNowService = {
   async sendInvitation(client: SignNowClient): Promise<SignNowResponse> {
     try {
-      const response = await fetch(`${BACKEND_URL}/api/signnow/send-client-partner`, {
+      const response = await fetchWithAuth(`${BACKEND_URL}/api/signnow/send-client-partner`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

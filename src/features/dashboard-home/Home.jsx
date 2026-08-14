@@ -52,9 +52,9 @@ export default function Home() {
 
   // Show regular dashboard for admin/doula users
   return (
-    <div className='h-full p-6 space-y-8 overflow-y-auto'>
-      <div className='space-y-2'>
-        <h1 className='text-3xl font-bold tracking-tight'>
+    <div className='h-full min-w-0 space-y-8 overflow-y-auto p-4 sm:p-6'>
+      <div className='min-w-0 space-y-2'>
+        <h1 className='text-2xl font-bold tracking-tight sm:text-3xl'>
           Welcome back, {displayFirstName}!
         </h1>
         <p className='text-muted-foreground'>

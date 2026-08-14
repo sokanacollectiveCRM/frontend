@@ -46,6 +46,7 @@ export function normalizeAssignmentRole(
 }
 
 import { apiBaseUrl } from '@/config/env';
+import { fetchWithAuth } from '@/api/http';
 
 const getBaseUrl = (): string => apiBaseUrl;
 
@@ -56,7 +57,7 @@ export const fetchAvailableDoulas = async (): Promise<Doula[]> => {
   const url = `${getBaseUrl()}/clients/team/doulas`;
   console.log('🔍 API: Fetching available doulas from:', url);
 
-  const response = await fetch(url, {
+  const response = await fetchWithAuth(url, {
     method: 'GET',
     credentials: 'include',
     headers: {
@@ -88,7 +89,7 @@ export const fetchAssignedDoulas = async (
   const url = `${getBaseUrl()}/clients/${clientId}/assigned-doulas`;
   console.log('🔍 API: Fetching assigned doulas from:', url);
 
-  const response = await fetch(url, {
+  const response = await fetchWithAuth(url, {
     method: 'GET',
     credentials: 'include',
     headers: {
@@ -130,7 +131,7 @@ export const assignDoula = async (
     body.services = options.services;
   }
 
-  const response = await fetch(
+  const response = await fetchWithAuth(
     `${getBaseUrl()}/clients/${clientId}/assign-doula`,
     {
       method: 'POST',
@@ -155,7 +156,7 @@ export const unassignDoula = async (
   clientId: string,
   doulaId: string
 ): Promise<void> => {
-  const response = await fetch(
+  const response = await fetchWithAuth(
     `${getBaseUrl()}/clients/${clientId}/assign-doula/${doulaId}`,
     {
       method: 'DELETE',

@@ -11,6 +11,8 @@ import {
   Step8ServicesInterested,
   Step9Payment,
 } from './Step3Home';
+import { isRequestTestDataEnabled } from '@/config/env';
+import { IntakeHoneypotFields } from './IntakeHoneypotFields';
 import { useRequestFormContext } from './contexts/RequestFormContext';
 import { StepNavigation } from './components/StepNavigation';
 import { StepHeader } from './components/StepHeader';
@@ -184,10 +186,11 @@ export default function RequestFormDesktop() {
           Please complete this form as thoroughly as possible so we can match
           you with a doula according to your needs.
         </div>
+        {isRequestTestDataEnabled() && (
         <button
           type='button'
           onClick={fillTestData}
-          title='Loads a complete sample (including age, provider type, primary + secondary insurance). Resets the form and returns to the first step.'
+          title='Loads a complete sample (including age, provider type, primary + secondary insurance). Resets the form and returns to the first step. Dev/QA only.'
           style={{
             marginTop: 12,
             padding: '6px 12px',
@@ -201,6 +204,7 @@ export default function RequestFormDesktop() {
         >
           Fill with test data
         </button>
+        )}
       </div>
 
       {/* Combined Progress and Navigation Section */}
@@ -242,6 +246,7 @@ export default function RequestFormDesktop() {
         </div>
       ) : null}
       <Form {...form}>
+        <IntakeHoneypotFields />
         {step === 0 && (
           <Step8ServicesInterested
             form={form}

@@ -1,9 +1,13 @@
 import type { UserContextType } from '@/common/types/auth';
 import { User } from '@/common/types/user';
 import React, { createContext, ReactNode, useEffect, useState } from 'react';
-import { get, buildUrl, fetchWithAuth } from '@/api/http';
+import { buildUrl, fetchWithAuth } from '@/api/http';
 import { ApiError } from '@/api/errors';
 import { API_CONFIG } from '@/api/config';
+import {
+  clearSessionAccessToken,
+  setSessionAccessToken,
+} from '@/api/sessionAccessToken';
 import { useIdleTimeout } from '@/common/hooks/auth/useIdleTimeout';
 import { supabase } from '@/lib/supabase';
 
@@ -48,17 +52,13 @@ export function UserProvider({
     }
   };
 
-  const checkAuth = async (): Promise<boolean> => {
-    setIsLoading(true);
+  const checkAuth = async (options?: { silent?: boolean }): Promise<boolean> => {
+    if (!options?.silent) {
+      setIsLoading(true);
+    }
     try {
-      if (API_CONFIG.authMode === 'supabase') {
-        const userData = await get<User>('/auth/me');
-        setUser(userData);
-        return true;
-      }
-      const response = await fetch(buildUrl('/auth/me'), {
-        credentials: 'include',
-      });
+      // /auth/me is an unwrapped user object — do not use canonical get().
+      const response = await fetchWithAuth(buildUrl('/auth/me'));
       if (!response.ok) throw new Error('Auth check failed');
       const userData = await response.json();
       setUser(userData);
@@ -71,7 +71,9 @@ export function UserProvider({
       }
       return false;
     } finally {
-      setIsLoading(false);
+      if (!options?.silent) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -95,7 +97,12 @@ export function UserProvider({
         const data = await response.json().catch(() => ({}));
         throw new Error((data as { error?: string })?.error || 'Login failed');
       }
-      await checkAuth();
+      const sessionOk = await checkAuth();
+      if (!sessionOk) {
+        throw new Error(
+          'Signed in, but the session could not be verified. If you are on a phone, confirm the API URL is reachable (not localhost) and that cookies are allowed.'
+        );
+      }
       return true;
     } catch (error) {
       console.error('Login error:', error);
@@ -191,13 +198,13 @@ export function UserProvider({
     void checkAuth();
   }, []);
 
-  // After client portal login (Supabase session only), refresh /auth/me so user.role is available on Home.
+  // After portal or OAuth sign-in, refresh /auth/me so user.role is authoritative.
   useEffect(() => {
-    if (API_CONFIG.authMode !== 'supabase') return;
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
-      void checkAuth();
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'INITIAL_SESSION') return;
+      void checkAuth({ silent: true });
     });
     return () => {
       subscription.unsubscribe();

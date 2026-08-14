@@ -1,5 +1,6 @@
 import { API_CONFIG } from '@/api/config';
 import { withTokenRefresh } from './utils';
+import { fetchWithAuth } from '@/api/http';
 
 const API_BASE = API_CONFIG.baseUrl.replace(/\/$/, '');
 
@@ -64,7 +65,7 @@ export async function createQuickBooksInvoice(
       userId: 'admin', // This matches the userId we use in tokenUtils.ts
     };
 
-    const res = await fetch(`${API_BASE}/quickbooks/invoice`, {
+    const res = await fetchWithAuth(`${API_BASE}/quickbooks/invoice`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -89,7 +90,7 @@ export async function createQuickBooksInvoice(
 //   params: CreateInvoiceParams
 // ): Promise<QuickBooksInvoiceResponse> {
 
-//   const res = await fetch(`${API_BASE}/quickbooks/invoice`, {
+//   const res = await fetchWithAuth(`${API_BASE}/quickbooks/invoice`, {
 //     method: 'POST',
 //     headers: {
 //       'Content-Type': 'application/json',
@@ -111,7 +112,7 @@ export async function createQuickBooksInvoice(
 export async function getQuickBooksInvoices(): Promise<any[]> {
 
   return withTokenRefresh(async () => {
-    const res = await fetch(`${API_BASE}/quickbooks/invoices`, {
+    const res = await fetchWithAuth(`${API_BASE}/quickbooks/invoices`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

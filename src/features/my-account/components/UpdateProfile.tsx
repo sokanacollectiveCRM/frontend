@@ -22,7 +22,7 @@ import UserAvatar from '@/common/components/user/UserAvatar';
 import { useUser } from '@/common/hooks/user/useUser';
 import saveUser from '@/common/utils/saveUser';
 import { Loader2 } from 'lucide-react';
-import { ChangeEvent } from 'react';
+import { ChangeEvent, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
@@ -32,13 +32,21 @@ interface ProfileFormValues {
 }
 
 export const Profile = () => {
-  const { user, isLoading, checkAuth } = useUser();
+  const { user, isLoading, checkAuth, setUser } = useUser();
 
   const profileForm = useForm<ProfileFormValues>({
     defaultValues: {
       bio: '',
     },
   });
+
+  useEffect(() => {
+    if (!user) return;
+    profileForm.reset({
+      bio: user.bio || '',
+      profile_picture: undefined,
+    });
+  }, [user, profileForm]);
 
   const submitProfileForm = async (values: ProfileFormValues) => {
     if (!user?.id) return;
@@ -50,10 +58,13 @@ export const Profile = () => {
 
     try {
       const savedUser = await saveUser(formData);
-      // console.log("User saved successfully:", savedUser);
       toast.success('Changes saved.');
-      await checkAuth();
-      profileForm.reset();
+      setUser((prev) => (prev ? { ...prev, ...savedUser } : savedUser));
+      await checkAuth({ silent: true });
+      profileForm.reset({
+        bio: values.bio ?? '',
+        profile_picture: undefined,
+      });
     } catch (err) {
       console.error('User NOT saved successfully:', err);
       toast.error(
@@ -121,7 +132,7 @@ export const Profile = () => {
                     <FormLabel className='pb-1'>Bio</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder={`Current: ${user?.bio || ''}`}
+                        placeholder='Tell others a bit about yourself'
                         {...field}
                       />
                     </FormControl>

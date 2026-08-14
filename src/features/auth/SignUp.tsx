@@ -97,7 +97,7 @@ export default function SignUp() {
   };
 
   return (
-    <div className='flex flex-col gap-6 max-w-md mx-auto'>
+    <div className='mx-auto flex w-full min-w-0 max-w-md flex-col gap-6 px-4 py-6'>
       <Card>
         <CardHeader>
           <CardTitle className='text-2xl'>Sign Up</CardTitle>

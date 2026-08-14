@@ -110,7 +110,7 @@ export function StatsOverview() {
           <h2 className="text-2xl font-bold tracking-tight">Dashboard Overview</h2>
           <p className="text-muted-foreground">Key metrics and statistics at a glance</p>
         </div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <StatsCardSkeleton key={i} />
           ))}
@@ -131,7 +131,7 @@ export function StatsOverview() {
         <h2 className="text-2xl font-bold tracking-tight">Dashboard Overview</h2>
         <p className="text-muted-foreground">Key metrics and statistics at a glance</p>
       </div>
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {visibleStats.map((config) => (
           <StatsCard
             key={config.key}

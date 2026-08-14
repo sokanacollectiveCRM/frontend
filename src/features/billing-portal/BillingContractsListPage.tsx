@@ -289,7 +289,7 @@ export default function BillingContractsListPage() {
   }
 
   return (
-    <div className='p-6 space-y-6 overflow-y-auto'>
+    <div className='min-w-0 space-y-6 overflow-y-auto p-4 sm:p-6'>
       <div className='space-y-2'>
         <h1 className='text-3xl font-bold tracking-tight'>Payment Schedules</h1>
         <p className='text-muted-foreground'>
@@ -321,10 +321,10 @@ export default function BillingContractsListPage() {
           description='Payment schedules will appear here when billing-safe contracts are available.'
         />
       ) : (
-        <div className='rounded-xl border bg-card shadow-sm overflow-hidden'>
+        <div className='overflow-hidden rounded-xl border bg-card shadow-sm'>
           <div className='border-b p-4'>
             <div className='flex flex-wrap items-center gap-3'>
-              <div className='relative min-w-[240px] flex-1'>
+              <div className='relative min-w-0 w-full flex-1 sm:min-w-[240px]'>
                 <Search className='pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
                 <Input
                   value={searchTerm}
@@ -420,7 +420,8 @@ export default function BillingContractsListPage() {
               {filteredContracts.length} of {contracts.length} payment schedules shown
             </p>
           </div>
-          <table className='min-w-full text-sm'>
+          <div className='overflow-x-auto'>
+          <table className='min-w-[720px] w-full text-sm'>
             <thead className='bg-muted/60'>
               <tr className='border-b'>
                 <th className='px-4 py-3 text-left font-semibold'>Client</th>
@@ -477,6 +478,7 @@ export default function BillingContractsListPage() {
               ))}
             </tbody>
           </table>
+          </div>
           {filteredContracts.length === 0 ? (
             <div className='border-t p-6 text-sm text-muted-foreground'>
               No payment schedules match the current filters.

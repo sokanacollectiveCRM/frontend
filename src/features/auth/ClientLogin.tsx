@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
+import { isStaffRole } from '@/common/auth/roles';
+import { useUser } from '@/common/hooks/user/useUser';
 import { Button } from '@/common/components/ui/button';
 import {
   Card,
@@ -18,6 +20,7 @@ import { Alert, AlertDescription } from '@/common/components/ui/alert';
 
 export default function ClientLogin() {
   const navigate = useNavigate();
+  const { user, checkAuth, isLoading: isAuthLoading } = useUser();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -52,45 +55,13 @@ export default function ClientLogin() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, []);
 
-  // Check if user is already logged in
-  // Skip this check if there was a recent login error to prevent redirect loops
+  // Redirect staff who already have an authoritative /auth/me role.
   useEffect(() => {
-    if (hasLoginError) {
-      console.log('ClientLogin - Skipping session check due to recent login error');
-      return;
+    if (hasLoginError || isAuthLoading) return;
+    if (isStaffRole(user?.role)) {
+      navigate('/', { replace: true });
     }
-
-    const checkSession = async () => {
-      console.log('ClientLogin - Checking Supabase session');
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      console.log('ClientLogin - Session result:', session ? 'has session' : 'no session');
-
-      if (session) {
-        // Verify user role
-        const userRole = session.user.user_metadata?.role;
-        console.log('ClientLogin - User role:', userRole);
-        if (userRole === 'client') {
-          console.log('ClientLogin - Client session detected');
-          // Client has Supabase session - they're already logged in via Supabase
-          // Don't redirect to / because that requires backend auth
-          // Instead, show a message or redirect to a client-only route (when created)
-          // For now, we'll let them stay on the login page or they can manually navigate
-          console.log('ClientLogin - Client already has Supabase session, staying on page');
-        } else {
-          console.log('ClientLogin - Signing out non-client user');
-          // Sign out non-client users
-          await supabase.auth.signOut();
-        }
-      } else {
-        console.log('ClientLogin - No Supabase session, staying on page');
-      }
-    };
-
-    checkSession();
-  }, [navigate, hasLoginError]);
+  }, [hasLoginError, isAuthLoading, user?.role, navigate]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -121,10 +92,7 @@ export default function ClientLogin() {
       setError(null);
       toast.success('Welcome! Redirecting to your dashboard...');
       
-      // Wait a moment for auth state to propagate so useClientAuth can detect the session
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Redirect to home page which will show client dashboard
+      await checkAuth({ silent: true });
       navigate('/', { replace: true });
     } catch (err: any) {
       console.error('Client login error:', err);
@@ -161,7 +129,7 @@ export default function ClientLogin() {
   }, []);
 
   return (
-    <div className='flex flex-col gap-6 max-w-md mx-auto p-4'>
+    <div className='mx-auto flex w-full min-w-0 max-w-md flex-col gap-6 p-4'>
       <Card>
         <CardHeader>
           <CardTitle className='text-2xl'>Client Portal Login</CardTitle>
@@ -190,6 +158,7 @@ export default function ClientLogin() {
                 required
                 disabled={isLoading}
                 autoComplete='email'
+                className='text-base md:text-sm'
               />
             </div>
 

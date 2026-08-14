@@ -23,14 +23,14 @@ import {
   SelectValue,
 } from '@/common/components/ui/select';
 import { Separator } from '@/common/components/ui/separator';
+import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
 import { useUser } from '@/common/hooks/user/useUser';
 import { STATES } from '@/common/utils/50States';
-import { useForm } from 'react-hook-form';
-import styled from 'styled-components';
-
-import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
 import saveUser from '@/common/utils/saveUser';
 import { Loader2 } from 'lucide-react';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import styled from 'styled-components';
 import { toast } from 'sonner';
 
 const TwoInputs = styled.div`
@@ -48,8 +48,22 @@ interface AccountFormValues {
   state?: string;
 }
 
+/** Accepts stored "IL" or "Illinois" and returns the Select option code. */
+function normalizeStateCode(raw?: string | null): string {
+  const trimmed = (raw || '').trim();
+  if (!trimmed) return '';
+  const byCode = STATES.find(
+    (s) => s.value.toLowerCase() === trimmed.toLowerCase()
+  );
+  if (byCode) return byCode.value;
+  const byLabel = STATES.find(
+    (s) => s.label.toLowerCase() === trimmed.toLowerCase()
+  );
+  return byLabel?.value || '';
+}
+
 export const Account = () => {
-  const { user, isLoading, checkAuth } = useUser();
+  const { user, isLoading, checkAuth, setUser } = useUser();
 
   const accountForm = useForm<AccountFormValues>({
     defaultValues: {
@@ -58,9 +72,21 @@ export const Account = () => {
       email: '',
       address: '',
       city: '',
-      state: STATES[0].value,
+      state: '',
     },
   });
+
+  useEffect(() => {
+    if (!user) return;
+    accountForm.reset({
+      firstname: user.firstname || '',
+      lastname: user.lastname || '',
+      email: user.email || '',
+      address: user.address || '',
+      city: user.city || '',
+      state: normalizeStateCode(user.state),
+    });
+  }, [user, accountForm]);
 
   const submitAccountForm = async (values: AccountFormValues) => {
     if (!user?.id) return;
@@ -72,14 +98,14 @@ export const Account = () => {
     userFormData.append('email', values.email ?? '');
     userFormData.append('address', values.address ?? '');
     userFormData.append('city', values.city ?? '');
-    userFormData.append('state', values.state ?? '');
+    userFormData.append('state', normalizeStateCode(values.state) || values.state || '');
 
     try {
       const savedUser = await saveUser(userFormData);
-      // console.log("User saved successfully:", savedUser);
       toast.success('Changes saved');
-      await checkAuth();
-      accountForm.reset();
+      setUser((prev) => (prev ? { ...prev, ...savedUser } : savedUser));
+      await checkAuth({ silent: true });
+      accountForm.reset(values);
     } catch (err) {
       console.error('User NOT saved successfully: ', err);
       toast.error(
@@ -180,21 +206,21 @@ export const Account = () => {
                     <FormLabel>State</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value || undefined}
                     >
                       <FormControl>
                         <SelectTrigger className='w-[180px]'>
-                          <SelectValue placeholder={user?.state || ''} />
+                          <SelectValue placeholder='Select state' />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {STATES.map((state) => (
                           <SelectItem
                             key={state.value}
-                            value={state.label}
+                            value={state.value}
                             className='cursor-pointer'
                           >
-                            {state.value}
+                            {state.label}
                           </SelectItem>
                         ))}
                       </SelectContent>

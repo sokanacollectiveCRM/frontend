@@ -73,7 +73,7 @@ export default function Login() {
   };
 
   return (
-    <div className='flex flex-col gap-6 max-w-md mx-auto'>
+    <div className='flex flex-col gap-6 max-w-md mx-auto w-full px-4 py-6'>
       <Card>
         <CardHeader>
           <CardTitle className='text-2xl'>Log In</CardTitle>
@@ -89,6 +89,9 @@ export default function Login() {
                 id='email'
                 type='email'
                 name='email'
+                autoComplete='email'
+                inputMode='email'
+                className='text-base md:text-sm'
                 placeholder='jsmith or j@example.com'
                 value={formState.email}
                 onChange={handleChange}
@@ -108,6 +111,8 @@ export default function Login() {
               <PasswordInput
                 id='password'
                 name='password'
+                autoComplete='current-password'
+                className='text-base md:text-sm'
                 placeholder='Enter your password'
                 value={formState.password}
                 onChange={handleChange}

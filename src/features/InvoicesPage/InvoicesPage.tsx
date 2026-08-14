@@ -351,7 +351,7 @@ export default function InvoicesPage() {
 
   return (
     <div className='flex flex-col p-4 min-h-0 overflow-auto'>
-      <div className='shrink-0 flex justify-between items-center mb-4'>
+      <div className='mb-4 flex min-w-0 shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
         <h1 className='text-2xl font-bold tracking-tight'>Invoices</h1>
         <SubmitButton onClick={() => setShowModal(true)}>
           New Invoice
@@ -359,7 +359,7 @@ export default function InvoicesPage() {
       </div>
 
       {/* Summary stats at top */}
-      <div className='grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4'>
+      <div className='mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
         <div className='rounded-lg border bg-card p-4 shadow-sm'>
           <p className='text-xs font-medium text-muted-foreground'>Total amount</p>
           <p className='text-xl font-semibold mt-1'>

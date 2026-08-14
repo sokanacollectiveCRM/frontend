@@ -4,6 +4,7 @@ import {
   getBillingHomePath,
   isBillingOnlyRole,
   isBillingRole,
+  isStaffRole,
 } from '@/common/auth/roles';
 import { describe, expect, it } from 'vitest';
 
@@ -26,6 +27,15 @@ describe('billing role helpers', () => {
   it('preserves non-billing full CRM behavior', () => {
     expect(canAccessFullCrm('admin', false)).toBe(true);
     expect(canAccessFullCrm('doula', false)).toBe(true);
-    expect(canAccessFullCrm('client', true)).toBe(true);
+    expect(canAccessFullCrm('client', true)).toBe(false);
+    expect(canAccessFullCrm('client', false)).toBe(false);
+  });
+
+  it('treats admin, doula, and billing as staff and never infers staff from empty role', () => {
+    expect(isStaffRole('admin')).toBe(true);
+    expect(isStaffRole('doula')).toBe(true);
+    expect(isStaffRole('billing')).toBe(true);
+    expect(isStaffRole('client')).toBe(false);
+    expect(isStaffRole(undefined)).toBe(false);
   });
 });
