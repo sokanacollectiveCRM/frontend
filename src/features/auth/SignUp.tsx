@@ -58,21 +58,18 @@ export default function SignUp() {
     setError('');
 
     try {
-      const response = await fetchWithAuth(
-        buildUrl('/auth/signup'),
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: formState.email,
-            password: formState.password,
-            firstname: formState.firstname || undefined,
-            lastname: formState.lastname || undefined,
-          }),
-        }
-      );
+      const response = await fetchWithAuth(buildUrl('/auth/signup'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formState.email,
+          password: formState.password,
+          firstname: formState.firstname || undefined,
+          lastname: formState.lastname || undefined,
+        }),
+      });
 
       const data = await response.json();
 

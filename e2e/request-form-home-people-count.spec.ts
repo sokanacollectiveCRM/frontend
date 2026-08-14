@@ -13,7 +13,9 @@ const HOME_PEOPLE_QUESTION =
 const HOME_PEOPLE_COUNT_OPTIONS = ['0', '1', '2', '3', '4', '5+'] as const;
 
 test.describe('Request form — People in the Home counts (E2E)', () => {
-  test('shows question and adult/youth count dropdowns on Home Details', async ({ page }) => {
+  test('shows question and adult/youth count dropdowns on Home Details', async ({
+    page,
+  }) => {
     await reachHomeDetailsStep(page);
 
     await expect(page.getByText('Support Person')).toBeVisible();
@@ -38,7 +40,9 @@ test.describe('Request form — People in the Home counts (E2E)', () => {
 
     await clickFormNext(page);
 
-    await expect(page.getByText('Home type (check all that apply)')).toBeVisible();
+    await expect(
+      page.getByText('Home type (check all that apply)')
+    ).toBeVisible();
     await expect(
       page.locator('[class*="form-error"]').filter({
         hasText: /adults live in the home/i,
@@ -62,7 +66,9 @@ test.describe('Request form — People in the Home counts (E2E)', () => {
     await expect(page.locator('#referral_source')).toBeVisible();
   });
 
-  test('submits home_adults_count and home_youth_count to backend', async ({ page }) => {
+  test('submits home_adults_count and home_youth_count to backend', async ({
+    page,
+  }) => {
     test.setTimeout(120000);
     const uniqueEmail = `home-people-e2e-${Date.now()}@example.com`;
     let capturedPayload:
@@ -75,7 +81,9 @@ test.describe('Request form — People in the Home counts (E2E)', () => {
       | undefined;
 
     await page.route('**/requestService/requestSubmission', async (route) => {
-      capturedPayload = route.request().postDataJSON() as typeof capturedPayload;
+      capturedPayload = route
+        .request()
+        .postDataJSON() as typeof capturedPayload;
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -107,7 +115,9 @@ test.describe('Request form — People in the Home counts (E2E)', () => {
     expect(capturedPayload?.home_youth_count).toBe('3');
     expect(capturedPayload).not.toHaveProperty('skip_email_notifications');
 
-    await expect(page.getByText('Request Form Submitted Successfully', { exact: false })).toBeVisible({
+    await expect(
+      page.getByText('Request Form Submitted Successfully', { exact: false })
+    ).toBeVisible({
       timeout: 15000,
     });
   });

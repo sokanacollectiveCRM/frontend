@@ -47,9 +47,7 @@ function assertProductionBackendUrl(_path: string): void {
   const isProductionBuild = import.meta.env.MODE === 'production';
   const base = API_CONFIG.baseUrl;
   const isLocalhost =
-    !base ||
-    base.includes('localhost') ||
-    base.startsWith('http://127.');
+    !base || base.includes('localhost') || base.startsWith('http://127.');
   if (isProductionBuild && isLocalhost) {
     throw new ApiError(
       'Backend URL is not set for production. Set VITE_APP_BACKEND_URL, VITE_API_BASE_URL, or VITE_CLOUD_RUN_API_URL in Vercel to your backend, e.g. https://your-backend.run.app',

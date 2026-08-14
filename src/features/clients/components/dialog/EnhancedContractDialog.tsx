@@ -111,11 +111,13 @@ export function buildInstallmentAmounts(
 
   const balanceCents = Math.round(Math.max(balanceAmount, 0) * 100);
   const baseInstallmentCents = Math.floor(balanceCents / installmentsCount);
-  const remainderCents = balanceCents - baseInstallmentCents * installmentsCount;
+  const remainderCents =
+    balanceCents - baseInstallmentCents * installmentsCount;
 
   return Array.from({ length: installmentsCount }, (_, index) => {
     const installmentCents =
-      baseInstallmentCents + (index === installmentsCount - 1 ? remainderCents : 0);
+      baseInstallmentCents +
+      (index === installmentsCount - 1 ? remainderCents : 0);
     return installmentCents / 100;
   });
 }
@@ -339,7 +341,9 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
           depositType,
           depositValue
         );
-        const balanceAmount = roundToCents(Math.max(totalAmount - depositAmount, 0));
+        const balanceAmount = roundToCents(
+          Math.max(totalAmount - depositAmount, 0)
+        );
 
         const localAmounts: CalculatedAmounts = {
           total_amount: totalAmount,
@@ -388,7 +392,9 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
           depositValue > 0
             ? calculateDepositAmount(totalAmount, depositType, depositValue)
             : 0;
-        const balanceAmount = roundToCents(Math.max(totalAmount - depositAmount, 0));
+        const balanceAmount = roundToCents(
+          Math.max(totalAmount - depositAmount, 0)
+        );
 
         const localAmounts: CalculatedAmounts = {
           total_amount: totalAmount,

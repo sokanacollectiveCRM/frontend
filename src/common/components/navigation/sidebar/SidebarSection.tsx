@@ -33,7 +33,8 @@ export function SidebarSection({ label, items }: SidebarSectionProps) {
           {items.map((item) => {
             const isActive =
               location.pathname === item.url ||
-              (item.url !== '/' && location.pathname.startsWith(`${item.url}/`));
+              (item.url !== '/' &&
+                location.pathname.startsWith(`${item.url}/`));
 
             return (
               <SidebarMenuItem key={item.title}>

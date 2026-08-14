@@ -98,7 +98,10 @@ export const Account = () => {
     userFormData.append('email', values.email ?? '');
     userFormData.append('address', values.address ?? '');
     userFormData.append('city', values.city ?? '');
-    userFormData.append('state', normalizeStateCode(values.state) || values.state || '');
+    userFormData.append(
+      'state',
+      normalizeStateCode(values.state) || values.state || ''
+    );
 
     try {
       const savedUser = await saveUser(userFormData);

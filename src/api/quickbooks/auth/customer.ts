@@ -65,13 +65,16 @@ export async function getInvoiceableCustomers(): Promise<
   InvoiceableCustomer[]
 > {
   return withTokenRefresh(async () => {
-    const res = await fetchWithAuth(`${API_BASE}/quickbooks/customers/invoiceable`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-    });
+    const res = await fetchWithAuth(
+      `${API_BASE}/quickbooks/customers/invoiceable`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      }
+    );
 
     if (!res.ok) {
       const err = await res.text().catch(() => '');

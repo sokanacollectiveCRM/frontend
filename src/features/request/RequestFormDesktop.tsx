@@ -187,23 +187,23 @@ export default function RequestFormDesktop() {
           you with a doula according to your needs.
         </div>
         {isRequestTestDataEnabled() && (
-        <button
-          type='button'
-          onClick={fillTestData}
-          title='Loads a complete sample (including age, provider type, primary + secondary insurance). Resets the form and returns to the first step. Dev/QA only.'
-          style={{
-            marginTop: 12,
-            padding: '6px 12px',
-            fontSize: 12,
-            color: '#009688',
-            background: 'transparent',
-            border: '1px dashed #009688',
-            borderRadius: 4,
-            cursor: 'pointer',
-          }}
-        >
-          Fill with test data
-        </button>
+          <button
+            type='button'
+            onClick={fillTestData}
+            title='Loads a complete sample (including age, provider type, primary + secondary insurance). Resets the form and returns to the first step. Dev/QA only.'
+            style={{
+              marginTop: 12,
+              padding: '6px 12px',
+              fontSize: 12,
+              color: '#009688',
+              background: 'transparent',
+              border: '1px dashed #009688',
+              borderRadius: 4,
+              cursor: 'pointer',
+            }}
+          >
+            Fill with test data
+          </button>
         )}
       </div>
 
@@ -229,13 +229,17 @@ export default function RequestFormDesktop() {
             }}
           />
         </div>
-        
+
         {/* Step Navigation */}
         <StepNavigation currentStep={step} isDesktop={true} />
       </div>
-      
+
       {/* Step Header */}
-      <StepHeader currentStep={step} totalSteps={totalSteps} showProgressText={false} />
+      <StepHeader
+        currentStep={step}
+        totalSteps={totalSteps}
+        showProgressText={false}
+      />
       {stepGateMessage ? (
         <div
           role='alert'

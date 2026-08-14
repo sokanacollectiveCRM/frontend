@@ -13,7 +13,6 @@ const API_BASE = apiBaseUrl;
 
 // Get all doulas (for list page)
 export async function getAllDoulas(): Promise<Doula[]> {
-
   const response = await fetchWithAuth(`${API_BASE}/admin/doulas`, {
     method: 'GET',
     credentials: 'include',
@@ -32,7 +31,6 @@ export async function getAllDoulas(): Promise<Doula[]> {
 
 // Get doula by ID (for detail page)
 export async function getDoulaById(doulaId: string): Promise<Doula> {
-
   const response = await fetchWithAuth(`${API_BASE}/admin/doulas/${doulaId}`, {
     method: 'GET',
     credentials: 'include',
@@ -53,7 +51,6 @@ export async function getDoulaById(doulaId: string): Promise<Doula> {
 export async function getAssignedClients(
   doulaId: string
 ): Promise<AssignedClient[]> {
-
   const response = await fetchWithAuth(
     `${API_BASE}/admin/doulas/${doulaId}/clients`,
     {
@@ -75,14 +72,16 @@ export async function getAssignedClients(
 
 // Get visits for a doula
 export async function getDoulaVisits(doulaId: string): Promise<Visit[]> {
-
-  const response = await fetchWithAuth(`${API_BASE}/admin/doulas/${doulaId}/visits`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+  const response = await fetchWithAuth(
+    `${API_BASE}/admin/doulas/${doulaId}/visits`,
+    {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -94,14 +93,16 @@ export async function getDoulaVisits(doulaId: string): Promise<Visit[]> {
 
 // Get notes for a doula
 export async function getDoulaNotes(doulaId: string): Promise<DoulaNote[]> {
-
-  const response = await fetchWithAuth(`${API_BASE}/admin/doulas/${doulaId}/notes`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+  const response = await fetchWithAuth(
+    `${API_BASE}/admin/doulas/${doulaId}/notes`,
+    {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -112,10 +113,7 @@ export async function getDoulaNotes(doulaId: string): Promise<DoulaNote[]> {
 }
 
 // Get activity log for a doula
-export async function getActivityLog(
-  doulaId: string
-): Promise<ActivityLog[]> {
-
+export async function getActivityLog(doulaId: string): Promise<ActivityLog[]> {
   const response = await fetchWithAuth(
     `${API_BASE}/admin/doulas/${doulaId}/activity`,
     {
@@ -140,7 +138,6 @@ export async function updateDoula(
   doulaId: string,
   updateData: Partial<Doula>
 ): Promise<Doula> {
-
   const response = await fetchWithAuth(`${API_BASE}/admin/doulas/${doulaId}`, {
     method: 'PUT',
     credentials: 'include',

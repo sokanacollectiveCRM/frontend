@@ -71,14 +71,12 @@ export function EditTemplateDialog({
             formData.append('fee', feeInput.value);
             if (file) formData.append('contract', file);
 
-
             try {
               const res = await fetchWithAuth(
                 buildUrl(`/contracts/templates/${templateName}`),
                 {
                   method: 'PUT',
-                  headers: {
-                  },
+                  headers: {},
                   body: formData,
                 }
               );

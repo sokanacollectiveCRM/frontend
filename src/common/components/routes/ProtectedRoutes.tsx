@@ -104,9 +104,7 @@ export function StaffCrmRoute() {
   }
 
   if (isClientPortalUser) {
-    return (
-      <AccessDenied description='This area is limited to Sokana staff.' />
-    );
+    return <AccessDenied description='This area is limited to Sokana staff.' />;
   }
 
   if (isBillingOnlyRole(user?.role)) {

@@ -38,11 +38,11 @@ const AppRoutes = () => (
   <Routes>
     {/* Client Portal Auth Routes - Must be first, No Sidebar, Always Accessible */}
     {/* These routes are completely standalone, outside all wrappers */}
-    <Route path="/auth/set-password" element={<SetPassword />} />
-    <Route path="/auth/client-login" element={<ClientLogin />} />
+    <Route path='/auth/set-password' element={<SetPassword />} />
+    <Route path='/auth/client-login' element={<ClientLogin />} />
 
     {/* Contract Signed Success Page - No Sidebar, No Auth */}
-    <Route path="/contract-signed" element={<ContractSignedPage />} />
+    <Route path='/contract-signed' element={<ContractSignedPage />} />
 
     <Route>
       <Route element={<NavLayout />}>
@@ -55,7 +55,7 @@ const AppRoutes = () => (
     </Route>
 
     {/* Contract Signed Success Page - No Sidebar, No Auth */}
-    <Route path="/contract-signed" element={<ContractSignedPage />} />
+    <Route path='/contract-signed' element={<ContractSignedPage />} />
 
     <Route>
       <Route element={<DashboardLayout />}>
@@ -67,8 +67,14 @@ const AppRoutes = () => (
             <Route index element={<Home />} />
             {MyAccountRoutes()}
             <Route element={<ClientPortalRoute />}>
-              <Route path='/profile' element={<ClientDashboard view='profile' />} />
-              <Route path='/billing' element={<ClientDashboard view='billing' />} />
+              <Route
+                path='/profile'
+                element={<ClientDashboard view='profile' />}
+              />
+              <Route
+                path='/billing'
+                element={<ClientDashboard view='billing' />}
+              />
             </Route>
             <Route element={<StaffCrmRoute />}>
               {ContractRoutes()}

@@ -63,7 +63,10 @@ describe('billing route guards', () => {
       'doula',
       '/billing/contracts',
       <Route element={<BillingPortalRoute />}>
-        <Route path='/billing/contracts' element={<div>Billing contracts</div>} />
+        <Route
+          path='/billing/contracts'
+          element={<div>Billing contracts</div>}
+        />
       </Route>
     );
 

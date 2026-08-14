@@ -1,6 +1,9 @@
 // src/features/dashboard-home/components/CalendarWidget.tsx
 import { useState, useMemo } from 'react';
-import { useDueDateCalendar, DueDateEvent } from '@/common/hooks/dashboard/useDueDateCalendar';
+import {
+  useDueDateCalendar,
+  DueDateEvent,
+} from '@/common/hooks/dashboard/useDueDateCalendar';
 import { DueDatePopover } from './DueDatePopover';
 import { Button } from '@/common/components/ui/button';
 import { ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
@@ -18,7 +21,6 @@ import {
   isSameMonth,
   isSameDay,
   isToday,
-  parseISO,
 } from 'date-fns';
 
 /**
@@ -28,13 +30,13 @@ export function CalendarWidget() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [popoverOpen, setPopoverOpen] = useState(false);
-  
+
   const { events, loading, error } = useDueDateCalendar();
 
   // Group events by date for quick lookup
   const eventsByDate = useMemo(() => {
     const map = new Map<string, DueDateEvent[]>();
-    
+
     events.forEach((event) => {
       const dateKey = event.date; // Already in YYYY-MM-DD format
       if (!map.has(dateKey)) {
@@ -42,7 +44,7 @@ export function CalendarWidget() {
       }
       map.get(dateKey)!.push(event);
     });
-    
+
     return map;
   }, [events]);
 
@@ -75,7 +77,7 @@ export function CalendarWidget() {
   const handleDateClick = (date: Date) => {
     const dateKey = format(date, 'yyyy-MM-dd');
     const dayEvents = eventsByDate.get(dateKey) || [];
-    
+
     if (dayEvents.length > 0) {
       setSelectedDate(date);
       setPopoverOpen(true);
@@ -100,12 +102,12 @@ export function CalendarWidget() {
   // Error state
   if (error) {
     return (
-      <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+      <div className='rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900'>
+        <h2 className='mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100'>
           Due Date Calendar
         </h2>
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
+        <Alert variant='destructive'>
+          <AlertCircle className='h-4 w-4' />
           <AlertDescription>
             Failed to load calendar events. Please try again later.
           </AlertDescription>
@@ -115,41 +117,41 @@ export function CalendarWidget() {
   }
 
   return (
-    <div className="min-w-0 rounded-lg border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:p-6">
+    <div className='min-w-0 rounded-lg border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:p-6'>
       {/* Header */}
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+      <div className='mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+        <h2 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
           Due Date Calendar
         </h2>
-        <div className="flex items-center justify-between gap-2 sm:justify-end">
+        <div className='flex items-center justify-between gap-2 sm:justify-end'>
           <Button
-            variant="outline"
-            size="icon"
+            variant='outline'
+            size='icon'
             onClick={handlePrevMonth}
             disabled={loading}
-            className="h-11 w-11 sm:h-8 sm:w-8"
+            className='h-11 w-11 sm:h-8 sm:w-8'
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className='h-4 w-4' />
           </Button>
-          <span className="min-w-0 flex-1 text-center text-sm font-medium text-gray-700 dark:text-gray-300 sm:min-w-[140px] sm:flex-none">
+          <span className='min-w-0 flex-1 text-center text-sm font-medium text-gray-700 dark:text-gray-300 sm:min-w-[140px] sm:flex-none'>
             {format(currentMonth, 'MMMM yyyy')}
           </span>
           <Button
-            variant="outline"
-            size="icon"
+            variant='outline'
+            size='icon'
             onClick={handleNextMonth}
             disabled={loading}
-            className="h-11 w-11 sm:h-8 sm:w-8"
+            className='h-11 w-11 sm:h-8 sm:w-8'
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className='h-4 w-4' />
           </Button>
         </div>
       </div>
 
       {/* Loading state */}
       {loading && (
-        <div className="flex h-64 items-center justify-center">
-          <div className="text-sm text-gray-500 dark:text-gray-400">
+        <div className='flex h-64 items-center justify-center'>
+          <div className='text-sm text-gray-500 dark:text-gray-400'>
             Loading calendar...
           </div>
         </div>
@@ -157,28 +159,30 @@ export function CalendarWidget() {
 
       {/* Calendar grid */}
       {!loading && (
-        <div className="min-w-0 overflow-hidden">
+        <div className='min-w-0 overflow-hidden'>
           {/* Week day headers */}
-          <div className="mb-2 grid grid-cols-7 gap-1 [grid-template-columns:repeat(7,minmax(0,1fr))]">
+          <div className='mb-2 grid grid-cols-7 gap-1 [grid-template-columns:repeat(7,minmax(0,1fr))]'>
             {weekDays.map((day, index) => (
               <div
                 key={`${day.long}-${index}`}
-                className="min-w-0 truncate py-2 text-center text-xs font-medium text-gray-600 dark:text-gray-400"
+                className='min-w-0 truncate py-2 text-center text-xs font-medium text-gray-600 dark:text-gray-400'
               >
-                <span className="sm:hidden">{day.short}</span>
-                <span className="hidden sm:inline">{day.long}</span>
+                <span className='sm:hidden'>{day.short}</span>
+                <span className='hidden sm:inline'>{day.long}</span>
               </div>
             ))}
           </div>
 
           {/* Calendar days */}
-          <div className="grid grid-cols-7 gap-1 [grid-template-columns:repeat(7,minmax(0,1fr))]">
+          <div className='grid grid-cols-7 gap-1 [grid-template-columns:repeat(7,minmax(0,1fr))]'>
             {calendarDays.map((day, index) => {
               const dayEvents = getDayEvents(day);
               const hasEvents = dayEvents.length > 0;
               const isCurrentMonth = isSameMonth(day, currentMonth);
               const isTodayDate = isToday(day);
-              const isSelected = selectedDate ? isSameDay(day, selectedDate) : false;
+              const isSelected = selectedDate
+                ? isSameDay(day, selectedDate)
+                : false;
 
               const dayContent = (
                 <button
@@ -202,30 +206,36 @@ export function CalendarWidget() {
                     !hasEvents && 'cursor-default'
                   )}
                 >
-                  <span className={cn(isTodayDate && 'text-blue-600 dark:text-blue-400')}>
+                  <span
+                    className={cn(
+                      isTodayDate && 'text-blue-600 dark:text-blue-400'
+                    )}
+                  >
                     {format(day, 'd')}
                   </span>
-                  
+
                   {/* Event indicator - green dot */}
                   {hasEvents && (
-                    <div className="mt-0.5 flex gap-0.5">
+                    <div className='mt-0.5 flex gap-0.5'>
                       {dayEvents.length <= 3 ? (
                         // Show individual dots for 1-3 events
                         dayEvents.map((event, idx) => (
                           <div
                             key={idx}
-                            className="h-1.5 w-1.5 rounded-full"
-                            style={{ backgroundColor: event.color || '#34A853' }}
+                            className='h-1.5 w-1.5 rounded-full'
+                            style={{
+                              backgroundColor: event.color || '#34A853',
+                            }}
                           />
                         ))
                       ) : (
                         // Show "+N" for more than 3 events
                         <>
                           <div
-                            className="h-1.5 w-1.5 shrink-0 rounded-full"
+                            className='h-1.5 w-1.5 shrink-0 rounded-full'
                             style={{ backgroundColor: '#34A853' }}
                           />
-                          <span className="hidden text-[10px] font-medium text-green-600 dark:text-green-400 sm:inline">
+                          <span className='hidden text-[10px] font-medium text-green-600 dark:text-green-400 sm:inline'>
                             +{dayEvents.length - 1}
                           </span>
                         </>
@@ -255,9 +265,9 @@ export function CalendarWidget() {
           </div>
 
           {/* Legend */}
-          <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-600 dark:text-gray-400">
-            <div className="flex items-center gap-1.5">
-              <div className="h-2 w-2 rounded-full bg-[#34A853]" />
+          <div className='mt-4 flex items-center justify-center gap-2 text-xs text-gray-600 dark:text-gray-400'>
+            <div className='flex items-center gap-1.5'>
+              <div className='h-2 w-2 rounded-full bg-[#34A853]' />
               <span>Due Date</span>
             </div>
           </div>
@@ -266,4 +276,3 @@ export function CalendarWidget() {
     </div>
   );
 }
-

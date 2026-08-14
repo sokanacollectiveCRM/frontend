@@ -42,7 +42,12 @@ interface DataTableProps {
   viewMode?: 'leads' | 'customers';
 }
 
-export function UsersTable({ columns, data, clients, viewMode = 'leads' }: DataTableProps) {
+export function UsersTable({
+  columns,
+  data,
+  clients,
+  viewMode = 'leads',
+}: DataTableProps) {
   const { setCurrentRow, setOpen } = useUsers();
   const [rowSelection, setRowSelection] = useState({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -99,9 +104,9 @@ export function UsersTable({ columns, data, clients, viewMode = 'leads' }: DataT
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
                     </TableHead>
                   );
                 })}

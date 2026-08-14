@@ -43,17 +43,12 @@ export function NewTemplateDialog({ onUploadSuccess }: Props) {
     formData.append('deposit', depositInput.value);
     formData.append('fee', feeInput.value);
 
-
     try {
-      const res = await fetchWithAuth(
-        buildUrl('/contracts/templates'),
-        {
-          method: 'POST',
-          headers: {
-          },
-          body: formData,
-        }
-      );
+      const res = await fetchWithAuth(buildUrl('/contracts/templates'), {
+        method: 'POST',
+        headers: {},
+        body: formData,
+      });
 
       if (!res.ok) throw new Error('Upload failed.');
 

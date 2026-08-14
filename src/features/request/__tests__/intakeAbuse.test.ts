@@ -16,7 +16,10 @@ describe('formatIntakeRateLimitError', () => {
     expect(
       formatIntakeRateLimitError(
         429,
-        { error: 'Too many requests. Please try again later.', code: 'RATE_LIMITED' },
+        {
+          error: 'Too many requests. Please try again later.',
+          code: 'RATE_LIMITED',
+        },
         null
       )
     ).toBe('Too many requests. Please try again later.');

@@ -23,7 +23,13 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { useState } from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/common/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/common/components/ui/select';
 import { hourTypeOptions } from '@/features/hours/data/hour-types';
 import { DataTablePagination } from './data-table-pagination';
 import { UsersPrimaryButtons } from './users-primary-buttons';
@@ -73,9 +79,13 @@ export function UsersTable({ columns, data }: DataTableProps) {
         <div className='flex items-center gap-2'>
           <span className='text-sm text-muted-foreground'>Filter by type</span>
           <Select
-            value={(table.getColumn('type')?.getFilterValue() as string) ?? 'all'}
+            value={
+              (table.getColumn('type')?.getFilterValue() as string) ?? 'all'
+            }
             onValueChange={(value) =>
-              table.getColumn('type')?.setFilterValue(value === 'all' ? undefined : value)
+              table
+                .getColumn('type')
+                ?.setFilterValue(value === 'all' ? undefined : value)
             }
           >
             <SelectTrigger className='w-[180px]'>
@@ -109,9 +119,9 @@ export function UsersTable({ columns, data }: DataTableProps) {
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
                     </TableHead>
                   );
                 })}

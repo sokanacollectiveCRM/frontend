@@ -522,10 +522,13 @@ export async function getDoulaDocuments(): Promise<DocumentsResponse> {
 }
 
 export async function deleteDoulaDocument(documentId: string): Promise<void> {
-  const response = await fetchWithAuth(`${API_BASE}/doulas/documents/${documentId}`, {
-    method: 'DELETE',
-    credentials: 'include',
-  });
+  const response = await fetchWithAuth(
+    `${API_BASE}/doulas/documents/${documentId}`,
+    {
+      method: 'DELETE',
+      credentials: 'include',
+    }
+  );
 
   if (!response.ok) {
     const error = await response
@@ -553,12 +556,15 @@ export async function updateDoulaDocumentMetadata(
   if (Object.keys(payload).length === 0) {
     throw new Error('No document metadata changes provided');
   }
-  const response = await fetchWithAuth(`${API_BASE}/doulas/documents/${documentId}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify(payload),
-  });
+  const response = await fetchWithAuth(
+    `${API_BASE}/doulas/documents/${documentId}`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    }
+  );
 
   if (!response.ok) {
     const error = await response
@@ -936,7 +942,7 @@ export interface LogHoursData {
   note?: string;
 }
 
-export interface UpdateHoursData extends Partial<LogHoursData> {}
+export type UpdateHoursData = Partial<LogHoursData>;
 
 export async function logHours(data: LogHoursData): Promise<HoursEntry> {
   const response = await fetchWithAuth(`${API_BASE}/doulas/hours`, {

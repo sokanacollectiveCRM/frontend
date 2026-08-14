@@ -1,7 +1,10 @@
 import { Form } from '@/common/components/ui/form';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { RequestFormProvider, useRequestFormContext } from './contexts/RequestFormContext';
+import {
+  RequestFormProvider,
+  useRequestFormContext,
+} from './contexts/RequestFormContext';
 import styles from './RequestForm.module.scss';
 import RequestFormDesktop from './RequestFormDesktop';
 import { Step1Personal } from './Step1Personal';
@@ -27,7 +30,13 @@ import {
   resetIntakeHoneypotValues,
 } from './intakeAbuse';
 
-function RefreshWarningModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function RefreshWarningModal({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) {
   if (!isOpen) return null;
 
   return (
@@ -59,8 +68,8 @@ function RefreshWarningModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
           Unsaved Changes
         </h3>
         <p style={{ marginBottom: 24, color: '#666', lineHeight: 1.5 }}>
-          You have unsaved changes in your form. If you refresh or leave this page,
-          all your progress will be lost.
+          You have unsaved changes in your form. If you refresh or leave this
+          page, all your progress will be lost.
         </p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
           <button
@@ -98,8 +107,22 @@ function RefreshWarningModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
 }
 
 function RequestFormContent() {
-  const [isDesktop, setIsDesktop] = useState(() => window.matchMedia('(min-width: 600px)').matches);
-  const { form, step, totalSteps, handleNextStep, handleBack, isSubmitting, submitted, showRefreshWarning, setShowRefreshWarning, fillTestData, stepGateMessage } = useRequestFormContext();
+  const [isDesktop, setIsDesktop] = useState(
+    () => window.matchMedia('(min-width: 600px)').matches
+  );
+  const {
+    form,
+    step,
+    totalSteps,
+    handleNextStep,
+    handleBack,
+    isSubmitting,
+    submitted,
+    showRefreshWarning,
+    setShowRefreshWarning,
+    fillTestData,
+    stepGateMessage,
+  } = useRequestFormContext();
 
   useEffect(() => {
     const mql = window.matchMedia('(min-width: 600px)');
@@ -113,7 +136,10 @@ function RequestFormContent() {
     return (
       <>
         <RequestFormDesktop />
-        <RefreshWarningModal isOpen={showRefreshWarning} onClose={() => setShowRefreshWarning(false)} />
+        <RefreshWarningModal
+          isOpen={showRefreshWarning}
+          onClose={() => setShowRefreshWarning(false)}
+        />
       </>
     );
   }
@@ -247,23 +273,23 @@ function RequestFormContent() {
             you with a doula according to your needs.
           </div>
           {isRequestTestDataEnabled() && (
-          <button
-            type="button"
-            onClick={fillTestData}
-            title="Loads a complete sample (including age, provider type, primary + secondary insurance). Resets the form and returns to the first step. Dev/QA only."
-            style={{
-              marginTop: 10,
-              padding: '5px 10px',
-              fontSize: 11,
-              color: '#009688',
-              background: 'transparent',
-              border: '1px dashed #009688',
-              borderRadius: 4,
-              cursor: 'pointer',
-            }}
-          >
-            Fill with test data
-          </button>
+            <button
+              type='button'
+              onClick={fillTestData}
+              title='Loads a complete sample (including age, provider type, primary + secondary insurance). Resets the form and returns to the first step. Dev/QA only.'
+              style={{
+                marginTop: 10,
+                padding: '5px 10px',
+                fontSize: 11,
+                color: '#009688',
+                background: 'transparent',
+                border: '1px dashed #009688',
+                borderRadius: 4,
+                cursor: 'pointer',
+              }}
+            >
+              Fill with test data
+            </button>
           )}
         </div>
 
@@ -289,11 +315,11 @@ function RequestFormContent() {
               }}
             />
           </div>
-          
+
           {/* Step Navigation */}
           <StepNavigation currentStep={step} isDesktop={false} />
         </div>
-        
+
         {/* Step Header */}
         <StepHeader currentStep={step} totalSteps={totalSteps} />
         {stepGateMessage ? (
@@ -391,7 +417,10 @@ function RequestFormContent() {
           )}
         </Form>
       </div>
-      <RefreshWarningModal isOpen={showRefreshWarning} onClose={() => setShowRefreshWarning(false)} />
+      <RefreshWarningModal
+        isOpen={showRefreshWarning}
+        onClose={() => setShowRefreshWarning(false)}
+      />
     </>
   );
 }

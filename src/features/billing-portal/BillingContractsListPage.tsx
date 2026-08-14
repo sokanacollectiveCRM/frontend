@@ -16,7 +16,12 @@ import {
 import { BillingState } from '@/features/billing-portal/components/BillingState';
 import { BillingStatusBadge } from '@/features/billing-portal/components/BillingStatusBadge';
 import type { LimitedContractBillingSummary } from '@/features/billing-portal/types';
-import { AlertTriangle, CalendarClock, CircleDollarSign, Search } from 'lucide-react';
+import {
+  AlertTriangle,
+  CalendarClock,
+  CircleDollarSign,
+  Search,
+} from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -24,8 +29,19 @@ import { toast } from 'sonner';
 
 type DueFilter = 'all' | 'upcoming' | 'past-due' | 'no-due-date';
 type StatusFilter = 'all' | string;
-type ResponsibilityFilter = 'all' | 'insurance' | 'client' | 'split' | 'unknown';
-type PaymentMethodFilter = 'all' | 'card' | 'insurance' | 'ach' | 'invoice' | 'unknown';
+type ResponsibilityFilter =
+  | 'all'
+  | 'insurance'
+  | 'client'
+  | 'split'
+  | 'unknown';
+type PaymentMethodFilter =
+  | 'all'
+  | 'card'
+  | 'insurance'
+  | 'ach'
+  | 'invoice'
+  | 'unknown';
 const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
 
 function formatAmount(value: number): string {
@@ -67,17 +83,24 @@ function normalizeLabel(value?: string | null): string {
   return (value || '').trim().toLowerCase();
 }
 
-function getResponsibilityBucket(contract: LimitedContractBillingSummary): ResponsibilityFilter {
+function getResponsibilityBucket(
+  contract: LimitedContractBillingSummary
+): ResponsibilityFilter {
   const responsibility = normalizeLabel(contract.billingResponsibility);
   const coverage = normalizeLabel(contract.insuranceCoverageType);
   const deductibleMethod = normalizeLabel(contract.deductiblePaymentMethod);
   const paymentMethod = normalizeLabel(contract.paymentMethodSummary);
 
-  if (responsibility.includes('split') || responsibility.includes('shared')) return 'split';
-  if (coverage.includes('insurance') && (deductibleMethod || paymentMethod.includes('card'))) {
+  if (responsibility.includes('split') || responsibility.includes('shared'))
+    return 'split';
+  if (
+    coverage.includes('insurance') &&
+    (deductibleMethod || paymentMethod.includes('card'))
+  ) {
     return 'split';
   }
-  if (responsibility.includes('insurance') || coverage.includes('insurance')) return 'insurance';
+  if (responsibility.includes('insurance') || coverage.includes('insurance'))
+    return 'insurance';
   if (
     responsibility.includes('client') ||
     responsibility.includes('self-pay') ||
@@ -89,7 +112,9 @@ function getResponsibilityBucket(contract: LimitedContractBillingSummary): Respo
   return 'unknown';
 }
 
-function getPaymentMethodBucket(contract: LimitedContractBillingSummary): PaymentMethodFilter {
+function getPaymentMethodBucket(
+  contract: LimitedContractBillingSummary
+): PaymentMethodFilter {
   const paymentMethod = normalizeLabel(contract.paymentMethodSummary);
   const deductibleMethod = normalizeLabel(contract.deductiblePaymentMethod);
   const combined = `${paymentMethod} ${deductibleMethod}`.trim();
@@ -128,7 +153,9 @@ function BillingMetricCard({
     <div className='rounded-xl border bg-card p-4 shadow-sm'>
       <div className='flex items-center gap-2 text-muted-foreground'>
         {icon}
-        <span className='text-xs font-medium uppercase tracking-wide'>{label}</span>
+        <span className='text-xs font-medium uppercase tracking-wide'>
+          {label}
+        </span>
       </div>
       <div className='mt-3 text-2xl font-semibold tracking-tight'>{value}</div>
     </div>
@@ -136,9 +163,13 @@ function BillingMetricCard({
 }
 
 export default function BillingContractsListPage() {
-  const [contracts, setContracts] = useState<LimitedContractBillingSummary[]>([]);
+  const [contracts, setContracts] = useState<LimitedContractBillingSummary[]>(
+    []
+  );
   const [isLoading, setIsLoading] = useState(true);
-  const [errorState, setErrorState] = useState<'access-denied' | 'load-error' | null>(null);
+  const [errorState, setErrorState] = useState<
+    'access-denied' | 'load-error' | null
+  >(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [dueFilter, setDueFilter] = useState<DueFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -209,7 +240,10 @@ export default function BillingContractsListPage() {
         return false;
       }
 
-      if (dueFilter !== 'all' && getDueBucket(contract.nextDueDate) !== dueFilter) {
+      if (
+        dueFilter !== 'all' &&
+        getDueBucket(contract.nextDueDate) !== dueFilter
+      ) {
         return false;
       }
 
@@ -229,27 +263,53 @@ export default function BillingContractsListPage() {
 
       return true;
     });
-  }, [contracts, dueFilter, paymentMethodFilter, responsibilityFilter, searchTerm, statusFilter]);
+  }, [
+    contracts,
+    dueFilter,
+    paymentMethodFilter,
+    responsibilityFilter,
+    searchTerm,
+    statusFilter,
+  ]);
 
   const uniqueStatuses = useMemo(
-    () => Array.from(new Set(contracts.map((contract) => contract.contractStatus))).sort(),
+    () =>
+      Array.from(
+        new Set(contracts.map((contract) => contract.contractStatus))
+      ).sort(),
     [contracts]
   );
 
   const metrics = useMemo(
     () => ({
-      pastDue: contracts.filter((contract) => getDueBucket(contract.nextDueDate) === 'past-due').length,
-      upcoming: contracts.filter((contract) => getDueBucket(contract.nextDueDate) === 'upcoming').length,
-      missingDueDate: contracts.filter((contract) => getDueBucket(contract.nextDueDate) === 'no-due-date').length,
+      pastDue: contracts.filter(
+        (contract) => getDueBucket(contract.nextDueDate) === 'past-due'
+      ).length,
+      upcoming: contracts.filter(
+        (contract) => getDueBucket(contract.nextDueDate) === 'upcoming'
+      ).length,
+      missingDueDate: contracts.filter(
+        (contract) => getDueBucket(contract.nextDueDate) === 'no-due-date'
+      ).length,
     }),
     [contracts]
   );
 
   useEffect(() => {
     setPageIndex(0);
-  }, [searchTerm, dueFilter, statusFilter, responsibilityFilter, paymentMethodFilter, pageSize]);
+  }, [
+    searchTerm,
+    dueFilter,
+    statusFilter,
+    responsibilityFilter,
+    paymentMethodFilter,
+    pageSize,
+  ]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredContracts.length / pageSize));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredContracts.length / pageSize)
+  );
   const paginatedContracts = useMemo(() => {
     const start = pageIndex * pageSize;
     return filteredContracts.slice(start, start + pageSize);
@@ -293,7 +353,8 @@ export default function BillingContractsListPage() {
       <div className='space-y-2'>
         <h1 className='text-3xl font-bold tracking-tight'>Payment Schedules</h1>
         <p className='text-muted-foreground'>
-          Limited billing-safe contract and installment visibility for internal payment follow-up.
+          Limited billing-safe contract and installment visibility for internal
+          payment follow-up.
         </p>
       </div>
 
@@ -333,7 +394,10 @@ export default function BillingContractsListPage() {
                   className='pl-9'
                 />
               </div>
-              <Select value={dueFilter} onValueChange={(value) => setDueFilter(value as DueFilter)}>
+              <Select
+                value={dueFilter}
+                onValueChange={(value) => setDueFilter(value as DueFilter)}
+              >
                 <SelectTrigger className='w-[180px]'>
                   <SelectValue placeholder='Due timing' />
                 </SelectTrigger>
@@ -346,7 +410,9 @@ export default function BillingContractsListPage() {
               </Select>
               <Select
                 value={statusFilter}
-                onValueChange={(value) => setStatusFilter(value as StatusFilter)}
+                onValueChange={(value) =>
+                  setStatusFilter(value as StatusFilter)
+                }
               >
                 <SelectTrigger className='w-[160px]'>
                   <SelectValue placeholder='Contract status' />
@@ -373,7 +439,9 @@ export default function BillingContractsListPage() {
                   <SelectItem value='all'>All payers</SelectItem>
                   <SelectItem value='insurance'>Insurance</SelectItem>
                   <SelectItem value='client'>Client / self-pay</SelectItem>
-                  <SelectItem value='split'>Split insurance + client</SelectItem>
+                  <SelectItem value='split'>
+                    Split insurance + client
+                  </SelectItem>
                   <SelectItem value='unknown'>Unavailable</SelectItem>
                 </SelectContent>
               </Select>
@@ -417,67 +485,98 @@ export default function BillingContractsListPage() {
               )}
             </div>
             <p className='mt-3 text-sm text-muted-foreground'>
-              {filteredContracts.length} of {contracts.length} payment schedules shown
+              {filteredContracts.length} of {contracts.length} payment schedules
+              shown
             </p>
           </div>
           <div className='overflow-x-auto'>
-          <table className='min-w-[720px] w-full text-sm'>
-            <thead className='bg-muted/60'>
-              <tr className='border-b'>
-                <th className='px-4 py-3 text-left font-semibold'>Client</th>
-                <th className='px-4 py-3 text-left font-semibold'>Contract</th>
-                <th className='px-4 py-3 text-left font-semibold'>Billing setup</th>
-                <th className='px-4 py-3 text-left font-semibold'>Status</th>
-                <th className='px-4 py-3 text-right font-semibold'>Total</th>
-                <th className='px-4 py-3 text-left font-semibold'>Schedule</th>
-                <th className='px-4 py-3 text-left font-semibold'>Next due</th>
-                <th className='px-4 py-3 text-left font-semibold'>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedContracts.map((contract) => (
-                <tr key={contract.contractId} className='border-b last:border-b-0'>
-                  <td className='px-4 py-3'>{contract.clientName}</td>
-                  <td className='px-4 py-3'>
-                    <div className='font-medium'>{contract.contractType}</div>
-                    <div className='text-xs text-muted-foreground'>
-                      {contract.installmentCount ?? 0} installments
-                    </div>
-                  </td>
-                  <td className='px-4 py-3'>
-                    <div className='max-w-[280px] text-sm'>{formatBillingContext(contract)}</div>
-                  </td>
-                  <td className='px-4 py-3'>
-                    <BillingStatusBadge value={contract.contractStatus} />
-                  </td>
-                  <td className='px-4 py-3 text-right'>{formatAmount(contract.totalAmount)}</td>
-                  <td className='px-4 py-3'>{contract.paymentSchedule || 'Schedule unavailable'}</td>
-                  <td className='px-4 py-3'>{formatDate(contract.nextDueDate)}</td>
-                  <td className='px-4 py-3'>
-                    <div className='flex flex-wrap gap-2'>
-                      <Button asChild variant='outline' size='sm'>
-                        <Link to={`/billing/contracts/${contract.contractId}`}>View schedule</Link>
-                      </Button>
-                      <Button
-                        type='button'
-                        variant={isActionRequiredForContract(contract) ? 'default' : 'outline'}
-                        size='sm'
-                        disabled={!contract.clientEmail}
-                        onClick={() => {
-                          const opened = openContractBillingOutreachEmail(contract);
-                          if (!opened) {
-                            toast.error('Client email is unavailable for billing outreach.');
-                          }
-                        }}
-                      >
-                        Email client
-                      </Button>
-                    </div>
-                  </td>
+            <table className='min-w-[720px] w-full text-sm'>
+              <thead className='bg-muted/60'>
+                <tr className='border-b'>
+                  <th className='px-4 py-3 text-left font-semibold'>Client</th>
+                  <th className='px-4 py-3 text-left font-semibold'>
+                    Contract
+                  </th>
+                  <th className='px-4 py-3 text-left font-semibold'>
+                    Billing setup
+                  </th>
+                  <th className='px-4 py-3 text-left font-semibold'>Status</th>
+                  <th className='px-4 py-3 text-right font-semibold'>Total</th>
+                  <th className='px-4 py-3 text-left font-semibold'>
+                    Schedule
+                  </th>
+                  <th className='px-4 py-3 text-left font-semibold'>
+                    Next due
+                  </th>
+                  <th className='px-4 py-3 text-left font-semibold'>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {paginatedContracts.map((contract) => (
+                  <tr
+                    key={contract.contractId}
+                    className='border-b last:border-b-0'
+                  >
+                    <td className='px-4 py-3'>{contract.clientName}</td>
+                    <td className='px-4 py-3'>
+                      <div className='font-medium'>{contract.contractType}</div>
+                      <div className='text-xs text-muted-foreground'>
+                        {contract.installmentCount ?? 0} installments
+                      </div>
+                    </td>
+                    <td className='px-4 py-3'>
+                      <div className='max-w-[280px] text-sm'>
+                        {formatBillingContext(contract)}
+                      </div>
+                    </td>
+                    <td className='px-4 py-3'>
+                      <BillingStatusBadge value={contract.contractStatus} />
+                    </td>
+                    <td className='px-4 py-3 text-right'>
+                      {formatAmount(contract.totalAmount)}
+                    </td>
+                    <td className='px-4 py-3'>
+                      {contract.paymentSchedule || 'Schedule unavailable'}
+                    </td>
+                    <td className='px-4 py-3'>
+                      {formatDate(contract.nextDueDate)}
+                    </td>
+                    <td className='px-4 py-3'>
+                      <div className='flex flex-wrap gap-2'>
+                        <Button asChild variant='outline' size='sm'>
+                          <Link
+                            to={`/billing/contracts/${contract.contractId}`}
+                          >
+                            View schedule
+                          </Link>
+                        </Button>
+                        <Button
+                          type='button'
+                          variant={
+                            isActionRequiredForContract(contract)
+                              ? 'default'
+                              : 'outline'
+                          }
+                          size='sm'
+                          disabled={!contract.clientEmail}
+                          onClick={() => {
+                            const opened =
+                              openContractBillingOutreachEmail(contract);
+                            if (!opened) {
+                              toast.error(
+                                'Client email is unavailable for billing outreach.'
+                              );
+                            }
+                          }}
+                        >
+                          Email client
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
           {filteredContracts.length === 0 ? (
             <div className='border-t p-6 text-sm text-muted-foreground'>
@@ -512,7 +611,9 @@ export default function BillingContractsListPage() {
                   variant='outline'
                   size='sm'
                   disabled={pageIndex === 0}
-                  onClick={() => setPageIndex((current) => Math.max(0, current - 1))}
+                  onClick={() =>
+                    setPageIndex((current) => Math.max(0, current - 1))
+                  }
                 >
                   Previous
                 </Button>
@@ -522,7 +623,9 @@ export default function BillingContractsListPage() {
                   size='sm'
                   disabled={pageIndex >= totalPages - 1}
                   onClick={() =>
-                    setPageIndex((current) => Math.min(totalPages - 1, current + 1))
+                    setPageIndex((current) =>
+                      Math.min(totalPages - 1, current + 1)
+                    )
                   }
                 >
                   Next

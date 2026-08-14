@@ -34,15 +34,18 @@ export default function ClientLogin() {
     console.log('Current path:', window.location.pathname);
     console.log('Current hash:', window.location.hash);
     console.log('Full URL:', window.location.href);
-    
+
     // Track navigation changes
     const interval = setInterval(() => {
       if (window.location.pathname !== '/auth/client-login') {
-        console.error('🚨 PATH CHANGED FROM /auth/client-login TO:', window.location.pathname);
+        console.error(
+          '🚨 PATH CHANGED FROM /auth/client-login TO:',
+          window.location.pathname
+        );
         console.trace('Stack trace of what changed the path');
       }
     }, 100);
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -71,10 +74,11 @@ export default function ClientLogin() {
 
     try {
       // Sign in with Supabase Auth (same approach as admin login - just authenticate)
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { data, error: signInError } =
+        await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
       if (signInError) {
         throw new Error(
@@ -91,7 +95,7 @@ export default function ClientLogin() {
       // Success - client is logged in via Supabase
       setError(null);
       toast.success('Welcome! Redirecting to your dashboard...');
-      
+
       await checkAuth({ silent: true });
       navigate('/', { replace: true });
     } catch (err: any) {
@@ -118,7 +122,7 @@ export default function ClientLogin() {
 
   console.log('ClientLogin - Rendering component');
   console.log('ClientLogin - Will NOT redirect to /login from this component');
-  
+
   // Prevent any navigation away from this page unless explicitly done by user action
   useEffect(() => {
     const currentPath = window.location.pathname;
@@ -215,8 +219,8 @@ export default function ClientLogin() {
 
           <div className='mt-6 text-center text-sm space-y-2'>
             <p className='text-muted-foreground'>
-              Don't have an account? Contact your administrator to receive a portal
-              invite.
+              Don't have an account? Contact your administrator to receive a
+              portal invite.
             </p>
             <div className='pt-2 border-t'>
               <p className='text-muted-foreground'>
@@ -235,4 +239,3 @@ export default function ClientLogin() {
     </div>
   );
 }
-

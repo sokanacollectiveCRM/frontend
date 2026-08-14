@@ -15,7 +15,9 @@ function getEnv(key: string): string | undefined {
 
 const rawAppEnv = (getEnv('VITE_APP_ENV') ?? 'development') as string;
 const appEnv: AppEnv =
-  rawAppEnv === 'production' || rawAppEnv === 'staging' || rawAppEnv === 'development'
+  rawAppEnv === 'production' ||
+  rawAppEnv === 'staging' ||
+  rawAppEnv === 'development'
     ? rawAppEnv
     : 'development';
 
@@ -25,7 +27,8 @@ const LOCAL_API_URL = 'http://localhost:5050';
  * Gradual cutover flag: when VITE_USE_CLOUD_RUN=true, use VITE_CLOUD_RUN_API_URL.
  * Production builds never fall back to a hardcoded Cloud Run URL or localhost.
  */
-const useCloudRun = (getEnv('VITE_USE_CLOUD_RUN') ?? '').toLowerCase() === 'true';
+const useCloudRun =
+  (getEnv('VITE_USE_CLOUD_RUN') ?? '').toLowerCase() === 'true';
 
 function configuredApiUrl(): string {
   const cloudRun = (getEnv('VITE_CLOUD_RUN_API_URL') ?? '').replace(/\/+$/, '');

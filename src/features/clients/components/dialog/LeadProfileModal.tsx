@@ -1,7 +1,15 @@
-import { ClientNote, createClientNote, getClientNotes } from '@/api/clients/notes';
+import {
+  ClientNote,
+  createClientNote,
+  getClientNotes,
+} from '@/api/clients/notes';
 import { Button } from '@/common/components/ui/button';
 import { Calendar } from '@/common/components/ui/calendar';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/common/components/ui/collapsible';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/common/components/ui/collapsible';
 import {
   Dialog,
   DialogContent,
@@ -18,13 +26,26 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/common/components/ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/common/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/common/components/ui/select';
 import { Textarea } from '@/common/components/ui/textarea';
 import { useClients } from '@/common/hooks/clients/useClients';
 import { UserContext } from '@/common/contexts/UserContext';
 import updateClient from '@/common/utils/updateClient';
 import updateClientStatus from '@/common/utils/updateClientStatus';
-import { updateClientPhi, fetchClientPaymentSchedule, fetchCardOnFileStatus, generateInstallmentInvoice, type PaymentInstallment, type CardOnFileStatus } from '@/api/services/clients.service';
+import {
+  updateClientPhi,
+  fetchClientPaymentSchedule,
+  fetchCardOnFileStatus,
+  generateInstallmentInvoice,
+  type PaymentInstallment,
+  type CardOnFileStatus,
+} from '@/api/services/clients.service';
 import { buildUrl, fetchWithAuth } from '@/api/http';
 import { PHI_KEYS } from '@/config/phi';
 import { Client } from '@/features/clients/data/schema';
@@ -48,11 +69,11 @@ import {
   Phone,
   Save,
   User,
-  Users
+  Users,
 } from 'lucide-react';
 import React, { useContext, useState } from 'react';
 import { toast } from 'sonner';
-import { DoulaAssignment } from '../DoulaAssignment';
+import { DoulaAssignment } from '@/features/clients/components/DoulaAssignment';
 import {
   compareClientDocumentsByUploadedAtDesc,
   getClientDocumentLabel,
@@ -91,9 +112,7 @@ import {
   REFERRAL_SOURCE_OPTIONS,
   REFERRAL_SOURCE_OTHER_VALUE,
 } from '@/features/request/referralSourceOptions';
-import {
-  HOME_PEOPLE_COUNT_OPTIONS,
-} from '@/features/request/homePeopleCountOptions';
+import { HOME_PEOPLE_COUNT_OPTIONS } from '@/features/request/homePeopleCountOptions';
 import {
   HOME_TYPE_OPTIONS,
   HOME_TYPE_OTHER_VALUE,
@@ -109,26 +128,79 @@ interface LeadProfileModalProps {
   missingClientId?: string;
 }
 
-const NOTE_CATEGORIES = ['General', 'Communication', 'Milestone', 'Follow-up', 'Health', 'Billing'];
+const NOTE_CATEGORIES = [
+  'General',
+  'Communication',
+  'Milestone',
+  'Follow-up',
+  'Health',
+  'Billing',
+];
 
 // Dropdown options from request form (exact matches)
-const PRONOUNS_OPTIONS = ['She/Her', 'He/Him', 'They/Them', 'Ze/Hir/Zir', 'None', 'Other'];
+const PRONOUNS_OPTIONS = [
+  'She/Her',
+  'He/Him',
+  'They/Them',
+  'Ze/Hir/Zir',
+  'None',
+  'Other',
+];
 const PREFERRED_CONTACT_OPTIONS = ['Phone', 'Text', 'Email'];
-const RELATIONSHIP_OPTIONS = ['Spouse', 'Partner', 'Friend', 'Parent', 'Sibling', 'Other'];
-const FAMILY_PRONOUNS_OPTIONS = ['She/Her', 'He/Him', 'They/Them', 'Ze/Hir/Zir', 'None'];
-const SERVICES_OPTIONS = ['Labor Support', 'Postpartum Support', '1st Night Care', 'Lactation Support', 'Perinatal Education', 'Abortion Support', 'Other'];
+const RELATIONSHIP_OPTIONS = [
+  'Spouse',
+  'Partner',
+  'Friend',
+  'Parent',
+  'Sibling',
+  'Other',
+];
+const FAMILY_PRONOUNS_OPTIONS = [
+  'She/Her',
+  'He/Him',
+  'They/Them',
+  'Ze/Hir/Zir',
+  'None',
+];
+const SERVICES_OPTIONS = [
+  'Labor Support',
+  'Postpartum Support',
+  '1st Night Care',
+  'Lactation Support',
+  'Perinatal Education',
+  'Abortion Support',
+  'Other',
+];
 const ANNUAL_INCOME_OPTIONS = [
   '$0-$24,999',
   '$25,000-$44,999',
   '$45,000-$64,999',
   '$65,000-$84,999',
   '$85,000-$99,999',
-  '100k and above'
+  '100k and above',
 ];
-const RACE_OPTIONS = ['African American/Black', 'Asian/Pacific Islander', 'Caucasian/White', 'Hispanic', 'Two or more races', 'Other'];
-const LANGUAGE_OPTIONS = ['English', 'Spanish', 'French', 'Mandarin', 'Arabic', 'Other'];
+const RACE_OPTIONS = [
+  'African American/Black',
+  'Asian/Pacific Islander',
+  'Caucasian/White',
+  'Hispanic',
+  'Two or more races',
+  'Other',
+];
+const LANGUAGE_OPTIONS = [
+  'English',
+  'Spanish',
+  'French',
+  'Mandarin',
+  'Arabic',
+  'Other',
+];
 const AGE_OPTIONS = ['Under 20', '20-25', '26-35', '36 and older'];
-const INSURANCE_OPTIONS = ['Private', 'Public Aid', "Currently don't have medical insurance"];
+const INSURANCE_OPTIONS = [
+  'Private',
+  'Public Aid',
+  "Currently don't have medical insurance",
+];
 const DEMOGRAPHICS_MULTI_OPTIONS = [
   'Annual income is less than $30,000',
   'Identify as a person of color',
@@ -141,7 +213,7 @@ const DEMOGRAPHICS_MULTI_OPTIONS = [
   'Refugee or religious minority',
   'Active Military or Veteran Status',
   'None apply',
-  'Other:'
+  'Other:',
 ];
 const DEMOGRAPHICS_INCOME_OPTIONS = [
   '$0-$24,999',
@@ -149,7 +221,7 @@ const DEMOGRAPHICS_INCOME_OPTIONS = [
   '$45,000-$64,999',
   '$65,000-$84,999',
   '$85,000-$99,999',
-  '$100,000 and above'
+  '$100,000 and above',
 ];
 const CLIENT_STATUS_OPTIONS = [
   'lead',
@@ -173,7 +245,7 @@ const NUMBER_OF_BABIES_OPTIONS = [
   'Quintuplets',
   'Sextuplets',
   'Septuplets',
-  'Octuplets'
+  'Octuplets',
 ];
 const PROVIDER_TYPE_OPTIONS = ['Midwife', 'OB', 'Family Doctor', 'Other'];
 
@@ -197,7 +269,9 @@ function isSelfPayMethod(method: string): boolean {
   return sharedIsSelfPayMethod(method);
 }
 
-function hasAnyInsuranceDetails(source: Record<string, unknown> | null | undefined): boolean {
+function hasAnyInsuranceDetails(
+  source: Record<string, unknown> | null | undefined
+): boolean {
   if (!source) return false;
   const fields = [
     'insurance_policy_holder_name',
@@ -231,7 +305,9 @@ function hasAnyInsuranceDetails(source: Record<string, unknown> | null | undefin
 }
 
 function normalizeLifecycleStatus(value: unknown): string {
-  const raw = String(value ?? '').trim().toLowerCase();
+  const raw = String(value ?? '')
+    .trim()
+    .toLowerCase();
   if (raw === 'matching') return 'matched';
   if (raw === 'customer') return 'not hired';
   return String(value ?? '').trim();
@@ -263,7 +339,9 @@ export function LeadProfileModal({
   const [savingNote, setSavingNote] = useState(false);
   const [notesError, setNotesError] = useState<string | null>(null);
   /** Include `notes` so Admin Notes + history are visible when the profile opens (audit trail is primary for this block). */
-  const [openSections, setOpenSections] = useState<Set<string>>(new Set(['contact', 'services', 'notes']));
+  const [openSections, setOpenSections] = useState<Set<string>>(
+    new Set(['contact', 'services', 'notes'])
+  );
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState<Partial<Client>>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -273,17 +351,25 @@ export function LeadProfileModal({
   const [billingLoading, setBillingLoading] = useState(false);
   const [billingError, setBillingError] = useState<string | null>(null);
   const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false);
-  const [generatedInvoiceLink, setGeneratedInvoiceLink] = useState<string | null>(null);
+  const [generatedInvoiceLink, setGeneratedInvoiceLink] = useState<
+    string | null
+  >(null);
   const [isSavingBirthOutcomes, setIsSavingBirthOutcomes] = useState(false);
   // Primary source for display: full detail from GET /clients/:id (authorized users get PHI).
   const [fetchedDetail, setFetchedDetail] = useState<ClientDetail | null>(null);
   const [clientDocuments, setClientDocuments] = useState<ClientDocument[]>([]);
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
-  const [documentPreviewUrls, setDocumentPreviewUrls] = useState<Record<string, string>>({});
+  const [documentPreviewUrls, setDocumentPreviewUrls] = useState<
+    Record<string, string>
+  >({});
   const currentUserDisplayName = React.useMemo(() => {
-    const first = String(user?.firstname ?? (user as any)?.first_name ?? '').trim();
-    const last = String(user?.lastname ?? (user as any)?.last_name ?? '').trim();
+    const first = String(
+      user?.firstname ?? (user as any)?.first_name ?? ''
+    ).trim();
+    const last = String(
+      user?.lastname ?? (user as any)?.last_name ?? ''
+    ).trim();
     const full = `${first} ${last}`.trim();
     if (full) return full;
     const email = String(user?.email ?? '').trim();
@@ -297,16 +383,23 @@ export function LeadProfileModal({
   // Primary source for modal: fetched detail from GET /clients/:id when available; otherwise client prop.
   // Detail modal is for authorized users only – backend gates PHI on GET /clients/:id.
   const detailSource: Record<string, unknown> | null = React.useMemo(() => {
-    if (fetchedDetail && typeof fetchedDetail === 'object') return fetchedDetail as unknown as Record<string, unknown>;
+    if (fetchedDetail && typeof fetchedDetail === 'object')
+      return fetchedDetail as unknown as Record<string, unknown>;
     if (!client || typeof client !== 'object') return null;
     const c = client as Record<string, unknown>;
-    const dataObj = c.data && typeof c.data === 'object' && !Array.isArray(c.data) ? (c.data as Record<string, unknown>) : null;
-    const base = dataObj ?? c;
-    const phi = (c.phi && typeof c.phi === 'object' && !Array.isArray(c.phi))
-      ? (c.phi as Record<string, unknown>)
-      : (dataObj?.phi && typeof dataObj.phi === 'object' && !Array.isArray(dataObj.phi))
-        ? (dataObj.phi as Record<string, unknown>)
+    const dataObj =
+      c.data && typeof c.data === 'object' && !Array.isArray(c.data)
+        ? (c.data as Record<string, unknown>)
         : null;
+    const base = dataObj ?? c;
+    const phi =
+      c.phi && typeof c.phi === 'object' && !Array.isArray(c.phi)
+        ? (c.phi as Record<string, unknown>)
+        : dataObj?.phi &&
+            typeof dataObj.phi === 'object' &&
+            !Array.isArray(dataObj.phi)
+          ? (dataObj.phi as Record<string, unknown>)
+          : null;
     if (phi) return { ...base, ...phi };
     return base;
   }, [client, fetchedDetail]);
@@ -322,7 +415,11 @@ export function LeadProfileModal({
   // Do not rely solely on list row; backend returns full PHI for authorized users on detail.
   const detailFetchRef = React.useRef<string | null>(null);
   React.useEffect(() => {
-    console.log('🔍 [Effect] Running', { open, hasClient: !!client?.id, refValue: detailFetchRef.current });
+    console.log('🔍 [Effect] Running', {
+      open,
+      hasClient: !!client?.id,
+      refValue: detailFetchRef.current,
+    });
     if (!open) {
       console.log('🔍 [Effect] Modal closed, resetting');
       detailFetchRef.current = null;
@@ -336,7 +433,11 @@ export function LeadProfileModal({
 
     const clientId = String(client.id);
     // Only skip if we have both: ref is set AND we have the actual data for this client
-    if (detailFetchRef.current === clientId && fetchedDetail && (fetchedDetail as any).id === clientId) {
+    if (
+      detailFetchRef.current === clientId &&
+      fetchedDetail &&
+      (fetchedDetail as any).id === clientId
+    ) {
       console.log('🔍 [Effect] Already fetched and have data, skipping');
       return;
     }
@@ -346,7 +447,9 @@ export function LeadProfileModal({
     console.log('🔍 [Effect] Fetching because:', {
       'ref matches': detailFetchRef.current === clientId,
       'have data': !!fetchedDetail,
-      'data matches': fetchedDetail ? (fetchedDetail as any).id === clientId : false
+      'data matches': fetchedDetail
+        ? (fetchedDetail as any).id === clientId
+        : false,
     });
 
     console.log('🔍 [Fetch] Starting fetch for client:', clientId);
@@ -360,8 +463,14 @@ export function LeadProfileModal({
           detailFetchRef.current = null;
           return;
         }
-        console.log('🔍 [Fetch] phoneNumber in fetched data:', (data as any)?.phoneNumber);
-        console.log('🔍 [Fetch] phone_number in fetched data:', (data as any)?.phone_number);
+        console.log(
+          '🔍 [Fetch] phoneNumber in fetched data:',
+          (data as any)?.phoneNumber
+        );
+        console.log(
+          '🔍 [Fetch] phone_number in fetched data:',
+          (data as any)?.phone_number
+        );
         console.log('🔍 [Fetch] Full data:', data);
         setFetchedDetail(data);
       })
@@ -382,20 +491,34 @@ export function LeadProfileModal({
 
   const loadBillingWorkflow = React.useCallback(async () => {
     if (!client?.id) return;
-    setBillingLoading(true); setBillingError(null);
+    setBillingLoading(true);
+    setBillingError(null);
     try {
       const [schedule, card] = await Promise.all([
-        fetchClientPaymentSchedule(String(client.id)), fetchCardOnFileStatus(String(client.id)),
+        fetchClientPaymentSchedule(String(client.id)),
+        fetchCardOnFileStatus(String(client.id)),
       ]);
-      setInstallments(Array.isArray(schedule) ? schedule : []); setCardStatus(card);
+      setInstallments(Array.isArray(schedule) ? schedule : []);
+      setCardStatus(card);
     } catch (error) {
-      setBillingError(error instanceof Error ? error.message : 'Unable to load billing information.');
-    } finally { setBillingLoading(false); }
+      setBillingError(
+        error instanceof Error
+          ? error.message
+          : 'Unable to load billing information.'
+      );
+    } finally {
+      setBillingLoading(false);
+    }
   }, [client?.id]);
 
   React.useEffect(() => {
     if (open && client?.id) void loadBillingWorkflow();
-    else { setInstallments([]); setCardStatus(null); setBillingError(null); setGeneratedInvoiceLink(null); }
+    else {
+      setInstallments([]);
+      setCardStatus(null);
+      setBillingError(null);
+      setGeneratedInvoiceLink(null);
+    }
   }, [open, client?.id, loadBillingWorkflow]);
 
   React.useEffect(() => {
@@ -433,14 +556,24 @@ export function LeadProfileModal({
     let cancelled = false;
 
     const populatePreviewUrls = async () => {
-      const imageDocs = clientDocuments.filter(isInsuranceCardDocument).filter(isImageDocument);
-      const missingDocs = imageDocs.filter((doc) => !documentPreviewUrls[doc.id]);
+      const imageDocs = clientDocuments
+        .filter(isInsuranceCardDocument)
+        .filter(isImageDocument);
+      const missingDocs = imageDocs.filter(
+        (doc) => !documentPreviewUrls[doc.id]
+      );
       if (missingDocs.length === 0) return;
 
       const entries = await Promise.all(
         missingDocs.map(async (doc) => {
           try {
-            const url = doc.url || (await getClientDocumentUrl('staff', doc.id, client?.id || undefined));
+            const url =
+              doc.url ||
+              (await getClientDocumentUrl(
+                'staff',
+                doc.id,
+                client?.id || undefined
+              ));
             return [doc.id, url] as const;
           } catch {
             return null;
@@ -495,9 +628,18 @@ export function LeadProfileModal({
         console.log('  Current time (now):', now);
         console.log('  Current time ISO:', now.toISOString());
         console.log('  Current time local:', now.toString());
-        console.log('  Time difference (ms):', now.getTime() - parsedDate.getTime());
-        console.log('  Time difference (minutes):', (now.getTime() - parsedDate.getTime()) / 1000 / 60);
-        console.log('  Browser timezone offset (minutes):', now.getTimezoneOffset());
+        console.log(
+          '  Time difference (ms):',
+          now.getTime() - parsedDate.getTime()
+        );
+        console.log(
+          '  Time difference (minutes):',
+          (now.getTime() - parsedDate.getTime()) / 1000 / 60
+        );
+        console.log(
+          '  Browser timezone offset (minutes):',
+          now.getTimezoneOffset()
+        );
         console.log('  Is timestamp in future?', parsedDate > now);
       }
 
@@ -522,7 +664,9 @@ export function LeadProfileModal({
     return `${clientId}|${phone}|${service}|${dueDate}`;
   }, [detailSource, client?.id]);
 
-  const hasInsuranceDetails = hasAnyInsuranceDetails(detailSource as Record<string, unknown> | null);
+  const hasInsuranceDetails = hasAnyInsuranceDetails(
+    detailSource as Record<string, unknown> | null
+  );
 
   const lastInitFingerprintRef = React.useRef<string | null>(null);
   React.useEffect(() => {
@@ -535,20 +679,35 @@ export function LeadProfileModal({
     }
     lastInitFingerprintRef.current = dataFingerprint;
     const d = detailSource as Record<string, unknown>;
-    const get = (key: string, alt: string) => (d[key] ?? d[alt]) as string | undefined;
+    const get = (key: string, alt: string) =>
+      (d[key] ?? d[alt]) as string | undefined;
     const stripRedacted = (v: unknown): string | undefined => {
-      if (v === '[redacted]' || v === null || v === undefined || v === -1 || v === '-1') return undefined;
+      if (
+        v === '[redacted]' ||
+        v === null ||
+        v === undefined ||
+        v === -1 ||
+        v === '-1'
+      )
+        return undefined;
       const str = String(v).trim();
       return str === '' ? undefined : str;
     };
     const nested = (obj: unknown, key: string) =>
-      obj && typeof obj === 'object' && !Array.isArray(obj) ? (obj as Record<string, unknown>)[key] : undefined;
+      obj && typeof obj === 'object' && !Array.isArray(obj)
+        ? (obj as Record<string, unknown>)[key]
+        : undefined;
     const rawPhone =
-      get('phone_number', 'phoneNumber') ?? nested(d.phi, 'phone_number') ?? nested(d.data, 'phone_number') ?? d.mobile_phone;
-      const phoneNumber = (stripRedacted(rawPhone) ?? '') as string;
-      const phone_number = stripRedacted(rawPhone) ?? undefined;
+      get('phone_number', 'phoneNumber') ??
+      nested(d.phi, 'phone_number') ??
+      nested(d.data, 'phone_number') ??
+      d.mobile_phone;
+    const phoneNumber = (stripRedacted(rawPhone) ?? '') as string;
+    const phone_number = stripRedacted(rawPhone) ?? undefined;
     const paymentMethod = normalizeBillingPaymentMethod(
-      get('payment_method', 'paymentMethod') ?? d.payment_method ?? d.paymentMethod
+      get('payment_method', 'paymentMethod') ??
+        d.payment_method ??
+        d.paymentMethod
     );
     console.log('🔍 [Init] Phone extraction:', {
       'detailSource.phoneNumber': d.phoneNumber,
@@ -560,33 +719,52 @@ export function LeadProfileModal({
     const initializedData: Partial<Client> = {
       ...client,
       ...detailSource,
-      firstname: (stripRedacted(get('firstname', 'first_name') ?? get('firstName', 'first_name')) ?? '') as string,
-      lastname: (stripRedacted(get('lastname', 'last_name') ?? get('lastName', 'last_name')) ?? '') as string,
+      firstname: (stripRedacted(
+        get('firstname', 'first_name') ?? get('firstName', 'first_name')
+      ) ?? '') as string,
+      lastname: (stripRedacted(
+        get('lastname', 'last_name') ?? get('lastName', 'last_name')
+      ) ?? '') as string,
       email: stripRedacted(d.email) as string | undefined,
       phoneNumber,
       phone_number,
       zip_code: normalizeZipCode(stripRedacted(get('zip_code', 'zipCode'))),
       due_date: get('due_date', 'dueDate'),
-      address: (get('address_line1', 'address') ?? get('addressLine1', 'address') ?? '') as string | undefined,
+      address: (get('address_line1', 'address') ??
+        get('addressLine1', 'address') ??
+        '') as string | undefined,
       address_line1: get('address_line1', 'addressLine1'),
       date_of_birth: get('date_of_birth', 'dateOfBirth'),
       serviceNeeded: (get('service_needed', 'serviceNeeded') ?? '') as string,
       service_needed: (get('service_needed', 'serviceNeeded') ?? '') as string,
       status: normalizeLifecycleStatus(get('status', 'status')) as any,
       payment_method: paymentMethod,
-      insurance_policy_holder_name: get('insurance_policy_holder_name', 'insurancePolicyHolderName'),
-      insurance_policy_holder_dob: get('insurance_policy_holder_dob', 'insurancePolicyHolderDob'),
+      insurance_policy_holder_name: get(
+        'insurance_policy_holder_name',
+        'insurancePolicyHolderName'
+      ),
+      insurance_policy_holder_dob: get(
+        'insurance_policy_holder_dob',
+        'insurancePolicyHolderDob'
+      ),
       insurance_policy_holder_relationship: get(
         'insurance_policy_holder_relationship',
         'insurancePolicyHolderRelationship'
       ),
       insurance_plan_type: get('insurance_plan_type', 'insurancePlanType'),
-      insurance_provider: (get('insurance_provider', 'insuranceProvider') ?? get('insurance', 'insurance')) as string | undefined,
-      insurance_member_id: (get('insurance_member_id', 'insuranceMemberId') ?? '') as string | undefined,
-      policy_number: (get('policy_number', 'policyNumber') ?? '') as string | undefined,
-      insurance_phone_number: get('insurance_phone_number', 'insurancePhoneNumber'),
-      has_secondary_insurance:
-        (d.has_secondary_insurance ?? d.hasSecondaryInsurance) as boolean | undefined,
+      insurance_provider: (get('insurance_provider', 'insuranceProvider') ??
+        get('insurance', 'insurance')) as string | undefined,
+      insurance_member_id: (get('insurance_member_id', 'insuranceMemberId') ??
+        '') as string | undefined,
+      policy_number: (get('policy_number', 'policyNumber') ?? '') as
+        | string
+        | undefined,
+      insurance_phone_number: get(
+        'insurance_phone_number',
+        'insurancePhoneNumber'
+      ),
+      has_secondary_insurance: (d.has_secondary_insurance ??
+        d.hasSecondaryInsurance) as boolean | undefined,
       secondary_insurance_provider: get(
         'secondary_insurance_provider',
         'secondaryInsuranceProvider'
@@ -595,19 +773,29 @@ export function LeadProfileModal({
         'secondary_insurance_member_id',
         'secondaryInsuranceMemberId'
       ),
-      secondary_policy_number: get('secondary_policy_number', 'secondaryPolicyNumber'),
+      secondary_policy_number: get(
+        'secondary_policy_number',
+        'secondaryPolicyNumber'
+      ),
     };
     delete (initializedData as Record<string, unknown>).self_pay_card_info;
     delete (initializedData as Record<string, unknown>).selfPayCardInfo;
     const rawReferral = stripRedacted(get('referral_source', 'referralSource'));
     if (rawReferral !== undefined) {
-      initializedData.referral_source = normalizeReferralSourceStoredValue(rawReferral);
+      initializedData.referral_source =
+        normalizeReferralSourceStoredValue(rawReferral);
     }
     const rawHomeType = get('home_type', 'homeType');
-    if (rawHomeType !== undefined && rawHomeType !== null && rawHomeType !== '') {
+    if (
+      rawHomeType !== undefined &&
+      rawHomeType !== null &&
+      rawHomeType !== ''
+    ) {
       initializedData.home_type = normalizeHomeTypeFromApi(rawHomeType);
     }
-    const rawHomeTypeOther = stripRedacted(get('home_type_other', 'homeTypeOther'));
+    const rawHomeTypeOther = stripRedacted(
+      get('home_type_other', 'homeTypeOther')
+    );
     if (rawHomeTypeOther !== undefined) {
       initializedData.home_type_other = rawHomeTypeOther;
     }
@@ -651,13 +839,15 @@ export function LeadProfileModal({
         description: newNote,
         metadata: {
           category: noteCategory.toLowerCase(),
-          ...(currentUserDisplayName ? { createdByName: currentUserDisplayName } : {}),
+          ...(currentUserDisplayName
+            ? { createdByName: currentUserDisplayName }
+            : {}),
           ...(user?.role ? { createdByRole: user.role } : {}),
-        }
+        },
       });
 
       // Add new note to the top of the list
-      setNotes(prev => [createdNote, ...prev]);
+      setNotes((prev) => [createdNote, ...prev]);
       setNewNote('');
       setNoteCategory('General');
       toast.success('Note added successfully!');
@@ -683,18 +873,28 @@ export function LeadProfileModal({
       const changedFields: string[] = [];
 
       // Check which fields have changed by comparing with original client data
-      Object.keys(editedData).forEach(key => {
+      Object.keys(editedData).forEach((key) => {
         const originalValue = client[key as keyof Client];
         const newValue = editedData[key as keyof Client];
 
         // Skip fields that are in editedData but not meaningful for updates
-        if (key === 'id' || key === 'uuid' || key === 'text' || key === 'role' || key === 'requestedAt' || key === 'created_at' || key === 'updatedAt') {
+        if (
+          key === 'id' ||
+          key === 'uuid' ||
+          key === 'text' ||
+          key === 'role' ||
+          key === 'requestedAt' ||
+          key === 'created_at' ||
+          key === 'updatedAt'
+        ) {
           return;
         }
 
         // Handle array comparisons
         if (Array.isArray(newValue)) {
-          const originalArray = Array.isArray(originalValue) ? originalValue : [];
+          const originalArray = Array.isArray(originalValue)
+            ? originalValue
+            : [];
           const originalSorted = originalArray.sort().join(',');
           const newSorted = [...newValue].sort().join(',');
           if (originalSorted !== newSorted) {
@@ -706,8 +906,12 @@ export function LeadProfileModal({
           // 1. Both have values and they're different, OR
           // 2. Original had a value and new is empty (clearing a field), OR
           // 3. Original was empty/undefined and new has a value
-          const originalHasValue = originalValue !== undefined && originalValue !== null && originalValue !== '';
-          const newHasValue = newValue !== undefined && newValue !== null && newValue !== '';
+          const originalHasValue =
+            originalValue !== undefined &&
+            originalValue !== null &&
+            originalValue !== '';
+          const newHasValue =
+            newValue !== undefined && newValue !== null && newValue !== '';
 
           // Special handling for date fields - don't send empty strings or null
           if (key === 'due_date' && !newHasValue) {
@@ -808,16 +1012,28 @@ export function LeadProfileModal({
 
       // Handle status update separately using the dedicated status endpoint
       if (updateData.status !== undefined) {
-        const statusResult = await updateClientStatus(client.id, updateData.status, {
-          id: client.id,
-          firstName: String(
-            editedData.firstname || editedData.firstName || client.firstname || client.firstName || ''
-          ),
-          lastName: String(
-            editedData.lastname || editedData.lastName || client.lastname || client.lastName || ''
-          ),
-          email: String(editedData.email || client.email || ''),
-        });
+        const statusResult = await updateClientStatus(
+          client.id,
+          updateData.status,
+          {
+            id: client.id,
+            firstName: String(
+              editedData.firstname ||
+                editedData.firstName ||
+                client.firstname ||
+                client.firstName ||
+                ''
+            ),
+            lastName: String(
+              editedData.lastname ||
+                editedData.lastName ||
+                client.lastname ||
+                client.lastName ||
+                ''
+            ),
+            email: String(editedData.email || client.email || ''),
+          }
+        );
         if (!statusResult.success) {
           toast.error(statusResult.error || 'Failed to update client status');
           setIsSaving(false);
@@ -856,7 +1072,10 @@ export function LeadProfileModal({
       });
 
       console.log('PHI fields to update:', Object.keys(phiData));
-      console.log('Operational fields to update:', Object.keys(operationalData));
+      console.log(
+        'Operational fields to update:',
+        Object.keys(operationalData)
+      );
 
       const billingFieldKeys = new Set([
         'payment_method',
@@ -927,7 +1146,9 @@ export function LeadProfileModal({
       if (Object.keys(billingData).length > 0) {
         const normalizedBillingData = {
           ...billingData,
-          payment_method: normalizeBillingPaymentMethod(billingData.payment_method),
+          payment_method: normalizeBillingPaymentMethod(
+            billingData.payment_method
+          ),
         };
         const billingResponse = await fetchWithAuth(
           buildUrl(`/api/clients/${encodeURIComponent(client.id)}/billing`),
@@ -942,16 +1163,23 @@ export function LeadProfileModal({
 
         if (!billingResponse.ok) {
           if (isEndpointUnavailableStatus(billingResponse.status)) {
-            const fallbackResult = await updateClientPhi(client.id, normalizedBillingData);
+            const fallbackResult = await updateClientPhi(
+              client.id,
+              normalizedBillingData
+            );
             if (!fallbackResult.success) {
               billingSuccess = false;
-              errors.push(fallbackResult.error || 'Failed to update billing fields');
+              errors.push(
+                fallbackResult.error || 'Failed to update billing fields'
+              );
             } else {
               setEditedData((prev) => ({
                 ...prev,
                 ...normalizedBillingData,
                 payment_method: normalizeBillingPaymentMethod(
-                  normalizedBillingData.payment_method ?? prev.payment_method ?? ''
+                  normalizedBillingData.payment_method ??
+                    prev.payment_method ??
+                    ''
                 ),
               }));
             }
@@ -959,7 +1187,8 @@ export function LeadProfileModal({
             billingSuccess = false;
             const billingError = await billingResponse.text().catch(() => '');
             errors.push(
-              billingError || `Failed to update billing fields (${billingResponse.status})`
+              billingError ||
+                `Failed to update billing fields (${billingResponse.status})`
             );
           }
         } else {
@@ -1047,7 +1276,8 @@ export function LeadProfileModal({
     const missing: string[] = [];
     if (induction === undefined) missing.push('Induction (Yes/No)');
     if (!deliveryType) missing.push('Delivery type');
-    if (medicationsUsed.length === 0) missing.push('Medications used (select at least one)');
+    if (medicationsUsed.length === 0)
+      missing.push('Medications used (select at least one)');
     if (missing.length > 0) {
       toast.error(`Complete required fields: ${missing.join(', ')}`);
       return;
@@ -1093,10 +1323,7 @@ export function LeadProfileModal({
           },
         });
       } catch (noteErr) {
-        console.error(
-          'Error creating birth outcomes history note:',
-          noteErr
-        );
+        console.error('Error creating birth outcomes history note:', noteErr);
         toast.error(
           'Birth outcomes saved, but failed to create history record'
         );
@@ -1130,8 +1357,12 @@ export function LeadProfileModal({
     () =>
       notes.filter((note) => {
         const category = note.metadata?.category;
-        const field = (note.metadata as Record<string, unknown> | undefined)?.field;
-        return isBirthOutcomesCategory(category) || String(field ?? '') === 'birth_outcomes';
+        const field = (note.metadata as Record<string, unknown> | undefined)
+          ?.field;
+        return (
+          isBirthOutcomesCategory(category) ||
+          String(field ?? '') === 'birth_outcomes'
+        );
       }),
     [notes]
   );
@@ -1141,68 +1372,82 @@ export function LeadProfileModal({
     .sort(compareClientDocumentsByUploadedAtDesc);
   const frontInsuranceCard =
     insuranceCardDocuments.find(
-      (document) => getInsuranceCardSide(document.documentType, document.fileName) === 'front'
+      (document) =>
+        getInsuranceCardSide(document.documentType, document.fileName) ===
+        'front'
     ) ??
-    insuranceCardDocuments.find((document) => document.documentType === 'insurance_card') ??
+    insuranceCardDocuments.find(
+      (document) => document.documentType === 'insurance_card'
+    ) ??
     null;
   const backInsuranceCard =
     insuranceCardDocuments.find(
-      (document) => getInsuranceCardSide(document.documentType, document.fileName) === 'back'
+      (document) =>
+        getInsuranceCardSide(document.documentType, document.fileName) ===
+        'back'
     ) ?? null;
 
   const renderInsuranceCardDocument = (documentItem: ClientDocument) => {
-    const parsed = documentItem.uploadedAt ? new Date(documentItem.uploadedAt) : null;
+    const parsed = documentItem.uploadedAt
+      ? new Date(documentItem.uploadedAt)
+      : null;
     const uploadedAt =
       parsed && !Number.isNaN(parsed.getTime())
         ? format(parsed, 'MMM d, yyyy')
         : documentItem.uploadedAt || '';
     const isBusy = activeDocumentId === documentItem.id;
-    const previewUrl = documentPreviewUrls[documentItem.id] || documentItem.url || '';
+    const previewUrl =
+      documentPreviewUrls[documentItem.id] || documentItem.url || '';
     const showPreview = isImageDocument(documentItem) && previewUrl;
 
     return (
       <div
         key={documentItem.id}
-        className="flex flex-col gap-3 rounded-lg border p-3 md:flex-row md:items-start md:justify-between"
+        className='flex flex-col gap-3 rounded-lg border p-3 md:flex-row md:items-start md:justify-between'
       >
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <FileImage className="h-4 w-4 text-primary" />
-            <p className="truncate text-sm font-medium">{documentItem.fileName}</p>
-            <Badge variant="secondary">
-              {getClientDocumentLabel(documentItem.documentType, documentItem.fileName)}
+        <div className='min-w-0 flex-1'>
+          <div className='flex items-center gap-2'>
+            <FileImage className='h-4 w-4 text-primary' />
+            <p className='truncate text-sm font-medium'>
+              {documentItem.fileName}
+            </p>
+            <Badge variant='secondary'>
+              {getClientDocumentLabel(
+                documentItem.documentType,
+                documentItem.fileName
+              )}
             </Badge>
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className='mt-1 text-xs text-muted-foreground'>
             {uploadedAt ? `Uploaded ${uploadedAt}` : 'Upload date unavailable'}
           </p>
           {showPreview ? (
             <img
               src={previewUrl}
               alt={documentItem.fileName}
-              className="mt-3 max-h-56 rounded-md border object-contain"
+              className='mt-3 max-h-56 rounded-md border object-contain'
             />
           ) : null}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className='flex flex-wrap items-center gap-2'>
           <Button
-            type="button"
-            variant="outline"
-            size="sm"
+            type='button'
+            variant='outline'
+            size='sm'
             onClick={() => void handleOpenDocument(documentItem)}
             disabled={isBusy}
           >
-            <ExternalLink className="mr-1 h-4 w-4" />
+            <ExternalLink className='mr-1 h-4 w-4' />
             {activeDocumentId === documentItem.id ? 'Opening...' : 'View'}
           </Button>
           <Button
-            type="button"
-            variant="outline"
-            size="sm"
+            type='button'
+            variant='outline'
+            size='sm'
             onClick={() => void handleDownloadDocument(documentItem)}
             disabled={isBusy}
           >
-            <Download className="mr-1 h-4 w-4" />
+            <Download className='mr-1 h-4 w-4' />
             {activeDocumentId === documentItem.id ? 'Working...' : 'Download'}
           </Button>
         </div>
@@ -1215,10 +1460,16 @@ export function LeadProfileModal({
     try {
       const url =
         documentItem.url ||
-        (await getClientDocumentUrl('staff', documentItem.id, client?.id || undefined));
+        (await getClientDocumentUrl(
+          'staff',
+          documentItem.id,
+          client?.id || undefined
+        ));
       window.open(url, '_blank', 'noopener,noreferrer');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to open insurance card');
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to open insurance card'
+      );
     } finally {
       setActiveDocumentId(null);
     }
@@ -1229,7 +1480,11 @@ export function LeadProfileModal({
     try {
       const url =
         documentItem.url ||
-        (await getClientDocumentUrl('staff', documentItem.id, client?.id || undefined));
+        (await getClientDocumentUrl(
+          'staff',
+          documentItem.id,
+          client?.id || undefined
+        ));
       const response = await fetch(url, {
         credentials: 'omit',
         mode: 'cors',
@@ -1249,15 +1504,22 @@ export function LeadProfileModal({
       document.body.removeChild(link);
       URL.revokeObjectURL(objectUrl);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to download insurance card');
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'Failed to download insurance card'
+      );
     } finally {
       setActiveDocumentId(null);
     }
   };
 
   const handleCancelEdit = () => {
-    const base = { ...(detailSource ?? detailedClient ?? {}) } as Partial<Client>;
-    const raw = base.referral_source ?? (base as Record<string, unknown>).referralSource;
+    const base = {
+      ...(detailSource ?? detailedClient ?? {}),
+    } as Partial<Client>;
+    const raw =
+      base.referral_source ?? (base as Record<string, unknown>).referralSource;
     if (raw !== undefined && raw !== null && String(raw).trim() !== '') {
       base.referral_source = normalizeReferralSourceStoredValue(String(raw));
     }
@@ -1285,11 +1547,20 @@ export function LeadProfileModal({
     // Priority: editedData (current form state) > detailSource (fetched) > client (list prop)
     // This ensures inputs show what's in the editable state, not stale fetched data
     const isEmpty = (v: unknown) => v === null || v === undefined || v === '';
-    const fromEdited = (altKey ? editedData[altKey] : undefined) ?? editedData[fieldKey];
-    const fromDetail = detailSource ? ((altKey ? detailSource[altKey] : undefined) ?? detailSource[fieldKey]) : undefined;
-    const fromClient = c ? ((altKey ? c[altKey] : undefined) ?? c[fieldKey]) : undefined;
+    const fromEdited =
+      (altKey ? editedData[altKey] : undefined) ?? editedData[fieldKey];
+    const fromDetail = detailSource
+      ? ((altKey ? detailSource[altKey] : undefined) ?? detailSource[fieldKey])
+      : undefined;
+    const fromClient = c
+      ? ((altKey ? c[altKey] : undefined) ?? c[fieldKey])
+      : undefined;
     // Use isEmpty to treat empty string as "no value" and fallback to next source
-    const v = isEmpty(fromEdited) ? (isEmpty(fromDetail) ? fromClient : fromDetail) : fromEdited;
+    const v = isEmpty(fromEdited)
+      ? isEmpty(fromDetail)
+        ? fromClient
+        : fromDetail
+      : fromEdited;
     if (v === null || v === undefined) return '';
     if (fieldKey === 'payment_method') {
       return normalizeBillingPaymentMethod(v);
@@ -1310,13 +1581,17 @@ export function LeadProfileModal({
     if (!client?.id) return;
     setIsRecordingPaymentAuth(true);
     try {
-      const pm = normalizeBillingPaymentMethod(getDisplayValue('payment_method', 'paymentMethod'));
+      const pm = normalizeBillingPaymentMethod(
+        getDisplayValue('payment_method', 'paymentMethod')
+      );
       const authorizedAt = new Date().toISOString();
       const needsIns = requiresInsuranceDetails(pm);
       const hasSecondary =
         needsIns &&
-        String(getDisplayValue('has_secondary_insurance', 'hasSecondaryInsurance') || '')
-          .toLowerCase() === 'true';
+        String(
+          getDisplayValue('has_secondary_insurance', 'hasSecondaryInsurance') ||
+            ''
+        ).toLowerCase() === 'true';
 
       const normalizedBillingData: Record<string, unknown> = {
         payment_method: pm,
@@ -1327,25 +1602,50 @@ export function LeadProfileModal({
             getDisplayValue('insurance', null)
           : '',
         insurance_policy_holder_name: needsIns
-          ? getDisplayValue('insurance_policy_holder_name', 'insurancePolicyHolderName')
+          ? getDisplayValue(
+              'insurance_policy_holder_name',
+              'insurancePolicyHolderName'
+            )
           : '',
         insurance_policy_holder_dob: needsIns
-          ? getDisplayValue('insurance_policy_holder_dob', 'insurancePolicyHolderDob')
+          ? getDisplayValue(
+              'insurance_policy_holder_dob',
+              'insurancePolicyHolderDob'
+            )
           : '',
         insurance_policy_holder_relationship: needsIns
-          ? getDisplayValue('insurance_policy_holder_relationship', 'insurancePolicyHolderRelationship')
+          ? getDisplayValue(
+              'insurance_policy_holder_relationship',
+              'insurancePolicyHolderRelationship'
+            )
           : '',
-        insurance_plan_type: needsIns ? getDisplayValue('insurance_plan_type', 'insurancePlanType') : '',
-        insurance_provider: needsIns ? getDisplayValue('insurance_provider', 'insuranceProvider') : '',
-        insurance_member_id: needsIns ? getDisplayValue('insurance_member_id', 'insuranceMemberId') : '',
-        policy_number: needsIns ? getDisplayValue('policy_number', 'policyNumber') : '',
-        insurance_phone_number: needsIns ? getDisplayValue('insurance_phone_number', 'insurancePhoneNumber') : '',
+        insurance_plan_type: needsIns
+          ? getDisplayValue('insurance_plan_type', 'insurancePlanType')
+          : '',
+        insurance_provider: needsIns
+          ? getDisplayValue('insurance_provider', 'insuranceProvider')
+          : '',
+        insurance_member_id: needsIns
+          ? getDisplayValue('insurance_member_id', 'insuranceMemberId')
+          : '',
+        policy_number: needsIns
+          ? getDisplayValue('policy_number', 'policyNumber')
+          : '',
+        insurance_phone_number: needsIns
+          ? getDisplayValue('insurance_phone_number', 'insurancePhoneNumber')
+          : '',
         has_secondary_insurance: hasSecondary,
         secondary_insurance_provider: hasSecondary
-          ? getDisplayValue('secondary_insurance_provider', 'secondaryInsuranceProvider')
+          ? getDisplayValue(
+              'secondary_insurance_provider',
+              'secondaryInsuranceProvider'
+            )
           : '',
         secondary_insurance_member_id: hasSecondary
-          ? getDisplayValue('secondary_insurance_member_id', 'secondaryInsuranceMemberId')
+          ? getDisplayValue(
+              'secondary_insurance_member_id',
+              'secondaryInsuranceMemberId'
+            )
           : '',
         secondary_policy_number: hasSecondary
           ? getDisplayValue('secondary_policy_number', 'secondaryPolicyNumber')
@@ -1363,13 +1663,20 @@ export function LeadProfileModal({
 
       if (!billingResponse.ok) {
         if (isEndpointUnavailableStatus(billingResponse.status)) {
-          const fallbackResult = await updateClientPhi(client.id, normalizedBillingData);
+          const fallbackResult = await updateClientPhi(
+            client.id,
+            normalizedBillingData
+          );
           if (!fallbackResult.success) {
-            throw new Error(fallbackResult.error || 'Failed to record payment authorization');
+            throw new Error(
+              fallbackResult.error || 'Failed to record payment authorization'
+            );
           }
         } else {
           const errText = await billingResponse.text().catch(() => '');
-          throw new Error(errText || `Request failed (${billingResponse.status})`);
+          throw new Error(
+            errText || `Request failed (${billingResponse.status})`
+          );
         }
       }
 
@@ -1393,22 +1700,47 @@ export function LeadProfileModal({
       toast.success('Payment authorization recorded as on file.');
       refreshClients?.();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to record payment authorization');
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'Failed to record payment authorization'
+      );
     } finally {
       setIsRecordingPaymentAuth(false);
     }
   };
 
-  const handleGenerateInstallmentInvoice = async (installment: PaymentInstallment) => {
+  const handleGenerateInstallmentInvoice = async (
+    installment: PaymentInstallment
+  ) => {
     if (!client?.id || isGeneratingInvoice) return;
-    const amount = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(installment.amount);
-    const due = installment.due_date ? format(parseISO(installment.due_date), 'MMMM d, yyyy') : 'the scheduled date';
-    const label = installment.payment_type === 'deposit' ? 'Deposit' : `Installment ${installment.installment_number}`;
-    const warning = cardStatus?.required && cardStatus.status !== 'active' ? '\n\nThis client does not currently have an active card on file. The invoice email will include the required card-on-file warning.' : '';
-    if (!window.confirm(`Generate an invoice for ${label} in the amount of ${amount}, due ${due}?${warning}`)) return;
+    const amount = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(installment.amount);
+    const due = installment.due_date
+      ? format(parseISO(installment.due_date), 'MMMM d, yyyy')
+      : 'the scheduled date';
+    const label =
+      installment.payment_type === 'deposit'
+        ? 'Deposit'
+        : `Installment ${installment.installment_number}`;
+    const warning =
+      cardStatus?.required && cardStatus.status !== 'active'
+        ? '\n\nThis client does not currently have an active card on file. The invoice email will include the required card-on-file warning.'
+        : '';
+    if (
+      !window.confirm(
+        `Generate an invoice for ${label} in the amount of ${amount}, due ${due}?${warning}`
+      )
+    )
+      return;
     setIsGeneratingInvoice(true);
     try {
-      const result = await generateInstallmentInvoice(String(client.id), installment.id);
+      const result = await generateInstallmentInvoice(
+        String(client.id),
+        installment.id
+      );
       setGeneratedInvoiceLink(result.payment_link);
       toast.success('Installment invoice generated.');
       await loadBillingWorkflow();
@@ -1417,12 +1749,18 @@ export function LeadProfileModal({
       if (refreshed) setFetchedDetail(refreshed);
       refreshClients?.();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to generate installment invoice.');
-    } finally { setIsGeneratingInvoice(false); }
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'Failed to generate installment invoice.'
+      );
+    } finally {
+      setIsGeneratingInvoice(false);
+    }
   };
 
   const eligibilitySource = React.useMemo(
-    () => detailSource ?? ((client as Record<string, unknown> | null) ?? {}),
+    () => detailSource ?? (client as Record<string, unknown> | null) ?? {},
     [detailSource, client]
   );
   const readinessSummary = React.useMemo(
@@ -1434,26 +1772,49 @@ export function LeadProfileModal({
     label: string,
     fieldKey: string,
     icon?: React.ReactNode,
-    type: 'text' | 'email' | 'tel' | 'textarea' | 'select' | 'multiselect' | 'date' | 'number' = 'text',
+    type:
+      | 'text'
+      | 'email'
+      | 'tel'
+      | 'textarea'
+      | 'select'
+      | 'multiselect'
+      | 'date'
+      | 'number' = 'text',
     options?: string[],
     textareaRows = 3
   ) => {
     const altKey =
-      fieldKey === 'phoneNumber' ? 'phone_number'
-      : fieldKey === 'service_needed' ? 'serviceNeeded'
-      : fieldKey === 'firstname' ? 'first_name'
-      : fieldKey === 'lastname' ? 'last_name'
-      : fieldKey === 'first_name' ? 'firstname'
-      : fieldKey === 'last_name' ? 'lastname'
-      : fieldKey === 'birth_outcomes' ? 'birthOutcomes'
-      : fieldKey === 'birth_outcomes_induction' ? 'birthOutcomesInduction'
-      : fieldKey === 'birth_outcomes_delivery_type' ? 'birthOutcomesDeliveryType'
-      : fieldKey === 'payment_authorization_status' ? 'paymentAuthorizationStatus'
-      : fieldKey === 'insurance_policy_holder_name' ? 'insurancePolicyHolderName'
-      : fieldKey === 'insurance_policy_holder_dob' ? 'insurancePolicyHolderDob'
-      : fieldKey === 'insurance_policy_holder_relationship' ? 'insurancePolicyHolderRelationship'
-      : fieldKey === 'insurance_plan_type' ? 'insurancePlanType'
-      : null;
+      fieldKey === 'phoneNumber'
+        ? 'phone_number'
+        : fieldKey === 'service_needed'
+          ? 'serviceNeeded'
+          : fieldKey === 'firstname'
+            ? 'first_name'
+            : fieldKey === 'lastname'
+              ? 'last_name'
+              : fieldKey === 'first_name'
+                ? 'firstname'
+                : fieldKey === 'last_name'
+                  ? 'lastname'
+                  : fieldKey === 'birth_outcomes'
+                    ? 'birthOutcomes'
+                    : fieldKey === 'birth_outcomes_induction'
+                      ? 'birthOutcomesInduction'
+                      : fieldKey === 'birth_outcomes_delivery_type'
+                        ? 'birthOutcomesDeliveryType'
+                        : fieldKey === 'payment_authorization_status'
+                          ? 'paymentAuthorizationStatus'
+                          : fieldKey === 'insurance_policy_holder_name'
+                            ? 'insurancePolicyHolderName'
+                            : fieldKey === 'insurance_policy_holder_dob'
+                              ? 'insurancePolicyHolderDob'
+                              : fieldKey ===
+                                  'insurance_policy_holder_relationship'
+                                ? 'insurancePolicyHolderRelationship'
+                                : fieldKey === 'insurance_plan_type'
+                                  ? 'insurancePlanType'
+                                  : null;
     let value: string | Date =
       altKey !== null || fieldKey === 'referral_source'
         ? getDisplayValue(fieldKey, altKey)
@@ -1474,10 +1835,13 @@ export function LeadProfileModal({
     }
 
     return (
-      <div className="flex items-start gap-2 py-2">
-        {icon && <div className="mt-2 text-muted-foreground">{icon}</div>}
-        <div className="flex-1 min-w-0">
-          <Label htmlFor={fieldKey} className="text-sm font-medium text-muted-foreground">
+      <div className='flex items-start gap-2 py-2'>
+        {icon && <div className='mt-2 text-muted-foreground'>{icon}</div>}
+        <div className='flex-1 min-w-0'>
+          <Label
+            htmlFor={fieldKey}
+            className='text-sm font-medium text-muted-foreground'
+          >
             {label}
           </Label>
           {type === 'textarea' ? (
@@ -1486,30 +1850,34 @@ export function LeadProfileModal({
                 id={fieldKey}
                 value={String(value)}
                 onChange={(e) => {
-                  const updates: Record<string, string> = { [fieldKey]: e.target.value };
+                  const updates: Record<string, string> = {
+                    [fieldKey]: e.target.value,
+                  };
                   if (altKey) updates[altKey] = e.target.value;
-                  setEditedData(prev => ({ ...prev, ...updates }));
+                  setEditedData((prev) => ({ ...prev, ...updates }));
                 }}
-                className="mt-1"
+                className='mt-1'
                 rows={textareaRows}
               />
             ) : (
-              <div className="mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm min-h-[72px] whitespace-pre-wrap">
+              <div className='mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm min-h-[72px] whitespace-pre-wrap'>
                 {String(value || 'Not provided')}
               </div>
             )
           ) : type === 'select' && options ? (
             isEditing ? (
               <select
-                className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className='mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
                 value={String(value || '')}
                 onChange={(e) => {
-                  const updates: Record<string, string> = { [fieldKey]: e.target.value };
+                  const updates: Record<string, string> = {
+                    [fieldKey]: e.target.value,
+                  };
                   if (altKey) updates[altKey] = e.target.value;
-                  setEditedData(prev => ({ ...prev, ...updates }));
+                  setEditedData((prev) => ({ ...prev, ...updates }));
                 }}
               >
-                <option value="">Select...</option>
+                <option value=''>Select...</option>
                 {options.map((option) => (
                   <option key={option} value={option}>
                     {option}
@@ -1517,13 +1885,13 @@ export function LeadProfileModal({
                 ))}
               </select>
             ) : (
-              <div className="mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm">
+              <div className='mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm'>
                 {String(value || 'Not provided')}
               </div>
             )
           ) : type === 'multiselect' && options ? (
-            <div className="mt-1">
-              <div className="flex flex-wrap gap-2">
+            <div className='mt-1'>
+              <div className='flex flex-wrap gap-2'>
                 {options.map((option) => {
                   const multiValue =
                     fieldKey === 'home_type'
@@ -1535,9 +1903,9 @@ export function LeadProfileModal({
                   return (
                     <Button
                       key={option}
-                      type="button"
-                      variant={isSelected ? "default" : "outline"}
-                      size="sm"
+                      type='button'
+                      variant={isSelected ? 'default' : 'outline'}
+                      size='sm'
                       onClick={() => {
                         if (!isEditing) return;
                         const currentArray =
@@ -1564,7 +1932,10 @@ export function LeadProfileModal({
                           }));
                           return;
                         }
-                        setEditedData((prev) => ({ ...prev, [fieldKey]: newArray }));
+                        setEditedData((prev) => ({
+                          ...prev,
+                          [fieldKey]: newArray,
+                        }));
                       }}
                       disabled={!isEditing}
                       className={`text-xs ${!isEditing ? 'cursor-default' : ''}`}
@@ -1578,35 +1949,43 @@ export function LeadProfileModal({
                 (fieldKey === 'home_type'
                   ? normalizeHomeTypeFromApi(value).length === 0
                   : !value || (Array.isArray(value) && value.length === 0)) && (
-                <div className="text-sm text-muted-foreground mt-2">No options selected</div>
-              )}
+                  <div className='text-sm text-muted-foreground mt-2'>
+                    No options selected
+                  </div>
+                )}
             </div>
           ) : type === 'date' ? (
             isEditing ? (
-              <div className="flex gap-2 mt-1">
+              <div className='flex gap-2 mt-1'>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
-                      variant="outline"
+                      variant='outline'
                       className={cn(
-                        "flex-1 justify-start text-left font-normal",
-                        !value && "text-muted-foreground"
+                        'flex-1 justify-start text-left font-normal',
+                        !value && 'text-muted-foreground'
                       )}
                     >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {value ? format(new Date(value), "PPP") : "Pick a date"}
+                      <CalendarIcon className='mr-2 h-4 w-4' />
+                      {value ? format(new Date(value), 'PPP') : 'Pick a date'}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
+                  <PopoverContent className='w-auto p-0' align='start'>
                     <Calendar
-                      mode="single"
+                      mode='single'
                       selected={value ? new Date(value) : undefined}
                       onSelect={(date) => {
                         if (date) {
-                          setEditedData(prev => ({ ...prev, [fieldKey]: date.toISOString().split('T')[0] }));
+                          setEditedData((prev) => ({
+                            ...prev,
+                            [fieldKey]: date.toISOString().split('T')[0],
+                          }));
                         } else {
                           // Clear the date when user deselects
-                          setEditedData(prev => ({ ...prev, [fieldKey]: null }));
+                          setEditedData((prev) => ({
+                            ...prev,
+                            [fieldKey]: null,
+                          }));
                         }
                       }}
                       initialFocus
@@ -1615,57 +1994,59 @@ export function LeadProfileModal({
                 </Popover>
                 {value && (
                   <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setEditedData(prev => ({ ...prev, [fieldKey]: null }))}
-                    className="px-2"
+                    variant='outline'
+                    size='sm'
+                    onClick={() =>
+                      setEditedData((prev) => ({ ...prev, [fieldKey]: null }))
+                    }
+                    className='px-2'
                   >
                     Clear
                   </Button>
                 )}
               </div>
             ) : (
-              <div className="mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm">
-                {value ? format(new Date(value), "PPP") : 'Not provided'}
+              <div className='mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm'>
+                {value ? format(new Date(value), 'PPP') : 'Not provided'}
               </div>
             )
+          ) : (fieldKey === 'phoneNumber' && type === 'tel') || isEditing ? (
+            (() => {
+              // Use getDisplayValue which has correct priority: editedData > detailSource > client
+              let inputValue = getDisplayValue(fieldKey, altKey);
+              if (inputValue === '[redacted]') inputValue = '';
+              if (fieldKey === 'phoneNumber') {
+                console.log('📱 [Input] Phone input render:', {
+                  fieldKey,
+                  altKey,
+                  inputValue,
+                  'editedData.phoneNumber': editedData.phoneNumber,
+                  'editedData.phone_number': (editedData as any).phone_number,
+                  'detailSource?.phoneNumber': detailSource?.phoneNumber,
+                });
+              }
+              return (
+                <Input
+                  id={fieldKey}
+                  type={type}
+                  value={inputValue}
+                  onChange={(e) => {
+                    const updates: Record<string, string> = {
+                      [fieldKey]: e.target.value,
+                    };
+                    // Keep both key variants in sync so inputValue reads the latest value
+                    if (altKey) updates[altKey] = e.target.value;
+                    setEditedData((prev) => ({ ...prev, ...updates }));
+                  }}
+                  className='mt-1'
+                  placeholder='Not provided'
+                />
+              );
+            })()
           ) : (
-            (fieldKey === 'phoneNumber' && type === 'tel') || isEditing ? (
-              (() => {
-                // Use getDisplayValue which has correct priority: editedData > detailSource > client
-                let inputValue = getDisplayValue(fieldKey, altKey);
-                if (inputValue === '[redacted]') inputValue = '';
-                if (fieldKey === 'phoneNumber') {
-                  console.log('📱 [Input] Phone input render:', {
-                    fieldKey,
-                    altKey,
-                    inputValue,
-                    'editedData.phoneNumber': editedData.phoneNumber,
-                    'editedData.phone_number': (editedData as any).phone_number,
-                    'detailSource?.phoneNumber': detailSource?.phoneNumber,
-                  });
-                }
-                return (
-              <Input
-                id={fieldKey}
-                type={type}
-                value={inputValue}
-                onChange={(e) => {
-                  const updates: Record<string, string> = { [fieldKey]: e.target.value };
-                  // Keep both key variants in sync so inputValue reads the latest value
-                  if (altKey) updates[altKey] = e.target.value;
-                  setEditedData(prev => ({ ...prev, ...updates }));
-                }}
-                className="mt-1"
-                placeholder="Not provided"
-              />
-                );
-              })()
-            ) : (
-              <div className="mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm">
-                {String(value || 'Not provided')}
-              </div>
-            )
+            <div className='mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm'>
+              {String(value || 'Not provided')}
+            </div>
           )}
         </div>
       </div>
@@ -1684,19 +2065,26 @@ export function LeadProfileModal({
       <Collapsible
         open={isOpen}
         onOpenChange={(nextOpen) => setSectionOpen(sectionId, nextOpen)}
-        className="border rounded-lg mb-3"
+        className='border rounded-lg mb-3'
       >
         <CollapsibleTrigger asChild>
-          <Button variant="ghost" className="w-full justify-between p-3 h-auto hover:bg-muted/50">
-            <div className="flex items-center gap-2">
+          <Button
+            variant='ghost'
+            className='w-full justify-between p-3 h-auto hover:bg-muted/50'
+          >
+            <div className='flex items-center gap-2'>
               {icon}
-              <span className="font-semibold">{title}</span>
+              <span className='font-semibold'>{title}</span>
             </div>
-            {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            {isOpen ? (
+              <ChevronDown className='h-4 w-4' />
+            ) : (
+              <ChevronRight className='h-4 w-4' />
+            )}
           </Button>
         </CollapsibleTrigger>
-        <CollapsibleContent className="px-3 pb-3">
-          <div className="space-y-2">{children}</div>
+        <CollapsibleContent className='px-3 pb-3'>
+          <div className='space-y-2'>{children}</div>
         </CollapsibleContent>
       </Collapsible>
     );
@@ -1737,34 +2125,53 @@ export function LeadProfileModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="left-0 top-0 h-[100dvh] max-h-[100dvh] w-full max-w-full translate-x-0 translate-y-0 overflow-y-auto rounded-none sm:left-[50%] sm:top-[50%] sm:h-auto sm:max-h-[90vh] sm:max-w-4xl sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg"
+        className='left-0 top-0 h-[100dvh] max-h-[100dvh] w-full max-w-full translate-x-0 translate-y-0 overflow-y-auto rounded-none sm:left-[50%] sm:top-[50%] sm:h-auto sm:max-h-[90vh] sm:max-w-4xl sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg'
         data-testid={`lead-profile-dialog-${String(client.id)}`}
       >
-        <DialogHeader className="pb-4">
-          <div className="flex flex-col gap-3 pr-8 sm:flex-row sm:items-center sm:justify-between">
-            <DialogTitle className="flex min-w-0 items-center gap-2">
-              <User className="h-5 w-5" />
+        <DialogHeader className='pb-4'>
+          <div className='flex flex-col gap-3 pr-8 sm:flex-row sm:items-center sm:justify-between'>
+            <DialogTitle className='flex min-w-0 items-center gap-2'>
+              <User className='h-5 w-5' />
               {(() => {
                 const c = detailSource ?? (client as Record<string, unknown>);
-                const first = (c.firstname ?? c.first_name ?? c.firstName) as string;
-                const last = (c.lastname ?? c.last_name ?? c.lastName) as string;
-                const title = first && last ? `${first} ${last}` : (c.email || `Client ${c.id}` || 'Client');
+                const first = (c.firstname ??
+                  c.first_name ??
+                  c.firstName) as string;
+                const last = (c.lastname ??
+                  c.last_name ??
+                  c.lastName) as string;
+                const title =
+                  first && last
+                    ? `${first} ${last}`
+                    : c.email || `Client ${c.id}` || 'Client';
                 return title as React.ReactNode;
               })()}
             </DialogTitle>
-            <div className="flex items-center gap-2">
+            <div className='flex items-center gap-2'>
               {isEditing ? (
                 <>
-                  <Button onClick={handleCancelEdit} variant="outline" size="sm">
+                  <Button
+                    onClick={handleCancelEdit}
+                    variant='outline'
+                    size='sm'
+                  >
                     Cancel
                   </Button>
-                  <Button onClick={handleSaveChanges} size="sm" disabled={isSaving}>
-                    <Save className="h-4 w-4 mr-1" />
+                  <Button
+                    onClick={handleSaveChanges}
+                    size='sm'
+                    disabled={isSaving}
+                  >
+                    <Save className='h-4 w-4 mr-1' />
                     {isSaving ? 'Saving...' : 'Save Changes'}
                   </Button>
                 </>
               ) : (
-                <Button onClick={() => setIsEditing(true)} variant="outline" size="sm">
+                <Button
+                  onClick={() => setIsEditing(true)}
+                  variant='outline'
+                  size='sm'
+                >
                   Edit
                 </Button>
               )}
@@ -1773,32 +2180,63 @@ export function LeadProfileModal({
         </DialogHeader>
 
         {detailedClient != null ? (
-          <div className="space-y-3">
+          <div className='space-y-3'>
             {/* Contact & Basic Info */}
             {renderCollapsibleSection(
               'contact',
               'Contact Information',
               <>
-                {(getDisplayValue('clientNumber', 'client_number') || getDisplayValue('client_number', 'clientNumber')) && (
-                  <div className="flex items-start gap-2 py-2">
-                    <div className="flex-1 min-w-0">
-                      <Label className="text-sm font-medium text-muted-foreground">Client #</Label>
-                      <div className="mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm font-mono">
-                        {getDisplayValue('clientNumber', 'client_number') || getDisplayValue('client_number', 'clientNumber')}
+                {(getDisplayValue('clientNumber', 'client_number') ||
+                  getDisplayValue('client_number', 'clientNumber')) && (
+                  <div className='flex items-start gap-2 py-2'>
+                    <div className='flex-1 min-w-0'>
+                      <Label className='text-sm font-medium text-muted-foreground'>
+                        Client #
+                      </Label>
+                      <div className='mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm font-mono'>
+                        {getDisplayValue('clientNumber', 'client_number') ||
+                          getDisplayValue('client_number', 'clientNumber')}
                       </div>
                     </div>
                   </div>
                 )}
                 {renderEditableField('First Name', 'firstname')}
                 {renderEditableField('Last Name', 'lastname')}
-                {renderEditableField('Email', 'email', <Mail className="h-4 w-4" />, 'email')}
-                {renderEditableField('Phone Number', 'phoneNumber', <Phone className="h-4 w-4" />, 'tel')}
-                {renderEditableField('Preferred Contact Method', 'preferred_contact_method', undefined, 'select', PREFERRED_CONTACT_OPTIONS)}
+                {renderEditableField(
+                  'Email',
+                  'email',
+                  <Mail className='h-4 w-4' />,
+                  'email'
+                )}
+                {renderEditableField(
+                  'Phone Number',
+                  'phoneNumber',
+                  <Phone className='h-4 w-4' />,
+                  'tel'
+                )}
+                {renderEditableField(
+                  'Preferred Contact Method',
+                  'preferred_contact_method',
+                  undefined,
+                  'select',
+                  PREFERRED_CONTACT_OPTIONS
+                )}
                 {renderEditableField('Preferred Name', 'preferred_name')}
                 {renderEditableField('Age', 'age', undefined, 'number')}
-                {renderEditableField('Pronouns', 'pronouns', undefined, 'select', PRONOUNS_OPTIONS)}
+                {renderEditableField(
+                  'Pronouns',
+                  'pronouns',
+                  undefined,
+                  'select',
+                  PRONOUNS_OPTIONS
+                )}
                 {renderEditableField('Children Expected', 'children_expected')}
-                {renderEditableField('Address', 'address', <MapPin className="h-4 w-4" />, 'textarea')}
+                {renderEditableField(
+                  'Address',
+                  'address',
+                  <MapPin className='h-4 w-4' />,
+                  'textarea'
+                )}
                 {renderEditableField('City', 'city')}
                 {renderEditableField('State', 'state')}
                 {renderEditableField('ZIP Code', 'zip_code')}
@@ -1811,7 +2249,8 @@ export function LeadProfileModal({
                 )}
                 {normalizeHomeTypeFromApi(editedData.home_type).includes(
                   HOME_TYPE_OTHER_VALUE
-                ) && renderEditableField('Home Type (Other)', 'home_type_other')}
+                ) &&
+                  renderEditableField('Home Type (Other)', 'home_type_other')}
                 {renderEditableField('Home Access', 'home_access')}
                 {renderEditableField('Pets/Animals in Home', 'pets')}
                 {renderEditableField(
@@ -1829,7 +2268,7 @@ export function LeadProfileModal({
                   [...HOME_PEOPLE_COUNT_OPTIONS]
                 )}
               </>,
-              <User className="h-5 w-5" />
+              <User className='h-5 w-5' />
             )}
 
             {/* Services Requested */}
@@ -1837,25 +2276,59 @@ export function LeadProfileModal({
               'services',
               'Services Requested',
               <>
-                {renderEditableField('Services Interested', 'services_interested', undefined, 'multiselect', SERVICES_OPTIONS)}
-                {renderEditableField('Service Support Details', 'service_support_details', undefined, 'textarea')}
-                {renderEditableField('Service Needed', 'service_needed', undefined, 'textarea')}
-                {renderEditableField('Service Specifics', 'service_specifics', undefined, 'textarea')}
-                {renderEditableField('Annual Income', 'annual_income', undefined, 'select', ANNUAL_INCOME_OPTIONS)}
+                {renderEditableField(
+                  'Services Interested',
+                  'services_interested',
+                  undefined,
+                  'multiselect',
+                  SERVICES_OPTIONS
+                )}
+                {renderEditableField(
+                  'Service Support Details',
+                  'service_support_details',
+                  undefined,
+                  'textarea'
+                )}
+                {renderEditableField(
+                  'Service Needed',
+                  'service_needed',
+                  undefined,
+                  'textarea'
+                )}
+                {renderEditableField(
+                  'Service Specifics',
+                  'service_specifics',
+                  undefined,
+                  'textarea'
+                )}
+                {renderEditableField(
+                  'Annual Income',
+                  'annual_income',
+                  undefined,
+                  'select',
+                  ANNUAL_INCOME_OPTIONS
+                )}
               </>,
-              <FileText className="h-5 w-5" />
+              <FileText className='h-5 w-5' />
             )}
 
             {/* Billing */}
             {renderCollapsibleSection(
               'billing',
               (() => {
-                const pm = String(getDisplayValue('payment_method', 'paymentMethod') || '');
+                const pm = String(
+                  getDisplayValue('payment_method', 'paymentMethod') || ''
+                );
                 const authStatus = String(
-                  getDisplayValue('payment_authorization_status', 'paymentAuthorizationStatus') || ''
+                  getDisplayValue(
+                    'payment_authorization_status',
+                    'paymentAuthorizationStatus'
+                  ) || ''
                 ) as PaymentAuthorizationStatus | '';
                 const statusLabel = authStatus
-                  ? (PAYMENT_AUTHORIZATION_STATUS_LABELS[authStatus as PaymentAuthorizationStatus] ?? authStatus)
+                  ? (PAYMENT_AUTHORIZATION_STATUS_LABELS[
+                      authStatus as PaymentAuthorizationStatus
+                    ] ?? authStatus)
                   : null;
                 const statusColors: Record<string, string> = {
                   not_required: 'bg-green-100 text-green-800',
@@ -1864,15 +2337,17 @@ export function LeadProfileModal({
                   failed: 'bg-red-100 text-red-800',
                 };
                 return (
-                  <div className="flex items-center gap-2">
+                  <div className='flex items-center gap-2'>
                     <span>Billing Information</span>
                     {pm && (
-                      <Badge variant="outline" className="text-xs font-normal">
+                      <Badge variant='outline' className='text-xs font-normal'>
                         {pm}
                       </Badge>
                     )}
                     {statusLabel && (
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[authStatus] ?? 'bg-muted text-muted-foreground'}`}>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[authStatus] ?? 'bg-muted text-muted-foreground'}`}
+                      >
                         {statusLabel}
                       </span>
                     )}
@@ -1880,35 +2355,63 @@ export function LeadProfileModal({
                 );
               })(),
               <>
-                <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
-                  <p className="text-sm font-medium text-foreground">Portal onboarding readiness</p>
-                  <div className="grid gap-2 sm:grid-cols-2 text-sm">
-                    <div className="flex justify-between gap-2">
-                      <span className="text-muted-foreground">Contract signed</span>
-                      <span>{formatYesNo(readinessSummary.contractSigned)}</span>
+                <div className='rounded-lg border bg-muted/30 p-4 space-y-3'>
+                  <p className='text-sm font-medium text-foreground'>
+                    Portal onboarding readiness
+                  </p>
+                  <div className='grid gap-2 sm:grid-cols-2 text-sm'>
+                    <div className='flex justify-between gap-2'>
+                      <span className='text-muted-foreground'>
+                        Contract signed
+                      </span>
+                      <span>
+                        {formatYesNo(readinessSummary.contractSigned)}
+                      </span>
                     </div>
-                    <div className="flex justify-between gap-2">
-                      <span className="text-muted-foreground">Deposit paid</span>
+                    <div className='flex justify-between gap-2'>
+                      <span className='text-muted-foreground'>
+                        Deposit paid
+                      </span>
                       <span>{formatYesNo(readinessSummary.depositPaid)}</span>
                     </div>
-                    <div className="flex justify-between gap-2">
-                      <span className="text-muted-foreground">Billing path</span>
-                      <span>{getBillingPathLabel(readinessSummary.billingPath)}</span>
+                    <div className='flex justify-between gap-2'>
+                      <span className='text-muted-foreground'>
+                        Billing path
+                      </span>
+                      <span>
+                        {getBillingPathLabel(readinessSummary.billingPath)}
+                      </span>
                     </div>
-                    <div className="flex justify-between gap-2">
-                      <span className="text-muted-foreground">Payment authorization required</span>
-                      <span>{formatYesNo(readinessSummary.paymentAuthorizationRequired)}</span>
+                    <div className='flex justify-between gap-2'>
+                      <span className='text-muted-foreground'>
+                        Payment authorization required
+                      </span>
+                      <span>
+                        {formatYesNo(
+                          readinessSummary.paymentAuthorizationRequired
+                        )}
+                      </span>
                     </div>
-                    <div className="flex justify-between gap-2">
-                      <span className="text-muted-foreground">Payment authorization satisfied</span>
-                      <span>{formatYesNo(readinessSummary.paymentAuthorizationSatisfied)}</span>
+                    <div className='flex justify-between gap-2'>
+                      <span className='text-muted-foreground'>
+                        Payment authorization satisfied
+                      </span>
+                      <span>
+                        {formatYesNo(
+                          readinessSummary.paymentAuthorizationSatisfied
+                        )}
+                      </span>
                     </div>
-                    <div className="flex justify-between gap-2">
-                      <span className="text-muted-foreground">Card on file</span>
+                    <div className='flex justify-between gap-2'>
+                      <span className='text-muted-foreground'>
+                        Card on file
+                      </span>
                       <span>{formatYesNo(readinessSummary.cardOnFile)}</span>
                     </div>
-                    <div className="flex justify-between gap-2">
-                      <span className="text-muted-foreground">Portal eligibility</span>
+                    <div className='flex justify-between gap-2'>
+                      <span className='text-muted-foreground'>
+                        Portal eligibility
+                      </span>
                       <span>
                         {readinessSummary.portalEligibility === 'eligible'
                           ? 'Eligible'
@@ -1918,94 +2421,258 @@ export function LeadProfileModal({
                       </span>
                     </div>
                     {readinessSummary.primaryBlocker ? (
-                      <div className="flex justify-between gap-2 sm:col-span-2">
-                        <span className="text-muted-foreground">Primary blocker</span>
-                        <span>{getPortalBlockerLabel(readinessSummary.primaryBlocker)}</span>
+                      <div className='flex justify-between gap-2 sm:col-span-2'>
+                        <span className='text-muted-foreground'>
+                          Primary blocker
+                        </span>
+                        <span>
+                          {getPortalBlockerLabel(
+                            readinessSummary.primaryBlocker
+                          )}
+                        </span>
                       </div>
                     ) : null}
                   </div>
                   {readinessSummary.primaryBlocker ? (
-                    <p className="text-xs text-muted-foreground">
-                      {getPortalBlockerDescription(readinessSummary.primaryBlocker)}
+                    <p className='text-xs text-muted-foreground'>
+                      {getPortalBlockerDescription(
+                        readinessSummary.primaryBlocker
+                      )}
                     </p>
                   ) : null}
                 </div>
-                <div className="rounded-lg border p-4 space-y-3" aria-label="Card on file status">
-                  <p className="text-sm font-medium">Card on file: {cardStatus ? cardStatus.status.replace('_', ' ').replace(/^./, c => c.toUpperCase()) : '—'}</p>
+                <div
+                  className='rounded-lg border p-4 space-y-3'
+                  aria-label='Card on file status'
+                >
+                  <p className='text-sm font-medium'>
+                    Card on file:{' '}
+                    {cardStatus
+                      ? cardStatus.status
+                          .replace('_', ' ')
+                          .replace(/^./, (c) => c.toUpperCase())
+                      : '—'}
+                  </p>
                   {cardStatus?.status === 'active' && cardStatus.last4 ? (
-                    <div className="text-sm text-muted-foreground">
-                      <p>{cardStatus.card_brand || 'Card'} ending in {cardStatus.last4}</p>
-                      {cardStatus.exp_month && cardStatus.exp_year ? <p>Expires {String(cardStatus.exp_month).padStart(2, '0')}/{cardStatus.exp_year}</p> : null}
+                    <div className='text-sm text-muted-foreground'>
+                      <p>
+                        {cardStatus.card_brand || 'Card'} ending in{' '}
+                        {cardStatus.last4}
+                      </p>
+                      {cardStatus.exp_month && cardStatus.exp_year ? (
+                        <p>
+                          Expires{' '}
+                          {String(cardStatus.exp_month).padStart(2, '0')}/
+                          {cardStatus.exp_year}
+                        </p>
+                      ) : null}
                     </div>
                   ) : null}
                 </div>
-                <div className="rounded-lg border p-4 space-y-3" aria-label="Payment Schedule">
-                  <p className="text-sm font-medium">Payment Schedule</p>
-                  {billingLoading ? <p className="text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Loading payment schedule…</p> : null}
-                  {billingError ? <p role="alert" className="text-sm text-destructive">{billingError}</p> : null}
-                  {!billingLoading && !billingError && installments.length === 0 ? <p className="text-sm text-muted-foreground">No payment schedule has been created for this client.</p> : null}
-                  {!billingLoading && !billingError && installments.length > 0 ? (
-                    <div className="space-y-3">
-                      {installments.map(item => {
-                          const label = item.payment_type === 'deposit' ? 'Deposit' : `Installment ${item.installment_number}`;
-                          const detail = (name: string, value: React.ReactNode) => (
-                            <div className="min-w-0">
-                              <dt className="text-xs font-medium text-muted-foreground">{name}</dt>
-                              <dd className="mt-0.5 break-words text-sm text-foreground">{value || '—'}</dd>
+                <div
+                  className='rounded-lg border p-4 space-y-3'
+                  aria-label='Payment Schedule'
+                >
+                  <p className='text-sm font-medium'>Payment Schedule</p>
+                  {billingLoading ? (
+                    <p className='text-sm text-muted-foreground flex items-center gap-2'>
+                      <Loader2 className='h-4 w-4 animate-spin' />
+                      Loading payment schedule…
+                    </p>
+                  ) : null}
+                  {billingError ? (
+                    <p role='alert' className='text-sm text-destructive'>
+                      {billingError}
+                    </p>
+                  ) : null}
+                  {!billingLoading &&
+                  !billingError &&
+                  installments.length === 0 ? (
+                    <p className='text-sm text-muted-foreground'>
+                      No payment schedule has been created for this client.
+                    </p>
+                  ) : null}
+                  {!billingLoading &&
+                  !billingError &&
+                  installments.length > 0 ? (
+                    <div className='space-y-3'>
+                      {installments.map((item) => {
+                        const label =
+                          item.payment_type === 'deposit'
+                            ? 'Deposit'
+                            : `Installment ${item.installment_number}`;
+                        const detail = (
+                          name: string,
+                          value: React.ReactNode
+                        ) => (
+                          <div className='min-w-0'>
+                            <dt className='text-xs font-medium text-muted-foreground'>
+                              {name}
+                            </dt>
+                            <dd className='mt-0.5 break-words text-sm text-foreground'>
+                              {value || '—'}
+                            </dd>
+                          </div>
+                        );
+                        return (
+                          <article
+                            key={item.id}
+                            className='rounded-lg border bg-background p-4'
+                          >
+                            <div className='flex flex-wrap items-start justify-between gap-3 border-b pb-3'>
+                              <div>
+                                <h4 className='font-medium text-foreground'>
+                                  {label}
+                                </h4>
+                                <p className='mt-1 break-all font-mono text-xs text-muted-foreground'>
+                                  {item.id}
+                                </p>
+                              </div>
+                              <div className='text-right'>
+                                <p className='text-lg font-semibold text-foreground'>
+                                  {new Intl.NumberFormat('en-US', {
+                                    style: 'currency',
+                                    currency: 'USD',
+                                  }).format(item.amount)}
+                                </p>
+                                <Badge
+                                  variant='outline'
+                                  className='mt-1 capitalize'
+                                >
+                                  {item.payment_status}
+                                </Badge>
+                              </div>
                             </div>
-                          );
-                          return (
-                            <article key={item.id} className="rounded-lg border bg-background p-4">
-                              <div className="flex flex-wrap items-start justify-between gap-3 border-b pb-3">
-                                <div>
-                                  <h4 className="font-medium text-foreground">{label}</h4>
-                                  <p className="mt-1 break-all font-mono text-xs text-muted-foreground">{item.id}</p>
-                                </div>
-                                <div className="text-right">
-                                  <p className="text-lg font-semibold text-foreground">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(item.amount)}</p>
-                                  <Badge variant="outline" className="mt-1 capitalize">{item.payment_status}</Badge>
-                                </div>
-                              </div>
-                              <dl className="grid grid-cols-2 gap-x-5 gap-y-3 py-4 sm:grid-cols-3 lg:grid-cols-4">
-                                {detail('Payment type', <span className="capitalize">{item.payment_type}</span>)}
-                                {detail('Due date', item.due_date ? format(parseISO(item.due_date), 'MMM d, yyyy') : '—')}
-                                {detail('Paid date', item.paid_date ? format(parseISO(item.paid_date), 'MMM d, yyyy') : '—')}
-                                {detail('Overdue', item.is_overdue ? 'Yes' : 'No')}
-                                {detail('QBO status', item.qbo_invoice_status || '—')}
-                                {detail('QBO invoice ID', item.qbo_invoice_id || '—')}
-                                {detail('Payment link', item.payment_link ? <a href={item.payment_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary underline underline-offset-2">Open invoice <ExternalLink className="h-3 w-3" /></a> : '—')}
-                              </dl>
-                              <div className="flex flex-col items-start gap-2 border-t pt-3 sm:flex-row sm:items-center sm:justify-between">
-                                {!item.available_action.enabled && item.available_action.reason ? <p className="text-xs text-muted-foreground">{item.available_action.reason}</p> : <span />}
-                                <Button className="w-full sm:w-auto" type="button" size="sm" disabled={!item.available_action.enabled || isGeneratingInvoice} title={item.available_action.reason || undefined} onClick={() => void handleGenerateInstallmentInvoice(item)}>{isGeneratingInvoice ? 'Generating…' : 'Generate Next Installment Invoice'}</Button>
-                              </div>
-                            </article>
-                          );
-                        })}
+                            <dl className='grid grid-cols-2 gap-x-5 gap-y-3 py-4 sm:grid-cols-3 lg:grid-cols-4'>
+                              {detail(
+                                'Payment type',
+                                <span className='capitalize'>
+                                  {item.payment_type}
+                                </span>
+                              )}
+                              {detail(
+                                'Due date',
+                                item.due_date
+                                  ? format(
+                                      parseISO(item.due_date),
+                                      'MMM d, yyyy'
+                                    )
+                                  : '—'
+                              )}
+                              {detail(
+                                'Paid date',
+                                item.paid_date
+                                  ? format(
+                                      parseISO(item.paid_date),
+                                      'MMM d, yyyy'
+                                    )
+                                  : '—'
+                              )}
+                              {detail(
+                                'Overdue',
+                                item.is_overdue ? 'Yes' : 'No'
+                              )}
+                              {detail(
+                                'QBO status',
+                                item.qbo_invoice_status || '—'
+                              )}
+                              {detail(
+                                'QBO invoice ID',
+                                item.qbo_invoice_id || '—'
+                              )}
+                              {detail(
+                                'Payment link',
+                                item.payment_link ? (
+                                  <a
+                                    href={item.payment_link}
+                                    target='_blank'
+                                    rel='noopener noreferrer'
+                                    className='inline-flex items-center gap-1 text-primary underline underline-offset-2'
+                                  >
+                                    Open invoice{' '}
+                                    <ExternalLink className='h-3 w-3' />
+                                  </a>
+                                ) : (
+                                  '—'
+                                )
+                              )}
+                            </dl>
+                            <div className='flex flex-col items-start gap-2 border-t pt-3 sm:flex-row sm:items-center sm:justify-between'>
+                              {!item.available_action.enabled &&
+                              item.available_action.reason ? (
+                                <p className='text-xs text-muted-foreground'>
+                                  {item.available_action.reason}
+                                </p>
+                              ) : (
+                                <span />
+                              )}
+                              <Button
+                                className='w-full sm:w-auto'
+                                type='button'
+                                size='sm'
+                                disabled={
+                                  !item.available_action.enabled ||
+                                  isGeneratingInvoice
+                                }
+                                title={
+                                  item.available_action.reason || undefined
+                                }
+                                onClick={() =>
+                                  void handleGenerateInstallmentInvoice(item)
+                                }
+                              >
+                                {isGeneratingInvoice
+                                  ? 'Generating…'
+                                  : 'Generate Next Installment Invoice'}
+                              </Button>
+                            </div>
+                          </article>
+                        );
+                      })}
                     </div>
                   ) : null}
-                  {generatedInvoiceLink ? <a href={generatedInvoiceLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-primary underline">Open invoice <ExternalLink className="h-3 w-3" /></a> : null}
+                  {generatedInvoiceLink ? (
+                    <a
+                      href={generatedInvoiceLink}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      className='inline-flex items-center gap-1 text-sm text-primary underline'
+                    >
+                      Open invoice <ExternalLink className='h-3 w-3' />
+                    </a>
+                  ) : null}
                 </div>
                 {(() => {
                   const legacyAuth = String(
-                    getDisplayValue('payment_authorization_status', 'paymentAuthorizationStatus') || ''
+                    getDisplayValue(
+                      'payment_authorization_status',
+                      'paymentAuthorizationStatus'
+                    ) || ''
                   ).trim();
                   if (!legacyAuth) return null;
                   return (
-                    <div className="rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground">
+                    <div className='rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground'>
                       Legacy PDF authorization status:{' '}
-                      <span className="font-medium text-foreground">
+                      <span className='font-medium text-foreground'>
                         {PAYMENT_AUTHORIZATION_STATUS_LABELS[
                           legacyAuth as PaymentAuthorizationStatus
                         ] ?? legacyAuth}
-                      </span>
-                      {' '}(historical display only)
+                      </span>{' '}
+                      (historical display only)
                     </div>
                   );
                 })()}
-                {renderEditableField('Payment Method', 'payment_method', undefined, 'select', [...ALL_PAYMENT_METHOD_OPTIONS])}
+                {renderEditableField(
+                  'Payment Method',
+                  'payment_method',
+                  undefined,
+                  'select',
+                  [...ALL_PAYMENT_METHOD_OPTIONS]
+                )}
                 {(() => {
-                  const pm = String(getDisplayValue('payment_method', 'paymentMethod') || '');
+                  const pm = String(
+                    getDisplayValue('payment_method', 'paymentMethod') || ''
+                  );
                   const msg = getPaymentMethodMessage(pm);
                   if (!msg) return null;
                   const colors =
@@ -2013,56 +2680,82 @@ export function LeadProfileModal({
                       ? 'bg-green-50 border-green-200 text-green-800'
                       : 'bg-blue-50 border-blue-200 text-blue-800';
                   return (
-                    <div className={`rounded-lg border px-4 py-3 text-sm ${colors}`}>
+                    <div
+                      className={`rounded-lg border px-4 py-3 text-sm ${colors}`}
+                    >
                       {msg.text}
                     </div>
                   );
                 })()}
                 {(() => {
-                  const pmForStaff = String(getDisplayValue('payment_method', 'paymentMethod') || '');
+                  const pmForStaff = String(
+                    getDisplayValue('payment_method', 'paymentMethod') || ''
+                  );
                   const authForStaff = String(
-                    getDisplayValue('payment_authorization_status', 'paymentAuthorizationStatus') || ''
+                    getDisplayValue(
+                      'payment_authorization_status',
+                      'paymentAuthorizationStatus'
+                    ) || ''
                   )
                     .trim()
                     .toLowerCase();
-                  const needsAuthOnFile = requiresPaymentMethodOnFile(pmForStaff);
+                  const needsAuthOnFile =
+                    requiresPaymentMethodOnFile(pmForStaff);
                   const alreadyOnFile = authForStaff === 'on_file';
-                  const atRaw = getDisplayValue('authorized_at', 'authorizedAt');
+                  const atRaw = getDisplayValue(
+                    'authorized_at',
+                    'authorizedAt'
+                  );
                   let atLabel = '';
                   if (atRaw) {
                     const parsed = parseISO(atRaw);
-                    atLabel = isValid(parsed) ? format(parsed, 'MMM d, yyyy · h:mm a') : atRaw;
+                    atLabel = isValid(parsed)
+                      ? format(parsed, 'MMM d, yyyy · h:mm a')
+                      : atRaw;
                   }
                   if (!needsAuthOnFile) return null;
                   return (
-                    <div className="rounded-lg border border-dashed border-primary/35 bg-muted/40 p-3 space-y-2">
-                      <p className="text-sm font-medium text-foreground">Staff: payment authorization</p>
-                      <p className="text-xs text-muted-foreground leading-snug">
-                        When you receive a signed payment authorization form (or equivalent), record it here so
-                        status shows <strong>On file</strong> in this profile and the Clients list.
+                    <div className='rounded-lg border border-dashed border-primary/35 bg-muted/40 p-3 space-y-2'>
+                      <p className='text-sm font-medium text-foreground'>
+                        Staff: payment authorization
+                      </p>
+                      <p className='text-xs text-muted-foreground leading-snug'>
+                        When you receive a signed payment authorization form (or
+                        equivalent), record it here so status shows{' '}
+                        <strong>On file</strong> in this profile and the Clients
+                        list.
                       </p>
                       {alreadyOnFile ? (
-                        <div className="flex flex-wrap items-center gap-2 text-sm">
-                          <Badge variant="outline" className="bg-blue-50 text-blue-900 border-blue-200">
+                        <div className='flex flex-wrap items-center gap-2 text-sm'>
+                          <Badge
+                            variant='outline'
+                            className='bg-blue-50 text-blue-900 border-blue-200'
+                          >
                             On file
                           </Badge>
                           {atLabel ? (
-                            <span className="text-muted-foreground text-xs">Recorded {atLabel}</span>
+                            <span className='text-muted-foreground text-xs'>
+                              Recorded {atLabel}
+                            </span>
                           ) : (
-                            <span className="text-muted-foreground text-xs">Date not stored</span>
+                            <span className='text-muted-foreground text-xs'>
+                              Date not stored
+                            </span>
                           )}
                         </div>
                       ) : (
                         <Button
-                          type="button"
-                          size="sm"
-                          onClick={() => void handleRecordPaymentAuthorization()}
+                          type='button'
+                          size='sm'
+                          onClick={() =>
+                            void handleRecordPaymentAuthorization()
+                          }
                           disabled={isRecordingPaymentAuth}
-                          className="w-fit"
+                          className='w-fit'
                         >
                           {isRecordingPaymentAuth ? (
                             <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                               Saving…
                             </>
                           ) : (
@@ -2073,11 +2766,14 @@ export function LeadProfileModal({
                     </div>
                   );
                 })()}
-                {requiresInsuranceDetails(String(getDisplayValue('payment_method', 'paymentMethod') || '')) ||
-                hasInsuranceDetails ? (
+                {requiresInsuranceDetails(
+                  String(
+                    getDisplayValue('payment_method', 'paymentMethod') || ''
+                  )
+                ) || hasInsuranceDetails ? (
                   <>
-                    <div className="rounded-lg border p-3 space-y-3">
-                      <div className="grid gap-3 lg:grid-cols-2">
+                    <div className='rounded-lg border p-3 space-y-3'>
+                      <div className='grid gap-3 lg:grid-cols-2'>
                         {[
                           {
                             side: 'front' as const,
@@ -2090,10 +2786,15 @@ export function LeadProfileModal({
                             document: backInsuranceCard,
                           },
                         ].map((slot) => (
-                          <div key={slot.side} className="rounded-lg border border-dashed p-3 space-y-3">
+                          <div
+                            key={slot.side}
+                            className='rounded-lg border border-dashed p-3 space-y-3'
+                          >
                             <div>
-                              <p className="font-medium">Insurance {slot.label.toLowerCase()}</p>
-                              <p className="text-sm text-muted-foreground">
+                              <p className='font-medium'>
+                                Insurance {slot.label.toLowerCase()}
+                              </p>
+                              <p className='text-sm text-muted-foreground'>
                                 {slot.document
                                   ? 'Uploaded files are shown below. Image files are previewed inline.'
                                   : `No ${slot.label.toLowerCase()} uploaded yet.`}
@@ -2101,8 +2802,8 @@ export function LeadProfileModal({
                             </div>
 
                             {documentsLoading ? (
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Loader2 className="h-4 w-4 animate-spin" />
+                              <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+                                <Loader2 className='h-4 w-4 animate-spin' />
                                 Loading uploaded documents...
                               </div>
                             ) : slot.document ? (
@@ -2112,8 +2813,16 @@ export function LeadProfileModal({
                         ))}
                       </div>
                     </div>
-                    {renderEditableField('Policy Holder Name', 'insurance_policy_holder_name')}
-                    {renderEditableField('Policy Holder Date of Birth', 'insurance_policy_holder_dob', undefined, 'date')}
+                    {renderEditableField(
+                      'Policy Holder Name',
+                      'insurance_policy_holder_name'
+                    )}
+                    {renderEditableField(
+                      'Policy Holder Date of Birth',
+                      'insurance_policy_holder_dob',
+                      undefined,
+                      'date'
+                    )}
                     {renderEditableField(
                       'Policy Holder Relationship to Client',
                       'insurance_policy_holder_relationship',
@@ -2121,9 +2830,18 @@ export function LeadProfileModal({
                       'select',
                       [...INSURANCE_POLICY_HOLDER_RELATIONSHIP_OPTIONS]
                     )}
-                    {renderEditableField('Insurance Company Name', 'insurance_provider')}
-                    {renderEditableField('Member ID / Subscriber ID', 'insurance_member_id')}
-                    {renderEditableField('Group Number (optional)', 'policy_number')}
+                    {renderEditableField(
+                      'Insurance Company Name',
+                      'insurance_provider'
+                    )}
+                    {renderEditableField(
+                      'Member ID / Subscriber ID',
+                      'insurance_member_id'
+                    )}
+                    {renderEditableField(
+                      'Group Number (optional)',
+                      'policy_number'
+                    )}
                     {renderEditableField(
                       'Plan Type',
                       'insurance_plan_type',
@@ -2131,18 +2849,31 @@ export function LeadProfileModal({
                       'select',
                       [...INSURANCE_PLAN_TYPE_OPTIONS]
                     )}
-                    {renderEditableField('Insurance Phone Number', 'insurance_phone_number')}
-                    <div className="py-2">
-                      <Label className="text-sm font-medium text-muted-foreground">Secondary Insurance</Label>
-                      <div className="text-sm text-foreground mt-1">
-                        {String(getDisplayValue('has_secondary_insurance', 'hasSecondaryInsurance') || '')
-                          .toLowerCase() === 'true'
+                    {renderEditableField(
+                      'Insurance Phone Number',
+                      'insurance_phone_number'
+                    )}
+                    <div className='py-2'>
+                      <Label className='text-sm font-medium text-muted-foreground'>
+                        Secondary Insurance
+                      </Label>
+                      <div className='text-sm text-foreground mt-1'>
+                        {String(
+                          getDisplayValue(
+                            'has_secondary_insurance',
+                            'hasSecondaryInsurance'
+                          ) || ''
+                        ).toLowerCase() === 'true'
                           ? 'Yes'
                           : 'No'}
                       </div>
                     </div>
-                    {String(getDisplayValue('has_secondary_insurance', 'hasSecondaryInsurance') || '')
-                      .toLowerCase() === 'true' ? (
+                    {String(
+                      getDisplayValue(
+                        'has_secondary_insurance',
+                        'hasSecondaryInsurance'
+                      ) || ''
+                    ).toLowerCase() === 'true' ? (
                       <>
                         {renderEditableField(
                           'Secondary Insurance Provider',
@@ -2161,7 +2892,7 @@ export function LeadProfileModal({
                   </>
                 ) : null}
               </>,
-              <FileText className="h-5 w-5" />
+              <FileText className='h-5 w-5' />
             )}
 
             {/* Family Information */}
@@ -2169,16 +2900,43 @@ export function LeadProfileModal({
               'family',
               'Family Information',
               <>
-                {renderEditableField('Relationship Status', 'relationship_status', undefined, 'select', RELATIONSHIP_OPTIONS)}
+                {renderEditableField(
+                  'Relationship Status',
+                  'relationship_status',
+                  undefined,
+                  'select',
+                  RELATIONSHIP_OPTIONS
+                )}
                 {renderEditableField('Family First Name', 'first_name')}
                 {renderEditableField('Family Last Name', 'last_name')}
                 {renderEditableField('Family Middle Name', 'middle_name')}
-                {renderEditableField('Family Pronouns', 'family_pronouns', undefined, 'select', FAMILY_PRONOUNS_OPTIONS)}
-                {renderEditableField('Family Email', 'family_email', <Mail className="h-4 w-4" />, 'email')}
-                {renderEditableField('Family Mobile Phone', 'mobile_phone', <Phone className="h-4 w-4" />, 'tel')}
-                {renderEditableField('Family Work Phone', 'work_phone', <Phone className="h-4 w-4" />, 'tel')}
+                {renderEditableField(
+                  'Family Pronouns',
+                  'family_pronouns',
+                  undefined,
+                  'select',
+                  FAMILY_PRONOUNS_OPTIONS
+                )}
+                {renderEditableField(
+                  'Family Email',
+                  'family_email',
+                  <Mail className='h-4 w-4' />,
+                  'email'
+                )}
+                {renderEditableField(
+                  'Family Mobile Phone',
+                  'mobile_phone',
+                  <Phone className='h-4 w-4' />,
+                  'tel'
+                )}
+                {renderEditableField(
+                  'Family Work Phone',
+                  'work_phone',
+                  <Phone className='h-4 w-4' />,
+                  'tel'
+                )}
               </>,
-              <Users className="h-5 w-5" />
+              <Users className='h-5 w-5' />
             )}
 
             {/* Referral Information */}
@@ -2191,19 +2949,25 @@ export function LeadProfileModal({
                   'referral_source',
                   undefined,
                   'select',
-                  [...REFERRAL_SOURCE_OPTIONS],
+                  [...REFERRAL_SOURCE_OPTIONS]
                 )}
-                {getDisplayValue('referral_source', null) === REFERRAL_SOURCE_OTHER_VALUE &&
+                {getDisplayValue('referral_source', null) ===
+                  REFERRAL_SOURCE_OTHER_VALUE &&
                   renderEditableField(
                     'How they heard about Sokana (other)',
                     'referral_source_other',
                     undefined,
-                    'textarea',
+                    'textarea'
                   )}
                 {renderEditableField('Referral Name', 'referral_name')}
-                {renderEditableField('Referral Email', 'referral_email', <Mail className="h-4 w-4" />, 'email')}
+                {renderEditableField(
+                  'Referral Email',
+                  'referral_email',
+                  <Mail className='h-4 w-4' />,
+                  'email'
+                )}
               </>,
-              <Users className="h-5 w-5" />
+              <Users className='h-5 w-5' />
             )}
 
             {/* Pregnancy & Health */}
@@ -2211,29 +2975,57 @@ export function LeadProfileModal({
               'health',
               'Pregnancy & Health Information',
               <>
-                {renderEditableField('Due Date', 'due_date', <CalendarIcon className="h-4 w-4" />, 'date')}
-                {renderEditableField('Birth Location', 'birth_location', undefined, 'select', BIRTH_LOCATION_OPTIONS)}
+                {renderEditableField(
+                  'Due Date',
+                  'due_date',
+                  <CalendarIcon className='h-4 w-4' />,
+                  'date'
+                )}
+                {renderEditableField(
+                  'Birth Location',
+                  'birth_location',
+                  undefined,
+                  'select',
+                  BIRTH_LOCATION_OPTIONS
+                )}
                 {renderEditableField('Birth Hospital', 'birth_hospital')}
-                {renderEditableField('Number of Babies', 'number_of_babies', undefined, 'select', NUMBER_OF_BABIES_OPTIONS)}
+                {renderEditableField(
+                  'Number of Babies',
+                  'number_of_babies',
+                  undefined,
+                  'select',
+                  NUMBER_OF_BABIES_OPTIONS
+                )}
                 {renderEditableField('Baby Name', 'baby_name')}
-                {renderEditableField('Provider Type', 'provider_type', undefined, 'select', PROVIDER_TYPE_OPTIONS)}
+                {renderEditableField(
+                  'Provider Type',
+                  'provider_type',
+                  undefined,
+                  'select',
+                  PROVIDER_TYPE_OPTIONS
+                )}
                 {renderEditableField('Pregnancy Number', 'pregnancy_number')}
-                {renderEditableField('Allergies', 'allergies', undefined, 'textarea')}
+                {renderEditableField(
+                  'Allergies',
+                  'allergies',
+                  undefined,
+                  'textarea'
+                )}
                 {renderEditableField(
                   PREGNANCY_BABY_POSTPARTUM_QUESTION_LABEL,
                   'health_history',
                   undefined,
-                  'textarea',
+                  'textarea'
                 )}
                 {String((editedData as any).health_notes ?? '').trim() !== '' &&
                   renderEditableField(
                     'Health notes (previous intake)',
                     'health_notes',
                     undefined,
-                    'textarea',
+                    'textarea'
                   )}
               </>,
-              <Baby className="h-5 w-5" />
+              <Baby className='h-5 w-5' />
             )}
 
             {/* Past Pregnancies */}
@@ -2241,17 +3033,32 @@ export function LeadProfileModal({
               'past-pregnancies',
               'Past Pregnancies',
               <>
-                <div className="py-2">
-                  <Label className="text-sm font-medium text-muted-foreground">Had Previous Pregnancies</Label>
-                  <div className="text-sm text-foreground mt-1">
-                    {(editedData as any).had_previous_pregnancies ? 'Yes' : 'No'}
+                <div className='py-2'>
+                  <Label className='text-sm font-medium text-muted-foreground'>
+                    Had Previous Pregnancies
+                  </Label>
+                  <div className='text-sm text-foreground mt-1'>
+                    {(editedData as any).had_previous_pregnancies
+                      ? 'Yes'
+                      : 'No'}
                   </div>
                 </div>
-                {renderEditableField('Previous Pregnancies Count', 'previous_pregnancies_count')}
-                {renderEditableField('Living Children Count', 'living_children_count')}
-                {renderEditableField('Past Pregnancy Experience', 'past_pregnancy_experience', undefined, 'textarea')}
+                {renderEditableField(
+                  'Previous Pregnancies Count',
+                  'previous_pregnancies_count'
+                )}
+                {renderEditableField(
+                  'Living Children Count',
+                  'living_children_count'
+                )}
+                {renderEditableField(
+                  'Past Pregnancy Experience',
+                  'past_pregnancy_experience',
+                  undefined,
+                  'textarea'
+                )}
               </>,
-              <Baby className="h-5 w-5" />
+              <Baby className='h-5 w-5' />
             )}
 
             {/* Demographics */}
@@ -2259,14 +3066,50 @@ export function LeadProfileModal({
               'demographics',
               'Demographics (Optional)',
               <>
-                {renderEditableField('Race/Ethnicity', 'race_ethnicity', undefined, 'select', RACE_OPTIONS)}
-                {renderEditableField('Primary Language', 'primary_language', undefined, 'select', LANGUAGE_OPTIONS)}
-                {renderEditableField('Client Age Range', 'client_age_range', undefined, 'select', AGE_OPTIONS)}
-                {renderEditableField('Insurance', 'insurance', undefined, 'select', INSURANCE_OPTIONS)}
-                {renderEditableField('Demographics Multi', 'demographics_multi', undefined, 'multiselect', DEMOGRAPHICS_MULTI_OPTIONS)}
-                {renderEditableField('Demographics Annual Income', 'demographics_annual_income', undefined, 'select', DEMOGRAPHICS_INCOME_OPTIONS)}
+                {renderEditableField(
+                  'Race/Ethnicity',
+                  'race_ethnicity',
+                  undefined,
+                  'select',
+                  RACE_OPTIONS
+                )}
+                {renderEditableField(
+                  'Primary Language',
+                  'primary_language',
+                  undefined,
+                  'select',
+                  LANGUAGE_OPTIONS
+                )}
+                {renderEditableField(
+                  'Client Age Range',
+                  'client_age_range',
+                  undefined,
+                  'select',
+                  AGE_OPTIONS
+                )}
+                {renderEditableField(
+                  'Insurance',
+                  'insurance',
+                  undefined,
+                  'select',
+                  INSURANCE_OPTIONS
+                )}
+                {renderEditableField(
+                  'Demographics Multi',
+                  'demographics_multi',
+                  undefined,
+                  'multiselect',
+                  DEMOGRAPHICS_MULTI_OPTIONS
+                )}
+                {renderEditableField(
+                  'Demographics Annual Income',
+                  'demographics_annual_income',
+                  undefined,
+                  'select',
+                  DEMOGRAPHICS_INCOME_OPTIONS
+                )}
               </>,
-              <Users className="h-5 w-5" />
+              <Users className='h-5 w-5' />
             )}
 
             {/* Account Information */}
@@ -2274,21 +3117,37 @@ export function LeadProfileModal({
               'account',
               'Account Information',
               <>
-                {renderEditableField('Client Status', 'status', undefined, 'select', CLIENT_STATUS_OPTIONS)}
-                <div className="py-2">
-                  <Label className="text-sm font-medium text-muted-foreground">Created At</Label>
-                  <div className="text-sm text-foreground mt-1">
-                    {(detailedClient as any).created_at ? new Date((detailedClient as any).created_at).toLocaleDateString() : 'Not provided'}
+                {renderEditableField(
+                  'Client Status',
+                  'status',
+                  undefined,
+                  'select',
+                  CLIENT_STATUS_OPTIONS
+                )}
+                <div className='py-2'>
+                  <Label className='text-sm font-medium text-muted-foreground'>
+                    Created At
+                  </Label>
+                  <div className='text-sm text-foreground mt-1'>
+                    {(detailedClient as any).created_at
+                      ? new Date(
+                          (detailedClient as any).created_at
+                        ).toLocaleDateString()
+                      : 'Not provided'}
                   </div>
                 </div>
-                <div className="py-2">
-                  <Label className="text-sm font-medium text-muted-foreground">Updated At</Label>
-                  <div className="text-sm text-foreground mt-1">
-                    {detailedClient.updatedAt ? new Date(detailedClient.updatedAt).toLocaleDateString() : 'Not provided'}
+                <div className='py-2'>
+                  <Label className='text-sm font-medium text-muted-foreground'>
+                    Updated At
+                  </Label>
+                  <div className='text-sm text-foreground mt-1'>
+                    {detailedClient.updatedAt
+                      ? new Date(detailedClient.updatedAt).toLocaleDateString()
+                      : 'Not provided'}
                   </div>
                 </div>
               </>,
-              <Users className="h-5 w-5" />
+              <Users className='h-5 w-5' />
             )}
 
             {/* Doula Assignment Section */}
@@ -2299,28 +3158,29 @@ export function LeadProfileModal({
                 clientId={String(client.id)}
                 canAssign={user?.role === 'admin'}
               />,
-              <Users className="h-5 w-5" />
+              <Users className='h-5 w-5' />
             )}
 
             {/* Birth outcomes — free-text narrative (doula); placed near Admin Notes */}
             {renderCollapsibleSection(
               'birth-outcomes',
-              <div className="flex items-center gap-2">
+              <div className='flex items-center gap-2'>
                 <span>Birth Outcomes</span>
                 {birthOutcomesHistory.length > 0 && (
-                  <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                  <span className='text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full'>
                     {birthOutcomesHistory.length}
                   </span>
                 )}
               </div>,
               <>
-                <p className="text-sm text-muted-foreground -mt-1 mb-1">
-                  Structured birth outcomes for reporting. All fields are required.
+                <p className='text-sm text-muted-foreground -mt-1 mb-1'>
+                  Structured birth outcomes for reporting. All fields are
+                  required.
                 </p>
-                <div className="rounded-lg border p-3 space-y-3">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-muted-foreground">
-                      Induction <span className="text-destructive">*</span>
+                <div className='rounded-lg border p-3 space-y-3'>
+                  <div className='space-y-2'>
+                    <Label className='text-sm font-medium text-muted-foreground'>
+                      Induction <span className='text-destructive'>*</span>
                     </Label>
                     {isEditing ? (
                       <Select
@@ -2344,16 +3204,16 @@ export function LeadProfileModal({
                           }));
                         }}
                       >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Select..." />
+                        <SelectTrigger className='mt-1'>
+                          <SelectValue placeholder='Select...' />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="true">Yes</SelectItem>
-                          <SelectItem value="false">No</SelectItem>
+                          <SelectItem value='true'>Yes</SelectItem>
+                          <SelectItem value='false'>No</SelectItem>
                         </SelectContent>
                       </Select>
                     ) : (
-                      <div className="mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm">
+                      <div className='mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm'>
                         {(() => {
                           const v = getDisplayValue(
                             'birth_outcomes_induction',
@@ -2366,9 +3226,9 @@ export function LeadProfileModal({
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-muted-foreground">
-                      Delivery type <span className="text-destructive">*</span>
+                  <div className='space-y-2'>
+                    <Label className='text-sm font-medium text-muted-foreground'>
+                      Delivery type <span className='text-destructive'>*</span>
                     </Label>
                     {isEditing ? (
                       <Select
@@ -2386,8 +3246,8 @@ export function LeadProfileModal({
                           }));
                         }}
                       >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Select..." />
+                        <SelectTrigger className='mt-1'>
+                          <SelectValue placeholder='Select...' />
                         </SelectTrigger>
                         <SelectContent>
                           {BIRTH_OUTCOMES_DELIVERY_TYPE_OPTIONS.map((opt) => (
@@ -2398,7 +3258,7 @@ export function LeadProfileModal({
                         </SelectContent>
                       </Select>
                     ) : (
-                      <div className="mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm">
+                      <div className='mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm'>
                         {String(
                           getDisplayValue(
                             'birth_outcomes_delivery_type',
@@ -2409,21 +3269,25 @@ export function LeadProfileModal({
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-muted-foreground">
-                      Medications used <span className="text-destructive">*</span>
+                  <div className='space-y-2'>
+                    <Label className='text-sm font-medium text-muted-foreground'>
+                      Medications used{' '}
+                      <span className='text-destructive'>*</span>
                     </Label>
                     {(() => {
                       const raw =
                         (editedData as any).birth_outcomes_medications_used ??
                         (editedData as any).birthOutcomesMedicationsUsed ??
-                        (detailSource as any)?.birth_outcomes_medications_used ??
+                        (detailSource as any)
+                          ?.birth_outcomes_medications_used ??
                         (detailSource as any)?.birthOutcomesMedicationsUsed ??
                         (client as any)?.birth_outcomes_medications_used ??
                         (client as any)?.birthOutcomesMedicationsUsed ??
                         [];
                       const current = Array.isArray(raw)
-                        ? (raw as unknown[]).map((v) => String(v)).filter(Boolean)
+                        ? (raw as unknown[])
+                            .map((v) => String(v))
+                            .filter(Boolean)
                         : [];
 
                       const toggle = (opt: string) => {
@@ -2439,16 +3303,18 @@ export function LeadProfileModal({
 
                       if (!isEditing) {
                         return (
-                          <div className="mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm">
-                            {current.length > 0 ? current.join(', ') : 'Not provided'}
+                          <div className='mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm'>
+                            {current.length > 0
+                              ? current.join(', ')
+                              : 'Not provided'}
                           </div>
                         );
                       }
 
                       return (
-                        <div className="mt-1 grid gap-2 sm:grid-cols-2">
+                        <div className='mt-1 grid gap-2 sm:grid-cols-2'>
                           {BIRTH_OUTCOMES_MEDICATION_OPTIONS.map((opt) => (
-                            <div key={opt} className="flex items-center gap-2">
+                            <div key={opt} className='flex items-center gap-2'>
                               <Checkbox
                                 id={`birth-outcomes-med-${opt}`}
                                 checked={current.includes(opt)}
@@ -2456,7 +3322,7 @@ export function LeadProfileModal({
                               />
                               <Label
                                 htmlFor={`birth-outcomes-med-${opt}`}
-                                className="text-sm font-normal"
+                                className='text-sm font-normal'
                               >
                                 {opt}
                               </Label>
@@ -2471,32 +3337,36 @@ export function LeadProfileModal({
                 {String(
                   getDisplayValue('birth_outcomes', 'birthOutcomes') || ''
                 ).trim() ? (
-                  <div className="pt-3">
-                    <Label className="text-sm font-medium text-muted-foreground">
+                  <div className='pt-3'>
+                    <Label className='text-sm font-medium text-muted-foreground'>
                       Legacy Birth Outcomes (read-only)
                     </Label>
-                    <div className="mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm min-h-[72px] whitespace-pre-wrap">
-                      {String(getDisplayValue('birth_outcomes', 'birthOutcomes') || '')}
+                    <div className='mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm min-h-[72px] whitespace-pre-wrap'>
+                      {String(
+                        getDisplayValue('birth_outcomes', 'birthOutcomes') || ''
+                      )}
                     </div>
                   </div>
                 ) : null}
                 {isEditing && (
-                  <div className="flex justify-end pt-1">
+                  <div className='flex justify-end pt-1'>
                     <Button
                       onClick={handleSaveBirthOutcomes}
-                      size="sm"
+                      size='sm'
                       disabled={isSavingBirthOutcomes}
                     >
-                      {isSavingBirthOutcomes ? 'Saving...' : 'Save Birth Outcomes'}
+                      {isSavingBirthOutcomes
+                        ? 'Saving...'
+                        : 'Save Birth Outcomes'}
                     </Button>
                   </div>
                 )}
-                <div className="space-y-2 pt-2">
-                  <h4 className="text-sm font-medium text-muted-foreground">
+                <div className='space-y-2 pt-2'>
+                  <h4 className='text-sm font-medium text-muted-foreground'>
                     Birth Outcomes History
                   </h4>
                   {birthOutcomesHistory.length === 0 ? (
-                    <div className="text-sm text-muted-foreground py-2">
+                    <div className='text-sm text-muted-foreground py-2'>
                       No birth outcomes records yet.
                     </div>
                   ) : (
@@ -2512,18 +3382,20 @@ export function LeadProfileModal({
                       return (
                         <div
                           key={`birth-outcomes-${note.id}`}
-                          className="bg-background border rounded-lg p-3 space-y-2"
+                          className='bg-background border rounded-lg p-3 space-y-2'
                         >
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <span className="font-medium">
-                              {formatDistanceToNow(noteDate, { addSuffix: true })}
+                          <div className='flex items-center gap-1.5 text-xs text-muted-foreground'>
+                            <span className='font-medium'>
+                              {formatDistanceToNow(noteDate, {
+                                addSuffix: true,
+                              })}
                             </span>
-                            <span className="text-muted-foreground/50">•</span>
-                            <span className="text-muted-foreground/70">
+                            <span className='text-muted-foreground/50'>•</span>
+                            <span className='text-muted-foreground/70'>
                               {format(noteDate, 'MMM dd, yyyy h:mm a')}
                             </span>
                           </div>
-                          <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                          <p className='text-sm leading-relaxed whitespace-pre-wrap'>
                             {note.description}
                           </p>
                         </div>
@@ -2532,56 +3404,64 @@ export function LeadProfileModal({
                   )}
                 </div>
               </>,
-              <Baby className="h-5 w-5" />
+              <Baby className='h-5 w-5' />
             )}
 
             {/* Notes Section */}
             <Collapsible
               open={openSections.has('notes')}
               onOpenChange={(nextOpen) => setSectionOpen('notes', nextOpen)}
-              className="border rounded-lg mb-3"
+              className='border rounded-lg mb-3'
             >
               <CollapsibleTrigger asChild>
                 <Button
-                  variant="ghost"
-                  className="w-full justify-between p-3 h-auto hover:bg-muted/50"
-                  data-testid="admin-notes-collapsible-trigger"
+                  variant='ghost'
+                  className='w-full justify-between p-3 h-auto hover:bg-muted/50'
+                  data-testid='admin-notes-collapsible-trigger'
                 >
-                  <div className="flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5" />
-                    <span className="font-semibold">Admin Notes</span>
+                  <div className='flex items-center gap-2'>
+                    <MessageSquare className='h-5 w-5' />
+                    <span className='font-semibold'>Admin Notes</span>
                     {notes.length > 0 && (
-                      <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                      <span className='text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full'>
                         {notes.length}
                       </span>
                     )}
                   </div>
-                  {openSections.has('notes') ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                  {openSections.has('notes') ? (
+                    <ChevronDown className='h-4 w-4' />
+                  ) : (
+                    <ChevronRight className='h-4 w-4' />
+                  )}
                 </Button>
               </CollapsibleTrigger>
-              <CollapsibleContent className="px-3 pb-3">
-                <div className="space-y-3">
+              <CollapsibleContent className='px-3 pb-3'>
+                <div className='space-y-3'>
                   {/* Add New Note */}
-                  <div className="space-y-2 bg-muted/30 p-3 rounded-lg">
-                    <label className="text-sm font-medium">Add New Note</label>
+                  <div className='space-y-2 bg-muted/30 p-3 rounded-lg'>
+                    <label className='text-sm font-medium'>Add New Note</label>
                     <Textarea
-                      placeholder="Enter note description..."
+                      placeholder='Enter note description...'
                       value={newNote}
                       onChange={(e) => setNewNote(e.target.value)}
                       rows={3}
                       disabled={savingNote}
-                      className="resize-none"
+                      className='resize-none'
                     />
-                    <div className="flex items-center gap-2">
+                    <div className='flex items-center gap-2'>
                       <select
-                        data-testid="admin-note-category-trigger"
+                        data-testid='admin-note-category-trigger'
                         value={noteCategory}
                         onChange={(e) => setNoteCategory(e.target.value)}
                         disabled={savingNote}
-                        className="h-9 w-[180px] rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        className='h-9 w-[180px] rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
                       >
                         {NOTE_CATEGORIES.map((category) => (
-                          <option key={category} value={category} data-testid={`admin-note-option-${category}`}>
+                          <option
+                            key={category}
+                            value={category}
+                            data-testid={`admin-note-option-${category}`}
+                          >
                             {category}
                           </option>
                         ))}
@@ -2589,27 +3469,32 @@ export function LeadProfileModal({
                       <Button
                         onClick={handleSaveNote}
                         disabled={savingNote || !newNote.trim()}
-                        size="sm"
+                        size='sm'
                       >
                         {savingNote ? 'Adding...' : 'Add Note'}
                       </Button>
                     </div>
                     {notesError && (
-                      <div className="text-sm text-destructive">{notesError}</div>
+                      <div className='text-sm text-destructive'>
+                        {notesError}
+                      </div>
                     )}
                   </div>
 
                   {/* Existing Notes */}
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-muted-foreground">
-                      Notes History {loadingNotes && <span className="text-xs">(Loading...)</span>}
+                  <div className='space-y-2'>
+                    <h4 className='text-sm font-medium text-muted-foreground'>
+                      Notes History{' '}
+                      {loadingNotes && (
+                        <span className='text-xs'>(Loading...)</span>
+                      )}
                     </h4>
                     {loadingNotes && notes.length === 0 ? (
-                      <div className="text-sm text-muted-foreground py-4 text-center">
+                      <div className='text-sm text-muted-foreground py-4 text-center'>
                         Loading notes...
                       </div>
                     ) : notes.length === 0 ? (
-                      <div className="text-sm text-muted-foreground py-4 text-center">
+                      <div className='text-sm text-muted-foreground py-4 text-center'>
                         No notes yet. Add the first note above.
                       </div>
                     ) : (
@@ -2624,27 +3509,38 @@ export function LeadProfileModal({
                           // Backend is sending local time as UTC, so we need to correct it
                           // Get the timestamp value and add back the timezone offset
                           const offsetMinutes = noteDate.getTimezoneOffset();
-                          noteDate = new Date(noteDate.getTime() + (offsetMinutes * 60 * 1000));
+                          noteDate = new Date(
+                            noteDate.getTime() + offsetMinutes * 60 * 1000
+                          );
                         }
 
                         return (
-                          <div key={note.id} className="bg-background border rounded-lg p-3 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs font-medium capitalize bg-primary/10 text-primary px-2 py-1 rounded">
+                          <div
+                            key={note.id}
+                            className='bg-background border rounded-lg p-3 space-y-2'
+                          >
+                            <div className='flex items-center justify-between'>
+                              <span className='text-xs font-medium capitalize bg-primary/10 text-primary px-2 py-1 rounded'>
                                 {note.metadata?.category || 'general'}
                               </span>
-                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                <span className="font-medium">
-                                  {formatDistanceToNow(noteDate, { addSuffix: true })}
+                              <div className='flex items-center gap-1.5 text-xs text-muted-foreground'>
+                                <span className='font-medium'>
+                                  {formatDistanceToNow(noteDate, {
+                                    addSuffix: true,
+                                  })}
                                 </span>
-                                <span className="text-muted-foreground/50">•</span>
-                                <span className="text-muted-foreground/70">
+                                <span className='text-muted-foreground/50'>
+                                  •
+                                </span>
+                                <span className='text-muted-foreground/70'>
                                   {format(noteDate, 'MMM dd, yyyy h:mm a')}
                                 </span>
                               </div>
                             </div>
-                            <p className="text-sm leading-relaxed">{note.description}</p>
-                            <p className="text-xs text-muted-foreground">
+                            <p className='text-sm leading-relaxed'>
+                              {note.description}
+                            </p>
+                            <p className='text-xs text-muted-foreground'>
                               Added by {note.createdBy || 'Unknown'}
                             </p>
                           </div>
@@ -2658,7 +3554,7 @@ export function LeadProfileModal({
           </div>
         ) : null}
 
-        <DialogFooter className="pt-4">
+        <DialogFooter className='pt-4'>
           <Button onClick={() => onOpenChange(false)}>Close</Button>
         </DialogFooter>
       </DialogContent>

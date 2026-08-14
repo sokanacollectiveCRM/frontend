@@ -10,7 +10,8 @@ const QUICKBOOKS_CONNECTED_KEY = 'quickbooks_just_connected';
 
 export default function Home() {
   const { user, isLoading: isUserLoading } = useUser();
-  const { isClientPortalUser, isLoading: isPortalLoading } = useIsClientPortalUser();
+  const { isClientPortalUser, isLoading: isPortalLoading } =
+    useIsClientPortalUser();
   const [searchParams, setSearchParams] = useSearchParams();
   const isDoula = user?.role === 'doula';
   const displayFirstName =

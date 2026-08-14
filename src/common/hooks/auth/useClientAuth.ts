@@ -13,13 +13,15 @@ interface ClientUser {
 
 type SessionIdentity = Omit<ClientUser, 'role'>;
 
-function identityFromSession(session: {
-  user: {
-    id: string;
-    email?: string;
-    user_metadata?: Record<string, unknown>;
-  };
-} | null): SessionIdentity | null {
+function identityFromSession(
+  session: {
+    user: {
+      id: string;
+      email?: string;
+      user_metadata?: Record<string, unknown>;
+    };
+  } | null
+): SessionIdentity | null {
   if (!session?.user) return null;
   const meta = session.user.user_metadata ?? {};
   return {
@@ -36,13 +38,14 @@ function identityFromSession(session: {
  */
 export function useClientAuth() {
   const { user, isLoading: userLoading } = useUser();
-  const [sessionIdentity, setSessionIdentity] = useState<SessionIdentity | null>(
-    null
-  );
+  const [sessionIdentity, setSessionIdentity] =
+    useState<SessionIdentity | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
 
   useEffect(() => {
-    const applySession = (session: Parameters<typeof identityFromSession>[0]) => {
+    const applySession = (
+      session: Parameters<typeof identityFromSession>[0]
+    ) => {
       setSessionIdentity(identityFromSession(session));
       setSessionLoading(false);
     };

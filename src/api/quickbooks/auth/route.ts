@@ -30,7 +30,9 @@ export async function getQuickBooksAuthUrl(): Promise<string> {
 
     if (!res.ok) {
       const body = (await res.text()).trim();
-      errors.push(`${path} -> HTTP ${res.status}${body ? `: ${body.slice(0, 180)}` : ''}`);
+      errors.push(
+        `${path} -> HTTP ${res.status}${body ? `: ${body.slice(0, 180)}` : ''}`
+      );
       continue;
     }
 
@@ -43,5 +45,7 @@ export async function getQuickBooksAuthUrl(): Promise<string> {
     return payload.url;
   }
 
-  throw new Error(`Could not fetch QuickBooks auth URL. Tried ${candidates.join(', ')}. ${errors.join(' | ')}`);
+  throw new Error(
+    `Could not fetch QuickBooks auth URL. Tried ${candidates.join(', ')}. ${errors.join(' | ')}`
+  );
 }

@@ -9,14 +9,19 @@ export function isDoulaRole(role: string | null | undefined): boolean {
 }
 
 export function isBillingRole(role: string | null | undefined): boolean {
-  return role != null && BILLING_PORTAL_ROLES.includes(role as (typeof BILLING_PORTAL_ROLES)[number]);
+  return (
+    role != null &&
+    BILLING_PORTAL_ROLES.includes(role as (typeof BILLING_PORTAL_ROLES)[number])
+  );
 }
 
 export function isBillingOnlyRole(role: string | null | undefined): boolean {
   return isBillingRole(role) && !isAdminRole(role) && !isDoulaRole(role);
 }
 
-export function canAccessBillingPortal(role: string | null | undefined): boolean {
+export function canAccessBillingPortal(
+  role: string | null | undefined
+): boolean {
   return isAdminRole(role) || isBillingRole(role);
 }
 
@@ -29,7 +34,10 @@ export function isStaffRole(role: string | null | undefined): boolean {
   return isAdminRole(role) || isDoulaRole(role) || isBillingRole(role);
 }
 
-export function canAccessFullCrm(role: string | null | undefined, isClientPortalUser: boolean): boolean {
+export function canAccessFullCrm(
+  role: string | null | undefined,
+  isClientPortalUser: boolean
+): boolean {
   if (isClientPortalUser || isClientRole(role)) return false;
   if (isBillingOnlyRole(role)) return false;
   return true;

@@ -57,7 +57,6 @@ export interface CreateInvoiceParams {
 export async function createQuickBooksInvoice(
   params: CreateInvoiceParams
 ): Promise<QuickBooksInvoiceResponse> {
-
   return withTokenRefresh(async () => {
     // Since we're using admin-only approach, set userId to 'admin'
     const requestBody = {
@@ -110,7 +109,6 @@ export async function createQuickBooksInvoice(
  * Automatically pulls the JWT from localStorage.
  */
 export async function getQuickBooksInvoices(): Promise<any[]> {
-
   return withTokenRefresh(async () => {
     const res = await fetchWithAuth(`${API_BASE}/quickbooks/invoices`, {
       method: 'GET',

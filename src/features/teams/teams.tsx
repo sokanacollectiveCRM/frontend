@@ -72,7 +72,9 @@ const toTeamMember = (member: any): TeamMember => ({
   firstname: String(member?.firstname ?? member?.first_name ?? '').trim(),
   lastname: String(member?.lastname ?? member?.last_name ?? '').trim(),
   role: normalizeTeamRole(member?.role),
-  email: String(member?.email ?? '').trim().toLowerCase(),
+  email: String(member?.email ?? '')
+    .trim()
+    .toLowerCase(),
   id: String(member?.id ?? member?.user_id ?? member?.email ?? ''),
   bio: String(member?.bio ?? ''),
   address: String(member?.address ?? '').trim(),
@@ -111,10 +113,16 @@ export default function Teams() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [documentsDialogOpen, setDocumentsDialogOpen] = useState(false);
-  const [documentsMember, setDocumentsMember] = useState<TeamMember | null>(null);
-  const [documentsItems, setDocumentsItems] = useState<DocumentCompletenessItem[]>([]);
+  const [documentsMember, setDocumentsMember] = useState<TeamMember | null>(
+    null
+  );
+  const [documentsItems, setDocumentsItems] = useState<
+    DocumentCompletenessItem[]
+  >([]);
   const [documentsLoading, setDocumentsLoading] = useState(false);
-  const [downloadingDocumentId, setDownloadingDocumentId] = useState<string | null>(null);
+  const [downloadingDocumentId, setDownloadingDocumentId] = useState<
+    string | null
+  >(null);
 
   const fetchTeam = async () => {
     //function to fetch all team members
@@ -238,28 +246,40 @@ export default function Teams() {
     try {
       const data = await getAdminDoulaDocuments(member.id);
       const rawItems = (data.completeness?.items ?? []) as unknown[];
-      const completenessItems: DocumentCompletenessItem[] = rawItems.map((raw) => {
-        const item = (raw ?? {}) as Record<string, unknown>;
-        const documentId = item.document_id ?? item.documentId;
-        const fileName = item.file_name ?? item.fileName;
-        const uploadedAt = item.uploaded_at ?? item.uploadedAt;
-        const rejectionReason = item.rejection_reason ?? item.rejectionReason;
-        return {
-          document_type: String(item.document_type ?? item.documentType ?? ''),
-          status: String(item.status ?? 'missing'),
-          document_id: typeof documentId === 'string' ? documentId : undefined,
-          file_name: typeof fileName === 'string' ? fileName : undefined,
-          uploaded_at: typeof uploadedAt === 'string' ? uploadedAt : undefined,
-          rejection_reason:
-            typeof rejectionReason === 'string' ? rejectionReason : undefined,
-        };
-      });
+      const completenessItems: DocumentCompletenessItem[] = rawItems.map(
+        (raw) => {
+          const item = (raw ?? {}) as Record<string, unknown>;
+          const documentId = item.document_id ?? item.documentId;
+          const fileName = item.file_name ?? item.fileName;
+          const uploadedAt = item.uploaded_at ?? item.uploadedAt;
+          const rejectionReason = item.rejection_reason ?? item.rejectionReason;
+          return {
+            document_type: String(
+              item.document_type ?? item.documentType ?? ''
+            ),
+            status: String(item.status ?? 'missing'),
+            document_id:
+              typeof documentId === 'string' ? documentId : undefined,
+            file_name: typeof fileName === 'string' ? fileName : undefined,
+            uploaded_at:
+              typeof uploadedAt === 'string' ? uploadedAt : undefined,
+            rejection_reason:
+              typeof rejectionReason === 'string' ? rejectionReason : undefined,
+          };
+        }
+      );
       const completenessByType = new Map<string, DocumentCompletenessItem>(
         completenessItems.map((item) => [item.document_type, item])
       );
       const documentsByType = new Map<
         string,
-        { id?: string; fileName?: string; uploadedAt?: string; status?: string; rejectionReason?: string }
+        {
+          id?: string;
+          fileName?: string;
+          uploadedAt?: string;
+          status?: string;
+          rejectionReason?: string;
+        }
       >();
 
       for (const raw of (data.documents ?? []) as unknown[]) {
@@ -276,7 +296,8 @@ export default function Teams() {
               ? String(doc.file_name ?? doc.fileName)
               : undefined,
           uploadedAt:
-            typeof (doc.uploaded_at ?? doc.uploadedAt ?? doc.created_at) === 'string'
+            typeof (doc.uploaded_at ?? doc.uploadedAt ?? doc.created_at) ===
+            'string'
               ? String(doc.uploaded_at ?? doc.uploadedAt ?? doc.created_at)
               : undefined,
           status: typeof doc.status === 'string' ? doc.status : undefined,
@@ -312,7 +333,9 @@ export default function Teams() {
       setDocumentsItems(mergedItems);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : 'Failed to load doula documents'
+        error instanceof Error
+          ? error.message
+          : 'Failed to load doula documents'
       );
     } finally {
       setDocumentsLoading(false);
@@ -575,19 +598,22 @@ export default function Teams() {
         throw new Error(errorMessage);
       }
 
-      const emailResponse = await fetchWithAuth(buildUrl('/email/team-invite'), {
-        //send the email invite after user is created
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: inviteForm.email,
-          firstname: inviteForm.firstname,
-          lastname: inviteForm.lastname,
-          role: inviteForm.role,
-        }),
-      });
+      const emailResponse = await fetchWithAuth(
+        buildUrl('/email/team-invite'),
+        {
+          //send the email invite after user is created
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: inviteForm.email,
+            firstname: inviteForm.firstname,
+            lastname: inviteForm.lastname,
+            role: inviteForm.role,
+          }),
+        }
+      );
 
       if (!emailResponse.ok) {
         const errorData = await emailResponse.json();
@@ -669,7 +695,9 @@ export default function Teams() {
               <select
                 className='h-10 rounded-md border border-gray-300 bg-white px-3 text-sm'
                 value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value as 'doula' | 'admin')}
+                onChange={(e) =>
+                  setRoleFilter(e.target.value as 'doula' | 'admin')
+                }
               >
                 <option value='doula'>Doulas</option>
                 <option value='admin'>Admins</option>
@@ -839,7 +867,9 @@ export default function Teams() {
                           <UserAvatar
                             fullName={`${member?.firstname || ''} ${member?.lastname || ''}`}
                             className='h-14 w-14 ring-2 ring-gray-100 group-hover:ring-green-200 transition-all'
-                            profile_picture={member?.profile_picture ?? undefined}
+                            profile_picture={
+                              member?.profile_picture ?? undefined
+                            }
                           />
                           <div className='absolute -bottom-1 -right-1 h-5 w-5 bg-green-500 rounded-full border-2 border-white'></div>
                         </div>
@@ -873,25 +903,25 @@ export default function Teams() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align='end' className='w-40'>
-                          {user?.role === 'admin' && member.role === 'doula' && (
-                            <DropdownMenuItem
-                              onClick={() => void handleOpenDocuments(member)}
-                              className='cursor-pointer'
-                            >
-                              <FileText className='h-4 w-4 mr-2' />
-                              <span>Documents</span>
-                            </DropdownMenuItem>
-                          )}
                           {user?.role === 'admin' &&
-                            member.profile_picture && (
+                            member.role === 'doula' && (
                               <DropdownMenuItem
-                                onClick={() => handleDownloadHeadshot(member)}
+                                onClick={() => void handleOpenDocuments(member)}
                                 className='cursor-pointer'
                               >
-                                <Download className='h-4 w-4 mr-2' />
-                                <span>Download headshot</span>
+                                <FileText className='h-4 w-4 mr-2' />
+                                <span>Documents</span>
                               </DropdownMenuItem>
                             )}
+                          {user?.role === 'admin' && member.profile_picture && (
+                            <DropdownMenuItem
+                              onClick={() => handleDownloadHeadshot(member)}
+                              className='cursor-pointer'
+                            >
+                              <Download className='h-4 w-4 mr-2' />
+                              <span>Download headshot</span>
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem
                             onClick={() => handleEditClick(member)}
                             className='cursor-pointer'
@@ -951,8 +981,11 @@ export default function Teams() {
               <div className='flex items-center justify-between rounded-xl border bg-white px-4 py-3'>
                 <p className='text-sm text-gray-600'>
                   Showing {(safeCurrentPage - 1) * PAGE_SIZE + 1}-
-                  {Math.min(safeCurrentPage * PAGE_SIZE, filteredMembers.length)} of{' '}
-                  {filteredMembers.length}
+                  {Math.min(
+                    safeCurrentPage * PAGE_SIZE,
+                    filteredMembers.length
+                  )}{' '}
+                  of {filteredMembers.length}
                 </p>
                 <div className='flex items-center gap-3'>
                   <span className='text-sm text-gray-500'>10 / page</span>
@@ -1265,7 +1298,9 @@ export default function Teams() {
             {documentsLoading ? (
               <p className='text-sm text-gray-500'>Loading documents...</p>
             ) : documentsItems.length === 0 ? (
-              <p className='text-sm text-gray-500'>No document status available.</p>
+              <p className='text-sm text-gray-500'>
+                No document status available.
+              </p>
             ) : (
               documentsItems.map((item) => {
                 const label =
@@ -1287,7 +1322,9 @@ export default function Teams() {
                   >
                     <div className='flex items-start justify-between gap-3'>
                       <div className='min-w-0'>
-                        <p className='text-sm font-medium text-gray-900'>{label}</p>
+                        <p className='text-sm font-medium text-gray-900'>
+                          {label}
+                        </p>
                         <p className='text-xs text-gray-500 capitalize'>
                           Status: {item.status}
                         </p>
