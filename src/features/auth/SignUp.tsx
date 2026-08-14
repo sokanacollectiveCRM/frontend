@@ -58,21 +58,18 @@ export default function SignUp() {
     setError('');
 
     try {
-      const response = await fetchWithAuth(
-        buildUrl('/auth/signup'),
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: formState.email,
-            password: formState.password,
-            firstname: formState.firstname || undefined,
-            lastname: formState.lastname || undefined,
-          }),
-        }
-      );
+      const response = await fetchWithAuth(buildUrl('/auth/signup'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formState.email,
+          password: formState.password,
+          firstname: formState.firstname || undefined,
+          lastname: formState.lastname || undefined,
+        }),
+      });
 
       const data = await response.json();
 
@@ -97,7 +94,7 @@ export default function SignUp() {
   };
 
   return (
-    <div className='flex flex-col gap-6 max-w-md mx-auto'>
+    <div className='mx-auto flex w-full min-w-0 max-w-md flex-col gap-6 px-4 py-6'>
       <Card>
         <CardHeader>
           <CardTitle className='text-2xl'>Sign Up</CardTitle>

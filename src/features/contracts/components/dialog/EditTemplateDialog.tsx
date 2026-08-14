@@ -71,14 +71,12 @@ export function EditTemplateDialog({
             formData.append('fee', feeInput.value);
             if (file) formData.append('contract', file);
 
-
             try {
               const res = await fetchWithAuth(
                 buildUrl(`/contracts/templates/${templateName}`),
                 {
                   method: 'PUT',
-                  headers: {
-                  },
+                  headers: {},
                   body: formData,
                 }
               );
@@ -111,7 +109,7 @@ export function EditTemplateDialog({
             <Input type='file' name='file' id='file' accept='.docx' />
           </div>
 
-          <div className='flex gap-4'>
+          <div className='flex flex-col gap-4 sm:flex-row'>
             <div className='flex-1 space-y-2'>
               <Label htmlFor='deposit'>Deposit Fee</Label>
               <Input

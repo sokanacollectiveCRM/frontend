@@ -16,9 +16,12 @@ interface ClientDashboardProps {
 }
 
 /** Client-facing area: profile only (no org metrics or staff CRM). */
-export default function ClientDashboard({ view = 'profile' }: ClientDashboardProps) {
+export default function ClientDashboard({
+  view = 'profile',
+}: ClientDashboardProps) {
   const { client, isLoading: clientAuthLoading } = useClientAuth();
-  const { isClientPortalUser, isLoading: portalLoading } = useIsClientPortalUser();
+  const { isClientPortalUser, isLoading: portalLoading } =
+    useIsClientPortalUser();
   const { user } = useUser();
   const isLoading = clientAuthLoading || portalLoading;
 
@@ -67,11 +70,13 @@ export default function ClientDashboard({ view = 'profile' }: ClientDashboardPro
 
   return (
     <>
-      <main className='w-full max-w-screen overflow-x-hidden px-4 py-6'>
-        <div className='p-6'>
+      <main className='w-full min-w-0 max-w-screen overflow-x-hidden px-4 py-6'>
+        <div className='min-w-0'>
           <div className='mb-6'>
-            <h1 className='text-3xl font-bold text-gray-900'>
-              {view === 'billing' ? 'Billing information' : 'Profile information'}
+            <h1 className='text-2xl font-bold text-gray-900 sm:text-3xl'>
+              {view === 'billing'
+                ? 'Billing information'
+                : 'Profile information'}
             </h1>
             <p className='mt-1 text-gray-600'>
               Welcome, {welcomeName}.{' '}
@@ -89,7 +94,9 @@ export default function ClientDashboard({ view = 'profile' }: ClientDashboardPro
                 >
                   Service Outcomes
                 </a>
-                <span className='ml-2 text-sm text-gray-500'>(opens in a new tab)</span>
+                <span className='ml-2 text-sm text-gray-500'>
+                  (opens in a new tab)
+                </span>
               </p>
             ) : null}
           </div>

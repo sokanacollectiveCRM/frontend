@@ -23,8 +23,17 @@ import { UserContext } from '@/common/contexts/UserContext';
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { ChevronLeft, ChevronRight, Filter, Loader2, Search } from 'lucide-react';
-import { InvoiceDetailModal, type InvoiceDetailData } from './InvoiceDetailModal';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  Loader2,
+  Search,
+} from 'lucide-react';
+import {
+  InvoiceDetailModal,
+  type InvoiceDetailData,
+} from './InvoiceDetailModal';
 
 const PAGE_SIZES = [10, 25, 50, 100];
 
@@ -129,7 +138,9 @@ export default function InvoicesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] = useState<DisplayInvoice | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<DisplayInvoice | null>(
+    null
+  );
 
   const fetchCustomers = useCallback(async () => {
     setLoadingCust(true);
@@ -215,12 +226,13 @@ export default function InvoicesPage() {
         due_date: inv.due_date,
         total: typeof total === 'number' ? total.toFixed(2) : '0.00',
         lineItems: (
-          <ul className="space-y-1">
+          <ul className='space-y-1'>
             {inv.line_items
               ?.filter((item) => item.DetailType === 'SalesItemLineDetail')
               .map((li, i) => (
                 <li key={i}>
-                  {li.Description ?? 'Item'} × {li.SalesItemLineDetail?.Qty ?? 1} @ $
+                  {li.Description ?? 'Item'} ×{' '}
+                  {li.SalesItemLineDetail?.Qty ?? 1} @ $
                   {li.SalesItemLineDetail?.UnitPrice?.toFixed(2) ?? '0.00'}
                 </li>
               )) ?? null}
@@ -257,13 +269,7 @@ export default function InvoicesPage() {
       );
     }
     return list;
-  }, [
-    displayList,
-    searchTerm,
-    statusFilter,
-    dateFromFilter,
-    dateToFilter,
-  ]);
+  }, [displayList, searchTerm, statusFilter, dateFromFilter, dateToFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredList.length / pageSize));
   const startItem = (currentPage - 1) * pageSize;
@@ -351,7 +357,7 @@ export default function InvoicesPage() {
 
   return (
     <div className='flex flex-col p-4 min-h-0 overflow-auto'>
-      <div className='shrink-0 flex justify-between items-center mb-4'>
+      <div className='mb-4 flex min-w-0 shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
         <h1 className='text-2xl font-bold tracking-tight'>Invoices</h1>
         <SubmitButton onClick={() => setShowModal(true)}>
           New Invoice
@@ -359,15 +365,19 @@ export default function InvoicesPage() {
       </div>
 
       {/* Summary stats at top */}
-      <div className='grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4'>
+      <div className='mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
         <div className='rounded-lg border bg-card p-4 shadow-sm'>
-          <p className='text-xs font-medium text-muted-foreground'>Total amount</p>
+          <p className='text-xs font-medium text-muted-foreground'>
+            Total amount
+          </p>
           <p className='text-xl font-semibold mt-1'>
             {formatAmount(invoiceStats.totalAmount)}
           </p>
         </div>
         <div className='rounded-lg border bg-card p-4 shadow-sm'>
-          <p className='text-xs font-medium text-muted-foreground'>Invoice count</p>
+          <p className='text-xs font-medium text-muted-foreground'>
+            Invoice count
+          </p>
           <p className='text-xl font-semibold mt-1'>{invoiceStats.count}</p>
         </div>
       </div>
@@ -389,7 +399,10 @@ export default function InvoicesPage() {
             </div>
           </div>
           <div className='flex flex-wrap items-center gap-2'>
-            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v)}>
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => setStatusFilter(v)}
+            >
               <SelectTrigger className='w-[160px] h-9'>
                 <SelectValue placeholder='Status' />
               </SelectTrigger>
@@ -446,7 +459,9 @@ export default function InvoicesPage() {
           {filteredList.length === 0
             ? 'No invoices match your filters.'
             : `${filteredList.length} invoice${filteredList.length === 1 ? '' : 's'} total`}
-          {displayList.length !== filteredList.length && hasActiveFilters && ` (filtered from ${displayList.length})`}
+          {displayList.length !== filteredList.length &&
+            hasActiveFilters &&
+            ` (filtered from ${displayList.length})`}
         </p>
       </div>
 
@@ -470,20 +485,34 @@ export default function InvoicesPage() {
               <table className='min-w-full text-sm'>
                 <thead className='sticky top-0 bg-muted/80 backdrop-blur z-10'>
                   <tr className='border-b'>
-                    <th className='px-4 py-3 text-left font-semibold'>Invoice #</th>
-                    <th className='px-4 py-3 text-left font-semibold'>Customer</th>
-                    <th className='px-4 py-3 text-center font-semibold'>Status</th>
-                    <th className='px-4 py-3 text-center font-semibold'>Date</th>
-                    <th className='px-4 py-3 text-center font-semibold'>Due Date</th>
-                    <th className='px-4 py-3 text-right font-semibold'>Total</th>
-                    <th className='px-4 py-3 text-left font-semibold'>Line Items</th>
+                    <th className='px-4 py-3 text-left font-semibold'>
+                      Invoice #
+                    </th>
+                    <th className='px-4 py-3 text-left font-semibold'>
+                      Customer
+                    </th>
+                    <th className='px-4 py-3 text-center font-semibold'>
+                      Status
+                    </th>
+                    <th className='px-4 py-3 text-center font-semibold'>
+                      Date
+                    </th>
+                    <th className='px-4 py-3 text-center font-semibold'>
+                      Due Date
+                    </th>
+                    <th className='px-4 py-3 text-right font-semibold'>
+                      Total
+                    </th>
+                    <th className='px-4 py-3 text-left font-semibold'>
+                      Line Items
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedItems.map((inv, idx) => (
                     <tr
                       key={inv.id}
-                      role="button"
+                      role='button'
                       tabIndex={0}
                       className='border-b border-border/50 last:border-0 hover:bg-muted/30 cursor-pointer'
                       onClick={() => {
@@ -498,26 +527,37 @@ export default function InvoicesPage() {
                         }
                       }}
                     >
-                      <td className='px-4 py-3 font-medium' title={inv.invoiceNumber}>
+                      <td
+                        className='px-4 py-3 font-medium'
+                        title={inv.invoiceNumber}
+                      >
                         {shortenInvoiceNumber(inv.invoiceNumber)}
                       </td>
                       <td className='px-4 py-3'>
                         <div>
                           <div className='font-medium'>{inv.customerName}</div>
                           {inv.customerEmail && (
-                            <div className='text-xs text-muted-foreground'>{inv.customerEmail}</div>
+                            <div className='text-xs text-muted-foreground'>
+                              {inv.customerEmail}
+                            </div>
                           )}
                         </div>
                       </td>
-                      <td className='px-4 py-3 text-center'>{getStatusBadge(inv.status)}</td>
+                      <td className='px-4 py-3 text-center'>
+                        {getStatusBadge(inv.status)}
+                      </td>
                       <td className='px-4 py-3 text-center text-muted-foreground'>
                         {formatDate(inv.created_at)}
                       </td>
                       <td className='px-4 py-3 text-center text-muted-foreground'>
                         {formatDate(inv.due_date)}
                       </td>
-                      <td className='px-4 py-3 text-right font-medium'>${inv.total}</td>
-                      <td className='px-4 py-3 text-muted-foreground'>{inv.lineItems}</td>
+                      <td className='px-4 py-3 text-right font-medium'>
+                        ${inv.total}
+                      </td>
+                      <td className='px-4 py-3 text-muted-foreground'>
+                        {inv.lineItems}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -525,7 +565,9 @@ export default function InvoicesPage() {
             </div>
             <div className='shrink-0 flex items-center justify-between gap-4 px-4 py-3 border-t bg-muted/30'>
               <p className='text-sm text-muted-foreground'>
-                Showing {startItem + 1}–{Math.min(startItem + pageSize, filteredList.length)} of {filteredList.length}
+                Showing {startItem + 1}–
+                {Math.min(startItem + pageSize, filteredList.length)} of{' '}
+                {filteredList.length}
               </p>
               <div className='flex items-center gap-2'>
                 <Button
@@ -545,7 +587,9 @@ export default function InvoicesPage() {
                   size='sm'
                   className='h-8 w-8 p-0'
                   disabled={currentPage >= totalPages}
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
                 >
                   <ChevronRight className='h-4 w-4' />
                 </Button>
@@ -616,10 +660,10 @@ function CreateInvoiceModal({
 
   const filtered = search
     ? customers.filter(
-      (c) =>
-        c.name.toLowerCase().includes(search.toLowerCase()) ||
-        c.email.toLowerCase().includes(search.toLowerCase())
-    )
+        (c) =>
+          c.name.toLowerCase().includes(search.toLowerCase()) ||
+          c.email.toLowerCase().includes(search.toLowerCase())
+      )
     : customers;
 
   const changeLine = (

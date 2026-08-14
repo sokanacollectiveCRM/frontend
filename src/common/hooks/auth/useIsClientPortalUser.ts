@@ -1,10 +1,11 @@
+import { isClientRole, isStaffRole } from '@/common/auth/roles';
 import { useUser } from '@/common/hooks/user/useUser';
 import { useClientAuth } from '@/common/hooks/auth/useClientAuth';
 
 /**
- * True when this session should see the client portal (not admin/doula CRM).
- * Uses both Supabase session (useClientAuth) and backend /auth/me (user.role) so we
- * never show org metrics if the backend already classified the user as client.
+ * True when this session should see the client portal (not admin/doula/billing CRM).
+ * Staff vs client comes from /auth/me. A Supabase session is a client fallback only
+ * when the backend has not classified the user as staff.
  */
 export function useIsClientPortalUser(): {
   isClientPortalUser: boolean;
@@ -14,9 +15,9 @@ export function useIsClientPortalUser(): {
   const { user, isLoading: userLoading } = useUser();
   const { client, isLoading: clientLoading } = useClientAuth();
 
-  const isStaffUser = user?.role === 'admin' || user?.role === 'doula';
+  const isStaffUser = isStaffRole(user?.role);
   const isClientPortalUser =
-    !isStaffUser && (!!client || user?.role === 'client');
+    !isStaffUser && (isClientRole(user?.role) || !!client);
 
   return {
     isClientPortalUser,

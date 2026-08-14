@@ -1,21 +1,25 @@
 import * as React from 'react';
 
-const MOBILE_BREAKPOINT = 768;
+/** Hamburger / Sheet below this width. Matches Tailwind `lg` (1024px). */
+export const MOBILE_BREAKPOINT = 1024;
+
+function getIsMobileWidth(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.innerWidth < MOBILE_BREAKPOINT;
+}
 
 export function useIsMobile() {
-  const [isMobile, setIsMobile] = React.useState<boolean | undefined>(
-    undefined
-  );
+  const [isMobile, setIsMobile] = React.useState<boolean>(getIsMobileWidth);
 
   React.useEffect(() => {
     const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
     const onChange = () => {
-      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+      setIsMobile(getIsMobileWidth());
     };
     mql.addEventListener('change', onChange);
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+    setIsMobile(getIsMobileWidth());
     return () => mql.removeEventListener('change', onChange);
   }, []);
 
-  return !!isMobile;
+  return isMobile;
 }

@@ -9,13 +9,14 @@ export function isSessionExpiredError(
   status: number,
   errorText: string
 ): boolean {
+  // 403 is authorization failure (logged in, not allowed) — not session expiry.
+  if (status === 403) return false;
+  if (status === 401) return true;
+  const text = errorText.toLowerCase();
   return (
-    status === 401 ||
-    status === 403 ||
-    errorText.toLowerCase().includes('unauthorized') ||
-    errorText.toLowerCase().includes('not authenticated') ||
-    errorText.toLowerCase().includes('token expired') ||
-    errorText.toLowerCase().includes('session expired')
+    text.includes('not authenticated') ||
+    text.includes('token expired') ||
+    text.includes('session expired')
   );
 }
 

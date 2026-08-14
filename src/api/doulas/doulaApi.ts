@@ -1,4 +1,5 @@
 // API functions for fetching doula-related data
+import { fetchWithAuth } from '@/api/http';
 import type {
   ActivityLog,
   AssignedClient,
@@ -12,8 +13,7 @@ const API_BASE = apiBaseUrl;
 
 // Get all doulas (for list page)
 export async function getAllDoulas(): Promise<Doula[]> {
-
-  const response = await fetch(`${API_BASE}/admin/doulas`, {
+  const response = await fetchWithAuth(`${API_BASE}/admin/doulas`, {
     method: 'GET',
     credentials: 'include',
     headers: {
@@ -31,8 +31,7 @@ export async function getAllDoulas(): Promise<Doula[]> {
 
 // Get doula by ID (for detail page)
 export async function getDoulaById(doulaId: string): Promise<Doula> {
-
-  const response = await fetch(`${API_BASE}/admin/doulas/${doulaId}`, {
+  const response = await fetchWithAuth(`${API_BASE}/admin/doulas/${doulaId}`, {
     method: 'GET',
     credentials: 'include',
     headers: {
@@ -52,8 +51,7 @@ export async function getDoulaById(doulaId: string): Promise<Doula> {
 export async function getAssignedClients(
   doulaId: string
 ): Promise<AssignedClient[]> {
-
-  const response = await fetch(
+  const response = await fetchWithAuth(
     `${API_BASE}/admin/doulas/${doulaId}/clients`,
     {
       method: 'GET',
@@ -74,14 +72,16 @@ export async function getAssignedClients(
 
 // Get visits for a doula
 export async function getDoulaVisits(doulaId: string): Promise<Visit[]> {
-
-  const response = await fetch(`${API_BASE}/admin/doulas/${doulaId}/visits`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+  const response = await fetchWithAuth(
+    `${API_BASE}/admin/doulas/${doulaId}/visits`,
+    {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -93,14 +93,16 @@ export async function getDoulaVisits(doulaId: string): Promise<Visit[]> {
 
 // Get notes for a doula
 export async function getDoulaNotes(doulaId: string): Promise<DoulaNote[]> {
-
-  const response = await fetch(`${API_BASE}/admin/doulas/${doulaId}/notes`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+  const response = await fetchWithAuth(
+    `${API_BASE}/admin/doulas/${doulaId}/notes`,
+    {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -111,11 +113,8 @@ export async function getDoulaNotes(doulaId: string): Promise<DoulaNote[]> {
 }
 
 // Get activity log for a doula
-export async function getActivityLog(
-  doulaId: string
-): Promise<ActivityLog[]> {
-
-  const response = await fetch(
+export async function getActivityLog(doulaId: string): Promise<ActivityLog[]> {
+  const response = await fetchWithAuth(
     `${API_BASE}/admin/doulas/${doulaId}/activity`,
     {
       method: 'GET',
@@ -139,8 +138,7 @@ export async function updateDoula(
   doulaId: string,
   updateData: Partial<Doula>
 ): Promise<Doula> {
-
-  const response = await fetch(`${API_BASE}/admin/doulas/${doulaId}`, {
+  const response = await fetchWithAuth(`${API_BASE}/admin/doulas/${doulaId}`, {
     method: 'PUT',
     credentials: 'include',
     headers: {

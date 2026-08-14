@@ -1,4 +1,5 @@
 // src/api/quickbooks/auth/customer.ts
+import { fetchWithAuth } from '@/api/http';
 import { API_CONFIG } from '@/api/config';
 import { withTokenRefresh } from './utils';
 
@@ -30,7 +31,7 @@ export async function createQuickBooksCustomer(
   params: CreateCustomerParams
 ): Promise<{ qbCustomerId: string }> {
   return withTokenRefresh(async () => {
-    const res = await fetch(`${API_BASE}/quickbooks/customer`, {
+    const res = await fetchWithAuth(`${API_BASE}/quickbooks/customer`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -64,13 +65,16 @@ export async function getInvoiceableCustomers(): Promise<
   InvoiceableCustomer[]
 > {
   return withTokenRefresh(async () => {
-    const res = await fetch(`${API_BASE}/quickbooks/customers/invoiceable`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-    });
+    const res = await fetchWithAuth(
+      `${API_BASE}/quickbooks/customers/invoiceable`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      }
+    );
 
     if (!res.ok) {
       const err = await res.text().catch(() => '');
@@ -119,7 +123,7 @@ export async function getQuickBooksCustomers(
       ? `${API_BASE}/quickbooks/customers?maxResults=${maxResults}`
       : `${API_BASE}/quickbooks/customers`;
 
-    const res = await fetch(url, {
+    const res = await fetchWithAuth(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

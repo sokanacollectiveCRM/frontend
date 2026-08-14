@@ -3,10 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/api/config', () => ({
   API_CONFIG: {
     baseUrl: 'https://api.example.com',
+    authMode: 'cookie',
   },
 }));
 
-import { getQuickBooksAuthUrl } from '../route';
+import { getQuickBooksAuthUrl } from '@/api/quickbooks/auth/route';
 
 describe('getQuickBooksAuthUrl', () => {
   const fetchMock = vi.fn();

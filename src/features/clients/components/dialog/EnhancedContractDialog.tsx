@@ -111,11 +111,13 @@ export function buildInstallmentAmounts(
 
   const balanceCents = Math.round(Math.max(balanceAmount, 0) * 100);
   const baseInstallmentCents = Math.floor(balanceCents / installmentsCount);
-  const remainderCents = balanceCents - baseInstallmentCents * installmentsCount;
+  const remainderCents =
+    balanceCents - baseInstallmentCents * installmentsCount;
 
   return Array.from({ length: installmentsCount }, (_, index) => {
     const installmentCents =
-      baseInstallmentCents + (index === installmentsCount - 1 ? remainderCents : 0);
+      baseInstallmentCents +
+      (index === installmentsCount - 1 ? remainderCents : 0);
     return installmentCents / 100;
   });
 }
@@ -339,7 +341,9 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
           depositType,
           depositValue
         );
-        const balanceAmount = roundToCents(Math.max(totalAmount - depositAmount, 0));
+        const balanceAmount = roundToCents(
+          Math.max(totalAmount - depositAmount, 0)
+        );
 
         const localAmounts: CalculatedAmounts = {
           total_amount: totalAmount,
@@ -388,7 +392,9 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
           depositValue > 0
             ? calculateDepositAmount(totalAmount, depositType, depositValue)
             : 0;
-        const balanceAmount = roundToCents(Math.max(totalAmount - depositAmount, 0));
+        const balanceAmount = roundToCents(
+          Math.max(totalAmount - depositAmount, 0)
+        );
 
         const localAmounts: CalculatedAmounts = {
           total_amount: totalAmount,
@@ -539,31 +545,6 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
         toast.success(
           `Contract generated successfully! Document ID: ${response.data.contractId}. Client will receive an email to sign the contract.`
         );
-
-        // Log the response for debugging
-        console.log('Contract generated successfully:', {
-          contractId: response.data.contractId,
-          signNow: response.data.signNow,
-          emailDelivery: response.data.emailDelivery,
-        });
-
-        // Store contract verification data in localStorage for future payment integration
-        const contractVerificationData = {
-          contractId: response.data.contractId,
-          clientEmail: clientData.email,
-          clientName: clientData.name,
-          timestamp: Date.now(),
-          amounts: calculatedAmounts,
-        };
-        localStorage.setItem(
-          'contractVerification',
-          JSON.stringify(contractVerificationData)
-        );
-
-        console.log(
-          'Stored contract verification data:',
-          contractVerificationData
-        );
       } else {
         toast.error('Failed to generate contract');
       }
@@ -634,7 +615,7 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className='max-w-4xl max-h-[90vh] overflow-y-auto'>
+      <DialogContent className='left-0 top-0 h-[100dvh] max-h-[100dvh] w-full max-w-full translate-x-0 translate-y-0 overflow-y-auto rounded-none sm:left-[50%] sm:top-[50%] sm:h-auto sm:max-h-[90vh] sm:max-w-4xl sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg'>
         <DialogHeader>
           <DialogTitle className='flex items-center gap-2'>
             <Calculator className='h-5 w-5' />
@@ -734,7 +715,7 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                                   </span>
                                 </div>
                               ) : (
-                                <div className='grid grid-cols-2 gap-3'>
+                                <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
                                   <div className='flex items-center gap-2'>
                                     <span className='text-sm text-gray-500'>
                                       $

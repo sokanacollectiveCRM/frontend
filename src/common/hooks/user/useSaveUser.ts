@@ -1,5 +1,6 @@
 import { User } from '@/common/utils/User';
 import { apiBaseUrl } from '@/config/env';
+import { fetchWithAuth } from '@/api/http';
 
 export default async function useSaveUser(userData: User) {
   console.assert(
@@ -7,7 +8,7 @@ export default async function useSaveUser(userData: User) {
     `in useSaveUser, no userData.id provided. the userData is ${JSON.stringify(userData)}`
   );
   try {
-    const response = await fetch(`${apiBaseUrl}/users/update`, {
+    const response = await fetchWithAuth(`${apiBaseUrl}/users/update`, {
       method: 'PUT',
       credentials: 'include',
       headers: {

@@ -5,7 +5,10 @@ import { Button } from '@/common/components/ui/button';
 
 const StyledNav = styled.nav`
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 10px;
+  min-width: 0;
   padding: 10px 20px;
   font-size: 20px;
 `;

@@ -1,4 +1,5 @@
 // src/api/quickbooks/status.ts
+import { fetchWithAuth } from '@/api/http';
 import { apiBaseUrl } from '@/config/env';
 
 const API_BASE = apiBaseUrl;
@@ -7,7 +8,7 @@ const API_BASE = apiBaseUrl;
  * @returns true if connected, false otherwise
  */
 export async function getConnectionStatus(): Promise<boolean> {
-  const res = await fetch(`${API_BASE}/quickbooks/status`, {
+  const res = await fetchWithAuth(`${API_BASE}/quickbooks/status`, {
     method: 'GET',
     credentials: 'include',
   });
@@ -27,7 +28,7 @@ export async function getConnectionStatus(): Promise<boolean> {
  * Disconnect the current user from QuickBooks (deletes stored tokens).
  */
 export async function disconnectQuickBooks(): Promise<void> {
-  const res = await fetch(`${API_BASE}/quickbooks/disconnect`, {
+  const res = await fetchWithAuth(`${API_BASE}/quickbooks/disconnect`, {
     method: 'POST',
     credentials: 'include',
   });

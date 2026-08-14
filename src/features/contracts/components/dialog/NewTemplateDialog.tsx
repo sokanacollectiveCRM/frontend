@@ -43,17 +43,12 @@ export function NewTemplateDialog({ onUploadSuccess }: Props) {
     formData.append('deposit', depositInput.value);
     formData.append('fee', feeInput.value);
 
-
     try {
-      const res = await fetchWithAuth(
-        buildUrl('/contracts/templates'),
-        {
-          method: 'POST',
-          headers: {
-          },
-          body: formData,
-        }
-      );
+      const res = await fetchWithAuth(buildUrl('/contracts/templates'), {
+        method: 'POST',
+        headers: {},
+        body: formData,
+      });
 
       if (!res.ok) throw new Error('Upload failed.');
 
@@ -97,7 +92,7 @@ export function NewTemplateDialog({ onUploadSuccess }: Props) {
             <Input type='file' name='file' id='file' accept='.docx' required />
           </div>
 
-          <div className='flex gap-4'>
+          <div className='flex flex-col gap-4 sm:flex-row'>
             <div className='flex-1 space-y-2'>
               <Label htmlFor='deposit'>Deposit Fee</Label>
               <Input name='deposit' id='deposit' type='number' required />

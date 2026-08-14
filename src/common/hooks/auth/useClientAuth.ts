@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import type { User } from '@supabase/supabase-js';
+import { isStaffRole } from '@/common/auth/roles';
+import { useUser } from '@/common/hooks/user/useUser';
 import { supabase } from '@/lib/supabase';
 
 interface ClientUser {
@@ -10,74 +11,64 @@ interface ClientUser {
   role: 'client';
 }
 
-/** Staff roles must not use the client dashboard session. */
-function isStaffRole(user: User): boolean {
-  const r =
-    (user.user_metadata?.role as string | undefined) ||
-    (user.app_metadata?.role as string | undefined);
-  return r === 'admin' || r === 'doula';
+type SessionIdentity = Omit<ClientUser, 'role'>;
+
+function identityFromSession(
+  session: {
+    user: {
+      id: string;
+      email?: string;
+      user_metadata?: Record<string, unknown>;
+    };
+  } | null
+): SessionIdentity | null {
+  if (!session?.user) return null;
+  const meta = session.user.user_metadata ?? {};
+  return {
+    id: session.user.id,
+    email: session.user.email || '',
+    firstname: typeof meta.firstname === 'string' ? meta.firstname : undefined,
+    lastname: typeof meta.lastname === 'string' ? meta.lastname : undefined,
+  };
 }
 
 /**
- * Hook to detect if the current user is a client logged in via Supabase
- * Returns the client user data if authenticated, null otherwise
+ * Supabase session identity for the client portal.
+ * Staff vs client is decided by /auth/me (`user.role`), never by user_metadata.
  */
 export function useClientAuth() {
-  const [client, setClient] = useState<ClientUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, isLoading: userLoading } = useUser();
+  const [sessionIdentity, setSessionIdentity] =
+    useState<SessionIdentity | null>(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
 
   useEffect(() => {
+    const applySession = (
+      session: Parameters<typeof identityFromSession>[0]
+    ) => {
+      setSessionIdentity(identityFromSession(session));
+      setSessionLoading(false);
+    };
+
     const checkClientSession = async () => {
       try {
         const {
           data: { session },
         } = await supabase.auth.getSession();
-
-        if (session?.user) {
-          if (isStaffRole(session.user)) {
-            setClient(null);
-          } else {
-            setClient({
-              id: session.user.id,
-              email: session.user.email || '',
-              firstname: session.user.user_metadata?.firstname,
-              lastname: session.user.user_metadata?.lastname,
-              role: 'client',
-            });
-          }
-        } else {
-          setClient(null);
-        }
+        applySession(session);
       } catch (error) {
         console.error('Error checking client session:', error);
-        setClient(null);
-      } finally {
-        setIsLoading(false);
+        setSessionIdentity(null);
+        setSessionLoading(false);
       }
     };
 
-    checkClientSession();
+    void checkClientSession();
 
-    // Listen for auth state changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        if (isStaffRole(session.user)) {
-          setClient(null);
-        } else {
-          setClient({
-            id: session.user.id,
-            email: session.user.email || '',
-            firstname: session.user.user_metadata?.firstname,
-            lastname: session.user.user_metadata?.lastname,
-            role: 'client',
-          });
-        }
-      } else {
-        setClient(null);
-      }
-      setIsLoading(false);
+      applySession(session);
     });
 
     return () => {
@@ -85,6 +76,11 @@ export function useClientAuth() {
     };
   }, []);
 
+  const isLoading = userLoading || sessionLoading;
+  const client =
+    !userLoading && !isStaffRole(user?.role) && sessionIdentity
+      ? { ...sessionIdentity, role: 'client' as const }
+      : null;
+
   return { client, isLoading, isClient: !!client };
 }
-

@@ -11,9 +11,11 @@ import RequestRoutes from '@/features/request/RequestRoutes';
 import { Route, Routes } from 'react-router-dom';
 import {
   BillingPortalRoute,
+  ClientPortalRoute,
   NonBillingOnlyRoute,
   PrivateRoute,
   PublicOnlyRoute,
+  StaffCrmRoute,
 } from './common/components/routes/ProtectedRoutes';
 import DashboardLayout from './common/layouts/DashboardLayout';
 import { DemographicsRoute } from './features/demographics/DemographicsRoute';
@@ -36,11 +38,11 @@ const AppRoutes = () => (
   <Routes>
     {/* Client Portal Auth Routes - Must be first, No Sidebar, Always Accessible */}
     {/* These routes are completely standalone, outside all wrappers */}
-    <Route path="/auth/set-password" element={<SetPassword />} />
-    <Route path="/auth/client-login" element={<ClientLogin />} />
+    <Route path='/auth/set-password' element={<SetPassword />} />
+    <Route path='/auth/client-login' element={<ClientLogin />} />
 
     {/* Contract Signed Success Page - No Sidebar, No Auth */}
-    <Route path="/contract-signed" element={<ContractSignedPage />} />
+    <Route path='/contract-signed' element={<ContractSignedPage />} />
 
     <Route>
       <Route element={<NavLayout />}>
@@ -53,7 +55,7 @@ const AppRoutes = () => (
     </Route>
 
     {/* Contract Signed Success Page - No Sidebar, No Auth */}
-    <Route path="/contract-signed" element={<ContractSignedPage />} />
+    <Route path='/contract-signed' element={<ContractSignedPage />} />
 
     <Route>
       <Route element={<DashboardLayout />}>
@@ -63,23 +65,33 @@ const AppRoutes = () => (
           </Route>
           <Route element={<NonBillingOnlyRoute />}>
             <Route index element={<Home />} />
-            <Route path='/profile' element={<ClientDashboard view='profile' />} />
-            <Route path='/billing' element={<ClientDashboard view='billing' />} />
-            {ContractRoutes()}
-            {PipelineRoutes()}
-            {ClientRoutes()}
-            {PaymentsRoute()}
-            {HoursRoutes()}
-            {ProfileRoutes()}
             {MyAccountRoutes()}
-            {TeamRoutes()}
-            {InboxRoutes()}
-            {QuickBooksRoutes()}
-            {CreateCustomerRoutes()}
-            {InvoiceRoute()}
-            {FinancialRoute()}
-            {DemographicsRoute()}
-            {DoulaDashboardRoutes()}
+            <Route element={<ClientPortalRoute />}>
+              <Route
+                path='/profile'
+                element={<ClientDashboard view='profile' />}
+              />
+              <Route
+                path='/billing'
+                element={<ClientDashboard view='billing' />}
+              />
+            </Route>
+            <Route element={<StaffCrmRoute />}>
+              {ContractRoutes()}
+              {PipelineRoutes()}
+              {ClientRoutes()}
+              {PaymentsRoute()}
+              {HoursRoutes()}
+              {ProfileRoutes()}
+              {TeamRoutes()}
+              {InboxRoutes()}
+              {QuickBooksRoutes()}
+              {CreateCustomerRoutes()}
+              {InvoiceRoute()}
+              {FinancialRoute()}
+              {DemographicsRoute()}
+              {DoulaDashboardRoutes()}
+            </Route>
           </Route>
         </Route>
       </Route>

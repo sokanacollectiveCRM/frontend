@@ -88,15 +88,12 @@ export default function DoulaDetailPage() {
     try {
       // For now, fetch from team members API (replace with real doula endpoints when available)
 
-      const response = await fetchWithAuth(
-        buildUrl('/clients/team/all'),
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      const response = await fetchWithAuth(buildUrl('/clients/team/all'), {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
       if (!response.ok) {
         throw new Error('Failed to fetch doula');
@@ -346,7 +343,7 @@ export default function DoulaDetailPage() {
       </Header>
 
       <Main>
-        <div className='flex-1 overflow-auto p-6'>
+        <div className='min-w-0 flex-1 overflow-auto p-4 sm:p-6'>
           {/* Back Button */}
           <Button
             variant='ghost'

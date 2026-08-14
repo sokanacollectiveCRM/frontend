@@ -1,7 +1,13 @@
 import { getPaymentsList, PaymentRow } from '@/api/financial/paymentsApi';
 import { UserContext } from '@/common/contexts/UserContext';
 import { useContext, useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Filter, Loader2, Search } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  Loader2,
+  Search,
+} from 'lucide-react';
 import { Button } from '@/common/components/ui/button';
 import {
   Select,
@@ -25,7 +31,8 @@ function formatAmount(n: number): string {
 
 function getDisplayStatus(p: PaymentRow): string {
   const s = (p.status || '').toLowerCase();
-  if (s === 'succeeded' || s === 'completed' || s === 'paid') return 'succeeded';
+  if (s === 'succeeded' || s === 'completed' || s === 'paid')
+    return 'succeeded';
   if (s === 'pending' || s === 'processing') return 'pending';
   if (s === 'failed' || s === 'cancelled') return 'failed';
   if (s === 'refunded') return 'refunded';
@@ -38,7 +45,12 @@ function getDisplayType(p: PaymentRow): string {
 }
 
 function getClientName(p: PaymentRow): string {
-  return (p.client_name || p.customer_name || (p as Record<string, unknown>).client_name as string) || '—';
+  return (
+    p.client_name ||
+    p.customer_name ||
+    ((p as Record<string, unknown>).client_name as string) ||
+    '—'
+  );
 }
 
 export default function FinancialPage() {
@@ -68,8 +80,10 @@ export default function FinancialPage() {
       list = list.filter(
         (p) =>
           getClientName(p).toLowerCase().includes(term) ||
-          (p.description && String(p.description).toLowerCase().includes(term)) ||
-          (p.contract_id && String(p.contract_id).toLowerCase().includes(term)) ||
+          (p.description &&
+            String(p.description).toLowerCase().includes(term)) ||
+          (p.contract_id &&
+            String(p.contract_id).toLowerCase().includes(term)) ||
           (p.invoice && String(p.invoice).toLowerCase().includes(term)) ||
           (p.invoice_id && String(p.invoice_id).toLowerCase().includes(term))
       );
@@ -106,86 +120,97 @@ export default function FinancialPage() {
     return Array.from(set).sort();
   }, [payments]);
 
-  const hasActiveFilters = searchTerm.trim() || categoryFilter !== 'all' || typeFilter !== 'all';
+  const hasActiveFilters =
+    searchTerm.trim() || categoryFilter !== 'all' || typeFilter !== 'all';
+
+  const totalAmount = useMemo(() => {
+    const sum = filtered.reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
+    return sum;
+  }, [filtered]);
 
   if (!authLoading && user?.role !== 'admin') {
     return (
-      <div className="p-6">
-        <p className="text-destructive">You do not have permission to view this page.</p>
+      <div className='p-6'>
+        <p className='text-destructive'>
+          You do not have permission to view this page.
+        </p>
       </div>
     );
   }
 
-  const totalAmount = useMemo(() => {
-    const sum = filtered.reduce(
-      (acc, p) => acc + (Number(p.amount) || 0),
-      0
-    );
-    return sum;
-  }, [filtered]);
-
   return (
-    <div className="flex flex-col p-4 min-h-0 overflow-auto">
-      <div className="mb-4 flex items-center justify-between shrink-0">
+    <div className='flex flex-col p-4 min-h-0 overflow-auto'>
+      <div className='mb-4 flex min-w-0 shrink-0 items-center justify-between'>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Payments</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className='text-2xl font-bold tracking-tight'>Payments</h1>
+          <p className='text-muted-foreground mt-1'>
             Payments by status and category from the payments table
           </p>
         </div>
       </div>
 
       {/* Summary stats at top */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
-        <div className="rounded-lg border bg-card p-4 shadow-sm">
-          <p className="text-xs font-medium text-muted-foreground">Total amount</p>
-          <p className="text-xl font-semibold mt-1">{formatAmount(totalAmount)}</p>
+      <div className='mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
+        <div className='rounded-lg border bg-card p-4 shadow-sm'>
+          <p className='text-xs font-medium text-muted-foreground'>
+            Total amount
+          </p>
+          <p className='text-xl font-semibold mt-1'>
+            {formatAmount(totalAmount)}
+          </p>
         </div>
-        <div className="rounded-lg border bg-card p-4 shadow-sm">
-          <p className="text-xs font-medium text-muted-foreground">Payment count</p>
-          <p className="text-xl font-semibold mt-1">{filtered.length}</p>
+        <div className='rounded-lg border bg-card p-4 shadow-sm'>
+          <p className='text-xs font-medium text-muted-foreground'>
+            Payment count
+          </p>
+          <p className='text-xl font-semibold mt-1'>{filtered.length}</p>
         </div>
       </div>
 
       {/* Filters bar */}
-      <div className="shrink-0 mb-4 rounded-lg border bg-card p-4 shadow-sm">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="flex items-center gap-2 min-w-[200px] flex-1">
-            <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className='shrink-0 mb-4 rounded-lg border bg-card p-4 shadow-sm'>
+        <div className='flex flex-wrap items-end gap-3'>
+          <div className='flex items-center gap-2 min-w-[200px] flex-1'>
+            <Filter className='h-4 w-4 text-muted-foreground shrink-0' />
+            <div className='relative flex-1 max-w-md'>
+              <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground' />
               <Input
-                type="text"
-                placeholder="Search by name, description, contract, or invoice..."
-                className="pl-9 h-9"
+                type='text'
+                placeholder='Search by name, description, contract, or invoice...'
+                className='pl-9 h-9'
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v)}>
-              <SelectTrigger className="w-[160px] h-9">
-                <SelectValue placeholder="Status" />
+          <div className='flex flex-wrap items-center gap-2'>
+            <Select
+              value={categoryFilter}
+              onValueChange={(v) => setCategoryFilter(v)}
+            >
+              <SelectTrigger className='w-[160px] h-9'>
+                <SelectValue placeholder='Status' />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="succeeded">Succeeded / Paid</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="failed">Failed</SelectItem>
-                <SelectItem value="refunded">Refunded</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
+                <SelectItem value='all'>All statuses</SelectItem>
+                <SelectItem value='succeeded'>Succeeded / Paid</SelectItem>
+                <SelectItem value='pending'>Pending</SelectItem>
+                <SelectItem value='failed'>Failed</SelectItem>
+                <SelectItem value='refunded'>Refunded</SelectItem>
+                <SelectItem value='other'>Other</SelectItem>
               </SelectContent>
             </Select>
             <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v)}>
-              <SelectTrigger className="w-[140px] h-9">
-                <SelectValue placeholder="Type" />
+              <SelectTrigger className='w-[140px] h-9'>
+                <SelectValue placeholder='Type' />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All types</SelectItem>
+                <SelectItem value='all'>All types</SelectItem>
                 {uniqueTypes.map((t) => (
                   <SelectItem key={t} value={t}>
-                    {t.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                    {t
+                      .replace(/_/g, ' ')
+                      .replace(/\b\w/g, (c) => c.toUpperCase())}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -194,8 +219,8 @@ export default function FinancialPage() {
               value={String(pageSize)}
               onValueChange={(v) => setPageSize(Number(v))}
             >
-              <SelectTrigger className="w-[100px] h-9">
-                <SelectValue placeholder="Per page" />
+              <SelectTrigger className='w-[100px] h-9'>
+                <SelectValue placeholder='Per page' />
               </SelectTrigger>
               <SelectContent>
                 {PAGE_SIZES.map((n) => (
@@ -207,10 +232,10 @@ export default function FinancialPage() {
             </Select>
             {hasActiveFilters && (
               <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-9"
+                type='button'
+                variant='outline'
+                size='sm'
+                className='h-9'
                 onClick={() => {
                   setSearchTerm('');
                   setCategoryFilter('all');
@@ -222,68 +247,82 @@ export default function FinancialPage() {
             )}
           </div>
         </div>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className='mt-2 text-sm text-muted-foreground'>
           {filtered.length === 0
             ? 'No payments match your filters.'
             : `${filtered.length} payment${filtered.length === 1 ? '' : 's'} total`}
-          {payments.length !== filtered.length && hasActiveFilters && ` (filtered from ${payments.length})`}
+          {payments.length !== filtered.length &&
+            hasActiveFilters &&
+            ` (filtered from ${payments.length})`}
         </p>
       </div>
 
       {/* Table + Pagination */}
-      <div className="flex flex-col flex-1 min-h-0 rounded-xl border bg-card shadow-sm overflow-hidden">
+      <div className='flex flex-col flex-1 min-h-0 rounded-xl border bg-card shadow-sm overflow-hidden'>
         {loadingPayments ? (
-          <div className="flex-1 flex flex-col items-center justify-center gap-3 p-8 text-muted-foreground">
-            <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
-            <p className="text-sm font-medium">Loading financial data…</p>
-            <p className="text-xs">This may take a moment.</p>
+          <div className='flex-1 flex flex-col items-center justify-center gap-3 p-8 text-muted-foreground'>
+            <Loader2 className='h-8 w-8 animate-spin' aria-hidden />
+            <p className='text-sm font-medium'>Loading financial data…</p>
+            <p className='text-xs'>This may take a moment.</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex-1 flex items-center justify-center p-8 text-muted-foreground">
+          <div className='flex-1 flex items-center justify-center p-8 text-muted-foreground'>
             {payments.length === 0
               ? 'No payment data yet. Data will appear when the payments table API is available.'
               : 'No payments match your filters.'}
           </div>
         ) : (
           <>
-            <div className="overflow-auto flex-1 min-h-0">
-              <table className="min-w-full text-sm">
-                <thead className="sticky top-0 bg-muted/80 backdrop-blur z-10">
-                  <tr className="border-b">
-                    <th className="px-4 py-3 text-left font-semibold">Date</th>
-                    <th className="px-4 py-3 text-left font-semibold">Client / Customer</th>
-                    <th className="px-4 py-3 text-left font-semibold">Type</th>
-                    <th className="px-4 py-3 text-right font-semibold">Amount</th>
-                    <th className="px-4 py-3 text-left font-semibold">Description</th>
-                    <th className="px-4 py-3 text-left font-semibold">Invoice</th>
-                    <th className="px-4 py-3 text-left font-semibold">Contract</th>
+            <div className='overflow-auto flex-1 min-h-0'>
+              <table className='min-w-full text-sm'>
+                <thead className='sticky top-0 bg-muted/80 backdrop-blur z-10'>
+                  <tr className='border-b'>
+                    <th className='px-4 py-3 text-left font-semibold'>Date</th>
+                    <th className='px-4 py-3 text-left font-semibold'>
+                      Client / Customer
+                    </th>
+                    <th className='px-4 py-3 text-left font-semibold'>Type</th>
+                    <th className='px-4 py-3 text-right font-semibold'>
+                      Amount
+                    </th>
+                    <th className='px-4 py-3 text-left font-semibold'>
+                      Description
+                    </th>
+                    <th className='px-4 py-3 text-left font-semibold'>
+                      Invoice
+                    </th>
+                    <th className='px-4 py-3 text-left font-semibold'>
+                      Contract
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedItems.map((p) => (
                     <tr
                       key={String(p.id)}
-                      className="border-b border-border/50 last:border-0 hover:bg-muted/30"
+                      className='border-b border-border/50 last:border-0 hover:bg-muted/30'
                     >
-                      <td className="px-4 py-3 text-muted-foreground">
+                      <td className='px-4 py-3 text-muted-foreground'>
                         {p.created_at
                           ? new Date(p.created_at).toLocaleDateString()
                           : '—'}
                       </td>
-                      <td className="px-4 py-3 font-medium">{getClientName(p)}</td>
-                      <td className="px-4 py-3 text-muted-foreground">
+                      <td className='px-4 py-3 font-medium'>
+                        {getClientName(p)}
+                      </td>
+                      <td className='px-4 py-3 text-muted-foreground'>
                         {getDisplayType(p).replace(/_/g, ' ')}
                       </td>
-                      <td className="px-4 py-3 text-right font-medium">
+                      <td className='px-4 py-3 text-right font-medium'>
                         ${Number(p.amount || 0).toFixed(2)}
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground max-w-[200px] truncate">
+                      <td className='px-4 py-3 text-muted-foreground max-w-[200px] truncate'>
                         {p.description || '—'}
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">
+                      <td className='px-4 py-3 text-muted-foreground'>
                         {p.invoice ?? p.invoice_id ?? '—'}
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">
+                      <td className='px-4 py-3 text-muted-foreground'>
                         {p.contract_id || '—'}
                       </td>
                     </tr>
@@ -293,31 +332,35 @@ export default function FinancialPage() {
             </div>
 
             {/* Pagination bar - always visible at bottom of card */}
-            <div className="shrink-0 flex items-center justify-between gap-4 px-4 py-3 border-t bg-muted/30">
-              <p className="text-sm text-muted-foreground">
-                Showing {startItem + 1}–{Math.min(startItem + pageSize, filtered.length)} of {filtered.length}
+            <div className='shrink-0 flex items-center justify-between gap-4 px-4 py-3 border-t bg-muted/30'>
+              <p className='text-sm text-muted-foreground'>
+                Showing {startItem + 1}–
+                {Math.min(startItem + pageSize, filtered.length)} of{' '}
+                {filtered.length}
               </p>
-              <div className="flex items-center gap-2">
+              <div className='flex items-center gap-2'>
                 <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 w-8 p-0"
+                  variant='outline'
+                  size='sm'
+                  className='h-8 w-8 p-0'
                   disabled={currentPage <= 1}
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  <ChevronLeft className='h-4 w-4' />
                 </Button>
-                <span className="text-sm font-medium min-w-[80px] text-center">
+                <span className='text-sm font-medium min-w-[80px] text-center'>
                   Page {currentPage} of {totalPages}
                 </span>
                 <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 w-8 p-0"
+                  variant='outline'
+                  size='sm'
+                  className='h-8 w-8 p-0'
                   disabled={currentPage >= totalPages}
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
                 >
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className='h-4 w-4' />
                 </Button>
               </div>
             </div>

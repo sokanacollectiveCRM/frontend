@@ -2,8 +2,31 @@ import useSaveUser from '@/common/hooks/user/useSaveUser';
 import { ROLE, User } from '@/common/utils/User';
 import { vi } from 'vitest';
 
-// Mock fetch
+vi.mock('@/api/sessionAccessToken', () => ({
+  getSessionAccessToken: () => null,
+}));
+
+vi.mock('@/lib/supabase', () => ({
+  supabase: {
+    auth: {
+      getSession: async () => ({ data: { session: null } }),
+    },
+  },
+}));
+
 global.fetch = vi.fn();
+
+function expectUpdateUserFetch(userData: User) {
+  expect(global.fetch).toHaveBeenCalledTimes(1);
+  const [url, init] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+  expect(url).toBe('http://localhost:5050/users/update');
+  expect(init.method).toBe('PUT');
+  expect(init.credentials).toBe('include');
+  expect(init.body).toBe(JSON.stringify(userData));
+  expect(new Headers(init.headers).get('Content-Type')).toBe(
+    'application/json'
+  );
+}
 
 // Mock localStorage
 const mockLocalStorage = {
@@ -41,17 +64,7 @@ describe('useSaveUser', () => {
       const result = await useSaveUser(mockUserData);
 
       expect(result).toEqual(mockResponse);
-      expect(global.fetch).toHaveBeenCalledWith(
-        'http://localhost:5050/users/update',
-        {
-          method: 'PUT',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(mockUserData),
-        }
-      );
+      expectUpdateUserFetch(mockUserData);
     });
 
     it('should handle user data with all fields', async () => {
@@ -74,17 +87,7 @@ describe('useSaveUser', () => {
       const result = await useSaveUser(mockUserData);
 
       expect(result).toEqual(mockResponse);
-      expect(global.fetch).toHaveBeenCalledWith(
-        'http://localhost:5050/users/update',
-        {
-          method: 'PUT',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(mockUserData),
-        }
-      );
+      expectUpdateUserFetch(mockUserData);
     });
   });
 
@@ -104,7 +107,9 @@ describe('useSaveUser', () => {
         statusText: 'Bad Request',
       });
 
-      await expect(useSaveUser(mockUserData)).rejects.toThrow('Failed to save user');
+      await expect(useSaveUser(mockUserData)).rejects.toThrow(
+        'Failed to save user'
+      );
     });
 
     it('should throw error on network failure', async () => {
@@ -130,7 +135,9 @@ describe('useSaveUser', () => {
       } as User;
 
       // This should trigger the console.assert in the hook
-      const consoleSpy = vi.spyOn(console, 'assert').mockImplementation(() => { });
+      const consoleSpy = vi
+        .spyOn(console, 'assert')
+        .mockImplementation(() => {});
 
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
@@ -213,17 +220,7 @@ describe('useSaveUser', () => {
 
       await useSaveUser(mockUserData);
 
-      expect(global.fetch).toHaveBeenCalledWith(
-        'http://localhost:5050/users/update',
-        {
-          method: 'PUT',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(mockUserData),
-        }
-      );
+      expectUpdateUserFetch(mockUserData);
     });
 
     it('should handle special characters in user data', async () => {
@@ -242,17 +239,7 @@ describe('useSaveUser', () => {
 
       await useSaveUser(mockUserData);
 
-      expect(global.fetch).toHaveBeenCalledWith(
-        'http://localhost:5050/users/update',
-        {
-          method: 'PUT',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(mockUserData),
-        }
-      );
+      expectUpdateUserFetch(mockUserData);
     });
   });
-}); 
+});

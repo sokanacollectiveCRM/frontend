@@ -42,7 +42,12 @@ interface DataTableProps {
   viewMode?: 'leads' | 'customers';
 }
 
-export function UsersTable({ columns, data, clients, viewMode = 'leads' }: DataTableProps) {
+export function UsersTable({
+  columns,
+  data,
+  clients,
+  viewMode = 'leads',
+}: DataTableProps) {
   const { setCurrentRow, setOpen } = useUsers();
   const [rowSelection, setRowSelection] = useState({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -84,8 +89,8 @@ export function UsersTable({ columns, data, clients, viewMode = 'leads' }: DataT
   return (
     <div className='space-y-4'>
       <DataTableToolbar table={table} clients={clients} viewMode={viewMode} />
-      <div className='rounded-md border'>
-        <Table className='table-fixed w-full'>
+      <div className='min-w-0 overflow-x-auto rounded-md border'>
+        <Table className='w-full min-w-[720px]'>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className='group/row'>
@@ -99,9 +104,9 @@ export function UsersTable({ columns, data, clients, viewMode = 'leads' }: DataT
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
                     </TableHead>
                   );
                 })}
