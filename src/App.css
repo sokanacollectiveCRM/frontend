@@ -4,7 +4,7 @@
 
 @plugin 'tailwind-scrollbar-hide';
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   --background: oklch(1 0 0);
