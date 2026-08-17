@@ -205,6 +205,9 @@ export function UserProvider({
     accessToken: string
   ): Promise<boolean> => {
     try {
+      if (accessToken) {
+        setSessionAccessToken(accessToken);
+      }
       const response = await fetchWithAuth(buildUrl('/auth/reset-password'), {
         method: 'PUT',
         headers: {
