@@ -6,6 +6,7 @@ import styled from 'styled-components';
 import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
 import { useUser } from '@/common/hooks/user/useUser';
 import { fetchWithAuth, buildUrl } from '@/api/http';
+import { setSessionAccessToken } from '@/api/sessionAccessToken';
 import { consumeSensitiveHash } from './consumeSensitiveHash';
 
 const Container = styled.div`
@@ -28,6 +29,8 @@ export default function AuthCallback() {
         if (!access_token) {
           throw new Error('No access token received');
         }
+
+        setSessionAccessToken(access_token);
 
         const response = await fetchWithAuth(
           buildUrl('/auth/callback'),
