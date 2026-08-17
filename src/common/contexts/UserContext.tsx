@@ -43,10 +43,10 @@ export function UserProvider({
         credentials: 'include',
       });
       if (!response.ok) throw new Error('Logout failed');
-      setUser(null);
-      window.location.href = '/login';
     } catch (error) {
       console.error('Logout error:', error);
+    } finally {
+      clearSessionAccessToken();
       setUser(null);
       window.location.href = '/login';
     }
@@ -92,6 +92,7 @@ export function UserProvider({
         });
         if (error) throw new Error(error.message);
         if (!data.session) throw new Error('No session after sign in');
+        setSessionAccessToken(data.session.access_token);
         await checkAuth();
         return true;
       }
@@ -102,12 +103,22 @@ export function UserProvider({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
+      const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
         throw new Error((data as { error?: string })?.error || 'Login failed');
+      }
+      // Phones often block the cross-site session cookie. The JSON token is the
+      // fallback: fetchWithAuth sends it as Bearer + X-Session-Token.
+      const token =
+        typeof (data as { token?: unknown }).token === 'string'
+          ? (data as { token: string }).token.trim()
+          : '';
+      if (token) {
+        setSessionAccessToken(token);
       }
       const sessionOk = await checkAuth();
       if (!sessionOk) {
+        clearSessionAccessToken();
         throw new Error(
           'Signed in, but the session could not be verified. If you are on a phone, confirm the API URL is reachable (not localhost) and that cookies are allowed.'
         );
