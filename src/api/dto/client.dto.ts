@@ -186,4 +186,13 @@ export interface ClientDetailDTO {
   referral_source_other?: string;
   referral_name?: string;
   referral_email?: string;
+
+  /** Intake — home / household (CRM profile + request form). */
+  home_type?: string[] | string;
+  home_types?: string[];
+  home_type_other?: string;
+  home_access?: string;
+  pets?: string;
+  home_adults_count?: string;
+  home_youth_count?: string;
 }

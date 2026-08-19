@@ -3,6 +3,8 @@ import {
   HOME_TYPE_OTHER_VALUE,
   HOME_TYPE_PREFER_NOT_VALUE,
   normalizeHomeTypeFromApi,
+  selectSingleHomeType,
+  singleHomeTypeFromApi,
   toggleHomeTypeSelection,
 } from '../homeTypeOptions';
 
@@ -28,6 +30,31 @@ describe('homeTypeOptions', () => {
       expect(normalizeHomeTypeFromApi(['Shelter or emergency housing'])).toEqual([
         'Shelter or emergency housing',
       ]);
+    });
+  });
+
+  describe('selectSingleHomeType', () => {
+    it('replaces the current selection with the new option', () => {
+      expect(
+        selectSingleHomeType(['Rent, apartment or house'], 'Transitional housing')
+      ).toEqual(['Transitional housing']);
+    });
+
+    it('deselects when the same option is clicked again', () => {
+      expect(
+        selectSingleHomeType(['Rent, apartment or house'], 'Rent, apartment or house')
+      ).toEqual([]);
+    });
+  });
+
+  describe('singleHomeTypeFromApi', () => {
+    it('returns only the first stored value for legacy multi-select rows', () => {
+      expect(
+        singleHomeTypeFromApi([
+          'Rent, apartment or house',
+          'Own, apartment, condo, or house',
+        ])
+      ).toEqual(['Rent, apartment or house']);
     });
   });
 

@@ -16,7 +16,13 @@ export default function App() {
           <AppRoutes />
         </BrowserRouter>
       </UserProvider>
-      <Toaster richColors position='bottom-right' />
+      <Toaster
+        richColors
+        position='bottom-right'
+        expand
+        visibleToasts={5}
+        closeButton
+      />
       <ToastContainer />
     </>
   );

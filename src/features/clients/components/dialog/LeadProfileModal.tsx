@@ -47,7 +47,7 @@ import {
   type CardOnFileStatus,
 } from '@/api/services/clients.service';
 import { buildUrl, fetchWithAuth } from '@/api/http';
-import { PHI_KEYS } from '@/config/phi';
+import { splitClientUpdatePayload } from '@/config/clientFieldRouting';
 import { Client } from '@/features/clients/data/schema';
 import type { ClientDetail } from '@/domain/client';
 import { cn } from '@/lib/utils';
@@ -92,6 +92,7 @@ import {
   getPaymentMethodMessage,
   derivePaymentAuthorizationStatus,
   normalizeBillingPaymentMethod,
+  toBillingApiPaymentMethod,
   PAYMENT_AUTHORIZATION_STATUS_LABELS,
   requiresPaymentMethodOnFile,
   requiresInsuranceDetails,
@@ -116,7 +117,8 @@ import { HOME_PEOPLE_COUNT_OPTIONS } from '@/features/request/homePeopleCountOpt
 import {
   HOME_TYPE_OPTIONS,
   HOME_TYPE_OTHER_VALUE,
-  normalizeHomeTypeFromApi,
+  selectSingleHomeType,
+  singleHomeTypeFromApi,
   toggleHomeTypeSelection,
 } from '@/features/request/homeTypeOptions';
 
@@ -661,7 +663,10 @@ export function LeadProfileModal({
     const phone = ((d.phone_number ?? d.phoneNumber) || '') as string;
     const service = ((d.service_needed ?? d.serviceNeeded) || '') as string;
     const dueDate = ((d.due_date ?? d.dueDate) || '') as string;
-    return `${clientId}|${phone}|${service}|${dueDate}`;
+    const homeType = JSON.stringify(
+      d.home_types ?? d.homeTypes ?? d.home_type ?? d.homeType ?? ''
+    );
+    return `${clientId}|${phone}|${service}|${dueDate}|${homeType}`;
   }, [detailSource, client?.id]);
 
   const hasInsuranceDetails = hasAnyInsuranceDetails(
@@ -785,19 +790,46 @@ export function LeadProfileModal({
       initializedData.referral_source =
         normalizeReferralSourceStoredValue(rawReferral);
     }
-    const rawHomeType = get('home_type', 'homeType');
+    const rawHomeType =
+      d.home_types ??
+      d.homeTypes ??
+      d.home_type ??
+      d.homeType;
     if (
       rawHomeType !== undefined &&
       rawHomeType !== null &&
-      rawHomeType !== ''
+      rawHomeType !== '' &&
+      !(Array.isArray(rawHomeType) && rawHomeType.length === 0)
     ) {
-      initializedData.home_type = normalizeHomeTypeFromApi(rawHomeType);
+      initializedData.home_type = singleHomeTypeFromApi(rawHomeType);
     }
     const rawHomeTypeOther = stripRedacted(
-      get('home_type_other', 'homeTypeOther')
+      (d.home_type_other ?? d.homeTypeOther) as string | undefined
     );
     if (rawHomeTypeOther !== undefined) {
       initializedData.home_type_other = rawHomeTypeOther;
+    }
+    const rawHomeAccess = stripRedacted(
+      (d.home_access ?? d.homeAccess) as string | undefined
+    );
+    if (rawHomeAccess !== undefined) {
+      initializedData.home_access = rawHomeAccess;
+    }
+    const rawPets = stripRedacted((d.pets as string | undefined) ?? undefined);
+    if (rawPets !== undefined) {
+      initializedData.pets = rawPets;
+    }
+    const rawHomeAdults = stripRedacted(
+      (d.home_adults_count ?? d.homeAdultsCount) as string | undefined
+    );
+    if (rawHomeAdults !== undefined) {
+      initializedData.home_adults_count = rawHomeAdults;
+    }
+    const rawHomeYouth = stripRedacted(
+      (d.home_youth_count ?? d.homeYouthCount) as string | undefined
+    );
+    if (rawHomeYouth !== undefined) {
+      initializedData.home_youth_count = rawHomeYouth;
     }
     console.log('🔍 [Init] Final initializedData:', {
       phoneNumber: initializedData.phoneNumber,
@@ -1007,6 +1039,21 @@ export function LeadProfileModal({
         }
       }
 
+      if (updateData.home_type !== undefined) {
+        const singleHomeType = singleHomeTypeFromApi(updateData.home_type);
+        if (singleHomeType.length === 0) {
+          updateData.home_type = [];
+        } else {
+          updateData.home_type = singleHomeType;
+        }
+        if (!singleHomeType.includes(HOME_TYPE_OTHER_VALUE)) {
+          updateData.home_type_other = '';
+          if (!changedFields.includes('home_type_other')) {
+            changedFields.push('home_type_other');
+          }
+        }
+      }
+
       console.log('Saving changes:', updateData);
       console.log('Changed fields:', changedFields);
 
@@ -1058,48 +1105,18 @@ export function LeadProfileModal({
         return;
       }
 
-      // Split update data into PHI fields and operational fields
-      const phiSet = new Set<string>(PHI_KEYS);
-      const phiData: Record<string, unknown> = {};
-      const operationalData: Record<string, unknown> = {};
-
-      Object.entries(updateData).forEach(([key, value]) => {
-        if (phiSet.has(key)) {
-          phiData[key] = value;
-        } else {
-          operationalData[key] = value;
-        }
-      });
+      const {
+        phi: phiData,
+        operational: operationalData,
+        billing: billingData,
+      } = splitClientUpdatePayload(updateData);
 
       console.log('PHI fields to update:', Object.keys(phiData));
       console.log(
         'Operational fields to update:',
         Object.keys(operationalData)
       );
-
-      const billingFieldKeys = new Set([
-        'payment_method',
-        'insurance',
-        'insurance_policy_holder_name',
-        'insurance_policy_holder_dob',
-        'insurance_policy_holder_relationship',
-        'insurance_plan_type',
-        'insurance_provider',
-        'insurance_member_id',
-        'policy_number',
-        'insurance_phone_number',
-        'has_secondary_insurance',
-        'secondary_insurance_provider',
-        'secondary_insurance_member_id',
-        'secondary_policy_number',
-      ]);
-      const billingData: Record<string, unknown> = {};
-      Object.keys(phiData).forEach((key) => {
-        if (billingFieldKeys.has(key)) {
-          billingData[key] = phiData[key];
-          delete phiData[key];
-        }
-      });
+      console.log('Billing fields to update:', Object.keys(billingData));
 
       // Track update results
       let operationalSuccess = true;
@@ -1144,11 +1161,24 @@ export function LeadProfileModal({
       // Update billing fields via dedicated endpoint when available;
       // fallback to PHI endpoint for backwards compatibility.
       if (Object.keys(billingData).length > 0) {
+        const resolvedPaymentMethod = toBillingApiPaymentMethod(
+          billingData.payment_method ?? effectivePaymentMethod
+        );
+
+        if (!resolvedPaymentMethod) {
+          const fallbackResult = await updateClient(client.id, billingData);
+          if (!fallbackResult.success) {
+            billingSuccess = false;
+            errors.push(
+              fallbackResult.error || 'Failed to update billing fields'
+            );
+          } else if (fallbackResult.client && typeof fallbackResult.client === 'object') {
+            setEditedData((prev) => ({ ...prev, ...billingData }));
+          }
+        } else {
         const normalizedBillingData = {
           ...billingData,
-          payment_method: normalizeBillingPaymentMethod(
-            billingData.payment_method
-          ),
+          payment_method: resolvedPaymentMethod,
         };
         const billingResponse = await fetchWithAuth(
           buildUrl(`/api/clients/${encodeURIComponent(client.id)}/billing`),
@@ -1200,10 +1230,18 @@ export function LeadProfileModal({
             ),
           }));
         }
+        }
       }
 
       // Show appropriate success/error message
       if (operationalSuccess && phiSuccess && billingSuccess) {
+        const profilePatch = { ...operationalData, ...phiData };
+        if (Object.keys(profilePatch).length > 0) {
+          setFetchedDetail((prev) =>
+            prev ? ({ ...prev, ...profilePatch } as ClientDetail) : prev
+          );
+          setEditedData((prev) => ({ ...prev, ...profilePatch }));
+        }
         toast.success('Client profile updated successfully!');
         setIsEditing(false);
         if (refreshClients) {
@@ -1211,21 +1249,15 @@ export function LeadProfileModal({
         }
       } else if (!operationalSuccess && !phiSuccess && !billingSuccess) {
         toast.error(`Update failed: ${errors.join('; ')}`);
-      } else if (!operationalSuccess) {
-        toast.error(`Operational fields update failed: ${errors.join('; ')}`);
-        if (phiSuccess || billingSuccess) {
-          toast.success('Some fields updated successfully');
-        }
-      } else if (!phiSuccess) {
-        toast.error(`PHI fields update failed: ${errors.join('; ')}`);
-        if (operationalSuccess || billingSuccess) {
-          toast.success('Some fields updated successfully');
-        }
-      } else if (!billingSuccess) {
-        toast.error(`Billing fields update failed: ${errors.join('; ')}`);
-        if (operationalSuccess || phiSuccess) {
-          toast.success('Other profile fields updated successfully');
-        }
+      } else {
+        const failedParts: string[] = [];
+        if (!operationalSuccess) failedParts.push('operational fields');
+        if (!phiSuccess) failedParts.push('PHI fields');
+        if (!billingSuccess) failedParts.push('billing fields');
+        toast.warning('Some fields updated successfully', {
+          description: `Failed to update ${failedParts.join(', ')}: ${errors.join('; ')}`,
+          duration: 8000,
+        });
       }
     } catch (error) {
       console.error('Error saving changes:', error);
@@ -1779,6 +1811,7 @@ export function LeadProfileModal({
       | 'textarea'
       | 'select'
       | 'multiselect'
+      | 'singleselect'
       | 'date'
       | 'number' = 'text',
     options?: string[],
@@ -1815,10 +1848,19 @@ export function LeadProfileModal({
                                 : fieldKey === 'insurance_plan_type'
                                   ? 'insurancePlanType'
                                   : null;
-    let value: string | Date =
+    let value: string | Date | unknown =
       altKey !== null || fieldKey === 'referral_source'
         ? getDisplayValue(fieldKey, altKey)
         : (editedData[fieldKey] ?? '');
+    if (fieldKey === 'home_type') {
+      value =
+        editedData.home_type !== undefined
+          ? editedData.home_type
+          : ((detailSource?.home_types ??
+              detailSource?.homeTypes ??
+              detailSource?.home_type ??
+              detailSource?.homeType) as unknown);
+    }
     if (fieldKey === 'payment_method') {
       value = normalizeBillingPaymentMethod(value);
     }
@@ -1889,13 +1931,13 @@ export function LeadProfileModal({
                 {String(value || 'Not provided')}
               </div>
             )
-          ) : type === 'multiselect' && options ? (
+          ) : (type === 'multiselect' || type === 'singleselect') && options ? (
             <div className='mt-1'>
               <div className='flex flex-wrap gap-2'>
                 {options.map((option) => {
                   const multiValue =
                     fieldKey === 'home_type'
-                      ? normalizeHomeTypeFromApi(value)
+                      ? singleHomeTypeFromApi(value)
                       : Array.isArray(value)
                         ? value
                         : [];
@@ -1906,17 +1948,20 @@ export function LeadProfileModal({
                       type='button'
                       variant={isSelected ? 'default' : 'outline'}
                       size='sm'
+                      aria-pressed={isSelected}
                       onClick={() => {
                         if (!isEditing) return;
                         const currentArray =
                           fieldKey === 'home_type'
-                            ? normalizeHomeTypeFromApi(value)
+                            ? singleHomeTypeFromApi(value)
                             : Array.isArray(value)
                               ? value
                               : [];
                         const newArray =
                           fieldKey === 'home_type'
-                            ? toggleHomeTypeSelection(currentArray, option)
+                            ? type === 'singleselect'
+                              ? selectSingleHomeType(currentArray, option)
+                              : toggleHomeTypeSelection(currentArray, option)
                             : isSelected
                               ? currentArray.filter((item) => item !== option)
                               : [...currentArray, option];
@@ -1937,8 +1982,10 @@ export function LeadProfileModal({
                           [fieldKey]: newArray,
                         }));
                       }}
-                      disabled={!isEditing}
-                      className={`text-xs ${!isEditing ? 'cursor-default' : ''}`}
+                      className={cn(
+                        'text-xs transition-none',
+                        !isEditing && 'pointer-events-none cursor-default'
+                      )}
                     >
                       {option}
                     </Button>
@@ -1947,7 +1994,7 @@ export function LeadProfileModal({
               </div>
               {!isEditing &&
                 (fieldKey === 'home_type'
-                  ? normalizeHomeTypeFromApi(value).length === 0
+                  ? singleHomeTypeFromApi(value).length === 0
                   : !value || (Array.isArray(value) && value.length === 0)) && (
                   <div className='text-sm text-muted-foreground mt-2'>
                     No options selected
@@ -2244,10 +2291,10 @@ export function LeadProfileModal({
                   'Home Type',
                   'home_type',
                   undefined,
-                  'multiselect',
+                  'singleselect',
                   [...HOME_TYPE_OPTIONS]
                 )}
-                {normalizeHomeTypeFromApi(editedData.home_type).includes(
+                {singleHomeTypeFromApi(editedData.home_type).includes(
                   HOME_TYPE_OTHER_VALUE
                 ) &&
                   renderEditableField('Home Type (Other)', 'home_type_other')}

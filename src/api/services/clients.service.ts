@@ -4,7 +4,7 @@ import { ApiError } from '../errors';
 import { extractClientList, mapClient, mapClientDetail } from '../mappers/client.mapper';
 import type { ClientListItemDTO, ClientDetailDTO } from '../dto/client.dto';
 import type { Client, ClientDetail } from '@/domain/client';
-import { normalizeZipCode } from '@/common/utils/zipCode';
+import { normalizeClientFieldKey } from '@/config/clientFieldRouting';
 import { syncQuickBooksCustomerFromClient } from '@/common/utils/syncQuickBooksCustomer';
 
 /**
@@ -243,12 +243,24 @@ export async function updateClientPhi(
   }
 
   try {
-    const normalizedPhiData =
-      Object.prototype.hasOwnProperty.call(phiData, 'zip_code')
-        ? { ...phiData, zip_code: normalizeZipCode(phiData.zip_code) }
-        : phiData;
-    const response = await put<PhiUpdateResponse>(`/clients/${clientId}/phi`, normalizedPhiData);
-    return response;
+    const normalizedPhiData: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(phiData)) {
+      if (value === undefined) continue;
+      normalizedPhiData[normalizeClientFieldKey(key)] = value;
+    }
+    if (Object.prototype.hasOwnProperty.call(normalizedPhiData, 'zip_code')) {
+      normalizedPhiData.zip_code = normalizeZipCode(
+        normalizedPhiData.zip_code as string | null | undefined
+      );
+    }
+    const data = await put<{ message: string }>(
+      `/clients/${clientId}/phi`,
+      normalizedPhiData
+    );
+    return {
+      success: true,
+      data,
+    };
   } catch (error: unknown) {
     let message = 'Failed to update PHI fields';
     if (error instanceof ApiError) {

@@ -25,13 +25,14 @@ describe('updateClientPhi', () => {
   });
 
   it('normalizes numeric zip_code values to strings before sending', async () => {
-    mockPut.mockResolvedValueOnce({ success: true });
+    mockPut.mockResolvedValueOnce({ message: 'PHI fields updated successfully' });
 
-    await updateClientPhi('client-1', {
+    const result = await updateClientPhi('client-1', {
       zip_code: 60601,
       first_name: 'Jane',
     });
 
+    expect(result.success).toBe(true);
     expect(mockPut).toHaveBeenCalledWith(
       '/clients/client-1/phi',
       expect.objectContaining({
@@ -42,12 +43,13 @@ describe('updateClientPhi', () => {
   });
 
   it('preserves a trimmed ZIP string unchanged', async () => {
-    mockPut.mockResolvedValueOnce({ success: true });
+    mockPut.mockResolvedValueOnce({ message: 'PHI fields updated successfully' });
 
-    await updateClientPhi('client-1', {
+    const result = await updateClientPhi('client-1', {
       zip_code: ' 01234 ',
     });
 
+    expect(result.success).toBe(true);
     expect(mockPut).toHaveBeenCalledWith(
       '/clients/client-1/phi',
       expect.objectContaining({

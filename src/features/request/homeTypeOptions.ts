@@ -1,4 +1,4 @@
-/** Request form — Home Type (check all that apply). */
+/** Request form — Home Type (multi-select on intake; staff CRM profile is single-select). */
 
 export const HOME_TYPE_OPTIONS = [
   'Rent, apartment or house',
@@ -41,6 +41,25 @@ export function normalizeHomeTypeFromApi(raw: unknown): string[] {
     return [trimmed];
   }
   return [];
+}
+
+/** Staff CRM profile: at most one home type (first stored value if legacy multi-select). */
+export function singleHomeTypeFromApi(raw: unknown): string[] {
+  const items = normalizeHomeTypeFromApi(raw);
+  if (items.length === 0) return [];
+  if (items.includes(HOME_TYPE_PREFER_NOT_VALUE)) {
+    return [HOME_TYPE_PREFER_NOT_VALUE];
+  }
+  return [items[0]];
+}
+
+/** Single-select for staff CRM — clicking an option replaces the current selection. */
+export function selectSingleHomeType(current: string[], option: string): string[] {
+  const selected = singleHomeTypeFromApi(current);
+  if (selected.includes(option)) {
+    return [];
+  }
+  return [option];
 }
 
 /** Toggle one home type; "Prefer not to answer" is mutually exclusive with other options. */

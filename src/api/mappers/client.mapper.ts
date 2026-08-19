@@ -221,5 +221,12 @@ export function mapClientDetail(dto: ClientDetailDTO): ClientDetail {
     secondaryInsuranceMemberId: dto.secondary_insurance_member_id,
     secondaryPolicyNumber: dto.secondary_policy_number,
     selfPayCardInfo: dto.self_pay_card_info,
+    homeType: dto.home_type ?? dto.home_types,
+    homeTypes: dto.home_types ?? (Array.isArray(dto.home_type) ? dto.home_type : undefined),
+    homeTypeOther: dto.home_type_other,
+    homeAccess: dto.home_access,
+    pets: dto.pets,
+    homeAdultsCount: dto.home_adults_count,
+    homeYouthCount: dto.home_youth_count,
   };
 }
