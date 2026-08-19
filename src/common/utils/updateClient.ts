@@ -2,7 +2,7 @@ import {
   getSessionExpirationMessage,
   isSessionExpiredError,
 } from './sessionUtils';
-import { PHI_KEYS } from '@/config/phi';
+import { PHI_BROKER_FIELD_KEYS } from '@/config/clientFieldRouting';
 import { normalizeZipCode } from './zipCode';
 import { apiBaseUrl } from '@/config/env';
 import { fetchWithAuth } from '@/api/http';
@@ -18,11 +18,10 @@ import { fetchWithAuth } from '@/api/http';
  * Operational fields (status, firstname, lastname, service_needed, etc.) ARE in client_info.
  */
 const UNSUPPORTED_CLIENT_INFO_COLUMNS = new Set([
-  // PHI fields (stored in Google Cloud, not Supabase client_info) - imported from config/phi.ts
-  ...PHI_KEYS,
+  // PHI broker fields (PUT /clients/:id/phi) — not Supabase client_info
+  ...PHI_BROKER_FIELD_KEYS,
 
   // Additional form fields not yet in schema
-  'pronouns',
   'family_pronouns',
 ]);
 

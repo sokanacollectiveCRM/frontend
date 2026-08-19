@@ -289,6 +289,41 @@ export function normalizeBillingPaymentMethod(method: unknown): string {
   return raw;
 }
 
+const BILLING_API_PAYMENT_METHODS = new Set([
+  'Self-Pay',
+  'Commercial Insurance',
+  'Private Insurance',
+  'Medicaid',
+]);
+
+/**
+ * Maps CRM/profile payment labels to values accepted by PUT /clients/:id/billing.
+ */
+export function toBillingApiPaymentMethod(method: unknown): string {
+  const normalized = normalizeBillingPaymentMethod(method);
+  if (!normalized) return '';
+
+  if (BILLING_API_PAYMENT_METHODS.has(normalized)) {
+    return normalized;
+  }
+
+  if (normalized === 'Private/Commercial Insurance') {
+    return 'Commercial Insurance';
+  }
+
+  const lower = normalized.toLowerCase();
+  if (
+    lower.startsWith('self-pay') ||
+    lower.includes('unable to pay') ||
+    lower.includes('full support') ||
+    lower.includes('not sure')
+  ) {
+    return 'Self-Pay';
+  }
+
+  return normalized;
+}
+
 // ---------------------------------------------------------------------------
 // Admin clients table — at-a-glance card-on-file expectation
 // ---------------------------------------------------------------------------

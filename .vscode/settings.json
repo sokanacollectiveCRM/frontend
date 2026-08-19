@@ -8,6 +8,8 @@
   },
   "editor.formatOnSaveMode": "file",
   "vs-code-prettier-eslint.prettierLast": false,
+  "css.lint.unknownAtRules": "ignore",
+  "scss.lint.unknownAtRules": "ignore",
   "editor.tabSize": 2,
   "typescript.tsdk": "node_modules/typescript/lib",
   "[typescriptreact]": {

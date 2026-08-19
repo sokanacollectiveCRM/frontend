@@ -175,4 +175,12 @@ export interface ClientDetail {
   secondaryInsuranceMemberId?: string;
   secondaryPolicyNumber?: string;
   selfPayCardInfo?: string;
+  /** Intake — home / household */
+  homeType?: string[] | string;
+  homeTypes?: string[];
+  homeTypeOther?: string;
+  homeAccess?: string;
+  pets?: string;
+  homeAdultsCount?: string;
+  homeYouthCount?: string;
 }
