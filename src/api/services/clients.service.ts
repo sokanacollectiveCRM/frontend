@@ -1,8 +1,12 @@
-import { get, post, put } from '../http';
-import { API_CONFIG } from '../config';
-import { ApiError } from '../errors';
-import { extractClientList, mapClient, mapClientDetail } from '../mappers/client.mapper';
-import type { ClientListItemDTO, ClientDetailDTO } from '../dto/client.dto';
+import { get, post, put } from '@/api/http';
+import { API_CONFIG } from '@/api/config';
+import { ApiError } from '@/api/errors';
+import {
+  extractClientList,
+  mapClient,
+  mapClientDetail,
+} from '@/api/mappers/client.mapper';
+import type { ClientListItemDTO, ClientDetailDTO } from '@/api/dto/client.dto';
 import type { Client, ClientDetail } from '@/domain/client';
 import { normalizeClientFieldKey } from '@/config/clientFieldRouting';
 import { syncQuickBooksCustomerFromClient } from '@/common/utils/syncQuickBooksCustomer';
