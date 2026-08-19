@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-vi.mock('../../http', () => {
+vi.mock('@/api/http', () => {
   return {
     put: vi.fn(),
     get: vi.fn(),
@@ -13,9 +13,9 @@ vi.mock('@/common/utils/syncQuickBooksCustomer', () => {
   };
 });
 
-import { put } from '../../http';
+import { put } from '@/api/http';
 import { syncQuickBooksCustomerFromClient } from '@/common/utils/syncQuickBooksCustomer';
-import { updateClientStatus } from '../clients.service';
+import { updateClientStatus } from '@/api/services/clients.service';
 
 describe('clients.service — QuickBooks sync is non-blocking', () => {
   beforeEach(() => {
@@ -55,11 +55,12 @@ describe('clients.service — QuickBooks sync is non-blocking', () => {
       status: 'lead',
     } as any);
 
-    vi.mocked(syncQuickBooksCustomerFromClient).mockResolvedValue({ success: false });
+    vi.mocked(syncQuickBooksCustomerFromClient).mockResolvedValue({
+      success: false,
+    });
 
     const result = await updateClientStatus('client-1', 'lead');
     expect(result.status).toBe('lead');
     expect(syncQuickBooksCustomerFromClient).toHaveBeenCalledTimes(0);
   });
 });
-

@@ -4,12 +4,12 @@ const { mockPut } = vi.hoisted(() => ({
   mockPut: vi.fn(),
 }));
 
-vi.mock('../../http', () => ({
+vi.mock('@/api/http', () => ({
   get: vi.fn(),
   put: mockPut,
 }));
 
-vi.mock('../../config', () => ({
+vi.mock('@/api/config', () => ({
   API_CONFIG: {
     useLegacyApi: false,
     baseUrl: 'http://localhost:5050',
@@ -25,7 +25,9 @@ describe('updateClientPhi', () => {
   });
 
   it('normalizes numeric zip_code values to strings before sending', async () => {
-    mockPut.mockResolvedValueOnce({ message: 'PHI fields updated successfully' });
+    mockPut.mockResolvedValueOnce({
+      message: 'PHI fields updated successfully',
+    });
 
     const result = await updateClientPhi('client-1', {
       zip_code: 60601,
@@ -43,7 +45,9 @@ describe('updateClientPhi', () => {
   });
 
   it('preserves a trimmed ZIP string unchanged', async () => {
-    mockPut.mockResolvedValueOnce({ message: 'PHI fields updated successfully' });
+    mockPut.mockResolvedValueOnce({
+      message: 'PHI fields updated successfully',
+    });
 
     const result = await updateClientPhi('client-1', {
       zip_code: ' 01234 ',
