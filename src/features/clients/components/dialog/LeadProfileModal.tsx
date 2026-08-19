@@ -791,10 +791,7 @@ export function LeadProfileModal({
         normalizeReferralSourceStoredValue(rawReferral);
     }
     const rawHomeType =
-      d.home_types ??
-      d.homeTypes ??
-      d.home_type ??
-      d.homeType;
+      d.home_types ?? d.homeTypes ?? d.home_type ?? d.homeType;
     if (
       rawHomeType !== undefined &&
       rawHomeType !== null &&
@@ -1172,64 +1169,69 @@ export function LeadProfileModal({
             errors.push(
               fallbackResult.error || 'Failed to update billing fields'
             );
-          } else if (fallbackResult.client && typeof fallbackResult.client === 'object') {
+          } else if (
+            fallbackResult.client &&
+            typeof fallbackResult.client === 'object'
+          ) {
             setEditedData((prev) => ({ ...prev, ...billingData }));
           }
         } else {
-        const normalizedBillingData = {
-          ...billingData,
-          payment_method: resolvedPaymentMethod,
-        };
-        const billingResponse = await fetchWithAuth(
-          buildUrl(`/api/clients/${encodeURIComponent(client.id)}/billing`),
-          {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(normalizedBillingData),
-          }
-        );
+          const normalizedBillingData = {
+            ...billingData,
+            payment_method: resolvedPaymentMethod,
+          };
+          const billingResponse = await fetchWithAuth(
+            buildUrl(`/api/clients/${encodeURIComponent(client.id)}/billing`),
+            {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(normalizedBillingData),
+            }
+          );
 
-        if (!billingResponse.ok) {
-          if (isEndpointUnavailableStatus(billingResponse.status)) {
-            const fallbackResult = await updateClientPhi(
-              client.id,
-              normalizedBillingData
-            );
-            if (!fallbackResult.success) {
-              billingSuccess = false;
-              errors.push(
-                fallbackResult.error || 'Failed to update billing fields'
+          if (!billingResponse.ok) {
+            if (isEndpointUnavailableStatus(billingResponse.status)) {
+              const fallbackResult = await updateClientPhi(
+                client.id,
+                normalizedBillingData
               );
+              if (!fallbackResult.success) {
+                billingSuccess = false;
+                errors.push(
+                  fallbackResult.error || 'Failed to update billing fields'
+                );
+              } else {
+                setEditedData((prev) => ({
+                  ...prev,
+                  ...normalizedBillingData,
+                  payment_method: normalizeBillingPaymentMethod(
+                    normalizedBillingData.payment_method ??
+                      prev.payment_method ??
+                      ''
+                  ),
+                }));
+              }
             } else {
-              setEditedData((prev) => ({
-                ...prev,
-                ...normalizedBillingData,
-                payment_method: normalizeBillingPaymentMethod(
-                  normalizedBillingData.payment_method ??
-                    prev.payment_method ??
-                    ''
-                ),
-              }));
+              billingSuccess = false;
+              const billingError = await billingResponse.text().catch(() => '');
+              errors.push(
+                billingError ||
+                  `Failed to update billing fields (${billingResponse.status})`
+              );
             }
           } else {
-            billingSuccess = false;
-            const billingError = await billingResponse.text().catch(() => '');
-            errors.push(
-              billingError ||
-                `Failed to update billing fields (${billingResponse.status})`
-            );
+            setEditedData((prev) => ({
+              ...prev,
+              ...normalizedBillingData,
+              payment_method: normalizeBillingPaymentMethod(
+                normalizedBillingData.payment_method ??
+                  prev.payment_method ??
+                  ''
+              ),
+            }));
           }
-        } else {
-          setEditedData((prev) => ({
-            ...prev,
-            ...normalizedBillingData,
-            payment_method: normalizeBillingPaymentMethod(
-              normalizedBillingData.payment_method ?? prev.payment_method ?? ''
-            ),
-          }));
-        }
         }
       }
 
@@ -1876,6 +1878,13 @@ export function LeadProfileModal({
       value = value.toISOString().split('T')[0];
     }
 
+    const dateValue =
+      typeof value === 'string' ||
+      typeof value === 'number' ||
+      value instanceof Date
+        ? value
+        : undefined;
+
     return (
       <div className='flex items-start gap-2 py-2'>
         {icon && <div className='mt-2 text-muted-foreground'>{icon}</div>}
@@ -2010,17 +2019,19 @@ export function LeadProfileModal({
                       variant='outline'
                       className={cn(
                         'flex-1 justify-start text-left font-normal',
-                        !value && 'text-muted-foreground'
+                        !dateValue && 'text-muted-foreground'
                       )}
                     >
                       <CalendarIcon className='mr-2 h-4 w-4' />
-                      {value ? format(new Date(value), 'PPP') : 'Pick a date'}
+                      {dateValue
+                        ? format(new Date(dateValue), 'PPP')
+                        : 'Pick a date'}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className='w-auto p-0' align='start'>
                     <Calendar
                       mode='single'
-                      selected={value ? new Date(value) : undefined}
+                      selected={dateValue ? new Date(dateValue) : undefined}
                       onSelect={(date) => {
                         if (date) {
                           setEditedData((prev) => ({
@@ -2039,7 +2050,7 @@ export function LeadProfileModal({
                     />
                   </PopoverContent>
                 </Popover>
-                {value && (
+                {dateValue ? (
                   <Button
                     variant='outline'
                     size='sm'
@@ -2050,11 +2061,13 @@ export function LeadProfileModal({
                   >
                     Clear
                   </Button>
-                )}
+                ) : null}
               </div>
             ) : (
               <div className='mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm'>
-                {value ? format(new Date(value), 'PPP') : 'Not provided'}
+                {dateValue
+                  ? format(new Date(dateValue), 'PPP')
+                  : 'Not provided'}
               </div>
             )
           ) : (fieldKey === 'phoneNumber' && type === 'tel') || isEditing ? (
