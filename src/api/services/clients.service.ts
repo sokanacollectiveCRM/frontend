@@ -6,6 +6,7 @@ import type { ClientListItemDTO, ClientDetailDTO } from '../dto/client.dto';
 import type { Client, ClientDetail } from '@/domain/client';
 import { normalizeClientFieldKey } from '@/config/clientFieldRouting';
 import { syncQuickBooksCustomerFromClient } from '@/common/utils/syncQuickBooksCustomer';
+import { normalizeZipCode } from '@/common/utils/zipCode';
 
 /**
  * Normalize API response to an array of client list DTOs.
