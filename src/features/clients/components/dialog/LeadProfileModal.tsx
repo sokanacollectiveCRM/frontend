@@ -121,6 +121,11 @@ import {
   singleHomeTypeFromApi,
   toggleHomeTypeSelection,
 } from '@/features/request/homeTypeOptions';
+import {
+  normalizeStringArrayFromApi,
+  readProfileFieldFromRecord,
+  PROFILE_FIELD_CAMEL_ALIASES,
+} from '@/features/clients/utils/profileArrayFields';
 
 interface LeadProfileModalProps {
   open: boolean;
@@ -666,7 +671,10 @@ export function LeadProfileModal({
     const homeType = JSON.stringify(
       d.home_types ?? d.homeTypes ?? d.home_type ?? d.homeType ?? ''
     );
-    return `${clientId}|${phone}|${service}|${dueDate}|${homeType}`;
+    const servicesInterested = JSON.stringify(
+      d.services_interested ?? d.servicesInterested ?? ''
+    );
+    return `${clientId}|${phone}|${service}|${dueDate}|${homeType}|${servicesInterested}`;
   }, [detailSource, client?.id]);
 
   const hasInsuranceDetails = hasAnyInsuranceDetails(
@@ -828,6 +836,54 @@ export function LeadProfileModal({
     if (rawHomeYouth !== undefined) {
       initializedData.home_youth_count = rawHomeYouth;
     }
+    const rawServicesInterested = d.services_interested ?? d.servicesInterested;
+    if (
+      rawServicesInterested !== undefined &&
+      rawServicesInterested !== null &&
+      !(
+        Array.isArray(rawServicesInterested) &&
+        rawServicesInterested.length === 0
+      )
+    ) {
+      initializedData.services_interested = normalizeStringArrayFromApi(
+        rawServicesInterested
+      );
+    }
+    const rawServiceSupport = stripRedacted(
+      (d.service_support_details ?? d.serviceSupportDetails) as
+        | string
+        | undefined
+    );
+    if (rawServiceSupport !== undefined) {
+      initializedData.service_support_details = rawServiceSupport;
+    }
+    const rawServiceSpecifics = stripRedacted(
+      (d.service_specifics ?? d.serviceSpecifics) as string | undefined
+    );
+    if (rawServiceSpecifics !== undefined) {
+      initializedData.service_specifics = rawServiceSpecifics;
+    }
+    const rawDemographicsMulti = d.demographics_multi ?? d.demographicsMulti;
+    if (
+      rawDemographicsMulti !== undefined &&
+      rawDemographicsMulti !== null &&
+      !(
+        Array.isArray(rawDemographicsMulti) && rawDemographicsMulti.length === 0
+      )
+    ) {
+      initializedData.demographics_multi =
+        normalizeStringArrayFromApi(rawDemographicsMulti);
+    }
+    const rawAge = d.age ?? d.intake_age_years ?? d.intakeAgeYears;
+    if (rawAge !== undefined && rawAge !== null && rawAge !== '') {
+      initializedData.age = Number(rawAge);
+    }
+    const rawChildrenExpected = stripRedacted(
+      (d.children_expected ?? d.childrenExpected) as string | undefined
+    );
+    if (rawChildrenExpected !== undefined) {
+      initializedData.children_expected = rawChildrenExpected;
+    }
     console.log('🔍 [Init] Final initializedData:', {
       phoneNumber: initializedData.phoneNumber,
       phone_number: (initializedData as any).phone_number,
@@ -901,9 +957,17 @@ export function LeadProfileModal({
       const updateData: any = {};
       const changedFields: string[] = [];
 
-      // Check which fields have changed by comparing with original client data
+      // Check which fields have changed by comparing with loaded profile baseline
+      const originalSource: Record<string, unknown> = {
+        ...(client as Record<string, unknown>),
+        ...(detailSource ?? {}),
+      };
       Object.keys(editedData).forEach((key) => {
-        const originalValue = client[key as keyof Client];
+        const alias = PROFILE_FIELD_CAMEL_ALIASES[key];
+        const originalValue =
+          originalSource[key] ??
+          (alias ? originalSource[alias] : undefined) ??
+          client[key as keyof Client];
         const newValue = editedData[key as keyof Client];
 
         // Skip fields that are in editedData but not meaningful for updates
@@ -921,10 +985,8 @@ export function LeadProfileModal({
 
         // Handle array comparisons
         if (Array.isArray(newValue)) {
-          const originalArray = Array.isArray(originalValue)
-            ? originalValue
-            : [];
-          const originalSorted = originalArray.sort().join(',');
+          const originalArray = normalizeStringArrayFromApi(originalValue);
+          const originalSorted = [...originalArray].sort().join(',');
           const newSorted = [...newValue].sort().join(',');
           if (originalSorted !== newSorted) {
             updateData[key] = newValue;
@@ -1047,6 +1109,20 @@ export function LeadProfileModal({
           updateData.home_type_other = '';
           if (!changedFields.includes('home_type_other')) {
             changedFields.push('home_type_other');
+          }
+        }
+      }
+
+      if (
+        updateData.age !== undefined &&
+        updateData.age !== null &&
+        updateData.age !== ''
+      ) {
+        const parsedAge = Number(updateData.age);
+        if (!Number.isNaN(parsedAge)) {
+          updateData.intake_age_years = parsedAge;
+          if (!changedFields.includes('intake_age_years')) {
+            changedFields.push('intake_age_years');
           }
         }
       }
@@ -1802,6 +1878,61 @@ export function LeadProfileModal({
     [eligibilitySource]
   );
 
+  const resolveProfileFieldValue = (
+    fieldKey: string,
+    altKey: string | null,
+    inputType:
+      | 'text'
+      | 'email'
+      | 'tel'
+      | 'textarea'
+      | 'select'
+      | 'multiselect'
+      | 'singleselect'
+      | 'date'
+      | 'number'
+  ): unknown => {
+    const isEmptyScalar = (v: unknown) =>
+      v === null || v === undefined || v === '';
+    const isEmptyArray = (v: unknown) => Array.isArray(v) && v.length === 0;
+    const isMultiselect =
+      inputType === 'multiselect' ||
+      fieldKey === 'services_interested' ||
+      fieldKey === 'demographics_multi';
+
+    const fromEdited =
+      (altKey ? editedData[altKey as keyof Client] : undefined) ??
+      editedData[fieldKey as keyof Client];
+    if (!isEmptyScalar(fromEdited) && !isEmptyArray(fromEdited)) {
+      return isMultiselect
+        ? normalizeStringArrayFromApi(fromEdited)
+        : fromEdited;
+    }
+
+    const fromDetail = readProfileFieldFromRecord(detailSource, fieldKey);
+    if (!isEmptyScalar(fromDetail) && !isEmptyArray(fromDetail)) {
+      return isMultiselect
+        ? normalizeStringArrayFromApi(fromDetail)
+        : fromDetail;
+    }
+
+    const fromClient = readProfileFieldFromRecord(
+      client as Record<string, unknown> | null,
+      fieldKey
+    );
+    if (!isEmptyScalar(fromClient) && !isEmptyArray(fromClient)) {
+      return isMultiselect
+        ? normalizeStringArrayFromApi(fromClient)
+        : fromClient;
+    }
+
+    if (altKey !== null || fieldKey === 'referral_source') {
+      return getDisplayValue(fieldKey, altKey);
+    }
+
+    return isMultiselect ? [] : '';
+  };
+
   const renderEditableField = (
     label: string,
     fieldKey: string,
@@ -1850,10 +1981,11 @@ export function LeadProfileModal({
                                 : fieldKey === 'insurance_plan_type'
                                   ? 'insurancePlanType'
                                   : null;
-    let value: string | Date | unknown =
-      altKey !== null || fieldKey === 'referral_source'
-        ? getDisplayValue(fieldKey, altKey)
-        : (editedData[fieldKey] ?? '');
+    let value: string | Date | unknown = resolveProfileFieldValue(
+      fieldKey,
+      altKey,
+      type
+    );
     if (fieldKey === 'home_type') {
       value =
         editedData.home_type !== undefined
@@ -1947,9 +2079,7 @@ export function LeadProfileModal({
                   const multiValue =
                     fieldKey === 'home_type'
                       ? singleHomeTypeFromApi(value)
-                      : Array.isArray(value)
-                        ? value
-                        : [];
+                      : normalizeStringArrayFromApi(value);
                   const isSelected = multiValue.includes(option);
                   return (
                     <Button
@@ -1963,9 +2093,7 @@ export function LeadProfileModal({
                         const currentArray =
                           fieldKey === 'home_type'
                             ? singleHomeTypeFromApi(value)
-                            : Array.isArray(value)
-                              ? value
-                              : [];
+                            : normalizeStringArrayFromApi(value);
                         const newArray =
                           fieldKey === 'home_type'
                             ? type === 'singleselect'
@@ -2004,7 +2132,7 @@ export function LeadProfileModal({
               {!isEditing &&
                 (fieldKey === 'home_type'
                   ? singleHomeTypeFromApi(value).length === 0
-                  : !value || (Array.isArray(value) && value.length === 0)) && (
+                  : normalizeStringArrayFromApi(value).length === 0) && (
                   <div className='text-sm text-muted-foreground mt-2'>
                     No options selected
                   </div>
