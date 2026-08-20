@@ -34,7 +34,6 @@ import {
   SelectValue,
 } from '@/common/components/ui/select';
 import { Textarea } from '@/common/components/ui/textarea';
-import { useClients } from '@/common/hooks/clients/useClients';
 import { UserContext } from '@/common/contexts/UserContext';
 import updateClient from '@/common/utils/updateClient';
 import updateClientStatus from '@/common/utils/updateClientStatus';
@@ -48,6 +47,10 @@ import {
 } from '@/api/services/clients.service';
 import { buildUrl, fetchWithAuth } from '@/api/http';
 import { splitClientUpdatePayload } from '@/config/clientFieldRouting';
+import {
+  getCachedClientDetail,
+  loadClientDetail,
+} from '@/api/services/clientDetailCache';
 import { Client } from '@/features/clients/data/schema';
 import type { ClientDetail } from '@/domain/client';
 import { cn } from '@/lib/utils';
@@ -63,9 +66,12 @@ import {
   FileText,
   FileImage,
   Loader2,
+  Lock,
   Mail,
   MapPin,
   MessageSquare,
+  Eye,
+  Pencil,
   Phone,
   Save,
   User,
@@ -338,7 +344,6 @@ export function LeadProfileModal({
   missingClientId,
 }: LeadProfileModalProps) {
   const { user } = useContext(UserContext);
-  const { getClientById } = useClients();
   const [notes, setNotes] = useState<ClientNote[]>([]);
   const [newNote, setNewNote] = useState('');
   const [noteCategory, setNoteCategory] = useState('General');
@@ -351,6 +356,34 @@ export function LeadProfileModal({
   );
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState<Partial<Client>>({});
+
+  const promptEditMode = React.useCallback(() => {
+    toast.message('View mode', {
+      description: 'Click "Edit Profile" at the top to change fields.',
+      duration: 4500,
+    });
+  }, []);
+
+  const readOnlyFieldClassName = cn(
+    'mt-1 px-3 py-2 border border-dashed rounded-md bg-muted/40 text-sm',
+    'cursor-pointer transition-colors hover:border-primary/50 hover:bg-muted/60'
+  );
+
+  const readOnlyFieldHandlers = React.useMemo(
+    () => ({
+      role: 'button' as const,
+      tabIndex: 0,
+      onClick: promptEditMode,
+      onKeyDown: (event: React.KeyboardEvent) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          promptEditMode();
+        }
+      },
+      'aria-label': 'View only. Press to learn how to edit this profile.',
+    }),
+    [promptEditMode]
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [isRecordingPaymentAuth, setIsRecordingPaymentAuth] = useState(false);
   const [installments, setInstallments] = useState<PaymentInstallment[]>([]);
@@ -364,6 +397,7 @@ export function LeadProfileModal({
   const [isSavingBirthOutcomes, setIsSavingBirthOutcomes] = useState(false);
   // Primary source for display: full detail from GET /clients/:id (authorized users get PHI).
   const [fetchedDetail, setFetchedDetail] = useState<ClientDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [clientDocuments, setClientDocuments] = useState<ClientDocument[]>([]);
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
@@ -418,6 +452,11 @@ export function LeadProfileModal({
     }
   }, [client?.id]);
 
+  const detailReady = React.useMemo(() => {
+    if (!client?.id || !fetchedDetail) return false;
+    return String(fetchedDetail.id) === String(client.id);
+  }, [client?.id, fetchedDetail]);
+
   // On modal open with client.id: always fetch GET /clients/:id and use as primary source for display.
   // Do not rely solely on list row; backend returns full PHI for authorized users on detail.
   const detailFetchRef = React.useRef<string | null>(null);
@@ -428,9 +467,10 @@ export function LeadProfileModal({
       refValue: detailFetchRef.current,
     });
     if (!open) {
-      console.log('🔍 [Effect] Modal closed, resetting');
       detailFetchRef.current = null;
       setFetchedDetail(null);
+      setDetailLoading(false);
+      setIsEditing(false);
       return;
     }
     if (!client?.id) {
@@ -445,56 +485,40 @@ export function LeadProfileModal({
       fetchedDetail &&
       (fetchedDetail as any).id === clientId
     ) {
-      console.log('🔍 [Effect] Already fetched and have data, skipping');
       return;
     }
 
-    // Set ref immediately to prevent duplicate fetches while this one is in progress
     detailFetchRef.current = clientId;
-    console.log('🔍 [Effect] Fetching because:', {
-      'ref matches': detailFetchRef.current === clientId,
-      'have data': !!fetchedDetail,
-      'data matches': fetchedDetail
-        ? (fetchedDetail as any).id === clientId
-        : false,
-    });
 
-    console.log('🔍 [Fetch] Starting fetch for client:', clientId);
+    const cached = getCachedClientDetail(clientId);
+    if (cached) {
+      setFetchedDetail(cached);
+      setDetailLoading(false);
+    } else {
+      setDetailLoading(true);
+    }
+
     let cancelled = false;
-    getClientById(clientId)
+    loadClientDetail(clientId)
       .then((data) => {
         if (cancelled) return;
         if (!data) {
-          // Fetch failed, clear ref so it can retry
-          console.error('❌ [Fetch] No data returned for client:', clientId);
           detailFetchRef.current = null;
           return;
         }
-        console.log(
-          '🔍 [Fetch] phoneNumber in fetched data:',
-          (data as any)?.phoneNumber
-        );
-        console.log(
-          '🔍 [Fetch] phone_number in fetched data:',
-          (data as any)?.phone_number
-        );
-        console.log('🔍 [Fetch] Full data:', data);
         setFetchedDetail(data);
       })
       .catch((error) => {
-        // On error, clear ref so it can retry
-        console.error('❌ [Fetch] Error fetching client detail:', error);
-        console.error('❌ [Fetch] Error details:', {
-          message: error?.message,
-          status: error?.status,
-          statusText: error?.statusText,
-        });
+        console.error('Error fetching client detail:', error);
         detailFetchRef.current = null;
+      })
+      .finally(() => {
+        if (!cancelled) setDetailLoading(false);
       });
     return () => {
       cancelled = true;
     };
-  }, [open, client?.id, getClientById]);
+  }, [open, client?.id]);
 
   const loadBillingWorkflow = React.useCallback(async () => {
     if (!client?.id) return;
@@ -685,6 +709,10 @@ export function LeadProfileModal({
   React.useEffect(() => {
     if (!client || !detailSource) {
       lastInitFingerprintRef.current = null;
+      return;
+    }
+    // Don't overwrite in-progress edits when detail fetch completes.
+    if (isEditing) {
       return;
     }
     if (lastInitFingerprintRef.current === dataFingerprint) {
@@ -889,7 +917,7 @@ export function LeadProfileModal({
       phone_number: (initializedData as any).phone_number,
     });
     setEditedData(initializedData);
-  }, [client, detailSource, dataFingerprint]);
+  }, [client, detailSource, dataFingerprint, isEditing]);
 
   /** Radix passes the next open state; do not toggle (double onOpenChange can flip closed again). */
   const setSectionOpen = (sectionId: string, nextOpen: boolean) => {
@@ -1315,10 +1343,15 @@ export function LeadProfileModal({
       if (operationalSuccess && phiSuccess && billingSuccess) {
         const profilePatch = { ...operationalData, ...phiData };
         if (Object.keys(profilePatch).length > 0) {
-          setFetchedDetail((prev) =>
-            prev ? ({ ...prev, ...profilePatch } as ClientDetail) : prev
-          );
           setEditedData((prev) => ({ ...prev, ...profilePatch }));
+        }
+        detailFetchRef.current = null;
+        const refreshed = await loadClientDetail(String(client.id), {
+          force: true,
+        });
+        if (refreshed) {
+          setFetchedDetail(refreshed);
+          detailFetchRef.current = String(client.id);
         }
         toast.success('Client profile updated successfully!');
         setIsEditing(false);
@@ -1855,7 +1888,9 @@ export function LeadProfileModal({
       toast.success('Installment invoice generated.');
       await loadBillingWorkflow();
       detailFetchRef.current = null;
-      const refreshed = await getClientById(String(client.id));
+      const refreshed = await loadClientDetail(String(client.id), {
+        force: true,
+      });
       if (refreshed) setFetchedDetail(refreshed);
       refreshClients?.();
     } catch (error) {
@@ -1900,9 +1935,10 @@ export function LeadProfileModal({
       fieldKey === 'services_interested' ||
       fieldKey === 'demographics_multi';
 
-    const fromEdited =
-      (altKey ? editedData[altKey as keyof Client] : undefined) ??
-      editedData[fieldKey as keyof Client];
+    const fromEdited = readProfileFieldFromRecord(
+      editedData as Record<string, unknown>,
+      fieldKey
+    );
     if (!isEmptyScalar(fromEdited) && !isEmptyArray(fromEdited)) {
       return isMultiselect
         ? normalizeStringArrayFromApi(fromEdited)
@@ -2043,7 +2079,10 @@ export function LeadProfileModal({
                 rows={textareaRows}
               />
             ) : (
-              <div className='mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm min-h-[72px] whitespace-pre-wrap'>
+              <div
+                className={cn(readOnlyFieldClassName, 'min-h-[72px] whitespace-pre-wrap')}
+                {...readOnlyFieldHandlers}
+              >
                 {String(value || 'Not provided')}
               </div>
             )
@@ -2068,19 +2107,47 @@ export function LeadProfileModal({
                 ))}
               </select>
             ) : (
-              <div className='mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm'>
+              <div className={readOnlyFieldClassName} {...readOnlyFieldHandlers}>
                 {String(value || 'Not provided')}
               </div>
             )
           ) : (type === 'multiselect' || type === 'singleselect') && options ? (
-            <div className='mt-1'>
+            detailLoading && !detailReady && !isEditing ? (
+              <div className='mt-1 text-sm text-muted-foreground animate-pulse'>
+                Loading selections…
+              </div>
+            ) : (
+            <div
+              className={cn(
+                'mt-1 rounded-md border border-dashed p-2',
+                !isEditing && 'cursor-pointer hover:border-primary/40 hover:bg-muted/30'
+              )}
+              {...(!isEditing ? readOnlyFieldHandlers : {})}
+            >
+              {(() => {
+                const resolvedForDisplay =
+                  isEditing &&
+                  (fieldKey === 'home_type'
+                    ? editedData.home_type !== undefined
+                    : readProfileFieldFromRecord(
+                        editedData as Record<string, unknown>,
+                        fieldKey
+                      ) !== undefined)
+                    ? fieldKey === 'home_type'
+                      ? editedData.home_type
+                      : readProfileFieldFromRecord(
+                          editedData as Record<string, unknown>,
+                          fieldKey
+                        )
+                    : value;
+                const selectionArray =
+                  fieldKey === 'home_type'
+                    ? singleHomeTypeFromApi(resolvedForDisplay)
+                    : normalizeStringArrayFromApi(resolvedForDisplay);
+                return (
               <div className='flex flex-wrap gap-2'>
                 {options.map((option) => {
-                  const multiValue =
-                    fieldKey === 'home_type'
-                      ? singleHomeTypeFromApi(value)
-                      : normalizeStringArrayFromApi(value);
-                  const isSelected = multiValue.includes(option);
+                  const isSelected = selectionArray.includes(option);
                   return (
                     <Button
                       key={option}
@@ -2088,40 +2155,54 @@ export function LeadProfileModal({
                       variant={isSelected ? 'default' : 'outline'}
                       size='sm'
                       aria-pressed={isSelected}
-                      onClick={() => {
-                        if (!isEditing) return;
-                        const currentArray =
-                          fieldKey === 'home_type'
-                            ? singleHomeTypeFromApi(value)
-                            : normalizeStringArrayFromApi(value);
-                        const newArray =
-                          fieldKey === 'home_type'
-                            ? type === 'singleselect'
-                              ? selectSingleHomeType(currentArray, option)
-                              : toggleHomeTypeSelection(currentArray, option)
-                            : isSelected
-                              ? currentArray.filter((item) => item !== option)
-                              : [...currentArray, option];
-                        if (
-                          fieldKey === 'home_type' &&
-                          option === HOME_TYPE_OTHER_VALUE &&
-                          !newArray.includes(HOME_TYPE_OTHER_VALUE)
-                        ) {
-                          setEditedData((prev) => ({
-                            ...prev,
-                            home_type: newArray,
-                            home_type_other: '',
-                          }));
+                      onClick={(event) => {
+                        if (!isEditing) {
+                          event.stopPropagation();
+                          promptEditMode();
                           return;
                         }
-                        setEditedData((prev) => ({
-                          ...prev,
-                          [fieldKey]: newArray,
-                        }));
+                        setEditedData((prev) => {
+                          const prevRaw =
+                            fieldKey === 'home_type'
+                              ? prev.home_type
+                              : readProfileFieldFromRecord(
+                                  prev as Record<string, unknown>,
+                                  fieldKey
+                                );
+                          const currentArray =
+                            fieldKey === 'home_type'
+                              ? singleHomeTypeFromApi(
+                                  prevRaw !== undefined ? prevRaw : value
+                                )
+                              : normalizeStringArrayFromApi(
+                                  prevRaw !== undefined ? prevRaw : value
+                                );
+                          const selected = currentArray.includes(option);
+                          const newArray =
+                            fieldKey === 'home_type'
+                              ? type === 'singleselect'
+                                ? selectSingleHomeType(currentArray, option)
+                                : toggleHomeTypeSelection(currentArray, option)
+                              : selected
+                                ? currentArray.filter((item) => item !== option)
+                                : [...currentArray, option];
+                          if (
+                            fieldKey === 'home_type' &&
+                            option === HOME_TYPE_OTHER_VALUE &&
+                            !newArray.includes(HOME_TYPE_OTHER_VALUE)
+                          ) {
+                            return {
+                              ...prev,
+                              home_type: newArray,
+                              home_type_other: '',
+                            };
+                          }
+                          return { ...prev, [fieldKey]: newArray };
+                        });
                       }}
                       className={cn(
                         'text-xs transition-none',
-                        !isEditing && 'pointer-events-none cursor-default'
+                        !isEditing && 'cursor-pointer'
                       )}
                     >
                       {option}
@@ -2129,6 +2210,8 @@ export function LeadProfileModal({
                   );
                 })}
               </div>
+                );
+              })()}
               {!isEditing &&
                 (fieldKey === 'home_type'
                   ? singleHomeTypeFromApi(value).length === 0
@@ -2138,6 +2221,7 @@ export function LeadProfileModal({
                   </div>
                 )}
             </div>
+            )
           ) : type === 'date' ? (
             isEditing ? (
               <div className='flex gap-2 mt-1'>
@@ -2192,27 +2276,16 @@ export function LeadProfileModal({
                 ) : null}
               </div>
             ) : (
-              <div className='mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm'>
+              <div className={readOnlyFieldClassName} {...readOnlyFieldHandlers}>
                 {dateValue
                   ? format(new Date(dateValue), 'PPP')
                   : 'Not provided'}
               </div>
             )
-          ) : (fieldKey === 'phoneNumber' && type === 'tel') || isEditing ? (
+          ) : isEditing ? (
             (() => {
-              // Use getDisplayValue which has correct priority: editedData > detailSource > client
               let inputValue = getDisplayValue(fieldKey, altKey);
               if (inputValue === '[redacted]') inputValue = '';
-              if (fieldKey === 'phoneNumber') {
-                console.log('📱 [Input] Phone input render:', {
-                  fieldKey,
-                  altKey,
-                  inputValue,
-                  'editedData.phoneNumber': editedData.phoneNumber,
-                  'editedData.phone_number': (editedData as any).phone_number,
-                  'detailSource?.phoneNumber': detailSource?.phoneNumber,
-                });
-              }
               return (
                 <Input
                   id={fieldKey}
@@ -2222,7 +2295,6 @@ export function LeadProfileModal({
                     const updates: Record<string, string> = {
                       [fieldKey]: e.target.value,
                     };
-                    // Keep both key variants in sync so inputValue reads the latest value
                     if (altKey) updates[altKey] = e.target.value;
                     setEditedData((prev) => ({ ...prev, ...updates }));
                   }}
@@ -2232,7 +2304,7 @@ export function LeadProfileModal({
               );
             })()
           ) : (
-            <div className='mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm'>
+            <div className={readOnlyFieldClassName} {...readOnlyFieldHandlers}>
               {String(value || 'Not provided')}
             </div>
           )}
@@ -2313,29 +2385,86 @@ export function LeadProfileModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className='left-0 top-0 h-[100dvh] max-h-[100dvh] w-full max-w-full translate-x-0 translate-y-0 overflow-y-auto rounded-none sm:left-[50%] sm:top-[50%] sm:h-auto sm:max-h-[90vh] sm:max-w-4xl sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg'
+        className={cn(
+          'left-0 top-0 flex h-[100dvh] max-h-[100dvh] w-full max-w-full translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none p-0 sm:left-[50%] sm:top-[50%] sm:h-auto sm:max-h-[90vh] sm:max-w-4xl sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg',
+          isEditing && 'ring-2 ring-primary ring-offset-2'
+        )}
         data-testid={`lead-profile-dialog-${String(client.id)}`}
+        data-profile-mode={isEditing ? 'edit' : 'view'}
       >
-        <DialogHeader className='pb-4'>
-          <div className='flex flex-col gap-3 pr-8 sm:flex-row sm:items-center sm:justify-between'>
-            <DialogTitle className='flex min-w-0 items-center gap-2'>
-              <User className='h-5 w-5' />
-              {(() => {
-                const c = detailSource ?? (client as Record<string, unknown>);
-                const first = (c.firstname ??
-                  c.first_name ??
-                  c.firstName) as string;
-                const last = (c.lastname ??
-                  c.last_name ??
-                  c.lastName) as string;
-                const title =
-                  first && last
-                    ? `${first} ${last}`
-                    : c.email || `Client ${c.id}` || 'Client';
-                return title as React.ReactNode;
-              })()}
-            </DialogTitle>
-            <div className='flex items-center gap-2'>
+        <div className='shrink-0 border-b bg-background/95 px-6 pb-3 pt-6 pr-12 backdrop-blur supports-[backdrop-filter]:bg-background/85'>
+          <DialogHeader className='pb-0 text-left'>
+            <div className='flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
+              <div className='flex min-w-0 flex-col gap-1'>
+                <DialogTitle className='flex min-w-0 flex-wrap items-center gap-2 text-left'>
+                  <User className='h-5 w-5 shrink-0' />
+                  {(() => {
+                    const c =
+                      detailSource ?? (client as Record<string, unknown>);
+                    const first = (c.firstname ??
+                      c.first_name ??
+                      c.firstName) as string;
+                    const last = (c.lastname ??
+                      c.last_name ??
+                      c.lastName) as string;
+                    const title =
+                      first && last
+                        ? `${first} ${last}`
+                        : c.email || `Client ${c.id}` || 'Client';
+                    return title as React.ReactNode;
+                  })()}
+                </DialogTitle>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div
+            className={cn(
+              'mt-3 flex flex-col gap-2 rounded-lg border px-3 py-2.5 text-sm sm:flex-row sm:items-center sm:justify-between',
+              isEditing
+                ? 'border-primary/40 bg-primary/5'
+                : 'border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100'
+            )}
+            role='status'
+            aria-live='polite'
+            data-testid='lead-profile-mode-bar'
+          >
+            <div className='flex min-w-0 flex-wrap items-center gap-2'>
+              <Badge
+                variant={isEditing ? 'default' : 'secondary'}
+                className='font-medium'
+              >
+                {isEditing ? (
+                  <>
+                    <Pencil className='h-3 w-3' />
+                    Editing
+                  </>
+                ) : (
+                  <>
+                    <Eye className='h-3 w-3' />
+                    View only
+                  </>
+                )}
+              </Badge>
+              {isEditing ? (
+                <>
+                  <Pencil className='hidden h-4 w-4 shrink-0 text-primary sm:block' />
+                  <span className='text-muted-foreground'>
+                    Scroll to review or update fields. Save or cancel when
+                    finished.
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Lock className='hidden h-4 w-4 shrink-0 sm:block' />
+                  <span>
+                    Scroll to review information. Fields are read-only until
+                    you edit.
+                  </span>
+                </>
+              )}
+            </div>
+            <div className='flex shrink-0 items-center gap-2 self-end sm:self-auto'>
               {isEditing ? (
                 <>
                   <Button
@@ -2357,16 +2486,17 @@ export function LeadProfileModal({
               ) : (
                 <Button
                   onClick={() => setIsEditing(true)}
-                  variant='outline'
                   size='sm'
                 >
-                  Edit
+                  <Pencil className='h-4 w-4 mr-1' />
+                  Edit Profile
                 </Button>
               )}
             </div>
           </div>
-        </DialogHeader>
+        </div>
 
+        <div className='min-h-0 flex-1 overflow-y-auto px-6 py-4'>
         {detailedClient != null ? (
           <div className='space-y-3'>
             {/* Contact & Basic Info */}
@@ -3741,8 +3871,9 @@ export function LeadProfileModal({
             </Collapsible>
           </div>
         ) : null}
+        </div>
 
-        <DialogFooter className='pt-4'>
+        <DialogFooter className='shrink-0 border-t px-6 py-4'>
           <Button onClick={() => onOpenChange(false)}>Close</Button>
         </DialogFooter>
       </DialogContent>

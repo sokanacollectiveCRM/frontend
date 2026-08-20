@@ -26,6 +26,7 @@ import { userListSchema, UserSummary, type UserWithPortal } from './data/schema'
 import { derivePortalStatus } from './utils/portalStatus';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/common/components/ui/tabs';
 import { fetchWithAuth, buildUrl } from '@/api/http';
+import { prefetchClientDetail } from '@/api/services/clientDetailCache';
 
 type RouteParams = {
   clientId?: string;
@@ -474,6 +475,7 @@ function RouteAwareLeadProfileLoader({
     }
 
     const normalizedId = String(requestedClientId);
+    prefetchClientDetail(normalizedId);
 
     // Always fetch full detail when URL has a client id so modal gets phone_number, service_needed, etc.
     // Do not use attemptedRouteIdsRef to skip fetches: React Strict Mode cancels the first run; skipping
@@ -484,7 +486,7 @@ function RouteAwareLeadProfileLoader({
     const fetchClient = async () => {
       try {
         setIsFetchingFromRoute(true);
-        const fetchedClient = await getClientById(normalizedId, true);
+        const fetchedClient = await getClientById(normalizedId);
 
         if (isCancelled) return;
 
