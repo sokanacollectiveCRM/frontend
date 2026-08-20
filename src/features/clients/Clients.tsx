@@ -22,27 +22,44 @@ import { UsersDialogs } from './components/users-dialogs';
 import { UsersTable } from './components/users-table';
 import UsersProvider from './context/users-context';
 import { TemplatesProvider } from './contexts/TemplatesContext';
-import { userListSchema, UserSummary, type UserWithPortal } from './data/schema';
+import {
+  userListSchema,
+  UserSummary,
+  type UserWithPortal,
+} from './data/schema';
 import { derivePortalStatus } from './utils/portalStatus';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/common/components/ui/tabs';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/common/components/ui/tabs';
 import { fetchWithAuth, buildUrl } from '@/api/http';
+import { prefetchClientDetail } from '@/api/services/clientDetailCache';
 
 type RouteParams = {
   clientId?: string;
 };
 
 export default function Users() {
-  const { clients, isLoading, getClients, getClientById, error: clientsError } = useClients();
+  const {
+    clients,
+    isLoading,
+    getClients,
+    getClientById,
+    error: clientsError,
+  } = useClients();
   const [userList, setUserList] = useState<UserSummary[]>([]);
   const { user, isLoading: userLoading } = useContext(UserContext);
   const { clientId } = useParams<RouteParams>();
   const location = useLocation();
   const [missingClientId, setMissingClientId] = useState<string | null>(null);
   const manualCloseRef = useRef(false);
-  
+
   // Portal invite modal state
   const [portalInviteModalOpen, setPortalInviteModalOpen] = useState(false);
-  const [selectedLeadForPortal, setSelectedLeadForPortal] = useState<UserSummary | null>(null);
+  const [selectedLeadForPortal, setSelectedLeadForPortal] =
+    useState<UserSummary | null>(null);
   const [isSendingInvite, setIsSendingInvite] = useState(false);
 
   const normalizedRouteClientId = clientId ? String(clientId) : undefined;
@@ -158,7 +175,10 @@ export default function Users() {
   }, []);
 
   const handleConfirmInvite = useCallback(async () => {
-    console.log('🔔 handleConfirmInvite called, selectedLeadForPortal:', selectedLeadForPortal);
+    console.log(
+      '🔔 handleConfirmInvite called, selectedLeadForPortal:',
+      selectedLeadForPortal
+    );
     if (!selectedLeadForPortal) {
       console.error('❌ handleConfirmInvite: No lead selected');
       return;
@@ -168,12 +188,14 @@ export default function Users() {
     console.log('✅ Sending invite to:', selectedLeadForPortal.email);
 
     try {
-
       // Get the frontend URL (production or current origin)
-      const frontendUrl = import.meta.env.VITE_APP_FRONTEND_URL || window.location.origin;
-      
+      const frontendUrl =
+        import.meta.env.VITE_APP_FRONTEND_URL || window.location.origin;
+
       const response = await fetchWithAuth(
-        buildUrl(`/api/admin/clients/${selectedLeadForPortal.id}/portal/invite`),
+        buildUrl(
+          `/api/admin/clients/${selectedLeadForPortal.id}/portal/invite`
+        ),
         {
           method: 'POST',
           headers: {
@@ -186,8 +208,12 @@ export default function Users() {
       );
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to send invite' }));
-        throw new Error(errorData.error || `Failed to send invite (${response.status})`);
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: 'Failed to send invite' }));
+        throw new Error(
+          errorData.error || `Failed to send invite (${response.status})`
+        );
       }
 
       const data = await response.json();
@@ -203,14 +229,18 @@ export default function Users() {
               portal_status: 'invited' as const,
               invited_at: data.invited_at || now,
               last_invite_sent_at: data.last_invite_sent_at || now,
-              invite_sent_count: data.invite_sent_count || ((user as any).invite_sent_count || 0) + 1,
+              invite_sent_count:
+                data.invite_sent_count ||
+                ((user as any).invite_sent_count || 0) + 1,
             } as UserWithPortal;
           }
           return user;
         })
       );
 
-      toast.success(`Invite sent to ${selectedLeadForPortal.email || 'client'}`);
+      toast.success(
+        `Invite sent to ${selectedLeadForPortal.email || 'client'}`
+      );
       setPortalInviteModalOpen(false);
       setSelectedLeadForPortal(null);
     } catch (error: any) {
@@ -223,11 +253,11 @@ export default function Users() {
 
   const handleResendInvite = useCallback(async (lead: UserSummary) => {
     console.log('🔔 handleResendInvite called for:', lead.email);
-    
-    try {
 
+    try {
       // Get the frontend URL (production or current origin)
-      const frontendUrl = import.meta.env.VITE_APP_FRONTEND_URL || window.location.origin;
+      const frontendUrl =
+        import.meta.env.VITE_APP_FRONTEND_URL || window.location.origin;
 
       const response = await fetchWithAuth(
         buildUrl(`/api/admin/clients/${lead.id}/portal/resend`),
@@ -243,8 +273,12 @@ export default function Users() {
       );
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to resend invite' }));
-        throw new Error(errorData.error || `Failed to resend invite (${response.status})`);
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: 'Failed to resend invite' }));
+        throw new Error(
+          errorData.error || `Failed to resend invite (${response.status})`
+        );
       }
 
       const data = await response.json();
@@ -258,7 +292,9 @@ export default function Users() {
             return {
               ...user,
               last_invite_sent_at: data.last_invite_sent_at || now,
-              invite_sent_count: data.invite_sent_count || ((user as any).invite_sent_count || 0) + 1,
+              invite_sent_count:
+                data.invite_sent_count ||
+                ((user as any).invite_sent_count || 0) + 1,
             } as UserWithPortal;
           }
           return user;
@@ -268,15 +304,16 @@ export default function Users() {
       toast.success(`Invite resent to ${lead.email || 'client'}`);
     } catch (error: any) {
       console.error('❌ Error resending invite:', error);
-      toast.error(error.message || 'Failed to resend invite. Please try again.');
+      toast.error(
+        error.message || 'Failed to resend invite. Please try again.'
+      );
     }
   }, []);
 
   const handleDisablePortal = useCallback(async (lead: UserSummary) => {
     console.log('🔔 handleDisablePortal called for:', lead.email);
-    
-    try {
 
+    try {
       const response = await fetchWithAuth(
         buildUrl(`/api/admin/clients/${lead.id}/portal/disable`),
         {
@@ -288,8 +325,13 @@ export default function Users() {
       );
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to disable portal access' }));
-        throw new Error(errorData.error || `Failed to disable portal access (${response.status})`);
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: 'Failed to disable portal access' }));
+        throw new Error(
+          errorData.error ||
+            `Failed to disable portal access (${response.status})`
+        );
       }
 
       const data = await response.json();
@@ -311,7 +353,9 @@ export default function Users() {
       toast.success(`Portal access disabled for ${lead.email || 'client'}`);
     } catch (error: any) {
       console.error('❌ Error disabling portal access:', error);
-      toast.error(error.message || 'Failed to disable portal access. Please try again.');
+      toast.error(
+        error.message || 'Failed to disable portal access. Please try again.'
+      );
     }
   }, []);
 
@@ -364,7 +408,9 @@ export default function Users() {
             </div>
             {clientsError && (
               <div className='p-4 mb-4 bg-red-50 border border-red-200 rounded-md'>
-                <p className='text-red-800 font-semibold'>Error loading clients:</p>
+                <p className='text-red-800 font-semibold'>
+                  Error loading clients:
+                </p>
                 <p className='text-red-600 text-sm'>{clientsError}</p>
                 <button
                   onClick={() => getClients()}
@@ -474,6 +520,7 @@ function RouteAwareLeadProfileLoader({
     }
 
     const normalizedId = String(requestedClientId);
+    prefetchClientDetail(normalizedId);
 
     // Always fetch full detail when URL has a client id so modal gets phone_number, service_needed, etc.
     // Do not use attemptedRouteIdsRef to skip fetches: React Strict Mode cancels the first run; skipping
@@ -484,7 +531,7 @@ function RouteAwareLeadProfileLoader({
     const fetchClient = async () => {
       try {
         setIsFetchingFromRoute(true);
-        const fetchedClient = await getClientById(normalizedId, true);
+        const fetchedClient = await getClientById(normalizedId);
 
         if (isCancelled) return;
 
@@ -583,7 +630,9 @@ function RouteAwareLeadProfileLoader({
 
 type ClientIdentifier = UserSummary & Record<string, any>;
 
-const collectClientIdentifiers = (client: ClientIdentifier | null | undefined) => {
+const collectClientIdentifiers = (
+  client: ClientIdentifier | null | undefined
+) => {
   if (!client) return [] as string[];
 
   const ids = new Set<string>();
@@ -660,26 +709,45 @@ const ensureClientIdentifiers = (
  * Merge API detail/PHI fields (snake_case or camelCase) into the parsed result
  * so the lead profile modal receives and displays them.
  */
-function mergeDetailFieldsIntoResult(result: UserSummary & Record<string, any>, raw: any): UserSummary & Record<string, any> {
+function mergeDetailFieldsIntoResult(
+  result: UserSummary & Record<string, any>,
+  raw: any
+): UserSummary & Record<string, any> {
   if (!raw || typeof raw !== 'object') return result;
   const nested = raw.user && typeof raw.user === 'object' ? raw.user : {};
   return {
     ...result,
     // Name and email: support both conventions so modal title and fields work (API returns snake_case)
-    firstname: result.firstname || raw.firstname || raw.first_name || raw.firstName || '',
-    lastname: result.lastname || raw.lastname || raw.last_name || raw.lastName || '',
+    firstname:
+      result.firstname ||
+      raw.firstname ||
+      raw.first_name ||
+      raw.firstName ||
+      '',
+    lastname:
+      result.lastname || raw.lastname || raw.last_name || raw.lastName || '',
     first_name: raw.first_name ?? raw.firstName ?? result.firstname,
     last_name: raw.last_name ?? raw.lastName ?? result.lastname,
     email: raw.email ?? result.email ?? '',
     // PHI / detail fields: explicitly map API snake_case → UI keys so form always gets values
     due_date: raw.due_date ?? raw.dueDate ?? result.due_date,
-    date_of_birth: raw.date_of_birth ?? raw.dateOfBirth ?? (result as any).date_of_birth,
-    address: raw.address ?? raw.address_line1 ?? raw.addressLine1 ?? (result as any).address,
-    address_line1: raw.address_line1 ?? raw.addressLine1 ?? (result as any).address_line1,
-    phoneNumber: raw.phone_number ?? raw.phoneNumber ?? result.phoneNumber ?? '',
-    phone_number: raw.phone_number ?? raw.phoneNumber ?? result.phoneNumber ?? '',
-    serviceNeeded: raw.service_needed ?? raw.serviceNeeded ?? result.serviceNeeded ?? '',
-    service_needed: raw.service_needed ?? raw.serviceNeeded ?? result.serviceNeeded ?? '',
+    date_of_birth:
+      raw.date_of_birth ?? raw.dateOfBirth ?? (result as any).date_of_birth,
+    address:
+      raw.address ??
+      raw.address_line1 ??
+      raw.addressLine1 ??
+      (result as any).address,
+    address_line1:
+      raw.address_line1 ?? raw.addressLine1 ?? (result as any).address_line1,
+    phoneNumber:
+      raw.phone_number ?? raw.phoneNumber ?? result.phoneNumber ?? '',
+    phone_number:
+      raw.phone_number ?? raw.phoneNumber ?? result.phoneNumber ?? '',
+    serviceNeeded:
+      raw.service_needed ?? raw.serviceNeeded ?? result.serviceNeeded ?? '',
+    service_needed:
+      raw.service_needed ?? raw.serviceNeeded ?? result.serviceNeeded ?? '',
     health_history: raw.health_history ?? raw.healthHistory,
     health_notes: raw.health_notes ?? raw.healthNotes,
     allergies: raw.allergies,
@@ -730,8 +798,10 @@ function mergeDetailFieldsIntoResult(result: UserSummary & Record<string, any>, 
     isEligible: raw.isEligible ?? raw.is_eligible,
     portal_blockers: raw.portal_blockers ?? raw.portalBlockers,
     portalBlockers: raw.portalBlockers ?? raw.portal_blockers,
-    primary_portal_blocker: raw.primary_portal_blocker ?? raw.primaryPortalBlocker,
-    primaryPortalBlocker: raw.primaryPortalBlocker ?? raw.primary_portal_blocker,
+    primary_portal_blocker:
+      raw.primary_portal_blocker ?? raw.primaryPortalBlocker,
+    primaryPortalBlocker:
+      raw.primaryPortalBlocker ?? raw.primary_portal_blocker,
     billing_path: raw.billing_path ?? raw.billingPath,
     billingPath: raw.billingPath ?? raw.billing_path,
     payment_authorization_required:
@@ -750,8 +820,10 @@ function mergeDetailFieldsIntoResult(result: UserSummary & Record<string, any>, 
       raw.qb_stored_payment_method_id ?? raw.qbStoredPaymentMethodId,
     qbStoredPaymentMethodId:
       raw.qbStoredPaymentMethodId ?? raw.qb_stored_payment_method_id,
-    verification_invoice_id: raw.verification_invoice_id ?? raw.verificationInvoiceId,
-    verificationInvoiceId: raw.verificationInvoiceId ?? raw.verification_invoice_id,
+    verification_invoice_id:
+      raw.verification_invoice_id ?? raw.verificationInvoiceId,
+    verificationInvoiceId:
+      raw.verificationInvoiceId ?? raw.verification_invoice_id,
     verification_invoice_sent_at:
       raw.verification_invoice_sent_at ?? raw.verificationInvoiceSentAt,
     verificationInvoiceSentAt:
@@ -781,8 +853,15 @@ function mapApiClientToUserSummary(
     const parsed = userListSchema.parse([client]);
     const result = parsed[0] as UserSummary & Record<string, any>;
     const merged = mergeDetailFieldsIntoResult(result, client);
-    if (fallbackId && !matchesClientIdentifier(merged as ClientIdentifier, fallbackId)) {
-      return ensureClientIdentifiers(merged as ClientIdentifier, client, fallbackId);
+    if (
+      fallbackId &&
+      !matchesClientIdentifier(merged as ClientIdentifier, fallbackId)
+    ) {
+      return ensureClientIdentifiers(
+        merged as ClientIdentifier,
+        client,
+        fallbackId
+      );
     }
     return merged;
   } catch (error) {
@@ -791,7 +870,10 @@ function mapApiClientToUserSummary(
     if (fallbackId && !rawClient.id) {
       rawClient.id = fallbackId;
     }
-    const merged = mergeDetailFieldsIntoResult(rawClient as UserSummary & Record<string, any>, rawClient);
+    const merged = mergeDetailFieldsIntoResult(
+      rawClient as UserSummary & Record<string, any>,
+      rawClient
+    );
     return merged;
   }
 }

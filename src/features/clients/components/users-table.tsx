@@ -25,6 +25,7 @@ import {
 } from '@tanstack/react-table';
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { prefetchClientDetail } from '@/api/services/clientDetailCache';
 import { DataTablePagination } from './data-table-pagination';
 import { DataTableToolbar } from './data-table-toolbar';
 
@@ -121,9 +122,11 @@ export function UsersTable({
                   data-state={row.getIsSelected() && 'selected'}
                   className='group/row cursor-pointer transition hover:bg-muted/50'
                   onClick={() => {
+                    const clientId = String(row.original.id);
+                    prefetchClientDetail(clientId);
                     setCurrentRow(row.original);
                     setOpen('lead-profile');
-                    const targetPath = `${basePath}/${String(row.original.id)}`;
+                    const targetPath = `${basePath}/${clientId}`;
                     navigate(targetPath);
                   }}
                 >

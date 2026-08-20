@@ -34,7 +34,6 @@ import {
   SelectValue,
 } from '@/common/components/ui/select';
 import { Textarea } from '@/common/components/ui/textarea';
-import { useClients } from '@/common/hooks/clients/useClients';
 import { UserContext } from '@/common/contexts/UserContext';
 import updateClient from '@/common/utils/updateClient';
 import updateClientStatus from '@/common/utils/updateClientStatus';
@@ -48,6 +47,10 @@ import {
 } from '@/api/services/clients.service';
 import { buildUrl, fetchWithAuth } from '@/api/http';
 import { splitClientUpdatePayload } from '@/config/clientFieldRouting';
+import {
+  getCachedClientDetail,
+  loadClientDetail,
+} from '@/api/services/clientDetailCache';
 import { Client } from '@/features/clients/data/schema';
 import type { ClientDetail } from '@/domain/client';
 import { cn } from '@/lib/utils';
@@ -63,9 +66,12 @@ import {
   FileText,
   FileImage,
   Loader2,
+  Lock,
   Mail,
   MapPin,
   MessageSquare,
+  Eye,
+  Pencil,
   Phone,
   Save,
   User,
@@ -338,7 +344,6 @@ export function LeadProfileModal({
   missingClientId,
 }: LeadProfileModalProps) {
   const { user } = useContext(UserContext);
-  const { getClientById } = useClients();
   const [notes, setNotes] = useState<ClientNote[]>([]);
   const [newNote, setNewNote] = useState('');
   const [noteCategory, setNoteCategory] = useState('General');
@@ -351,6 +356,34 @@ export function LeadProfileModal({
   );
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState<Partial<Client>>({});
+
+  const promptEditMode = React.useCallback(() => {
+    toast.message('View mode', {
+      description: 'Click "Edit Profile" at the top to change fields.',
+      duration: 4500,
+    });
+  }, []);
+
+  const readOnlyFieldClassName = cn(
+    'mt-1 px-3 py-2 border border-dashed rounded-md bg-muted/40 text-sm',
+    'cursor-pointer transition-colors hover:border-primary/50 hover:bg-muted/60'
+  );
+
+  const readOnlyFieldHandlers = React.useMemo(
+    () => ({
+      role: 'button' as const,
+      tabIndex: 0,
+      onClick: promptEditMode,
+      onKeyDown: (event: React.KeyboardEvent) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          promptEditMode();
+        }
+      },
+      'aria-label': 'View only. Press to learn how to edit this profile.',
+    }),
+    [promptEditMode]
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [isRecordingPaymentAuth, setIsRecordingPaymentAuth] = useState(false);
   const [installments, setInstallments] = useState<PaymentInstallment[]>([]);
@@ -364,6 +397,7 @@ export function LeadProfileModal({
   const [isSavingBirthOutcomes, setIsSavingBirthOutcomes] = useState(false);
   // Primary source for display: full detail from GET /clients/:id (authorized users get PHI).
   const [fetchedDetail, setFetchedDetail] = useState<ClientDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [clientDocuments, setClientDocuments] = useState<ClientDocument[]>([]);
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
@@ -418,6 +452,11 @@ export function LeadProfileModal({
     }
   }, [client?.id]);
 
+  const detailReady = React.useMemo(() => {
+    if (!client?.id || !fetchedDetail) return false;
+    return String(fetchedDetail.id) === String(client.id);
+  }, [client?.id, fetchedDetail]);
+
   // On modal open with client.id: always fetch GET /clients/:id and use as primary source for display.
   // Do not rely solely on list row; backend returns full PHI for authorized users on detail.
   const detailFetchRef = React.useRef<string | null>(null);
@@ -428,9 +467,10 @@ export function LeadProfileModal({
       refValue: detailFetchRef.current,
     });
     if (!open) {
-      console.log('🔍 [Effect] Modal closed, resetting');
       detailFetchRef.current = null;
       setFetchedDetail(null);
+      setDetailLoading(false);
+      setIsEditing(false);
       return;
     }
     if (!client?.id) {
@@ -445,56 +485,40 @@ export function LeadProfileModal({
       fetchedDetail &&
       (fetchedDetail as any).id === clientId
     ) {
-      console.log('🔍 [Effect] Already fetched and have data, skipping');
       return;
     }
 
-    // Set ref immediately to prevent duplicate fetches while this one is in progress
     detailFetchRef.current = clientId;
-    console.log('🔍 [Effect] Fetching because:', {
-      'ref matches': detailFetchRef.current === clientId,
-      'have data': !!fetchedDetail,
-      'data matches': fetchedDetail
-        ? (fetchedDetail as any).id === clientId
-        : false,
-    });
 
-    console.log('🔍 [Fetch] Starting fetch for client:', clientId);
+    const cached = getCachedClientDetail(clientId);
+    if (cached) {
+      setFetchedDetail(cached);
+      setDetailLoading(false);
+    } else {
+      setDetailLoading(true);
+    }
+
     let cancelled = false;
-    getClientById(clientId)
+    loadClientDetail(clientId)
       .then((data) => {
         if (cancelled) return;
         if (!data) {
-          // Fetch failed, clear ref so it can retry
-          console.error('❌ [Fetch] No data returned for client:', clientId);
           detailFetchRef.current = null;
           return;
         }
-        console.log(
-          '🔍 [Fetch] phoneNumber in fetched data:',
-          (data as any)?.phoneNumber
-        );
-        console.log(
-          '🔍 [Fetch] phone_number in fetched data:',
-          (data as any)?.phone_number
-        );
-        console.log('🔍 [Fetch] Full data:', data);
         setFetchedDetail(data);
       })
       .catch((error) => {
-        // On error, clear ref so it can retry
-        console.error('❌ [Fetch] Error fetching client detail:', error);
-        console.error('❌ [Fetch] Error details:', {
-          message: error?.message,
-          status: error?.status,
-          statusText: error?.statusText,
-        });
+        console.error('Error fetching client detail:', error);
         detailFetchRef.current = null;
+      })
+      .finally(() => {
+        if (!cancelled) setDetailLoading(false);
       });
     return () => {
       cancelled = true;
     };
-  }, [open, client?.id, getClientById]);
+  }, [open, client?.id]);
 
   const loadBillingWorkflow = React.useCallback(async () => {
     if (!client?.id) return;
@@ -685,6 +709,10 @@ export function LeadProfileModal({
   React.useEffect(() => {
     if (!client || !detailSource) {
       lastInitFingerprintRef.current = null;
+      return;
+    }
+    // Don't overwrite in-progress edits when detail fetch completes.
+    if (isEditing) {
       return;
     }
     if (lastInitFingerprintRef.current === dataFingerprint) {
@@ -889,7 +917,7 @@ export function LeadProfileModal({
       phone_number: (initializedData as any).phone_number,
     });
     setEditedData(initializedData);
-  }, [client, detailSource, dataFingerprint]);
+  }, [client, detailSource, dataFingerprint, isEditing]);
 
   /** Radix passes the next open state; do not toggle (double onOpenChange can flip closed again). */
   const setSectionOpen = (sectionId: string, nextOpen: boolean) => {
@@ -1315,10 +1343,15 @@ export function LeadProfileModal({
       if (operationalSuccess && phiSuccess && billingSuccess) {
         const profilePatch = { ...operationalData, ...phiData };
         if (Object.keys(profilePatch).length > 0) {
-          setFetchedDetail((prev) =>
-            prev ? ({ ...prev, ...profilePatch } as ClientDetail) : prev
-          );
           setEditedData((prev) => ({ ...prev, ...profilePatch }));
+        }
+        detailFetchRef.current = null;
+        const refreshed = await loadClientDetail(String(client.id), {
+          force: true,
+        });
+        if (refreshed) {
+          setFetchedDetail(refreshed);
+          detailFetchRef.current = String(client.id);
         }
         toast.success('Client profile updated successfully!');
         setIsEditing(false);
@@ -1855,7 +1888,9 @@ export function LeadProfileModal({
       toast.success('Installment invoice generated.');
       await loadBillingWorkflow();
       detailFetchRef.current = null;
-      const refreshed = await getClientById(String(client.id));
+      const refreshed = await loadClientDetail(String(client.id), {
+        force: true,
+      });
       if (refreshed) setFetchedDetail(refreshed);
       refreshClients?.();
     } catch (error) {
@@ -1900,9 +1935,10 @@ export function LeadProfileModal({
       fieldKey === 'services_interested' ||
       fieldKey === 'demographics_multi';
 
-    const fromEdited =
-      (altKey ? editedData[altKey as keyof Client] : undefined) ??
-      editedData[fieldKey as keyof Client];
+    const fromEdited = readProfileFieldFromRecord(
+      editedData as Record<string, unknown>,
+      fieldKey
+    );
     if (!isEmptyScalar(fromEdited) && !isEmptyArray(fromEdited)) {
       return isMultiselect
         ? normalizeStringArrayFromApi(fromEdited)
@@ -2043,7 +2079,13 @@ export function LeadProfileModal({
                 rows={textareaRows}
               />
             ) : (
-              <div className='mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm min-h-[72px] whitespace-pre-wrap'>
+              <div
+                className={cn(
+                  readOnlyFieldClassName,
+                  'min-h-[72px] whitespace-pre-wrap'
+                )}
+                {...readOnlyFieldHandlers}
+              >
                 {String(value || 'Not provided')}
               </div>
             )
@@ -2068,76 +2110,133 @@ export function LeadProfileModal({
                 ))}
               </select>
             ) : (
-              <div className='mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm'>
+              <div
+                className={readOnlyFieldClassName}
+                {...readOnlyFieldHandlers}
+              >
                 {String(value || 'Not provided')}
               </div>
             )
           ) : (type === 'multiselect' || type === 'singleselect') && options ? (
-            <div className='mt-1'>
-              <div className='flex flex-wrap gap-2'>
-                {options.map((option) => {
-                  const multiValue =
-                    fieldKey === 'home_type'
-                      ? singleHomeTypeFromApi(value)
-                      : normalizeStringArrayFromApi(value);
-                  const isSelected = multiValue.includes(option);
-                  return (
-                    <Button
-                      key={option}
-                      type='button'
-                      variant={isSelected ? 'default' : 'outline'}
-                      size='sm'
-                      aria-pressed={isSelected}
-                      onClick={() => {
-                        if (!isEditing) return;
-                        const currentArray =
-                          fieldKey === 'home_type'
-                            ? singleHomeTypeFromApi(value)
-                            : normalizeStringArrayFromApi(value);
-                        const newArray =
-                          fieldKey === 'home_type'
-                            ? type === 'singleselect'
-                              ? selectSingleHomeType(currentArray, option)
-                              : toggleHomeTypeSelection(currentArray, option)
-                            : isSelected
-                              ? currentArray.filter((item) => item !== option)
-                              : [...currentArray, option];
-                        if (
-                          fieldKey === 'home_type' &&
-                          option === HOME_TYPE_OTHER_VALUE &&
-                          !newArray.includes(HOME_TYPE_OTHER_VALUE)
-                        ) {
-                          setEditedData((prev) => ({
-                            ...prev,
-                            home_type: newArray,
-                            home_type_other: '',
-                          }));
-                          return;
-                        }
-                        setEditedData((prev) => ({
-                          ...prev,
-                          [fieldKey]: newArray,
-                        }));
-                      }}
-                      className={cn(
-                        'text-xs transition-none',
-                        !isEditing && 'pointer-events-none cursor-default'
-                      )}
-                    >
-                      {option}
-                    </Button>
-                  );
-                })}
+            detailLoading && !detailReady && !isEditing ? (
+              <div className='mt-1 text-sm text-muted-foreground animate-pulse'>
+                Loading selections…
               </div>
-              {!isEditing &&
-                (fieldKey === 'home_type'
-                  ? singleHomeTypeFromApi(value).length === 0
-                  : normalizeStringArrayFromApi(value).length === 0) && (
-                  <div className='text-sm text-muted-foreground mt-2'>
-                    No options selected
-                  </div>
+            ) : (
+              <div
+                className={cn(
+                  'mt-1 rounded-md border border-dashed p-2',
+                  !isEditing &&
+                    'cursor-pointer hover:border-primary/40 hover:bg-muted/30'
                 )}
-            </div>
+                {...(!isEditing ? readOnlyFieldHandlers : {})}
+              >
+                {(() => {
+                  const resolvedForDisplay =
+                    isEditing &&
+                    (fieldKey === 'home_type'
+                      ? editedData.home_type !== undefined
+                      : readProfileFieldFromRecord(
+                          editedData as Record<string, unknown>,
+                          fieldKey
+                        ) !== undefined)
+                      ? fieldKey === 'home_type'
+                        ? editedData.home_type
+                        : readProfileFieldFromRecord(
+                            editedData as Record<string, unknown>,
+                            fieldKey
+                          )
+                      : value;
+                  const selectionArray =
+                    fieldKey === 'home_type'
+                      ? singleHomeTypeFromApi(resolvedForDisplay)
+                      : normalizeStringArrayFromApi(resolvedForDisplay);
+                  return (
+                    <div className='flex flex-wrap gap-2'>
+                      {options.map((option) => {
+                        const isSelected = selectionArray.includes(option);
+                        return (
+                          <Button
+                            key={option}
+                            type='button'
+                            variant={isSelected ? 'default' : 'outline'}
+                            size='sm'
+                            aria-pressed={isSelected}
+                            onClick={(event) => {
+                              if (!isEditing) {
+                                event.stopPropagation();
+                                promptEditMode();
+                                return;
+                              }
+                              setEditedData((prev) => {
+                                const prevRaw =
+                                  fieldKey === 'home_type'
+                                    ? prev.home_type
+                                    : readProfileFieldFromRecord(
+                                        prev as Record<string, unknown>,
+                                        fieldKey
+                                      );
+                                const currentArray =
+                                  fieldKey === 'home_type'
+                                    ? singleHomeTypeFromApi(
+                                        prevRaw !== undefined ? prevRaw : value
+                                      )
+                                    : normalizeStringArrayFromApi(
+                                        prevRaw !== undefined ? prevRaw : value
+                                      );
+                                const selected = currentArray.includes(option);
+                                const newArray =
+                                  fieldKey === 'home_type'
+                                    ? type === 'singleselect'
+                                      ? selectSingleHomeType(
+                                          currentArray,
+                                          option
+                                        )
+                                      : toggleHomeTypeSelection(
+                                          currentArray,
+                                          option
+                                        )
+                                    : selected
+                                      ? currentArray.filter(
+                                          (item) => item !== option
+                                        )
+                                      : [...currentArray, option];
+                                if (
+                                  fieldKey === 'home_type' &&
+                                  option === HOME_TYPE_OTHER_VALUE &&
+                                  !newArray.includes(HOME_TYPE_OTHER_VALUE)
+                                ) {
+                                  return {
+                                    ...prev,
+                                    home_type: newArray,
+                                    home_type_other: '',
+                                  };
+                                }
+                                return { ...prev, [fieldKey]: newArray };
+                              });
+                            }}
+                            className={cn(
+                              'text-xs transition-none',
+                              !isEditing && 'cursor-pointer'
+                            )}
+                          >
+                            {option}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+                {!isEditing &&
+                  (fieldKey === 'home_type'
+                    ? singleHomeTypeFromApi(value).length === 0
+                    : normalizeStringArrayFromApi(value).length === 0) && (
+                    <div className='text-sm text-muted-foreground mt-2'>
+                      No options selected
+                    </div>
+                  )}
+              </div>
+            )
           ) : type === 'date' ? (
             isEditing ? (
               <div className='flex gap-2 mt-1'>
@@ -2192,27 +2291,19 @@ export function LeadProfileModal({
                 ) : null}
               </div>
             ) : (
-              <div className='mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm'>
+              <div
+                className={readOnlyFieldClassName}
+                {...readOnlyFieldHandlers}
+              >
                 {dateValue
                   ? format(new Date(dateValue), 'PPP')
                   : 'Not provided'}
               </div>
             )
-          ) : (fieldKey === 'phoneNumber' && type === 'tel') || isEditing ? (
+          ) : isEditing ? (
             (() => {
-              // Use getDisplayValue which has correct priority: editedData > detailSource > client
               let inputValue = getDisplayValue(fieldKey, altKey);
               if (inputValue === '[redacted]') inputValue = '';
-              if (fieldKey === 'phoneNumber') {
-                console.log('📱 [Input] Phone input render:', {
-                  fieldKey,
-                  altKey,
-                  inputValue,
-                  'editedData.phoneNumber': editedData.phoneNumber,
-                  'editedData.phone_number': (editedData as any).phone_number,
-                  'detailSource?.phoneNumber': detailSource?.phoneNumber,
-                });
-              }
               return (
                 <Input
                   id={fieldKey}
@@ -2222,7 +2313,6 @@ export function LeadProfileModal({
                     const updates: Record<string, string> = {
                       [fieldKey]: e.target.value,
                     };
-                    // Keep both key variants in sync so inputValue reads the latest value
                     if (altKey) updates[altKey] = e.target.value;
                     setEditedData((prev) => ({ ...prev, ...updates }));
                   }}
@@ -2232,7 +2322,7 @@ export function LeadProfileModal({
               );
             })()
           ) : (
-            <div className='mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm'>
+            <div className={readOnlyFieldClassName} {...readOnlyFieldHandlers}>
               {String(value || 'Not provided')}
             </div>
           )}
@@ -2313,29 +2403,86 @@ export function LeadProfileModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className='left-0 top-0 h-[100dvh] max-h-[100dvh] w-full max-w-full translate-x-0 translate-y-0 overflow-y-auto rounded-none sm:left-[50%] sm:top-[50%] sm:h-auto sm:max-h-[90vh] sm:max-w-4xl sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg'
+        className={cn(
+          'left-0 top-0 flex h-[100dvh] max-h-[100dvh] w-full max-w-full translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none p-0 sm:left-[50%] sm:top-[50%] sm:h-auto sm:max-h-[90vh] sm:max-w-4xl sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg',
+          isEditing && 'ring-2 ring-primary ring-offset-2'
+        )}
         data-testid={`lead-profile-dialog-${String(client.id)}`}
+        data-profile-mode={isEditing ? 'edit' : 'view'}
       >
-        <DialogHeader className='pb-4'>
-          <div className='flex flex-col gap-3 pr-8 sm:flex-row sm:items-center sm:justify-between'>
-            <DialogTitle className='flex min-w-0 items-center gap-2'>
-              <User className='h-5 w-5' />
-              {(() => {
-                const c = detailSource ?? (client as Record<string, unknown>);
-                const first = (c.firstname ??
-                  c.first_name ??
-                  c.firstName) as string;
-                const last = (c.lastname ??
-                  c.last_name ??
-                  c.lastName) as string;
-                const title =
-                  first && last
-                    ? `${first} ${last}`
-                    : c.email || `Client ${c.id}` || 'Client';
-                return title as React.ReactNode;
-              })()}
-            </DialogTitle>
-            <div className='flex items-center gap-2'>
+        <div className='shrink-0 border-b bg-background/95 px-6 pb-3 pt-6 pr-12 backdrop-blur supports-[backdrop-filter]:bg-background/85'>
+          <DialogHeader className='pb-0 text-left'>
+            <div className='flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
+              <div className='flex min-w-0 flex-col gap-1'>
+                <DialogTitle className='flex min-w-0 flex-wrap items-center gap-2 text-left'>
+                  <User className='h-5 w-5 shrink-0' />
+                  {(() => {
+                    const c =
+                      detailSource ?? (client as Record<string, unknown>);
+                    const first = (c.firstname ??
+                      c.first_name ??
+                      c.firstName) as string;
+                    const last = (c.lastname ??
+                      c.last_name ??
+                      c.lastName) as string;
+                    const title =
+                      first && last
+                        ? `${first} ${last}`
+                        : c.email || `Client ${c.id}` || 'Client';
+                    return title as React.ReactNode;
+                  })()}
+                </DialogTitle>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div
+            className={cn(
+              'mt-3 flex flex-col gap-2 rounded-lg border px-3 py-2.5 text-sm sm:flex-row sm:items-center sm:justify-between',
+              isEditing
+                ? 'border-primary/40 bg-primary/5'
+                : 'border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100'
+            )}
+            role='status'
+            aria-live='polite'
+            data-testid='lead-profile-mode-bar'
+          >
+            <div className='flex min-w-0 flex-wrap items-center gap-2'>
+              <Badge
+                variant={isEditing ? 'default' : 'secondary'}
+                className='font-medium'
+              >
+                {isEditing ? (
+                  <>
+                    <Pencil className='h-3 w-3' />
+                    Editing
+                  </>
+                ) : (
+                  <>
+                    <Eye className='h-3 w-3' />
+                    View only
+                  </>
+                )}
+              </Badge>
+              {isEditing ? (
+                <>
+                  <Pencil className='hidden h-4 w-4 shrink-0 text-primary sm:block' />
+                  <span className='text-muted-foreground'>
+                    Scroll to review or update fields. Save or cancel when
+                    finished.
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Lock className='hidden h-4 w-4 shrink-0 sm:block' />
+                  <span>
+                    Scroll to review information. Fields are read-only until you
+                    edit.
+                  </span>
+                </>
+              )}
+            </div>
+            <div className='flex shrink-0 items-center gap-2 self-end sm:self-auto'>
               {isEditing ? (
                 <>
                   <Button
@@ -2355,1394 +2502,1411 @@ export function LeadProfileModal({
                   </Button>
                 </>
               ) : (
-                <Button
-                  onClick={() => setIsEditing(true)}
-                  variant='outline'
-                  size='sm'
-                >
-                  Edit
+                <Button onClick={() => setIsEditing(true)} size='sm'>
+                  <Pencil className='h-4 w-4 mr-1' />
+                  Edit Profile
                 </Button>
               )}
             </div>
           </div>
-        </DialogHeader>
+        </div>
 
-        {detailedClient != null ? (
-          <div className='space-y-3'>
-            {/* Contact & Basic Info */}
-            {renderCollapsibleSection(
-              'contact',
-              'Contact Information',
-              <>
-                {(getDisplayValue('clientNumber', 'client_number') ||
-                  getDisplayValue('client_number', 'clientNumber')) && (
-                  <div className='flex items-start gap-2 py-2'>
-                    <div className='flex-1 min-w-0'>
-                      <Label className='text-sm font-medium text-muted-foreground'>
-                        Client #
-                      </Label>
-                      <div className='mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm font-mono'>
-                        {getDisplayValue('clientNumber', 'client_number') ||
-                          getDisplayValue('client_number', 'clientNumber')}
+        <div className='min-h-0 flex-1 overflow-y-auto px-6 py-4'>
+          {detailedClient != null ? (
+            <div className='space-y-3'>
+              {/* Contact & Basic Info */}
+              {renderCollapsibleSection(
+                'contact',
+                'Contact Information',
+                <>
+                  {(getDisplayValue('clientNumber', 'client_number') ||
+                    getDisplayValue('client_number', 'clientNumber')) && (
+                    <div className='flex items-start gap-2 py-2'>
+                      <div className='flex-1 min-w-0'>
+                        <Label className='text-sm font-medium text-muted-foreground'>
+                          Client #
+                        </Label>
+                        <div className='mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm font-mono'>
+                          {getDisplayValue('clientNumber', 'client_number') ||
+                            getDisplayValue('client_number', 'clientNumber')}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-                {renderEditableField('First Name', 'firstname')}
-                {renderEditableField('Last Name', 'lastname')}
-                {renderEditableField(
-                  'Email',
-                  'email',
-                  <Mail className='h-4 w-4' />,
-                  'email'
-                )}
-                {renderEditableField(
-                  'Phone Number',
-                  'phoneNumber',
-                  <Phone className='h-4 w-4' />,
-                  'tel'
-                )}
-                {renderEditableField(
-                  'Preferred Contact Method',
-                  'preferred_contact_method',
-                  undefined,
-                  'select',
-                  PREFERRED_CONTACT_OPTIONS
-                )}
-                {renderEditableField('Preferred Name', 'preferred_name')}
-                {renderEditableField('Age', 'age', undefined, 'number')}
-                {renderEditableField(
-                  'Pronouns',
-                  'pronouns',
-                  undefined,
-                  'select',
-                  PRONOUNS_OPTIONS
-                )}
-                {renderEditableField('Children Expected', 'children_expected')}
-                {renderEditableField(
-                  'Address',
-                  'address',
-                  <MapPin className='h-4 w-4' />,
-                  'textarea'
-                )}
-                {renderEditableField('City', 'city')}
-                {renderEditableField('State', 'state')}
-                {renderEditableField('ZIP Code', 'zip_code')}
-                {renderEditableField(
-                  'Home Type',
-                  'home_type',
-                  undefined,
-                  'singleselect',
-                  [...HOME_TYPE_OPTIONS]
-                )}
-                {singleHomeTypeFromApi(editedData.home_type).includes(
-                  HOME_TYPE_OTHER_VALUE
-                ) &&
-                  renderEditableField('Home Type (Other)', 'home_type_other')}
-                {renderEditableField('Home Access', 'home_access')}
-                {renderEditableField('Pets/Animals in Home', 'pets')}
-                {renderEditableField(
-                  'Other People in Home — Adults (18+)',
-                  'home_adults_count',
-                  undefined,
-                  'select',
-                  [...HOME_PEOPLE_COUNT_OPTIONS]
-                )}
-                {renderEditableField(
-                  'Other People in Home — Youth (under 18)',
-                  'home_youth_count',
-                  undefined,
-                  'select',
-                  [...HOME_PEOPLE_COUNT_OPTIONS]
-                )}
-              </>,
-              <User className='h-5 w-5' />
-            )}
+                  )}
+                  {renderEditableField('First Name', 'firstname')}
+                  {renderEditableField('Last Name', 'lastname')}
+                  {renderEditableField(
+                    'Email',
+                    'email',
+                    <Mail className='h-4 w-4' />,
+                    'email'
+                  )}
+                  {renderEditableField(
+                    'Phone Number',
+                    'phoneNumber',
+                    <Phone className='h-4 w-4' />,
+                    'tel'
+                  )}
+                  {renderEditableField(
+                    'Preferred Contact Method',
+                    'preferred_contact_method',
+                    undefined,
+                    'select',
+                    PREFERRED_CONTACT_OPTIONS
+                  )}
+                  {renderEditableField('Preferred Name', 'preferred_name')}
+                  {renderEditableField('Age', 'age', undefined, 'number')}
+                  {renderEditableField(
+                    'Pronouns',
+                    'pronouns',
+                    undefined,
+                    'select',
+                    PRONOUNS_OPTIONS
+                  )}
+                  {renderEditableField(
+                    'Children Expected',
+                    'children_expected'
+                  )}
+                  {renderEditableField(
+                    'Address',
+                    'address',
+                    <MapPin className='h-4 w-4' />,
+                    'textarea'
+                  )}
+                  {renderEditableField('City', 'city')}
+                  {renderEditableField('State', 'state')}
+                  {renderEditableField('ZIP Code', 'zip_code')}
+                  {renderEditableField(
+                    'Home Type',
+                    'home_type',
+                    undefined,
+                    'singleselect',
+                    [...HOME_TYPE_OPTIONS]
+                  )}
+                  {singleHomeTypeFromApi(editedData.home_type).includes(
+                    HOME_TYPE_OTHER_VALUE
+                  ) &&
+                    renderEditableField('Home Type (Other)', 'home_type_other')}
+                  {renderEditableField('Home Access', 'home_access')}
+                  {renderEditableField('Pets/Animals in Home', 'pets')}
+                  {renderEditableField(
+                    'Other People in Home — Adults (18+)',
+                    'home_adults_count',
+                    undefined,
+                    'select',
+                    [...HOME_PEOPLE_COUNT_OPTIONS]
+                  )}
+                  {renderEditableField(
+                    'Other People in Home — Youth (under 18)',
+                    'home_youth_count',
+                    undefined,
+                    'select',
+                    [...HOME_PEOPLE_COUNT_OPTIONS]
+                  )}
+                </>,
+                <User className='h-5 w-5' />
+              )}
 
-            {/* Services Requested */}
-            {renderCollapsibleSection(
-              'services',
-              'Services Requested',
-              <>
-                {renderEditableField(
-                  'Services Interested',
-                  'services_interested',
-                  undefined,
-                  'multiselect',
-                  SERVICES_OPTIONS
-                )}
-                {renderEditableField(
-                  'Service Support Details',
-                  'service_support_details',
-                  undefined,
-                  'textarea'
-                )}
-                {renderEditableField(
-                  'Service Needed',
-                  'service_needed',
-                  undefined,
-                  'textarea'
-                )}
-                {renderEditableField(
-                  'Service Specifics',
-                  'service_specifics',
-                  undefined,
-                  'textarea'
-                )}
-                {renderEditableField(
-                  'Annual Income',
-                  'annual_income',
-                  undefined,
-                  'select',
-                  ANNUAL_INCOME_OPTIONS
-                )}
-              </>,
-              <FileText className='h-5 w-5' />
-            )}
+              {/* Services Requested */}
+              {renderCollapsibleSection(
+                'services',
+                'Services Requested',
+                <>
+                  {renderEditableField(
+                    'Services Interested',
+                    'services_interested',
+                    undefined,
+                    'multiselect',
+                    SERVICES_OPTIONS
+                  )}
+                  {renderEditableField(
+                    'Service Support Details',
+                    'service_support_details',
+                    undefined,
+                    'textarea'
+                  )}
+                  {renderEditableField(
+                    'Service Needed',
+                    'service_needed',
+                    undefined,
+                    'textarea'
+                  )}
+                  {renderEditableField(
+                    'Service Specifics',
+                    'service_specifics',
+                    undefined,
+                    'textarea'
+                  )}
+                  {renderEditableField(
+                    'Annual Income',
+                    'annual_income',
+                    undefined,
+                    'select',
+                    ANNUAL_INCOME_OPTIONS
+                  )}
+                </>,
+                <FileText className='h-5 w-5' />
+              )}
 
-            {/* Billing */}
-            {renderCollapsibleSection(
-              'billing',
-              (() => {
-                const pm = String(
-                  getDisplayValue('payment_method', 'paymentMethod') || ''
-                );
-                const authStatus = String(
-                  getDisplayValue(
-                    'payment_authorization_status',
-                    'paymentAuthorizationStatus'
-                  ) || ''
-                ) as PaymentAuthorizationStatus | '';
-                const statusLabel = authStatus
-                  ? (PAYMENT_AUTHORIZATION_STATUS_LABELS[
-                      authStatus as PaymentAuthorizationStatus
-                    ] ?? authStatus)
-                  : null;
-                const statusColors: Record<string, string> = {
-                  not_required: 'bg-green-100 text-green-800',
-                  on_file: 'bg-blue-100 text-blue-800',
-                  required: 'bg-amber-100 text-amber-800',
-                  failed: 'bg-red-100 text-red-800',
-                };
-                return (
-                  <div className='flex items-center gap-2'>
-                    <span>Billing Information</span>
-                    {pm && (
-                      <Badge variant='outline' className='text-xs font-normal'>
-                        {pm}
-                      </Badge>
-                    )}
-                    {statusLabel && (
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[authStatus] ?? 'bg-muted text-muted-foreground'}`}
-                      >
-                        {statusLabel}
-                      </span>
-                    )}
-                  </div>
-                );
-              })(),
-              <>
-                <div className='rounded-lg border bg-muted/30 p-4 space-y-3'>
-                  <p className='text-sm font-medium text-foreground'>
-                    Portal onboarding readiness
-                  </p>
-                  <div className='grid gap-2 sm:grid-cols-2 text-sm'>
-                    <div className='flex justify-between gap-2'>
-                      <span className='text-muted-foreground'>
-                        Contract signed
-                      </span>
-                      <span>
-                        {formatYesNo(readinessSummary.contractSigned)}
-                      </span>
-                    </div>
-                    <div className='flex justify-between gap-2'>
-                      <span className='text-muted-foreground'>
-                        Deposit paid
-                      </span>
-                      <span>{formatYesNo(readinessSummary.depositPaid)}</span>
-                    </div>
-                    <div className='flex justify-between gap-2'>
-                      <span className='text-muted-foreground'>
-                        Billing path
-                      </span>
-                      <span>
-                        {getBillingPathLabel(readinessSummary.billingPath)}
-                      </span>
-                    </div>
-                    <div className='flex justify-between gap-2'>
-                      <span className='text-muted-foreground'>
-                        Payment authorization required
-                      </span>
-                      <span>
-                        {formatYesNo(
-                          readinessSummary.paymentAuthorizationRequired
-                        )}
-                      </span>
-                    </div>
-                    <div className='flex justify-between gap-2'>
-                      <span className='text-muted-foreground'>
-                        Payment authorization satisfied
-                      </span>
-                      <span>
-                        {formatYesNo(
-                          readinessSummary.paymentAuthorizationSatisfied
-                        )}
-                      </span>
-                    </div>
-                    <div className='flex justify-between gap-2'>
-                      <span className='text-muted-foreground'>
-                        Card on file
-                      </span>
-                      <span>{formatYesNo(readinessSummary.cardOnFile)}</span>
-                    </div>
-                    <div className='flex justify-between gap-2'>
-                      <span className='text-muted-foreground'>
-                        Portal eligibility
-                      </span>
-                      <span>
-                        {readinessSummary.portalEligibility === 'eligible'
-                          ? 'Eligible'
-                          : readinessSummary.portalEligibility === 'locked'
-                            ? 'Locked'
-                            : '—'}
-                      </span>
-                    </div>
-                    {readinessSummary.primaryBlocker ? (
-                      <div className='flex justify-between gap-2 sm:col-span-2'>
-                        <span className='text-muted-foreground'>
-                          Primary blocker
-                        </span>
-                        <span>
-                          {getPortalBlockerLabel(
-                            readinessSummary.primaryBlocker
-                          )}
-                        </span>
-                      </div>
-                    ) : null}
-                  </div>
-                  {readinessSummary.primaryBlocker ? (
-                    <p className='text-xs text-muted-foreground'>
-                      {getPortalBlockerDescription(
-                        readinessSummary.primaryBlocker
-                      )}
-                    </p>
-                  ) : null}
-                </div>
-                <div
-                  className='rounded-lg border p-4 space-y-3'
-                  aria-label='Card on file status'
-                >
-                  <p className='text-sm font-medium'>
-                    Card on file:{' '}
-                    {cardStatus
-                      ? cardStatus.status
-                          .replace('_', ' ')
-                          .replace(/^./, (c) => c.toUpperCase())
-                      : '—'}
-                  </p>
-                  {cardStatus?.status === 'active' && cardStatus.last4 ? (
-                    <div className='text-sm text-muted-foreground'>
-                      <p>
-                        {cardStatus.card_brand || 'Card'} ending in{' '}
-                        {cardStatus.last4}
-                      </p>
-                      {cardStatus.exp_month && cardStatus.exp_year ? (
-                        <p>
-                          Expires{' '}
-                          {String(cardStatus.exp_month).padStart(2, '0')}/
-                          {cardStatus.exp_year}
-                        </p>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </div>
-                <div
-                  className='rounded-lg border p-4 space-y-3'
-                  aria-label='Payment Schedule'
-                >
-                  <p className='text-sm font-medium'>Payment Schedule</p>
-                  {billingLoading ? (
-                    <p className='text-sm text-muted-foreground flex items-center gap-2'>
-                      <Loader2 className='h-4 w-4 animate-spin' />
-                      Loading payment schedule…
-                    </p>
-                  ) : null}
-                  {billingError ? (
-                    <p role='alert' className='text-sm text-destructive'>
-                      {billingError}
-                    </p>
-                  ) : null}
-                  {!billingLoading &&
-                  !billingError &&
-                  installments.length === 0 ? (
-                    <p className='text-sm text-muted-foreground'>
-                      No payment schedule has been created for this client.
-                    </p>
-                  ) : null}
-                  {!billingLoading &&
-                  !billingError &&
-                  installments.length > 0 ? (
-                    <div className='space-y-3'>
-                      {installments.map((item) => {
-                        const label =
-                          item.payment_type === 'deposit'
-                            ? 'Deposit'
-                            : `Installment ${item.installment_number}`;
-                        const detail = (
-                          name: string,
-                          value: React.ReactNode
-                        ) => (
-                          <div className='min-w-0'>
-                            <dt className='text-xs font-medium text-muted-foreground'>
-                              {name}
-                            </dt>
-                            <dd className='mt-0.5 break-words text-sm text-foreground'>
-                              {value || '—'}
-                            </dd>
-                          </div>
-                        );
-                        return (
-                          <article
-                            key={item.id}
-                            className='rounded-lg border bg-background p-4'
-                          >
-                            <div className='flex flex-wrap items-start justify-between gap-3 border-b pb-3'>
-                              <div>
-                                <h4 className='font-medium text-foreground'>
-                                  {label}
-                                </h4>
-                                <p className='mt-1 break-all font-mono text-xs text-muted-foreground'>
-                                  {item.id}
-                                </p>
-                              </div>
-                              <div className='text-right'>
-                                <p className='text-lg font-semibold text-foreground'>
-                                  {new Intl.NumberFormat('en-US', {
-                                    style: 'currency',
-                                    currency: 'USD',
-                                  }).format(item.amount)}
-                                </p>
-                                <Badge
-                                  variant='outline'
-                                  className='mt-1 capitalize'
-                                >
-                                  {item.payment_status}
-                                </Badge>
-                              </div>
-                            </div>
-                            <dl className='grid grid-cols-2 gap-x-5 gap-y-3 py-4 sm:grid-cols-3 lg:grid-cols-4'>
-                              {detail(
-                                'Payment type',
-                                <span className='capitalize'>
-                                  {item.payment_type}
-                                </span>
-                              )}
-                              {detail(
-                                'Due date',
-                                item.due_date
-                                  ? format(
-                                      parseISO(item.due_date),
-                                      'MMM d, yyyy'
-                                    )
-                                  : '—'
-                              )}
-                              {detail(
-                                'Paid date',
-                                item.paid_date
-                                  ? format(
-                                      parseISO(item.paid_date),
-                                      'MMM d, yyyy'
-                                    )
-                                  : '—'
-                              )}
-                              {detail(
-                                'Overdue',
-                                item.is_overdue ? 'Yes' : 'No'
-                              )}
-                              {detail(
-                                'QBO status',
-                                item.qbo_invoice_status || '—'
-                              )}
-                              {detail(
-                                'QBO invoice ID',
-                                item.qbo_invoice_id || '—'
-                              )}
-                              {detail(
-                                'Payment link',
-                                item.payment_link ? (
-                                  <a
-                                    href={item.payment_link}
-                                    target='_blank'
-                                    rel='noopener noreferrer'
-                                    className='inline-flex items-center gap-1 text-primary underline underline-offset-2'
-                                  >
-                                    Open invoice{' '}
-                                    <ExternalLink className='h-3 w-3' />
-                                  </a>
-                                ) : (
-                                  '—'
-                                )
-                              )}
-                            </dl>
-                            <div className='flex flex-col items-start gap-2 border-t pt-3 sm:flex-row sm:items-center sm:justify-between'>
-                              {!item.available_action.enabled &&
-                              item.available_action.reason ? (
-                                <p className='text-xs text-muted-foreground'>
-                                  {item.available_action.reason}
-                                </p>
-                              ) : (
-                                <span />
-                              )}
-                              <Button
-                                className='w-full sm:w-auto'
-                                type='button'
-                                size='sm'
-                                disabled={
-                                  !item.available_action.enabled ||
-                                  isGeneratingInvoice
-                                }
-                                title={
-                                  item.available_action.reason || undefined
-                                }
-                                onClick={() =>
-                                  void handleGenerateInstallmentInvoice(item)
-                                }
-                              >
-                                {isGeneratingInvoice
-                                  ? 'Generating…'
-                                  : 'Generate Next Installment Invoice'}
-                              </Button>
-                            </div>
-                          </article>
-                        );
-                      })}
-                    </div>
-                  ) : null}
-                  {generatedInvoiceLink ? (
-                    <a
-                      href={generatedInvoiceLink}
-                      target='_blank'
-                      rel='noopener noreferrer'
-                      className='inline-flex items-center gap-1 text-sm text-primary underline'
-                    >
-                      Open invoice <ExternalLink className='h-3 w-3' />
-                    </a>
-                  ) : null}
-                </div>
-                {(() => {
-                  const legacyAuth = String(
-                    getDisplayValue(
-                      'payment_authorization_status',
-                      'paymentAuthorizationStatus'
-                    ) || ''
-                  ).trim();
-                  if (!legacyAuth) return null;
-                  return (
-                    <div className='rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground'>
-                      Legacy PDF authorization status:{' '}
-                      <span className='font-medium text-foreground'>
-                        {PAYMENT_AUTHORIZATION_STATUS_LABELS[
-                          legacyAuth as PaymentAuthorizationStatus
-                        ] ?? legacyAuth}
-                      </span>{' '}
-                      (historical display only)
-                    </div>
-                  );
-                })()}
-                {renderEditableField(
-                  'Payment Method',
-                  'payment_method',
-                  undefined,
-                  'select',
-                  [...ALL_PAYMENT_METHOD_OPTIONS]
-                )}
-                {(() => {
+              {/* Billing */}
+              {renderCollapsibleSection(
+                'billing',
+                (() => {
                   const pm = String(
                     getDisplayValue('payment_method', 'paymentMethod') || ''
                   );
-                  const msg = getPaymentMethodMessage(pm);
-                  if (!msg) return null;
-                  const colors =
-                    msg.variant === 'success'
-                      ? 'bg-green-50 border-green-200 text-green-800'
-                      : 'bg-blue-50 border-blue-200 text-blue-800';
-                  return (
-                    <div
-                      className={`rounded-lg border px-4 py-3 text-sm ${colors}`}
-                    >
-                      {msg.text}
-                    </div>
-                  );
-                })()}
-                {(() => {
-                  const pmForStaff = String(
-                    getDisplayValue('payment_method', 'paymentMethod') || ''
-                  );
-                  const authForStaff = String(
+                  const authStatus = String(
                     getDisplayValue(
                       'payment_authorization_status',
                       'paymentAuthorizationStatus'
                     ) || ''
-                  )
-                    .trim()
-                    .toLowerCase();
-                  const needsAuthOnFile =
-                    requiresPaymentMethodOnFile(pmForStaff);
-                  const alreadyOnFile = authForStaff === 'on_file';
-                  const atRaw = getDisplayValue(
-                    'authorized_at',
-                    'authorizedAt'
-                  );
-                  let atLabel = '';
-                  if (atRaw) {
-                    const parsed = parseISO(atRaw);
-                    atLabel = isValid(parsed)
-                      ? format(parsed, 'MMM d, yyyy · h:mm a')
-                      : atRaw;
-                  }
-                  if (!needsAuthOnFile) return null;
+                  ) as PaymentAuthorizationStatus | '';
+                  const statusLabel = authStatus
+                    ? (PAYMENT_AUTHORIZATION_STATUS_LABELS[
+                        authStatus as PaymentAuthorizationStatus
+                      ] ?? authStatus)
+                    : null;
+                  const statusColors: Record<string, string> = {
+                    not_required: 'bg-green-100 text-green-800',
+                    on_file: 'bg-blue-100 text-blue-800',
+                    required: 'bg-amber-100 text-amber-800',
+                    failed: 'bg-red-100 text-red-800',
+                  };
                   return (
-                    <div className='rounded-lg border border-dashed border-primary/35 bg-muted/40 p-3 space-y-2'>
-                      <p className='text-sm font-medium text-foreground'>
-                        Staff: payment authorization
-                      </p>
-                      <p className='text-xs text-muted-foreground leading-snug'>
-                        When you receive a signed payment authorization form (or
-                        equivalent), record it here so status shows{' '}
-                        <strong>On file</strong> in this profile and the Clients
-                        list.
-                      </p>
-                      {alreadyOnFile ? (
-                        <div className='flex flex-wrap items-center gap-2 text-sm'>
-                          <Badge
-                            variant='outline'
-                            className='bg-blue-50 text-blue-900 border-blue-200'
-                          >
-                            On file
-                          </Badge>
-                          {atLabel ? (
-                            <span className='text-muted-foreground text-xs'>
-                              Recorded {atLabel}
-                            </span>
-                          ) : (
-                            <span className='text-muted-foreground text-xs'>
-                              Date not stored
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <Button
-                          type='button'
-                          size='sm'
-                          onClick={() =>
-                            void handleRecordPaymentAuthorization()
-                          }
-                          disabled={isRecordingPaymentAuth}
-                          className='w-fit'
+                    <div className='flex items-center gap-2'>
+                      <span>Billing Information</span>
+                      {pm && (
+                        <Badge
+                          variant='outline'
+                          className='text-xs font-normal'
                         >
-                          {isRecordingPaymentAuth ? (
-                            <>
-                              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                              Saving…
-                            </>
-                          ) : (
-                            'Record payment authorization on file'
-                          )}
-                        </Button>
+                          {pm}
+                        </Badge>
+                      )}
+                      {statusLabel && (
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[authStatus] ?? 'bg-muted text-muted-foreground'}`}
+                        >
+                          {statusLabel}
+                        </span>
                       )}
                     </div>
                   );
-                })()}
-                {requiresInsuranceDetails(
-                  String(
-                    getDisplayValue('payment_method', 'paymentMethod') || ''
-                  )
-                ) || hasInsuranceDetails ? (
-                  <>
-                    <div className='rounded-lg border p-3 space-y-3'>
-                      <div className='grid gap-3 lg:grid-cols-2'>
-                        {[
-                          {
-                            side: 'front' as const,
-                            label: 'Front of Card',
-                            document: frontInsuranceCard,
-                          },
-                          {
-                            side: 'back' as const,
-                            label: 'Back of Card',
-                            document: backInsuranceCard,
-                          },
-                        ].map((slot) => (
-                          <div
-                            key={slot.side}
-                            className='rounded-lg border border-dashed p-3 space-y-3'
-                          >
-                            <div>
-                              <p className='font-medium'>
-                                Insurance {slot.label.toLowerCase()}
-                              </p>
-                              <p className='text-sm text-muted-foreground'>
-                                {slot.document
-                                  ? 'Uploaded files are shown below. Image files are previewed inline.'
-                                  : `No ${slot.label.toLowerCase()} uploaded yet.`}
-                              </p>
-                            </div>
-
-                            {documentsLoading ? (
-                              <div className='flex items-center gap-2 text-sm text-muted-foreground'>
-                                <Loader2 className='h-4 w-4 animate-spin' />
-                                Loading uploaded documents...
-                              </div>
-                            ) : slot.document ? (
-                              renderInsuranceCardDocument(slot.document)
-                            ) : null}
-                          </div>
-                        ))}
+                })(),
+                <>
+                  <div className='rounded-lg border bg-muted/30 p-4 space-y-3'>
+                    <p className='text-sm font-medium text-foreground'>
+                      Portal onboarding readiness
+                    </p>
+                    <div className='grid gap-2 sm:grid-cols-2 text-sm'>
+                      <div className='flex justify-between gap-2'>
+                        <span className='text-muted-foreground'>
+                          Contract signed
+                        </span>
+                        <span>
+                          {formatYesNo(readinessSummary.contractSigned)}
+                        </span>
                       </div>
-                    </div>
-                    {renderEditableField(
-                      'Policy Holder Name',
-                      'insurance_policy_holder_name'
-                    )}
-                    {renderEditableField(
-                      'Policy Holder Date of Birth',
-                      'insurance_policy_holder_dob',
-                      undefined,
-                      'date'
-                    )}
-                    {renderEditableField(
-                      'Policy Holder Relationship to Client',
-                      'insurance_policy_holder_relationship',
-                      undefined,
-                      'select',
-                      [...INSURANCE_POLICY_HOLDER_RELATIONSHIP_OPTIONS]
-                    )}
-                    {renderEditableField(
-                      'Insurance Company Name',
-                      'insurance_provider'
-                    )}
-                    {renderEditableField(
-                      'Member ID / Subscriber ID',
-                      'insurance_member_id'
-                    )}
-                    {renderEditableField(
-                      'Group Number (optional)',
-                      'policy_number'
-                    )}
-                    {renderEditableField(
-                      'Plan Type',
-                      'insurance_plan_type',
-                      undefined,
-                      'select',
-                      [...INSURANCE_PLAN_TYPE_OPTIONS]
-                    )}
-                    {renderEditableField(
-                      'Insurance Phone Number',
-                      'insurance_phone_number'
-                    )}
-                    <div className='py-2'>
-                      <Label className='text-sm font-medium text-muted-foreground'>
-                        Secondary Insurance
-                      </Label>
-                      <div className='text-sm text-foreground mt-1'>
-                        {String(
-                          getDisplayValue(
-                            'has_secondary_insurance',
-                            'hasSecondaryInsurance'
-                          ) || ''
-                        ).toLowerCase() === 'true'
-                          ? 'Yes'
-                          : 'No'}
+                      <div className='flex justify-between gap-2'>
+                        <span className='text-muted-foreground'>
+                          Deposit paid
+                        </span>
+                        <span>{formatYesNo(readinessSummary.depositPaid)}</span>
                       </div>
+                      <div className='flex justify-between gap-2'>
+                        <span className='text-muted-foreground'>
+                          Billing path
+                        </span>
+                        <span>
+                          {getBillingPathLabel(readinessSummary.billingPath)}
+                        </span>
+                      </div>
+                      <div className='flex justify-between gap-2'>
+                        <span className='text-muted-foreground'>
+                          Payment authorization required
+                        </span>
+                        <span>
+                          {formatYesNo(
+                            readinessSummary.paymentAuthorizationRequired
+                          )}
+                        </span>
+                      </div>
+                      <div className='flex justify-between gap-2'>
+                        <span className='text-muted-foreground'>
+                          Payment authorization satisfied
+                        </span>
+                        <span>
+                          {formatYesNo(
+                            readinessSummary.paymentAuthorizationSatisfied
+                          )}
+                        </span>
+                      </div>
+                      <div className='flex justify-between gap-2'>
+                        <span className='text-muted-foreground'>
+                          Card on file
+                        </span>
+                        <span>{formatYesNo(readinessSummary.cardOnFile)}</span>
+                      </div>
+                      <div className='flex justify-between gap-2'>
+                        <span className='text-muted-foreground'>
+                          Portal eligibility
+                        </span>
+                        <span>
+                          {readinessSummary.portalEligibility === 'eligible'
+                            ? 'Eligible'
+                            : readinessSummary.portalEligibility === 'locked'
+                              ? 'Locked'
+                              : '—'}
+                        </span>
+                      </div>
+                      {readinessSummary.primaryBlocker ? (
+                        <div className='flex justify-between gap-2 sm:col-span-2'>
+                          <span className='text-muted-foreground'>
+                            Primary blocker
+                          </span>
+                          <span>
+                            {getPortalBlockerLabel(
+                              readinessSummary.primaryBlocker
+                            )}
+                          </span>
+                        </div>
+                      ) : null}
                     </div>
-                    {String(
-                      getDisplayValue(
-                        'has_secondary_insurance',
-                        'hasSecondaryInsurance'
-                      ) || ''
-                    ).toLowerCase() === 'true' ? (
-                      <>
-                        {renderEditableField(
-                          'Secondary Insurance Provider',
-                          'secondary_insurance_provider'
+                    {readinessSummary.primaryBlocker ? (
+                      <p className='text-xs text-muted-foreground'>
+                        {getPortalBlockerDescription(
+                          readinessSummary.primaryBlocker
                         )}
-                        {renderEditableField(
-                          'Secondary Insurance Member ID',
-                          'secondary_insurance_member_id'
-                        )}
-                        {renderEditableField(
-                          'Secondary Policy Number',
-                          'secondary_policy_number'
-                        )}
-                      </>
+                      </p>
                     ) : null}
-                  </>
-                ) : null}
-              </>,
-              <FileText className='h-5 w-5' />
-            )}
-
-            {/* Family Information */}
-            {renderCollapsibleSection(
-              'family',
-              'Family Information',
-              <>
-                {renderEditableField(
-                  'Relationship Status',
-                  'relationship_status',
-                  undefined,
-                  'select',
-                  RELATIONSHIP_OPTIONS
-                )}
-                {renderEditableField('Family First Name', 'first_name')}
-                {renderEditableField('Family Last Name', 'last_name')}
-                {renderEditableField('Family Middle Name', 'middle_name')}
-                {renderEditableField(
-                  'Family Pronouns',
-                  'family_pronouns',
-                  undefined,
-                  'select',
-                  FAMILY_PRONOUNS_OPTIONS
-                )}
-                {renderEditableField(
-                  'Family Email',
-                  'family_email',
-                  <Mail className='h-4 w-4' />,
-                  'email'
-                )}
-                {renderEditableField(
-                  'Family Mobile Phone',
-                  'mobile_phone',
-                  <Phone className='h-4 w-4' />,
-                  'tel'
-                )}
-                {renderEditableField(
-                  'Family Work Phone',
-                  'work_phone',
-                  <Phone className='h-4 w-4' />,
-                  'tel'
-                )}
-              </>,
-              <Users className='h-5 w-5' />
-            )}
-
-            {/* Referral Information */}
-            {renderCollapsibleSection(
-              'referral',
-              'Referral Information',
-              <>
-                {renderEditableField(
-                  'Referral Source',
-                  'referral_source',
-                  undefined,
-                  'select',
-                  [...REFERRAL_SOURCE_OPTIONS]
-                )}
-                {getDisplayValue('referral_source', null) ===
-                  REFERRAL_SOURCE_OTHER_VALUE &&
-                  renderEditableField(
-                    'How they heard about Sokana (other)',
-                    'referral_source_other',
-                    undefined,
-                    'textarea'
-                  )}
-                {renderEditableField('Referral Name', 'referral_name')}
-                {renderEditableField(
-                  'Referral Email',
-                  'referral_email',
-                  <Mail className='h-4 w-4' />,
-                  'email'
-                )}
-              </>,
-              <Users className='h-5 w-5' />
-            )}
-
-            {/* Pregnancy & Health */}
-            {renderCollapsibleSection(
-              'health',
-              'Pregnancy & Health Information',
-              <>
-                {renderEditableField(
-                  'Due Date',
-                  'due_date',
-                  <CalendarIcon className='h-4 w-4' />,
-                  'date'
-                )}
-                {renderEditableField(
-                  'Birth Location',
-                  'birth_location',
-                  undefined,
-                  'select',
-                  BIRTH_LOCATION_OPTIONS
-                )}
-                {renderEditableField('Birth Hospital', 'birth_hospital')}
-                {renderEditableField(
-                  'Number of Babies',
-                  'number_of_babies',
-                  undefined,
-                  'select',
-                  NUMBER_OF_BABIES_OPTIONS
-                )}
-                {renderEditableField('Baby Name', 'baby_name')}
-                {renderEditableField(
-                  'Provider Type',
-                  'provider_type',
-                  undefined,
-                  'select',
-                  PROVIDER_TYPE_OPTIONS
-                )}
-                {renderEditableField('Pregnancy Number', 'pregnancy_number')}
-                {renderEditableField(
-                  'Allergies',
-                  'allergies',
-                  undefined,
-                  'textarea'
-                )}
-                {renderEditableField(
-                  PREGNANCY_BABY_POSTPARTUM_QUESTION_LABEL,
-                  'health_history',
-                  undefined,
-                  'textarea'
-                )}
-                {String((editedData as any).health_notes ?? '').trim() !== '' &&
-                  renderEditableField(
-                    'Health notes (previous intake)',
-                    'health_notes',
-                    undefined,
-                    'textarea'
-                  )}
-              </>,
-              <Baby className='h-5 w-5' />
-            )}
-
-            {/* Past Pregnancies */}
-            {renderCollapsibleSection(
-              'past-pregnancies',
-              'Past Pregnancies',
-              <>
-                <div className='py-2'>
-                  <Label className='text-sm font-medium text-muted-foreground'>
-                    Had Previous Pregnancies
-                  </Label>
-                  <div className='text-sm text-foreground mt-1'>
-                    {(editedData as any).had_previous_pregnancies
-                      ? 'Yes'
-                      : 'No'}
                   </div>
-                </div>
-                {renderEditableField(
-                  'Previous Pregnancies Count',
-                  'previous_pregnancies_count'
-                )}
-                {renderEditableField(
-                  'Living Children Count',
-                  'living_children_count'
-                )}
-                {renderEditableField(
-                  'Past Pregnancy Experience',
-                  'past_pregnancy_experience',
-                  undefined,
-                  'textarea'
-                )}
-              </>,
-              <Baby className='h-5 w-5' />
-            )}
-
-            {/* Demographics */}
-            {renderCollapsibleSection(
-              'demographics',
-              'Demographics (Optional)',
-              <>
-                {renderEditableField(
-                  'Race/Ethnicity',
-                  'race_ethnicity',
-                  undefined,
-                  'select',
-                  RACE_OPTIONS
-                )}
-                {renderEditableField(
-                  'Primary Language',
-                  'primary_language',
-                  undefined,
-                  'select',
-                  LANGUAGE_OPTIONS
-                )}
-                {renderEditableField(
-                  'Client Age Range',
-                  'client_age_range',
-                  undefined,
-                  'select',
-                  AGE_OPTIONS
-                )}
-                {renderEditableField(
-                  'Insurance',
-                  'insurance',
-                  undefined,
-                  'select',
-                  INSURANCE_OPTIONS
-                )}
-                {renderEditableField(
-                  'Demographics Multi',
-                  'demographics_multi',
-                  undefined,
-                  'multiselect',
-                  DEMOGRAPHICS_MULTI_OPTIONS
-                )}
-                {renderEditableField(
-                  'Demographics Annual Income',
-                  'demographics_annual_income',
-                  undefined,
-                  'select',
-                  DEMOGRAPHICS_INCOME_OPTIONS
-                )}
-              </>,
-              <Users className='h-5 w-5' />
-            )}
-
-            {/* Account Information */}
-            {renderCollapsibleSection(
-              'account',
-              'Account Information',
-              <>
-                {renderEditableField(
-                  'Client Status',
-                  'status',
-                  undefined,
-                  'select',
-                  CLIENT_STATUS_OPTIONS
-                )}
-                <div className='py-2'>
-                  <Label className='text-sm font-medium text-muted-foreground'>
-                    Created At
-                  </Label>
-                  <div className='text-sm text-foreground mt-1'>
-                    {(detailedClient as any).created_at
-                      ? new Date(
-                          (detailedClient as any).created_at
-                        ).toLocaleDateString()
-                      : 'Not provided'}
+                  <div
+                    className='rounded-lg border p-4 space-y-3'
+                    aria-label='Card on file status'
+                  >
+                    <p className='text-sm font-medium'>
+                      Card on file:{' '}
+                      {cardStatus
+                        ? cardStatus.status
+                            .replace('_', ' ')
+                            .replace(/^./, (c) => c.toUpperCase())
+                        : '—'}
+                    </p>
+                    {cardStatus?.status === 'active' && cardStatus.last4 ? (
+                      <div className='text-sm text-muted-foreground'>
+                        <p>
+                          {cardStatus.card_brand || 'Card'} ending in{' '}
+                          {cardStatus.last4}
+                        </p>
+                        {cardStatus.exp_month && cardStatus.exp_year ? (
+                          <p>
+                            Expires{' '}
+                            {String(cardStatus.exp_month).padStart(2, '0')}/
+                            {cardStatus.exp_year}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
-                </div>
-                <div className='py-2'>
-                  <Label className='text-sm font-medium text-muted-foreground'>
-                    Updated At
-                  </Label>
-                  <div className='text-sm text-foreground mt-1'>
-                    {detailedClient.updatedAt
-                      ? new Date(detailedClient.updatedAt).toLocaleDateString()
-                      : 'Not provided'}
-                  </div>
-                </div>
-              </>,
-              <Users className='h-5 w-5' />
-            )}
-
-            {/* Doula Assignment Section */}
-            {renderCollapsibleSection(
-              'doula-assignment',
-              'Doula Assignment',
-              <DoulaAssignment
-                clientId={String(client.id)}
-                canAssign={user?.role === 'admin'}
-              />,
-              <Users className='h-5 w-5' />
-            )}
-
-            {/* Birth outcomes — free-text narrative (doula); placed near Admin Notes */}
-            {renderCollapsibleSection(
-              'birth-outcomes',
-              <div className='flex items-center gap-2'>
-                <span>Birth Outcomes</span>
-                {birthOutcomesHistory.length > 0 && (
-                  <span className='text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full'>
-                    {birthOutcomesHistory.length}
-                  </span>
-                )}
-              </div>,
-              <>
-                <p className='text-sm text-muted-foreground -mt-1 mb-1'>
-                  Structured birth outcomes for reporting. All fields are
-                  required.
-                </p>
-                <div className='rounded-lg border p-3 space-y-3'>
-                  <div className='space-y-2'>
-                    <Label className='text-sm font-medium text-muted-foreground'>
-                      Induction <span className='text-destructive'>*</span>
-                    </Label>
-                    {isEditing ? (
-                      <Select
-                        value={String(
-                          getDisplayValue(
-                            'birth_outcomes_induction',
-                            'birthOutcomesInduction'
-                          ) || ''
-                        )}
-                        onValueChange={(next) => {
-                          const parsed =
-                            next === 'true'
-                              ? true
-                              : next === 'false'
-                                ? false
-                                : undefined;
-                          setEditedData((prev) => ({
-                            ...prev,
-                            birth_outcomes_induction: parsed,
-                            birthOutcomesInduction: parsed,
-                          }));
-                        }}
-                      >
-                        <SelectTrigger className='mt-1'>
-                          <SelectValue placeholder='Select...' />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value='true'>Yes</SelectItem>
-                          <SelectItem value='false'>No</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <div className='mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm'>
-                        {(() => {
-                          const v = getDisplayValue(
-                            'birth_outcomes_induction',
-                            'birthOutcomesInduction'
+                  <div
+                    className='rounded-lg border p-4 space-y-3'
+                    aria-label='Payment Schedule'
+                  >
+                    <p className='text-sm font-medium'>Payment Schedule</p>
+                    {billingLoading ? (
+                      <p className='text-sm text-muted-foreground flex items-center gap-2'>
+                        <Loader2 className='h-4 w-4 animate-spin' />
+                        Loading payment schedule…
+                      </p>
+                    ) : null}
+                    {billingError ? (
+                      <p role='alert' className='text-sm text-destructive'>
+                        {billingError}
+                      </p>
+                    ) : null}
+                    {!billingLoading &&
+                    !billingError &&
+                    installments.length === 0 ? (
+                      <p className='text-sm text-muted-foreground'>
+                        No payment schedule has been created for this client.
+                      </p>
+                    ) : null}
+                    {!billingLoading &&
+                    !billingError &&
+                    installments.length > 0 ? (
+                      <div className='space-y-3'>
+                        {installments.map((item) => {
+                          const label =
+                            item.payment_type === 'deposit'
+                              ? 'Deposit'
+                              : `Installment ${item.installment_number}`;
+                          const detail = (
+                            name: string,
+                            value: React.ReactNode
+                          ) => (
+                            <div className='min-w-0'>
+                              <dt className='text-xs font-medium text-muted-foreground'>
+                                {name}
+                              </dt>
+                              <dd className='mt-0.5 break-words text-sm text-foreground'>
+                                {value || '—'}
+                              </dd>
+                            </div>
                           );
-                          if (v === '') return 'Not provided';
-                          return v.toLowerCase() === 'true' ? 'Yes' : 'No';
-                        })()}
+                          return (
+                            <article
+                              key={item.id}
+                              className='rounded-lg border bg-background p-4'
+                            >
+                              <div className='flex flex-wrap items-start justify-between gap-3 border-b pb-3'>
+                                <div>
+                                  <h4 className='font-medium text-foreground'>
+                                    {label}
+                                  </h4>
+                                  <p className='mt-1 break-all font-mono text-xs text-muted-foreground'>
+                                    {item.id}
+                                  </p>
+                                </div>
+                                <div className='text-right'>
+                                  <p className='text-lg font-semibold text-foreground'>
+                                    {new Intl.NumberFormat('en-US', {
+                                      style: 'currency',
+                                      currency: 'USD',
+                                    }).format(item.amount)}
+                                  </p>
+                                  <Badge
+                                    variant='outline'
+                                    className='mt-1 capitalize'
+                                  >
+                                    {item.payment_status}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <dl className='grid grid-cols-2 gap-x-5 gap-y-3 py-4 sm:grid-cols-3 lg:grid-cols-4'>
+                                {detail(
+                                  'Payment type',
+                                  <span className='capitalize'>
+                                    {item.payment_type}
+                                  </span>
+                                )}
+                                {detail(
+                                  'Due date',
+                                  item.due_date
+                                    ? format(
+                                        parseISO(item.due_date),
+                                        'MMM d, yyyy'
+                                      )
+                                    : '—'
+                                )}
+                                {detail(
+                                  'Paid date',
+                                  item.paid_date
+                                    ? format(
+                                        parseISO(item.paid_date),
+                                        'MMM d, yyyy'
+                                      )
+                                    : '—'
+                                )}
+                                {detail(
+                                  'Overdue',
+                                  item.is_overdue ? 'Yes' : 'No'
+                                )}
+                                {detail(
+                                  'QBO status',
+                                  item.qbo_invoice_status || '—'
+                                )}
+                                {detail(
+                                  'QBO invoice ID',
+                                  item.qbo_invoice_id || '—'
+                                )}
+                                {detail(
+                                  'Payment link',
+                                  item.payment_link ? (
+                                    <a
+                                      href={item.payment_link}
+                                      target='_blank'
+                                      rel='noopener noreferrer'
+                                      className='inline-flex items-center gap-1 text-primary underline underline-offset-2'
+                                    >
+                                      Open invoice{' '}
+                                      <ExternalLink className='h-3 w-3' />
+                                    </a>
+                                  ) : (
+                                    '—'
+                                  )
+                                )}
+                              </dl>
+                              <div className='flex flex-col items-start gap-2 border-t pt-3 sm:flex-row sm:items-center sm:justify-between'>
+                                {!item.available_action.enabled &&
+                                item.available_action.reason ? (
+                                  <p className='text-xs text-muted-foreground'>
+                                    {item.available_action.reason}
+                                  </p>
+                                ) : (
+                                  <span />
+                                )}
+                                <Button
+                                  className='w-full sm:w-auto'
+                                  type='button'
+                                  size='sm'
+                                  disabled={
+                                    !item.available_action.enabled ||
+                                    isGeneratingInvoice
+                                  }
+                                  title={
+                                    item.available_action.reason || undefined
+                                  }
+                                  onClick={() =>
+                                    void handleGenerateInstallmentInvoice(item)
+                                  }
+                                >
+                                  {isGeneratingInvoice
+                                    ? 'Generating…'
+                                    : 'Generate Next Installment Invoice'}
+                                </Button>
+                              </div>
+                            </article>
+                          );
+                        })}
                       </div>
-                    )}
-                  </div>
-
-                  <div className='space-y-2'>
-                    <Label className='text-sm font-medium text-muted-foreground'>
-                      Delivery type <span className='text-destructive'>*</span>
-                    </Label>
-                    {isEditing ? (
-                      <Select
-                        value={String(
-                          getDisplayValue(
-                            'birth_outcomes_delivery_type',
-                            'birthOutcomesDeliveryType'
-                          ) || ''
-                        )}
-                        onValueChange={(next) => {
-                          setEditedData((prev) => ({
-                            ...prev,
-                            birth_outcomes_delivery_type: next,
-                            birthOutcomesDeliveryType: next,
-                          }));
-                        }}
+                    ) : null}
+                    {generatedInvoiceLink ? (
+                      <a
+                        href={generatedInvoiceLink}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        className='inline-flex items-center gap-1 text-sm text-primary underline'
                       >
-                        <SelectTrigger className='mt-1'>
-                          <SelectValue placeholder='Select...' />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {BIRTH_OUTCOMES_DELIVERY_TYPE_OPTIONS.map((opt) => (
-                            <SelectItem key={opt} value={opt}>
-                              {opt}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <div className='mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm'>
-                        {String(
-                          getDisplayValue(
-                            'birth_outcomes_delivery_type',
-                            'birthOutcomesDeliveryType'
-                          ) || 'Not provided'
+                        Open invoice <ExternalLink className='h-3 w-3' />
+                      </a>
+                    ) : null}
+                  </div>
+                  {(() => {
+                    const legacyAuth = String(
+                      getDisplayValue(
+                        'payment_authorization_status',
+                        'paymentAuthorizationStatus'
+                      ) || ''
+                    ).trim();
+                    if (!legacyAuth) return null;
+                    return (
+                      <div className='rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground'>
+                        Legacy PDF authorization status:{' '}
+                        <span className='font-medium text-foreground'>
+                          {PAYMENT_AUTHORIZATION_STATUS_LABELS[
+                            legacyAuth as PaymentAuthorizationStatus
+                          ] ?? legacyAuth}
+                        </span>{' '}
+                        (historical display only)
+                      </div>
+                    );
+                  })()}
+                  {renderEditableField(
+                    'Payment Method',
+                    'payment_method',
+                    undefined,
+                    'select',
+                    [...ALL_PAYMENT_METHOD_OPTIONS]
+                  )}
+                  {(() => {
+                    const pm = String(
+                      getDisplayValue('payment_method', 'paymentMethod') || ''
+                    );
+                    const msg = getPaymentMethodMessage(pm);
+                    if (!msg) return null;
+                    const colors =
+                      msg.variant === 'success'
+                        ? 'bg-green-50 border-green-200 text-green-800'
+                        : 'bg-blue-50 border-blue-200 text-blue-800';
+                    return (
+                      <div
+                        className={`rounded-lg border px-4 py-3 text-sm ${colors}`}
+                      >
+                        {msg.text}
+                      </div>
+                    );
+                  })()}
+                  {(() => {
+                    const pmForStaff = String(
+                      getDisplayValue('payment_method', 'paymentMethod') || ''
+                    );
+                    const authForStaff = String(
+                      getDisplayValue(
+                        'payment_authorization_status',
+                        'paymentAuthorizationStatus'
+                      ) || ''
+                    )
+                      .trim()
+                      .toLowerCase();
+                    const needsAuthOnFile =
+                      requiresPaymentMethodOnFile(pmForStaff);
+                    const alreadyOnFile = authForStaff === 'on_file';
+                    const atRaw = getDisplayValue(
+                      'authorized_at',
+                      'authorizedAt'
+                    );
+                    let atLabel = '';
+                    if (atRaw) {
+                      const parsed = parseISO(atRaw);
+                      atLabel = isValid(parsed)
+                        ? format(parsed, 'MMM d, yyyy · h:mm a')
+                        : atRaw;
+                    }
+                    if (!needsAuthOnFile) return null;
+                    return (
+                      <div className='rounded-lg border border-dashed border-primary/35 bg-muted/40 p-3 space-y-2'>
+                        <p className='text-sm font-medium text-foreground'>
+                          Staff: payment authorization
+                        </p>
+                        <p className='text-xs text-muted-foreground leading-snug'>
+                          When you receive a signed payment authorization form
+                          (or equivalent), record it here so status shows{' '}
+                          <strong>On file</strong> in this profile and the
+                          Clients list.
+                        </p>
+                        {alreadyOnFile ? (
+                          <div className='flex flex-wrap items-center gap-2 text-sm'>
+                            <Badge
+                              variant='outline'
+                              className='bg-blue-50 text-blue-900 border-blue-200'
+                            >
+                              On file
+                            </Badge>
+                            {atLabel ? (
+                              <span className='text-muted-foreground text-xs'>
+                                Recorded {atLabel}
+                              </span>
+                            ) : (
+                              <span className='text-muted-foreground text-xs'>
+                                Date not stored
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <Button
+                            type='button'
+                            size='sm'
+                            onClick={() =>
+                              void handleRecordPaymentAuthorization()
+                            }
+                            disabled={isRecordingPaymentAuth}
+                            className='w-fit'
+                          >
+                            {isRecordingPaymentAuth ? (
+                              <>
+                                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                                Saving…
+                              </>
+                            ) : (
+                              'Record payment authorization on file'
+                            )}
+                          </Button>
                         )}
                       </div>
-                    )}
-                  </div>
+                    );
+                  })()}
+                  {requiresInsuranceDetails(
+                    String(
+                      getDisplayValue('payment_method', 'paymentMethod') || ''
+                    )
+                  ) || hasInsuranceDetails ? (
+                    <>
+                      <div className='rounded-lg border p-3 space-y-3'>
+                        <div className='grid gap-3 lg:grid-cols-2'>
+                          {[
+                            {
+                              side: 'front' as const,
+                              label: 'Front of Card',
+                              document: frontInsuranceCard,
+                            },
+                            {
+                              side: 'back' as const,
+                              label: 'Back of Card',
+                              document: backInsuranceCard,
+                            },
+                          ].map((slot) => (
+                            <div
+                              key={slot.side}
+                              className='rounded-lg border border-dashed p-3 space-y-3'
+                            >
+                              <div>
+                                <p className='font-medium'>
+                                  Insurance {slot.label.toLowerCase()}
+                                </p>
+                                <p className='text-sm text-muted-foreground'>
+                                  {slot.document
+                                    ? 'Uploaded files are shown below. Image files are previewed inline.'
+                                    : `No ${slot.label.toLowerCase()} uploaded yet.`}
+                                </p>
+                              </div>
 
-                  <div className='space-y-2'>
-                    <Label className='text-sm font-medium text-muted-foreground'>
-                      Medications used{' '}
-                      <span className='text-destructive'>*</span>
-                    </Label>
-                    {(() => {
-                      const raw =
-                        (editedData as any).birth_outcomes_medications_used ??
-                        (editedData as any).birthOutcomesMedicationsUsed ??
-                        (detailSource as any)
-                          ?.birth_outcomes_medications_used ??
-                        (detailSource as any)?.birthOutcomesMedicationsUsed ??
-                        (client as any)?.birth_outcomes_medications_used ??
-                        (client as any)?.birthOutcomesMedicationsUsed ??
-                        [];
-                      const current = Array.isArray(raw)
-                        ? (raw as unknown[])
-                            .map((v) => String(v))
-                            .filter(Boolean)
-                        : [];
-
-                      const toggle = (opt: string) => {
-                        const next = current.includes(opt)
-                          ? current.filter((v) => v !== opt)
-                          : [...current, opt];
-                        setEditedData((prev) => ({
-                          ...prev,
-                          birth_outcomes_medications_used: next,
-                          birthOutcomesMedicationsUsed: next,
-                        }));
-                      };
-
-                      if (!isEditing) {
-                        return (
-                          <div className='mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm'>
-                            {current.length > 0
-                              ? current.join(', ')
-                              : 'Not provided'}
-                          </div>
-                        );
-                      }
-
-                      return (
-                        <div className='mt-1 grid gap-2 sm:grid-cols-2'>
-                          {BIRTH_OUTCOMES_MEDICATION_OPTIONS.map((opt) => (
-                            <div key={opt} className='flex items-center gap-2'>
-                              <Checkbox
-                                id={`birth-outcomes-med-${opt}`}
-                                checked={current.includes(opt)}
-                                onCheckedChange={() => toggle(opt)}
-                              />
-                              <Label
-                                htmlFor={`birth-outcomes-med-${opt}`}
-                                className='text-sm font-normal'
-                              >
-                                {opt}
-                              </Label>
+                              {documentsLoading ? (
+                                <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+                                  <Loader2 className='h-4 w-4 animate-spin' />
+                                  Loading uploaded documents...
+                                </div>
+                              ) : slot.document ? (
+                                renderInsuranceCardDocument(slot.document)
+                              ) : null}
                             </div>
                           ))}
                         </div>
-                      );
-                    })()}
-                  </div>
-                </div>
-
-                {String(
-                  getDisplayValue('birth_outcomes', 'birthOutcomes') || ''
-                ).trim() ? (
-                  <div className='pt-3'>
-                    <Label className='text-sm font-medium text-muted-foreground'>
-                      Legacy Birth Outcomes (read-only)
-                    </Label>
-                    <div className='mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm min-h-[72px] whitespace-pre-wrap'>
+                      </div>
+                      {renderEditableField(
+                        'Policy Holder Name',
+                        'insurance_policy_holder_name'
+                      )}
+                      {renderEditableField(
+                        'Policy Holder Date of Birth',
+                        'insurance_policy_holder_dob',
+                        undefined,
+                        'date'
+                      )}
+                      {renderEditableField(
+                        'Policy Holder Relationship to Client',
+                        'insurance_policy_holder_relationship',
+                        undefined,
+                        'select',
+                        [...INSURANCE_POLICY_HOLDER_RELATIONSHIP_OPTIONS]
+                      )}
+                      {renderEditableField(
+                        'Insurance Company Name',
+                        'insurance_provider'
+                      )}
+                      {renderEditableField(
+                        'Member ID / Subscriber ID',
+                        'insurance_member_id'
+                      )}
+                      {renderEditableField(
+                        'Group Number (optional)',
+                        'policy_number'
+                      )}
+                      {renderEditableField(
+                        'Plan Type',
+                        'insurance_plan_type',
+                        undefined,
+                        'select',
+                        [...INSURANCE_PLAN_TYPE_OPTIONS]
+                      )}
+                      {renderEditableField(
+                        'Insurance Phone Number',
+                        'insurance_phone_number'
+                      )}
+                      <div className='py-2'>
+                        <Label className='text-sm font-medium text-muted-foreground'>
+                          Secondary Insurance
+                        </Label>
+                        <div className='text-sm text-foreground mt-1'>
+                          {String(
+                            getDisplayValue(
+                              'has_secondary_insurance',
+                              'hasSecondaryInsurance'
+                            ) || ''
+                          ).toLowerCase() === 'true'
+                            ? 'Yes'
+                            : 'No'}
+                        </div>
+                      </div>
                       {String(
-                        getDisplayValue('birth_outcomes', 'birthOutcomes') || ''
+                        getDisplayValue(
+                          'has_secondary_insurance',
+                          'hasSecondaryInsurance'
+                        ) || ''
+                      ).toLowerCase() === 'true' ? (
+                        <>
+                          {renderEditableField(
+                            'Secondary Insurance Provider',
+                            'secondary_insurance_provider'
+                          )}
+                          {renderEditableField(
+                            'Secondary Insurance Member ID',
+                            'secondary_insurance_member_id'
+                          )}
+                          {renderEditableField(
+                            'Secondary Policy Number',
+                            'secondary_policy_number'
+                          )}
+                        </>
+                      ) : null}
+                    </>
+                  ) : null}
+                </>,
+                <FileText className='h-5 w-5' />
+              )}
+
+              {/* Family Information */}
+              {renderCollapsibleSection(
+                'family',
+                'Family Information',
+                <>
+                  {renderEditableField(
+                    'Relationship Status',
+                    'relationship_status',
+                    undefined,
+                    'select',
+                    RELATIONSHIP_OPTIONS
+                  )}
+                  {renderEditableField('Family First Name', 'first_name')}
+                  {renderEditableField('Family Last Name', 'last_name')}
+                  {renderEditableField('Family Middle Name', 'middle_name')}
+                  {renderEditableField(
+                    'Family Pronouns',
+                    'family_pronouns',
+                    undefined,
+                    'select',
+                    FAMILY_PRONOUNS_OPTIONS
+                  )}
+                  {renderEditableField(
+                    'Family Email',
+                    'family_email',
+                    <Mail className='h-4 w-4' />,
+                    'email'
+                  )}
+                  {renderEditableField(
+                    'Family Mobile Phone',
+                    'mobile_phone',
+                    <Phone className='h-4 w-4' />,
+                    'tel'
+                  )}
+                  {renderEditableField(
+                    'Family Work Phone',
+                    'work_phone',
+                    <Phone className='h-4 w-4' />,
+                    'tel'
+                  )}
+                </>,
+                <Users className='h-5 w-5' />
+              )}
+
+              {/* Referral Information */}
+              {renderCollapsibleSection(
+                'referral',
+                'Referral Information',
+                <>
+                  {renderEditableField(
+                    'Referral Source',
+                    'referral_source',
+                    undefined,
+                    'select',
+                    [...REFERRAL_SOURCE_OPTIONS]
+                  )}
+                  {getDisplayValue('referral_source', null) ===
+                    REFERRAL_SOURCE_OTHER_VALUE &&
+                    renderEditableField(
+                      'How they heard about Sokana (other)',
+                      'referral_source_other',
+                      undefined,
+                      'textarea'
+                    )}
+                  {renderEditableField('Referral Name', 'referral_name')}
+                  {renderEditableField(
+                    'Referral Email',
+                    'referral_email',
+                    <Mail className='h-4 w-4' />,
+                    'email'
+                  )}
+                </>,
+                <Users className='h-5 w-5' />
+              )}
+
+              {/* Pregnancy & Health */}
+              {renderCollapsibleSection(
+                'health',
+                'Pregnancy & Health Information',
+                <>
+                  {renderEditableField(
+                    'Due Date',
+                    'due_date',
+                    <CalendarIcon className='h-4 w-4' />,
+                    'date'
+                  )}
+                  {renderEditableField(
+                    'Birth Location',
+                    'birth_location',
+                    undefined,
+                    'select',
+                    BIRTH_LOCATION_OPTIONS
+                  )}
+                  {renderEditableField('Birth Hospital', 'birth_hospital')}
+                  {renderEditableField(
+                    'Number of Babies',
+                    'number_of_babies',
+                    undefined,
+                    'select',
+                    NUMBER_OF_BABIES_OPTIONS
+                  )}
+                  {renderEditableField('Baby Name', 'baby_name')}
+                  {renderEditableField(
+                    'Provider Type',
+                    'provider_type',
+                    undefined,
+                    'select',
+                    PROVIDER_TYPE_OPTIONS
+                  )}
+                  {renderEditableField('Pregnancy Number', 'pregnancy_number')}
+                  {renderEditableField(
+                    'Allergies',
+                    'allergies',
+                    undefined,
+                    'textarea'
+                  )}
+                  {renderEditableField(
+                    PREGNANCY_BABY_POSTPARTUM_QUESTION_LABEL,
+                    'health_history',
+                    undefined,
+                    'textarea'
+                  )}
+                  {String((editedData as any).health_notes ?? '').trim() !==
+                    '' &&
+                    renderEditableField(
+                      'Health notes (previous intake)',
+                      'health_notes',
+                      undefined,
+                      'textarea'
+                    )}
+                </>,
+                <Baby className='h-5 w-5' />
+              )}
+
+              {/* Past Pregnancies */}
+              {renderCollapsibleSection(
+                'past-pregnancies',
+                'Past Pregnancies',
+                <>
+                  <div className='py-2'>
+                    <Label className='text-sm font-medium text-muted-foreground'>
+                      Had Previous Pregnancies
+                    </Label>
+                    <div className='text-sm text-foreground mt-1'>
+                      {(editedData as any).had_previous_pregnancies
+                        ? 'Yes'
+                        : 'No'}
+                    </div>
+                  </div>
+                  {renderEditableField(
+                    'Previous Pregnancies Count',
+                    'previous_pregnancies_count'
+                  )}
+                  {renderEditableField(
+                    'Living Children Count',
+                    'living_children_count'
+                  )}
+                  {renderEditableField(
+                    'Past Pregnancy Experience',
+                    'past_pregnancy_experience',
+                    undefined,
+                    'textarea'
+                  )}
+                </>,
+                <Baby className='h-5 w-5' />
+              )}
+
+              {/* Demographics */}
+              {renderCollapsibleSection(
+                'demographics',
+                'Demographics (Optional)',
+                <>
+                  {renderEditableField(
+                    'Race/Ethnicity',
+                    'race_ethnicity',
+                    undefined,
+                    'select',
+                    RACE_OPTIONS
+                  )}
+                  {renderEditableField(
+                    'Primary Language',
+                    'primary_language',
+                    undefined,
+                    'select',
+                    LANGUAGE_OPTIONS
+                  )}
+                  {renderEditableField(
+                    'Client Age Range',
+                    'client_age_range',
+                    undefined,
+                    'select',
+                    AGE_OPTIONS
+                  )}
+                  {renderEditableField(
+                    'Insurance',
+                    'insurance',
+                    undefined,
+                    'select',
+                    INSURANCE_OPTIONS
+                  )}
+                  {renderEditableField(
+                    'Demographics Multi',
+                    'demographics_multi',
+                    undefined,
+                    'multiselect',
+                    DEMOGRAPHICS_MULTI_OPTIONS
+                  )}
+                  {renderEditableField(
+                    'Demographics Annual Income',
+                    'demographics_annual_income',
+                    undefined,
+                    'select',
+                    DEMOGRAPHICS_INCOME_OPTIONS
+                  )}
+                </>,
+                <Users className='h-5 w-5' />
+              )}
+
+              {/* Account Information */}
+              {renderCollapsibleSection(
+                'account',
+                'Account Information',
+                <>
+                  {renderEditableField(
+                    'Client Status',
+                    'status',
+                    undefined,
+                    'select',
+                    CLIENT_STATUS_OPTIONS
+                  )}
+                  <div className='py-2'>
+                    <Label className='text-sm font-medium text-muted-foreground'>
+                      Created At
+                    </Label>
+                    <div className='text-sm text-foreground mt-1'>
+                      {(detailedClient as any).created_at
+                        ? new Date(
+                            (detailedClient as any).created_at
+                          ).toLocaleDateString()
+                        : 'Not provided'}
+                    </div>
+                  </div>
+                  <div className='py-2'>
+                    <Label className='text-sm font-medium text-muted-foreground'>
+                      Updated At
+                    </Label>
+                    <div className='text-sm text-foreground mt-1'>
+                      {detailedClient.updatedAt
+                        ? new Date(
+                            detailedClient.updatedAt
+                          ).toLocaleDateString()
+                        : 'Not provided'}
+                    </div>
+                  </div>
+                </>,
+                <Users className='h-5 w-5' />
+              )}
+
+              {/* Doula Assignment Section */}
+              {renderCollapsibleSection(
+                'doula-assignment',
+                'Doula Assignment',
+                <DoulaAssignment
+                  clientId={String(client.id)}
+                  canAssign={user?.role === 'admin'}
+                />,
+                <Users className='h-5 w-5' />
+              )}
+
+              {/* Birth outcomes — free-text narrative (doula); placed near Admin Notes */}
+              {renderCollapsibleSection(
+                'birth-outcomes',
+                <div className='flex items-center gap-2'>
+                  <span>Birth Outcomes</span>
+                  {birthOutcomesHistory.length > 0 && (
+                    <span className='text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full'>
+                      {birthOutcomesHistory.length}
+                    </span>
+                  )}
+                </div>,
+                <>
+                  <p className='text-sm text-muted-foreground -mt-1 mb-1'>
+                    Structured birth outcomes for reporting. All fields are
+                    required.
+                  </p>
+                  <div className='rounded-lg border p-3 space-y-3'>
+                    <div className='space-y-2'>
+                      <Label className='text-sm font-medium text-muted-foreground'>
+                        Induction <span className='text-destructive'>*</span>
+                      </Label>
+                      {isEditing ? (
+                        <Select
+                          value={String(
+                            getDisplayValue(
+                              'birth_outcomes_induction',
+                              'birthOutcomesInduction'
+                            ) || ''
+                          )}
+                          onValueChange={(next) => {
+                            const parsed =
+                              next === 'true'
+                                ? true
+                                : next === 'false'
+                                  ? false
+                                  : undefined;
+                            setEditedData((prev) => ({
+                              ...prev,
+                              birth_outcomes_induction: parsed,
+                              birthOutcomesInduction: parsed,
+                            }));
+                          }}
+                        >
+                          <SelectTrigger className='mt-1'>
+                            <SelectValue placeholder='Select...' />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value='true'>Yes</SelectItem>
+                            <SelectItem value='false'>No</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <div className='mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm'>
+                          {(() => {
+                            const v = getDisplayValue(
+                              'birth_outcomes_induction',
+                              'birthOutcomesInduction'
+                            );
+                            if (v === '') return 'Not provided';
+                            return v.toLowerCase() === 'true' ? 'Yes' : 'No';
+                          })()}
+                        </div>
                       )}
                     </div>
-                  </div>
-                ) : null}
-                {isEditing && (
-                  <div className='flex justify-end pt-1'>
-                    <Button
-                      onClick={handleSaveBirthOutcomes}
-                      size='sm'
-                      disabled={isSavingBirthOutcomes}
-                    >
-                      {isSavingBirthOutcomes
-                        ? 'Saving...'
-                        : 'Save Birth Outcomes'}
-                    </Button>
-                  </div>
-                )}
-                <div className='space-y-2 pt-2'>
-                  <h4 className='text-sm font-medium text-muted-foreground'>
-                    Birth Outcomes History
-                  </h4>
-                  {birthOutcomesHistory.length === 0 ? (
-                    <div className='text-sm text-muted-foreground py-2'>
-                      No birth outcomes records yet.
-                    </div>
-                  ) : (
-                    birthOutcomesHistory.map((note) => {
-                      let noteDate = new Date(note.timestamp);
-                      const now = new Date();
-                      if (noteDate > now) {
-                        const offsetMinutes = noteDate.getTimezoneOffset();
-                        noteDate = new Date(
-                          noteDate.getTime() + offsetMinutes * 60 * 1000
-                        );
-                      }
-                      return (
-                        <div
-                          key={`birth-outcomes-${note.id}`}
-                          className='bg-background border rounded-lg p-3 space-y-2'
-                        >
-                          <div className='flex items-center gap-1.5 text-xs text-muted-foreground'>
-                            <span className='font-medium'>
-                              {formatDistanceToNow(noteDate, {
-                                addSuffix: true,
-                              })}
-                            </span>
-                            <span className='text-muted-foreground/50'>•</span>
-                            <span className='text-muted-foreground/70'>
-                              {format(noteDate, 'MMM dd, yyyy h:mm a')}
-                            </span>
-                          </div>
-                          <p className='text-sm leading-relaxed whitespace-pre-wrap'>
-                            {note.description}
-                          </p>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </>,
-              <Baby className='h-5 w-5' />
-            )}
 
-            {/* Notes Section */}
-            <Collapsible
-              open={openSections.has('notes')}
-              onOpenChange={(nextOpen) => setSectionOpen('notes', nextOpen)}
-              className='border rounded-lg mb-3'
-            >
-              <CollapsibleTrigger asChild>
-                <Button
-                  variant='ghost'
-                  className='w-full justify-between p-3 h-auto hover:bg-muted/50'
-                  data-testid='admin-notes-collapsible-trigger'
-                >
-                  <div className='flex items-center gap-2'>
-                    <MessageSquare className='h-5 w-5' />
-                    <span className='font-semibold'>Admin Notes</span>
-                    {notes.length > 0 && (
-                      <span className='text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full'>
-                        {notes.length}
-                      </span>
-                    )}
+                    <div className='space-y-2'>
+                      <Label className='text-sm font-medium text-muted-foreground'>
+                        Delivery type{' '}
+                        <span className='text-destructive'>*</span>
+                      </Label>
+                      {isEditing ? (
+                        <Select
+                          value={String(
+                            getDisplayValue(
+                              'birth_outcomes_delivery_type',
+                              'birthOutcomesDeliveryType'
+                            ) || ''
+                          )}
+                          onValueChange={(next) => {
+                            setEditedData((prev) => ({
+                              ...prev,
+                              birth_outcomes_delivery_type: next,
+                              birthOutcomesDeliveryType: next,
+                            }));
+                          }}
+                        >
+                          <SelectTrigger className='mt-1'>
+                            <SelectValue placeholder='Select...' />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {BIRTH_OUTCOMES_DELIVERY_TYPE_OPTIONS.map((opt) => (
+                              <SelectItem key={opt} value={opt}>
+                                {opt}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <div className='mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm'>
+                          {String(
+                            getDisplayValue(
+                              'birth_outcomes_delivery_type',
+                              'birthOutcomesDeliveryType'
+                            ) || 'Not provided'
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className='space-y-2'>
+                      <Label className='text-sm font-medium text-muted-foreground'>
+                        Medications used{' '}
+                        <span className='text-destructive'>*</span>
+                      </Label>
+                      {(() => {
+                        const raw =
+                          (editedData as any).birth_outcomes_medications_used ??
+                          (editedData as any).birthOutcomesMedicationsUsed ??
+                          (detailSource as any)
+                            ?.birth_outcomes_medications_used ??
+                          (detailSource as any)?.birthOutcomesMedicationsUsed ??
+                          (client as any)?.birth_outcomes_medications_used ??
+                          (client as any)?.birthOutcomesMedicationsUsed ??
+                          [];
+                        const current = Array.isArray(raw)
+                          ? (raw as unknown[])
+                              .map((v) => String(v))
+                              .filter(Boolean)
+                          : [];
+
+                        const toggle = (opt: string) => {
+                          const next = current.includes(opt)
+                            ? current.filter((v) => v !== opt)
+                            : [...current, opt];
+                          setEditedData((prev) => ({
+                            ...prev,
+                            birth_outcomes_medications_used: next,
+                            birthOutcomesMedicationsUsed: next,
+                          }));
+                        };
+
+                        if (!isEditing) {
+                          return (
+                            <div className='mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm'>
+                              {current.length > 0
+                                ? current.join(', ')
+                                : 'Not provided'}
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div className='mt-1 grid gap-2 sm:grid-cols-2'>
+                            {BIRTH_OUTCOMES_MEDICATION_OPTIONS.map((opt) => (
+                              <div
+                                key={opt}
+                                className='flex items-center gap-2'
+                              >
+                                <Checkbox
+                                  id={`birth-outcomes-med-${opt}`}
+                                  checked={current.includes(opt)}
+                                  onCheckedChange={() => toggle(opt)}
+                                />
+                                <Label
+                                  htmlFor={`birth-outcomes-med-${opt}`}
+                                  className='text-sm font-normal'
+                                >
+                                  {opt}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </div>
                   </div>
-                  {openSections.has('notes') ? (
-                    <ChevronDown className='h-4 w-4' />
-                  ) : (
-                    <ChevronRight className='h-4 w-4' />
-                  )}
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className='px-3 pb-3'>
-                <div className='space-y-3'>
-                  {/* Add New Note */}
-                  <div className='space-y-2 bg-muted/30 p-3 rounded-lg'>
-                    <label className='text-sm font-medium'>Add New Note</label>
-                    <Textarea
-                      placeholder='Enter note description...'
-                      value={newNote}
-                      onChange={(e) => setNewNote(e.target.value)}
-                      rows={3}
-                      disabled={savingNote}
-                      className='resize-none'
-                    />
-                    <div className='flex items-center gap-2'>
-                      <select
-                        data-testid='admin-note-category-trigger'
-                        value={noteCategory}
-                        onChange={(e) => setNoteCategory(e.target.value)}
-                        disabled={savingNote}
-                        className='h-9 w-[180px] rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
-                      >
-                        {NOTE_CATEGORIES.map((category) => (
-                          <option
-                            key={category}
-                            value={category}
-                            data-testid={`admin-note-option-${category}`}
-                          >
-                            {category}
-                          </option>
-                        ))}
-                      </select>
+
+                  {String(
+                    getDisplayValue('birth_outcomes', 'birthOutcomes') || ''
+                  ).trim() ? (
+                    <div className='pt-3'>
+                      <Label className='text-sm font-medium text-muted-foreground'>
+                        Legacy Birth Outcomes (read-only)
+                      </Label>
+                      <div className='mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm min-h-[72px] whitespace-pre-wrap'>
+                        {String(
+                          getDisplayValue('birth_outcomes', 'birthOutcomes') ||
+                            ''
+                        )}
+                      </div>
+                    </div>
+                  ) : null}
+                  {isEditing && (
+                    <div className='flex justify-end pt-1'>
                       <Button
-                        onClick={handleSaveNote}
-                        disabled={savingNote || !newNote.trim()}
+                        onClick={handleSaveBirthOutcomes}
                         size='sm'
+                        disabled={isSavingBirthOutcomes}
                       >
-                        {savingNote ? 'Adding...' : 'Add Note'}
+                        {isSavingBirthOutcomes
+                          ? 'Saving...'
+                          : 'Save Birth Outcomes'}
                       </Button>
                     </div>
-                    {notesError && (
-                      <div className='text-sm text-destructive'>
-                        {notesError}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Existing Notes */}
-                  <div className='space-y-2'>
+                  )}
+                  <div className='space-y-2 pt-2'>
                     <h4 className='text-sm font-medium text-muted-foreground'>
-                      Notes History{' '}
-                      {loadingNotes && (
-                        <span className='text-xs'>(Loading...)</span>
-                      )}
+                      Birth Outcomes History
                     </h4>
-                    {loadingNotes && notes.length === 0 ? (
-                      <div className='text-sm text-muted-foreground py-4 text-center'>
-                        Loading notes...
-                      </div>
-                    ) : notes.length === 0 ? (
-                      <div className='text-sm text-muted-foreground py-4 text-center'>
-                        No notes yet. Add the first note above.
+                    {birthOutcomesHistory.length === 0 ? (
+                      <div className='text-sm text-muted-foreground py-2'>
+                        No birth outcomes records yet.
                       </div>
                     ) : (
-                      notes.map((note) => {
-                        // Parse the timestamp - JavaScript automatically converts UTC to local timezone
+                      birthOutcomesHistory.map((note) => {
                         let noteDate = new Date(note.timestamp);
-
-                        // TEMPORARY FIX: If timestamp is in the future, the backend has a timezone issue
-                        // Adjust by converting to actual local time
                         const now = new Date();
                         if (noteDate > now) {
-                          // Backend is sending local time as UTC, so we need to correct it
-                          // Get the timestamp value and add back the timezone offset
                           const offsetMinutes = noteDate.getTimezoneOffset();
                           noteDate = new Date(
                             noteDate.getTime() + offsetMinutes * 60 * 1000
                           );
                         }
-
                         return (
                           <div
-                            key={note.id}
+                            key={`birth-outcomes-${note.id}`}
                             className='bg-background border rounded-lg p-3 space-y-2'
                           >
-                            <div className='flex items-center justify-between'>
-                              <span className='text-xs font-medium capitalize bg-primary/10 text-primary px-2 py-1 rounded'>
-                                {note.metadata?.category || 'general'}
+                            <div className='flex items-center gap-1.5 text-xs text-muted-foreground'>
+                              <span className='font-medium'>
+                                {formatDistanceToNow(noteDate, {
+                                  addSuffix: true,
+                                })}
                               </span>
-                              <div className='flex items-center gap-1.5 text-xs text-muted-foreground'>
-                                <span className='font-medium'>
-                                  {formatDistanceToNow(noteDate, {
-                                    addSuffix: true,
-                                  })}
-                                </span>
-                                <span className='text-muted-foreground/50'>
-                                  •
-                                </span>
-                                <span className='text-muted-foreground/70'>
-                                  {format(noteDate, 'MMM dd, yyyy h:mm a')}
-                                </span>
-                              </div>
+                              <span className='text-muted-foreground/50'>
+                                •
+                              </span>
+                              <span className='text-muted-foreground/70'>
+                                {format(noteDate, 'MMM dd, yyyy h:mm a')}
+                              </span>
                             </div>
-                            <p className='text-sm leading-relaxed'>
+                            <p className='text-sm leading-relaxed whitespace-pre-wrap'>
                               {note.description}
-                            </p>
-                            <p className='text-xs text-muted-foreground'>
-                              Added by {note.createdBy || 'Unknown'}
                             </p>
                           </div>
                         );
                       })
                     )}
                   </div>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          </div>
-        ) : null}
+                </>,
+                <Baby className='h-5 w-5' />
+              )}
 
-        <DialogFooter className='pt-4'>
+              {/* Notes Section */}
+              <Collapsible
+                open={openSections.has('notes')}
+                onOpenChange={(nextOpen) => setSectionOpen('notes', nextOpen)}
+                className='border rounded-lg mb-3'
+              >
+                <CollapsibleTrigger asChild>
+                  <Button
+                    variant='ghost'
+                    className='w-full justify-between p-3 h-auto hover:bg-muted/50'
+                    data-testid='admin-notes-collapsible-trigger'
+                  >
+                    <div className='flex items-center gap-2'>
+                      <MessageSquare className='h-5 w-5' />
+                      <span className='font-semibold'>Admin Notes</span>
+                      {notes.length > 0 && (
+                        <span className='text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full'>
+                          {notes.length}
+                        </span>
+                      )}
+                    </div>
+                    {openSections.has('notes') ? (
+                      <ChevronDown className='h-4 w-4' />
+                    ) : (
+                      <ChevronRight className='h-4 w-4' />
+                    )}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className='px-3 pb-3'>
+                  <div className='space-y-3'>
+                    {/* Add New Note */}
+                    <div className='space-y-2 bg-muted/30 p-3 rounded-lg'>
+                      <label className='text-sm font-medium'>
+                        Add New Note
+                      </label>
+                      <Textarea
+                        placeholder='Enter note description...'
+                        value={newNote}
+                        onChange={(e) => setNewNote(e.target.value)}
+                        rows={3}
+                        disabled={savingNote}
+                        className='resize-none'
+                      />
+                      <div className='flex items-center gap-2'>
+                        <select
+                          data-testid='admin-note-category-trigger'
+                          value={noteCategory}
+                          onChange={(e) => setNoteCategory(e.target.value)}
+                          disabled={savingNote}
+                          className='h-9 w-[180px] rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
+                        >
+                          {NOTE_CATEGORIES.map((category) => (
+                            <option
+                              key={category}
+                              value={category}
+                              data-testid={`admin-note-option-${category}`}
+                            >
+                              {category}
+                            </option>
+                          ))}
+                        </select>
+                        <Button
+                          onClick={handleSaveNote}
+                          disabled={savingNote || !newNote.trim()}
+                          size='sm'
+                        >
+                          {savingNote ? 'Adding...' : 'Add Note'}
+                        </Button>
+                      </div>
+                      {notesError && (
+                        <div className='text-sm text-destructive'>
+                          {notesError}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Existing Notes */}
+                    <div className='space-y-2'>
+                      <h4 className='text-sm font-medium text-muted-foreground'>
+                        Notes History{' '}
+                        {loadingNotes && (
+                          <span className='text-xs'>(Loading...)</span>
+                        )}
+                      </h4>
+                      {loadingNotes && notes.length === 0 ? (
+                        <div className='text-sm text-muted-foreground py-4 text-center'>
+                          Loading notes...
+                        </div>
+                      ) : notes.length === 0 ? (
+                        <div className='text-sm text-muted-foreground py-4 text-center'>
+                          No notes yet. Add the first note above.
+                        </div>
+                      ) : (
+                        notes.map((note) => {
+                          // Parse the timestamp - JavaScript automatically converts UTC to local timezone
+                          let noteDate = new Date(note.timestamp);
+
+                          // TEMPORARY FIX: If timestamp is in the future, the backend has a timezone issue
+                          // Adjust by converting to actual local time
+                          const now = new Date();
+                          if (noteDate > now) {
+                            // Backend is sending local time as UTC, so we need to correct it
+                            // Get the timestamp value and add back the timezone offset
+                            const offsetMinutes = noteDate.getTimezoneOffset();
+                            noteDate = new Date(
+                              noteDate.getTime() + offsetMinutes * 60 * 1000
+                            );
+                          }
+
+                          return (
+                            <div
+                              key={note.id}
+                              className='bg-background border rounded-lg p-3 space-y-2'
+                            >
+                              <div className='flex items-center justify-between'>
+                                <span className='text-xs font-medium capitalize bg-primary/10 text-primary px-2 py-1 rounded'>
+                                  {note.metadata?.category || 'general'}
+                                </span>
+                                <div className='flex items-center gap-1.5 text-xs text-muted-foreground'>
+                                  <span className='font-medium'>
+                                    {formatDistanceToNow(noteDate, {
+                                      addSuffix: true,
+                                    })}
+                                  </span>
+                                  <span className='text-muted-foreground/50'>
+                                    •
+                                  </span>
+                                  <span className='text-muted-foreground/70'>
+                                    {format(noteDate, 'MMM dd, yyyy h:mm a')}
+                                  </span>
+                                </div>
+                              </div>
+                              <p className='text-sm leading-relaxed'>
+                                {note.description}
+                              </p>
+                              <p className='text-xs text-muted-foreground'>
+                                Added by {note.createdBy || 'Unknown'}
+                              </p>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            </div>
+          ) : null}
+        </div>
+
+        <DialogFooter className='shrink-0 border-t px-6 py-4'>
           <Button onClick={() => onOpenChange(false)}>Close</Button>
         </DialogFooter>
       </DialogContent>

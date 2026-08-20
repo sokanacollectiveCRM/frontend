@@ -1,10 +1,20 @@
 // src/common/hooks/clients/useClients.ts
 import {
-    getSessionExpirationMessage,
-    isSessionExpiredError,
+  getSessionExpirationMessage,
+  isSessionExpiredError,
 } from '@/common/utils/sessionUtils';
-import { fetchClients, fetchClientById, updateClientStatus } from '@/api/services/clients.service';
-import { fetchActivities, createActivity } from '@/api/services/activities.service';
+import {
+  getCachedClientDetail,
+  loadClientDetail,
+} from '@/api/services/clientDetailCache';
+import {
+  fetchClients,
+  updateClientStatus,
+} from '@/api/services/clients.service';
+import {
+  fetchActivities,
+  createActivity,
+} from '@/api/services/activities.service';
 import { ApiError } from '@/api/errors';
 import type { Client, ClientDetail, ClientStatus } from '@/domain/client';
 import type { Activity, CreateActivityInput } from '@/domain/activity';
@@ -47,30 +57,40 @@ export function useClients() {
    * Fetch a single client by ID using the migrated service.
    * Returns domain ClientDetail type (canonical mode only).
    */
-  const getClientById = useCallback(async (id: string): Promise<ClientDetail | null> => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const data = await fetchClientById(id);
-      return data;
-    } catch (err: unknown) {
-      if (err instanceof ApiError) {
-        if (isSessionExpiredError(err.status, err.message)) {
-          setError(getSessionExpirationMessage());
-        } else {
-          setError(err.message);
-        }
-      } else if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('An unknown error occurred');
+  const getClientById = useCallback(
+    async (
+      id: string,
+      options?: { force?: boolean }
+    ): Promise<ClientDetail | null> => {
+      const hasCached = !options?.force && !!getCachedClientDetail(id);
+      if (!hasCached) {
+        setIsLoading(true);
+        setError(null);
       }
-      return null;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []); // Empty deps - function doesn't depend on any props/state
+
+      try {
+        return await loadClientDetail(id, options);
+      } catch (err: unknown) {
+        if (err instanceof ApiError) {
+          if (isSessionExpiredError(err.status, err.message)) {
+            setError(getSessionExpirationMessage());
+          } else {
+            setError(err.message);
+          }
+        } else if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError('An unknown error occurred');
+        }
+        return null;
+      } finally {
+        if (!hasCached) {
+          setIsLoading(false);
+        }
+      }
+    },
+    []
+  );
 
   /**
    * Update a client's status using the migrated service.
@@ -108,7 +128,9 @@ export function useClients() {
    * Fetch all activities for a client.
    * Returns Activity[] or null on error (canonical mode only).
    */
-  const getActivities = async (clientId: string): Promise<Activity[] | null> => {
+  const getActivities = async (
+    clientId: string
+  ): Promise<Activity[] | null> => {
     setIsLoading(true);
     setError(null);
 
