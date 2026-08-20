@@ -1,14 +1,20 @@
 // src/common/hooks/clients/useClients.ts
 import {
-    getSessionExpirationMessage,
-    isSessionExpiredError,
+  getSessionExpirationMessage,
+  isSessionExpiredError,
 } from '@/common/utils/sessionUtils';
 import {
   getCachedClientDetail,
   loadClientDetail,
 } from '@/api/services/clientDetailCache';
-import { fetchClients, updateClientStatus } from '@/api/services/clients.service';
-import { fetchActivities, createActivity } from '@/api/services/activities.service';
+import {
+  fetchClients,
+  updateClientStatus,
+} from '@/api/services/clients.service';
+import {
+  fetchActivities,
+  createActivity,
+} from '@/api/services/activities.service';
 import { ApiError } from '@/api/errors';
 import type { Client, ClientDetail, ClientStatus } from '@/domain/client';
 import type { Activity, CreateActivityInput } from '@/domain/activity';
@@ -122,7 +128,9 @@ export function useClients() {
    * Fetch all activities for a client.
    * Returns Activity[] or null on error (canonical mode only).
    */
-  const getActivities = async (clientId: string): Promise<Activity[] | null> => {
+  const getActivities = async (
+    clientId: string
+  ): Promise<Activity[] | null> => {
     setIsLoading(true);
     setError(null);
 
