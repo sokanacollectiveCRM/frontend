@@ -79,12 +79,23 @@ function normalizeError(
   parsed: unknown,
   response: Response
 ): { ok: false; status: number; message: string; code?: string } {
-  const message =
+  let message =
     typeof parsed === 'string'
       ? parsed
       : ((parsed as Record<string, unknown>)?.error ??
         (parsed as Record<string, unknown>)?.message ??
         response.statusText);
+  // Express default HTML 404 bodies must not surface in CRM UI.
+  const raw = String(message ?? '');
+  if (/<!DOCTYPE\s+html/i.test(raw) || /<html[\s>]/i.test(raw)) {
+    const preMatch = raw.match(/<pre>([\s\S]*?)<\/pre>/i);
+    message =
+      preMatch?.[1]?.trim() ||
+      response.statusText ||
+      `Request failed (${response.status})`;
+  } else {
+    message = raw;
+  }
   const code =
     typeof parsed === 'object' && parsed !== null
       ? (parsed as Record<string, unknown>)?.code

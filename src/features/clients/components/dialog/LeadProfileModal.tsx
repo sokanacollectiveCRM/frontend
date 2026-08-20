@@ -525,17 +525,36 @@ export function LeadProfileModal({
     setBillingLoading(true);
     setBillingError(null);
     try {
-      const [schedule, card] = await Promise.all([
-        fetchClientPaymentSchedule(String(client.id)),
-        fetchCardOnFileStatus(String(client.id)),
+      const clientId = String(client.id);
+      const [scheduleResult, cardResult] = await Promise.allSettled([
+        fetchClientPaymentSchedule(clientId),
+        fetchCardOnFileStatus(clientId),
       ]);
-      setInstallments(Array.isArray(schedule) ? schedule : []);
-      setCardStatus(card);
-    } catch (error) {
+
+      if (scheduleResult.status === 'fulfilled') {
+        setInstallments(
+          Array.isArray(scheduleResult.value) ? scheduleResult.value : []
+        );
+        setBillingError(null);
+      } else {
+        setInstallments([]);
+        // Never surface raw API/HTML bodies in this panel.
+        setBillingError(
+          'Payment schedule is temporarily unavailable. Try again later.'
+        );
+      }
+
+      // Card-on-file is informational; failures must not paint Payment Schedule red.
+      if (cardResult.status === 'fulfilled') {
+        setCardStatus(cardResult.value);
+      } else {
+        setCardStatus(null);
+      }
+    } catch {
+      setInstallments([]);
+      setCardStatus(null);
       setBillingError(
-        error instanceof Error
-          ? error.message
-          : 'Unable to load billing information.'
+        'Payment schedule is temporarily unavailable. Try again later.'
       );
     } finally {
       setBillingLoading(false);
