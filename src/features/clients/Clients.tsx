@@ -36,6 +36,7 @@ import {
 } from '@/common/components/ui/tabs';
 import { fetchWithAuth, buildUrl } from '@/api/http';
 import { prefetchClientDetail } from '@/api/services/clientDetailCache';
+import type { ClientDetail } from '@/domain/client';
 
 type RouteParams = {
   clientId?: string;
@@ -495,7 +496,10 @@ function RouteAwareLeadProfileLoader({
   requestedClientId?: string;
   knownClients: UserSummary[];
   navigateToOnClose: string;
-  getClientById: (id: string, detailed?: boolean) => Promise<any>;
+  getClientById: (
+    id: string,
+    options?: { force?: boolean } | boolean
+  ) => Promise<ClientDetail | null>;
   attemptedRouteIdsRef: MutableRefObject<Set<string>>;
   setMissingClientId: React.Dispatch<React.SetStateAction<string | null>>;
   manualCloseRef: MutableRefObject<boolean>;
