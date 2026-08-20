@@ -9,15 +9,15 @@ import { UsersPrimaryButtons } from './users-primary-buttons';
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>;
+  /** @deprecated Unused; kept for call-site compatibility. */
   draggedTemplate?: Template | null;
+  /** @deprecated Unused; kept for call-site compatibility. */
   clients?: any[];
   viewMode?: 'leads' | 'customers';
 }
 
 export function DataTableToolbar<TData>({
   table,
-  draggedTemplate,
-  clients,
   viewMode = 'leads',
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0;
@@ -57,7 +57,7 @@ export function DataTableToolbar<TData>({
           </Button>
         )}
       </div>
-      <UsersPrimaryButtons draggedTemplate={draggedTemplate ?? null} clients={clients} />
+      <UsersPrimaryButtons />
     </div>
   );
 }

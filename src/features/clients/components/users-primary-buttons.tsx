@@ -1,27 +1,19 @@
 import { Button } from '@/common/components/ui/button';
-import { Template } from '@/common/types/template';
+import { UserContext } from '@/common/contexts/UserContext';
 import { Send, SquarePlus } from 'lucide-react';
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import { EnhancedContractDialog } from './dialog/EnhancedContractDialog';
 import { fetchWithAuth, buildUrl } from '@/api/http';
 
-interface Props {
-  draggedTemplate: Template | null;
-  clients?: any[]; // Simple clients prop
-}
-
-export function UsersPrimaryButtons({
-  draggedTemplate,
-  clients = [],
-}: Props) {
-  const [isEnhancedContractDialogOpen, setIsEnhancedContractDialogOpen] = useState(false);
+export function UsersPrimaryButtons() {
+  const [isEnhancedContractDialogOpen, setIsEnhancedContractDialogOpen] =
+    useState(false);
+  const { user } = useContext(UserContext);
+  const canExportCsv = user?.role === 'admin';
 
   const fetchCSV = async () => {
     try {
-      const data = await fetchWithAuth(buildUrl('/clients/fetchCSV'), {
-        headers: {
-        },
-      });
+      const data = await fetchWithAuth(buildUrl('/clients/fetchCSV'));
 
       const csvData = await data.text();
       const blob = new Blob([csvData], { type: 'text/csv' });
@@ -38,10 +30,12 @@ export function UsersPrimaryButtons({
   };
   return (
     <div className='ml-auto flex shrink-0 flex-wrap justify-end gap-2'>
-      <Button variant='outline' className='space-x-1' onClick={fetchCSV}>
-        <span>Export</span>
-        <SquarePlus size={18} />
-      </Button>
+      {canExportCsv ? (
+        <Button variant='outline' className='space-x-1' onClick={fetchCSV}>
+          <span>Export</span>
+          <SquarePlus size={18} />
+        </Button>
+      ) : null}
       <Button
         className='space-x-1'
         onClick={() => setIsEnhancedContractDialogOpen(true)}
