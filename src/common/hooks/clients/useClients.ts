@@ -60,16 +60,19 @@ export function useClients() {
   const getClientById = useCallback(
     async (
       id: string,
-      options?: { force?: boolean }
+      options?: { force?: boolean } | boolean
     ): Promise<ClientDetail | null> => {
-      const hasCached = !options?.force && !!getCachedClientDetail(id);
+      const normalizedOptions =
+        typeof options === 'boolean' ? { force: options } : options;
+      const hasCached =
+        !normalizedOptions?.force && !!getCachedClientDetail(id);
       if (!hasCached) {
         setIsLoading(true);
         setError(null);
       }
 
       try {
-        return await loadClientDetail(id, options);
+        return await loadClientDetail(id, normalizedOptions);
       } catch (err: unknown) {
         if (err instanceof ApiError) {
           if (isSessionExpiredError(err.status, err.message)) {
