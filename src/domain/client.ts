@@ -10,7 +10,12 @@ import type {
   PortalBlocker,
 } from '@/lib/portalEligibility';
 
-export type { BillingPath, ClientEligibilityFields, PortalAllowedActions, PortalBlocker };
+export type {
+  BillingPath,
+  ClientEligibilityFields,
+  PortalAllowedActions,
+  PortalBlocker,
+};
 
 export type ClientStatus =
   | 'lead'
@@ -183,4 +188,32 @@ export interface ClientDetail {
   pets?: string;
   homeAdultsCount?: string;
   homeYouthCount?: string;
+  /** Intake — services requested */
+  servicesInterested?: string[];
+  serviceSupportDetails?: string;
+  serviceSpecifics?: string;
+  demographicsMulti?: string[];
+  preferredContactMethod?: string;
+  preferredName?: string;
+  pronouns?: string;
+  pronounsOther?: string;
+  childrenExpected?: string;
+  intakeAgeYears?: number;
+  age?: number;
+  birthLocation?: string;
+  birthHospital?: string;
+  providerType?: string;
+  primaryLanguage?: string;
+  relationshipStatus?: string;
+  middleName?: string;
+  mobilePhone?: string;
+  workPhone?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  address?: string;
+  referralSource?: string;
+  referralSourceOther?: string;
+  referralName?: string;
+  referralEmail?: string;
 }

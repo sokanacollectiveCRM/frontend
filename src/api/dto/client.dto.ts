@@ -195,4 +195,28 @@ export interface ClientDetailDTO {
   pets?: string;
   home_adults_count?: string;
   home_youth_count?: string;
+
+  /** Intake — services requested */
+  services_interested?: string[];
+  service_support_details?: string;
+  service_specifics?: string;
+  demographics_multi?: string[];
+  preferred_contact_method?: string;
+  preferred_name?: string;
+  pronouns?: string;
+  pronouns_other?: string;
+  children_expected?: string;
+  intake_age_years?: number;
+  birth_location?: string;
+  birth_hospital?: string;
+  provider_type?: string;
+  primary_language?: string;
+  relationship_status?: string;
+  middle_name?: string;
+  mobile_phone?: string;
+  work_phone?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  address?: string;
 }

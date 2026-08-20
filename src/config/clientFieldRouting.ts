@@ -84,6 +84,25 @@ const FIELD_ALIAS_MAP: Record<string, string> = {
   birthoutcomes: 'birth_outcomes',
   serviceNeeded: 'service_needed',
   serviceneeded: 'service_needed',
+  servicesInterested: 'services_interested',
+  serviceSupportDetails: 'service_support_details',
+  serviceSpecifics: 'service_specifics',
+  demographicsMulti: 'demographics_multi',
+  age: 'intake_age_years',
+  preferredContactMethod: 'preferred_contact_method',
+  preferredName: 'preferred_name',
+  pronounsOther: 'pronouns_other',
+  birthLocation: 'birth_location',
+  birthHospital: 'birth_hospital',
+  providerType: 'provider_type',
+  primaryLanguage: 'primary_language',
+  relationshipStatus: 'relationship_status',
+  middleName: 'middle_name',
+  mobilePhone: 'mobile_phone',
+  workPhone: 'work_phone',
+  referralSource: 'referral_source',
+  referralName: 'referral_name',
+  referralEmail: 'referral_email',
   childrenExpected: 'children_expected',
   childrenexpected: 'children_expected',
   portalStatus: 'portal_status',
@@ -134,9 +153,7 @@ export function normalizeClientFieldKey(key: string): string {
   return FIELD_ALIAS_MAP[key] ?? key;
 }
 
-export function splitClientUpdatePayload(
-  updateData: Record<string, unknown>
-): {
+export function splitClientUpdatePayload(updateData: Record<string, unknown>): {
   phi: Record<string, unknown>;
   operational: Record<string, unknown>;
   billing: Record<string, unknown>;

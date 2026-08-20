@@ -1,9 +1,18 @@
-import { API_CONFIG } from '../config';
-import type { ClientListItemDTO, ClientDetailDTO } from '../dto/client.dto';
-import type { Client, ClientDetail, ClientStatus, PortalBlocker, BillingPath } from '@/domain/client';
+import { API_CONFIG } from '@/api/config';
+import type { ClientListItemDTO, ClientDetailDTO } from '@/api/dto/client.dto';
+import type {
+  Client,
+  ClientDetail,
+  ClientStatus,
+  PortalBlocker,
+  BillingPath,
+} from '@/domain/client';
 import type { PortalAllowedActions } from '@/lib/portalEligibility';
+import { normalizeStringArrayFromApi } from '@/features/clients/utils/profileArrayFields';
 
-function mapPortalBlockers(raw: string[] | undefined): PortalBlocker[] | undefined {
+function mapPortalBlockers(
+  raw: string[] | undefined
+): PortalBlocker[] | undefined {
   if (!raw?.length) return undefined;
   const valid: PortalBlocker[] = [
     'contract_unsigned',
@@ -12,7 +21,9 @@ function mapPortalBlockers(raw: string[] | undefined): PortalBlocker[] | undefin
     'payment_authorization_required',
     'billing_path_unknown',
   ];
-  return raw.filter((item): item is PortalBlocker => valid.includes(item as PortalBlocker));
+  return raw.filter((item): item is PortalBlocker =>
+    valid.includes(item as PortalBlocker)
+  );
 }
 
 function mapEligibilityFromDto(
@@ -32,14 +43,22 @@ function mapEligibilityFromDto(
     portalBlockers: mapPortalBlockers(pick<string[]>('portal_blockers')),
     primaryPortalBlocker: primaryBlocker as PortalBlocker | null | undefined,
     billingPath: billingPath as BillingPath | undefined,
-    paymentAuthorizationRequired: pick<boolean>('payment_authorization_required'),
-    paymentAuthorizationSatisfied: pick<boolean>('payment_authorization_satisfied'),
+    paymentAuthorizationRequired: pick<boolean>(
+      'payment_authorization_required'
+    ),
+    paymentAuthorizationSatisfied: pick<boolean>(
+      'payment_authorization_satisfied'
+    ),
     cardOnFile: pick<boolean>('card_on_file'),
     qbCustomerId: pick<string | null>('qb_customer_id'),
     qbStoredPaymentMethodId: pick<string | null>('qb_stored_payment_method_id'),
     verificationInvoiceId: pick<string | null>('verification_invoice_id'),
-    verificationInvoiceSentAt: pick<string | null>('verification_invoice_sent_at'),
-    verificationInvoicePaidAt: pick<string | null>('verification_invoice_paid_at'),
+    verificationInvoiceSentAt: pick<string | null>(
+      'verification_invoice_sent_at'
+    ),
+    verificationInvoicePaidAt: pick<string | null>(
+      'verification_invoice_paid_at'
+    ),
     allowedActions: pick<PortalAllowedActions>('allowed_actions'),
     paymentMethod: pick<string>('payment_method'),
     paymentAuthorizationStatus: pick<string>('payment_authorization_status'),
@@ -95,45 +114,31 @@ export function mapClient(dto: ClientListItemDTO): Client {
 
   // Extract fields from nested user or flat DTO
   const firstname =
-    user?.firstname ||
-    user?.firstName ||
-    dto.firstname ||
-    dto.first_name ||
-    '';
+    user?.firstname || user?.firstName || dto.firstname || dto.first_name || '';
 
   const lastname =
-    user?.lastname ||
-    user?.lastName ||
-    dto.lastname ||
-    dto.last_name ||
-    '';
+    user?.lastname || user?.lastName || dto.lastname || dto.last_name || '';
 
   const email = user?.email || dto.email || '';
 
   const phoneNumber =
-    user?.phone_number ||
-    user?.phoneNumber ||
-    dto.phone_number ||
-    '';
+    user?.phone_number || user?.phoneNumber || dto.phone_number || '';
 
   const rawStatus = dto.status || user?.status || 'lead';
-  const status = (rawStatus === 'matching' ? 'matched' : rawStatus) as ClientStatus;
+  const status = (
+    rawStatus === 'matching' ? 'matched' : rawStatus
+  ) as ClientStatus;
 
   const serviceNeeded =
-    dto.serviceNeeded ||
-    dto.service_needed ||
-    user?.service_needed ||
-    '';
+    dto.serviceNeeded || dto.service_needed || user?.service_needed || '';
 
-  const requestedAtRaw =
-    dto.requestedAt || dto.requested_at;
+  const requestedAtRaw = dto.requestedAt || dto.requested_at;
   const requestedAt = requestedAtRaw ? new Date(requestedAtRaw) : new Date();
 
   const updatedAtRaw = dto.updatedAt || dto.updated_at;
   const updatedAt = updatedAtRaw ? new Date(updatedAtRaw) : new Date();
 
-  const profilePicture =
-    user?.profile_picture ?? dto.profile_picture ?? null;
+  const profilePicture = user?.profile_picture ?? dto.profile_picture ?? null;
 
   return {
     id: dto.id,
@@ -153,7 +158,8 @@ export function mapClient(dto: ClientListItemDTO): Client {
     contractStatus: dto.contract_status || user?.contract_status,
     hasSignedContract: dto.has_signed_contract ?? user?.has_signed_contract,
     paymentStatus: dto.payment_status || user?.payment_status,
-    hasCompletedPayment: dto.has_completed_payment ?? user?.has_completed_payment,
+    hasCompletedPayment:
+      dto.has_completed_payment ?? user?.has_completed_payment,
     ...mapEligibilityFromDto(dto, user),
   };
 }
@@ -171,7 +177,9 @@ export function mapClientDetail(dto: ClientDetailDTO): ClientDetail {
     lastName: dto.last_name,
     email: dto.email,
     phoneNumber: dto.phone_number,
-    status: ((dto.status || 'lead') === 'matching' ? 'matched' : (dto.status || 'lead')) as ClientStatus,
+    status: ((dto.status || 'lead') === 'matching'
+      ? 'matched'
+      : dto.status || 'lead') as ClientStatus,
     serviceNeeded: dto.service_needed,
     portalStatus: dto.portal_status,
     invitedAt: dto.invited_at,
@@ -222,11 +230,40 @@ export function mapClientDetail(dto: ClientDetailDTO): ClientDetail {
     secondaryPolicyNumber: dto.secondary_policy_number,
     selfPayCardInfo: dto.self_pay_card_info,
     homeType: dto.home_type ?? dto.home_types,
-    homeTypes: dto.home_types ?? (Array.isArray(dto.home_type) ? dto.home_type : undefined),
+    homeTypes:
+      dto.home_types ??
+      (Array.isArray(dto.home_type) ? dto.home_type : undefined),
     homeTypeOther: dto.home_type_other,
     homeAccess: dto.home_access,
     pets: dto.pets,
     homeAdultsCount: dto.home_adults_count,
     homeYouthCount: dto.home_youth_count,
+    servicesInterested: normalizeStringArrayFromApi(dto.services_interested),
+    serviceSupportDetails: dto.service_support_details,
+    serviceSpecifics: dto.service_specifics,
+    demographicsMulti: normalizeStringArrayFromApi(dto.demographics_multi),
+    preferredContactMethod: dto.preferred_contact_method,
+    preferredName: dto.preferred_name,
+    pronouns: dto.pronouns,
+    pronounsOther: dto.pronouns_other,
+    childrenExpected: dto.children_expected,
+    intakeAgeYears: dto.intake_age_years,
+    age: dto.age ?? dto.intake_age_years,
+    birthLocation: dto.birth_location,
+    birthHospital: dto.birth_hospital,
+    providerType: dto.provider_type,
+    primaryLanguage: dto.primary_language,
+    relationshipStatus: dto.relationship_status,
+    middleName: dto.middle_name,
+    mobilePhone: dto.mobile_phone,
+    workPhone: dto.work_phone,
+    city: dto.city,
+    state: dto.state,
+    zipCode: dto.zip_code,
+    address: dto.address ?? dto.address_line1,
+    referralSource: dto.referral_source,
+    referralSourceOther: dto.referral_source_other,
+    referralName: dto.referral_name,
+    referralEmail: dto.referral_email,
   };
 }
