@@ -1,5 +1,6 @@
 // src/features/invoices/InvoicesPage.tsx
 import { getInvoicesList, type InvoiceRow } from '@/api/financial/invoicesApi';
+import { logFailure } from '@/utils/safeLog';
 import {
   getInvoiceableCustomers,
   InvoiceableCustomer,
@@ -723,7 +724,7 @@ function CreateInvoiceModal({
       );
       onClose();
     } catch (err: any) {
-      console.error('Invoice creation error:', err);
+      logFailure('invoices', 'invoice_creation_error');
       toast.error(err.message || 'Failed to create invoice');
     }
   };

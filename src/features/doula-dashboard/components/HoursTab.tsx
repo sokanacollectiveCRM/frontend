@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { logFailure } from '@/utils/safeLog';
 import { format } from 'date-fns';
 import { Calendar, Clock, Edit2, FileText, Plus, User } from 'lucide-react';
 import { toast } from 'sonner';
@@ -92,7 +93,7 @@ export default function HoursTab() {
       setHours(Array.isArray(hoursData) ? hoursData : []);
       setClients(Array.isArray(clientsData) ? (clientsData as AssignedClientLite[]) : []);
     } catch (error: any) {
-      console.error('Failed to fetch data:', error);
+      logFailure('doula-dashboard', 'failed_to_fetch_data');
       setHours([]);
       setClients([]);
       toast.error(error.message || 'Failed to load data');
@@ -191,7 +192,7 @@ export default function HoursTab() {
       closeDialog();
       fetchData();
     } catch (error: any) {
-      console.error('Failed to save hours:', error);
+      logFailure('doula-dashboard', 'failed_to_save_hours');
       toast.error(error.message || 'Failed to save hours');
     } finally {
       setIsSaving(false);

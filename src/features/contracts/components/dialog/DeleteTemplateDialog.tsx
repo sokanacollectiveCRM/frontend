@@ -1,4 +1,5 @@
 import { Button } from '@/common/components/ui/button';
+import { logFailure } from '@/utils/safeLog';
 import {
   DialogClose,
   DialogContent,
@@ -47,7 +48,7 @@ export function DeleteTemplateDialog({ templateName, onDelete }: Props) {
       closeRef.current?.click();
       getTemplates();
     } catch (err) {
-      console.error(err);
+      logFailure('contracts', 'operation_failed');
       toast.error(
         `Something went wrong. ${err instanceof Error ? err.message : err}.`
       );

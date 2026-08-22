@@ -1,4 +1,5 @@
 import { fetchWithAuth, buildUrl } from '@/api/http';
+import { logFailure } from '@/utils/safeLog';
 
 export default async function saveUser(userData: FormData) {
   try {
@@ -14,7 +15,7 @@ export default async function saveUser(userData: FormData) {
     }
     return await response.json();
   } catch (error) {
-    console.error("Error: couldn't save user", error);
+    logFailure('client-api', 'error_couldn_t_save_user');
     throw error;
   }
 }

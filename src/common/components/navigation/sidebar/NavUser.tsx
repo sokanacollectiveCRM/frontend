@@ -1,6 +1,7 @@
 'use client';
 
 import { ChevronsUpDown, LogOut, User } from 'lucide-react';
+import { logFailure } from '@/utils/safeLog';
 import { useNavigate } from 'react-router-dom';
 
 import {
@@ -40,7 +41,7 @@ export function NavUser() {
       // Use window.location.href to force full page navigation and clear all state
       window.location.href = '/auth/client-login';
     } catch (error) {
-      console.error('Client logout error:', error);
+      logFailure('ui', 'client_logout_error');
       // Still navigate even if signOut fails - force full page reload
       window.location.href = '/auth/client-login';
     }

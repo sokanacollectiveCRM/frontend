@@ -25,15 +25,12 @@ export function PortalInviteModal({
   onConfirm,
   isLoading = false,
 }: PortalInviteModalProps) {
-  console.log('PortalInviteModal - open:', open, 'lead:', lead);
 
   if (!lead) {
-    console.log('PortalInviteModal - No lead provided, returning null');
     return null;
   }
 
   const handleConfirm = () => {
-    console.log('PortalInviteModal - Send Invite button clicked');
     onConfirm();
   };
 

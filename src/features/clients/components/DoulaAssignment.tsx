@@ -10,6 +10,7 @@ import {
   unassignDoula,
 } from '@/api/clients/doulaAssignments';
 import { Alert, AlertDescription } from '@/common/components/ui/alert';
+import { logFailure } from '@/utils/safeLog';
 import { Badge } from '@/common/components/ui/badge';
 import { Button } from '@/common/components/ui/button';
 import {
@@ -81,13 +82,11 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
         fetchAssignedDoulas(clientId),
       ]);
 
-      console.log('🔍 Doula Assignment - Available doulas:', doulas);
-      console.log('🔍 Doula Assignment - Assigned doulas:', assigned);
 
       setAvailableDoulas(doulas);
       setAssignedDoulas(assigned);
     } catch (err) {
-      console.error('Error loading doula data:', err);
+      logFailure('clients', 'error_loading_doula_data');
       setError(
         err instanceof Error ? err.message : 'Failed to load doula data'
       );
@@ -130,7 +129,7 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
       const assigned = await fetchAssignedDoulas(clientId);
       setAssignedDoulas(assigned);
     } catch (err) {
-      console.error('Error assigning doula:', err);
+      logFailure('clients', 'error_assigning_doula');
       const errorMsg =
         err instanceof Error ? err.message : 'Failed to assign doula';
       setError(errorMsg);
@@ -152,7 +151,7 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
       const assigned = await fetchAssignedDoulas(clientId);
       setAssignedDoulas(assigned);
     } catch (err) {
-      console.error('Error removing doula:', err);
+      logFailure('clients', 'error_removing_doula');
       const errorMsg =
         err instanceof Error ? err.message : 'Failed to remove doula';
       setError(errorMsg);
@@ -267,7 +266,6 @@ export function DoulaAssignment({ clientId, canAssign }: DoulaAssignmentProps) {
                               setSelectedDoulaId(
                                 doula.id === selectedDoulaId ? '' : doula.id
                               );
-                              console.log('🔍 Selected doula ID:', doula.id);
                             }}
                           >
                             <Check

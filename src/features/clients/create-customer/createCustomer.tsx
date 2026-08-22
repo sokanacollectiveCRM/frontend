@@ -2,6 +2,7 @@
 'use client';
 
 import { UserContext } from '@/common/contexts/UserContext';
+import { logFailure } from '@/utils/safeLog';
 import {
   getInvoiceableCustomers,
   getQuickBooksCustomers,
@@ -185,7 +186,7 @@ export default function CreateCustomerPage() {
       } else {
         setError(errorMessage);
       }
-      console.error('Error fetching customers:', err);
+      logFailure('clients', 'error_fetching_customers');
     } finally {
       setLoading(false);
     }

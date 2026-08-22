@@ -1,4 +1,5 @@
 import { Search } from '@/common/components/header/Search';
+import { logFailure } from '@/utils/safeLog';
 import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
 import { useClients } from '@/common/hooks/clients/useClients';
 import { useUser } from '@/common/hooks/user/useUser';
@@ -31,10 +32,9 @@ export default function Pipeline() {
 
     try {
       const parsed = clientListSchema.parse(clients);
-      console.log(parsed);
       setUserList(parsed);
     } catch (err) {
-      console.error('Failed to parse client list with Zod:', err);
+      logFailure('pipeline', 'failed_to_parse_client_list_with');
       setUserList([]);
     }
   }, [clients]);
@@ -107,7 +107,7 @@ export default function Pipeline() {
                   );
                 }
               } catch (error) {
-                console.error('Failed to update user status:', error);
+                logFailure('pipeline', 'failed_to_update_user_status');
                 toast.error(
                   `Something went wrong. ${error instanceof Error ? error.message : error}`
                 );

@@ -1,4 +1,5 @@
 import { Button } from '@/common/components/ui/button';
+import { logFailure } from '@/utils/safeLog';
 import {
   Dialog,
   DialogContent,
@@ -68,7 +69,7 @@ export const SelectClientModal: React.FC<Props> = ({
         toast.error(result.error || 'Failed to send contract');
       }
     } catch (error) {
-      console.error('Failed to send contract:', error);
+      logFailure('clients', 'failed_to_send_contract');
       toast.error('Failed to send contract');
     } finally {
       setLoading(false);

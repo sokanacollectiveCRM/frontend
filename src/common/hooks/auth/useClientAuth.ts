@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { logFailure } from '@/utils/safeLog';
 import { isStaffRole } from '@/common/auth/roles';
 import { useUser } from '@/common/hooks/user/useUser';
 import { supabase } from '@/lib/supabase';
@@ -57,7 +58,7 @@ export function useClientAuth() {
         } = await supabase.auth.getSession();
         applySession(session);
       } catch (error) {
-        console.error('Error checking client session:', error);
+        logFailure('hooks', 'error_checking_client_session');
         setSessionIdentity(null);
         setSessionLoading(false);
       }

@@ -6,6 +6,7 @@ import { PHI_BROKER_FIELD_KEYS } from '@/config/clientFieldRouting';
 import { normalizeZipCode } from './zipCode';
 import { apiBaseUrl } from '@/config/env';
 import { fetchWithAuth } from '@/api/http';
+import { logFailure, logHttpFailure } from '@/utils/safeLog';
 
 /**
  * Columns that cannot be updated via PUT /clients/:id to Supabase client_info table.
@@ -48,15 +49,6 @@ export default async function updateClient(
     payload.zip_code = normalizeZipCode(payload.zip_code);
   }
 
-  // Debug logging
-  console.log('🚨 DEBUG START - Client Update');
-  console.log('🚨 Client ID:', clientId);
-  console.log('🚨 Update Data:', payload);
-  console.log(
-    '🚨 Full request URL:',
-    `${apiBaseUrl}/clients/${clientId}`
-  );
-
   try {
     const response = await fetchWithAuth(`${apiBaseUrl}/clients/${clientId}`, {
       method: 'PUT',
@@ -68,13 +60,10 @@ export default async function updateClient(
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Client update failed:', response.status, errorText);
+      logHttpFailure('client-api', 'update_client', response.status);
 
       // Check if this is the "No data returned after update" error
       if (errorText.includes('No data returned after update')) {
-        console.log(
-          '⚠️ Backend update succeeded but no data returned - treating as success'
-        );
         return { success: true, client: { id: clientId, ...payload } };
       }
 
@@ -83,16 +72,13 @@ export default async function updateClient(
         throw new Error(getSessionExpirationMessage());
       }
 
-      throw new Error(
-        `Failed to update client: ${response.status} - ${errorText}`
-      );
+      throw new Error(`Failed to update client (${response.status})`);
     }
 
     const result = await response.json();
-    console.log('✅ Client updated successfully:', result);
     return { success: true, client: result.client };
   } catch (err) {
-    console.error("❌ Couldn't update client: ", err);
+    logFailure('client-api', 'update_client');
     return {
       success: false,
       error: err instanceof Error ? err.message : 'Unknown error',

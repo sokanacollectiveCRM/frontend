@@ -1,4 +1,5 @@
 import { apiBaseUrl } from '@/config/env';
+import { logFailure } from '@/utils/safeLog';
 import { fetchWithAuth } from '@/api/http';
 
 export interface ClientNote {
@@ -147,7 +148,7 @@ export const getClientNotes = async (
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
   } catch (err) {
-    console.error('Error fetching client notes:', err);
+    logFailure('client-api', 'error_fetching_client_notes');
     throw err;
   }
 };
@@ -188,7 +189,7 @@ export const createClientNote = async (
 
     return normalizeNoteRow(raw, clientId);
   } catch (err) {
-    console.error('Error creating client note:', err);
+    logFailure('client-api', 'error_creating_client_note');
     throw err;
   }
 };

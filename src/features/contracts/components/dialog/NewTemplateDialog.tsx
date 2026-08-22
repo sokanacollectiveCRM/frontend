@@ -1,4 +1,5 @@
 import { Button } from '@/common/components/ui/button';
+import { logFailure } from '@/utils/safeLog';
 import {
   Dialog,
   DialogClose,
@@ -56,7 +57,7 @@ export function NewTemplateDialog({ onUploadSuccess }: Props) {
       toast.success(`Successfully created ${nameInput}.`);
       closeRef.current?.click();
     } catch (err) {
-      console.error(err);
+      logFailure('contracts', 'operation_failed');
       toast.error(
         `Something went wrong. ${err instanceof Error ? err.message : err}`
       );

@@ -97,8 +97,6 @@ export function Step1Personal({
   };
 
   // Add debug logs
-  console.log('Step1Personal errors:', errors);
-  console.log('Step1Personal isValid:', form.formState.isValid);
 
   return (
     <div>
@@ -404,7 +402,6 @@ export function Step1Personal({
         <Button
           type='submit'
           onClick={() => {
-            console.log('handleNextStep called');
             handleNextStep();
           }}
           disabled={form.formState.isSubmitting}

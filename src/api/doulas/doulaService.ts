@@ -1,6 +1,7 @@
 // API service functions for Doula Dashboard
 // Base URL: http://localhost:5050/api
 import { buildUrl, fetchWithAuth } from '@/api/http';
+import { logHttpFailure } from '@/utils/safeLog';
 import { apiBaseUrl } from '@/config/env';
 import {
   normalizeHourType,
@@ -161,10 +162,6 @@ export async function updateDoulaProfile(
   data: UpdateProfileData
 ): Promise<DoulaProfile> {
   // Log the payload being sent
-  console.log(
-    'updateDoulaProfile - Sending payload:',
-    JSON.stringify(data, null, 2)
-  );
 
   const response = await fetchWithAuth(`${API_BASE}/doulas/profile`, {
     method: 'PUT',
@@ -177,7 +174,7 @@ export async function updateDoulaProfile(
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('updateDoulaProfile - Error response:', errorText);
+    logHttpFailure('doula-api', 'update_doula_profile', response.status);
     let error;
     try {
       error = JSON.parse(errorText);
@@ -188,17 +185,9 @@ export async function updateDoulaProfile(
   }
 
   const result = await response.json();
-  console.log(
-    'updateDoulaProfile - Response received:',
-    JSON.stringify(result, null, 2)
-  );
 
   // Handle both {success: true, profile: {...}} and direct profile object
   const profile = result.profile || result;
-  console.log(
-    'updateDoulaProfile - Returning profile:',
-    JSON.stringify(profile, null, 2)
-  );
 
   return profile;
 }
@@ -456,12 +445,7 @@ export async function uploadDocument(
   }
 
   // Debug: Log FormData contents
-  console.log('Uploading document with FormData fields:');
   formData.forEach((value, key) => {
-    console.log(
-      `${key}:`,
-      value instanceof File ? `${value.name} (${value.type})` : value
-    );
   });
 
   const response = await fetchWithAuth(`${API_BASE}/doulas/documents`, {
@@ -474,7 +458,7 @@ export async function uploadDocument(
     const errorData = await response
       .json()
       .catch(() => ({ error: 'Failed to upload document' }));
-    console.error('Upload error response:', errorData); // Debug log
+    logHttpFailure('doula-api', 'upload_doula_document', response.status);
     throw new Error(
       errorData.error || errorData.message || 'Failed to upload document'
     );
@@ -699,8 +683,6 @@ export async function getAssignedClients(
   detailed = false
 ): Promise<AssignedClientLite[] | AssignedClientDetailed[]> {
   const url = `${API_BASE}/doulas/clients?detailed=${detailed}`;
-  console.log('getAssignedClients - Calling URL:', url);
-  console.log('getAssignedClients - Detailed mode:', detailed);
 
   const response = await fetchWithAuth(url, {
     headers: {
@@ -708,12 +690,10 @@ export async function getAssignedClients(
     },
   });
 
-  console.log('getAssignedClients - Response status:', response.status);
-  console.log('getAssignedClients - Response ok?', response.ok);
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('getAssignedClients - Error response:', errorText);
+    logHttpFailure('doula-api', 'get_assigned_clients', response.status);
     let error;
     try {
       error = JSON.parse(errorText);
@@ -724,37 +704,19 @@ export async function getAssignedClients(
   }
 
   const data = await response.json();
-  console.log('getAssignedClients - Raw response:', data);
-  console.log(
-    'getAssignedClients - Full response structure:',
-    JSON.stringify(data, null, 2)
-  );
-  console.log('getAssignedClients - Is array?', Array.isArray(data));
-  console.log('getAssignedClients - Has success?', data?.success);
-  console.log('getAssignedClients - Has data?', data?.data);
-  console.log('getAssignedClients - Has clients?', data?.clients);
-  console.log(
-    'getAssignedClients - Clients array length:',
-    data?.clients?.length
-  );
 
   // Handle multiple response formats
   let clientsArray: any[] = [];
 
   if (data?.success && Array.isArray(data.data)) {
-    console.log('Using format: {success: true, data: [...]}');
     clientsArray = data.data;
   } else if (data?.success && Array.isArray(data.clients)) {
-    console.log('Using format: {success: true, clients: [...]}');
     clientsArray = data.clients;
   } else if (Array.isArray(data)) {
-    console.log('Using format: direct array');
     clientsArray = data;
   } else if (data?.data && Array.isArray(data.data)) {
-    console.log('Using format: {data: [...]}');
     clientsArray = data.data;
   } else if (data?.clients && Array.isArray(data.clients)) {
-    console.log('Using format: {clients: [...]}');
     clientsArray = data.clients;
   } else {
     console.warn('Unexpected response format:', data);
@@ -846,7 +808,6 @@ export async function getAssignedClients(
     };
   });
 
-  console.log('getAssignedClients - Transformed clients:', transformedClients);
   return transformedClients;
 }
 
@@ -1317,7 +1278,6 @@ export async function getClientActivities(
   if (!response.ok) {
     // If 404 or empty, return empty array instead of throwing
     if (response.status === 404) {
-      console.log('No activities found for client:', clientId);
       return [];
     }
     const error = await response
@@ -1327,38 +1287,21 @@ export async function getClientActivities(
   }
 
   const data = await response.json();
-  console.log('getClientActivities - Raw response:', data);
 
   let activitiesArray: any[] = [];
 
   // Handle different response formats
   if (Array.isArray(data)) {
-    console.log(
-      'getClientActivities - Returning array with',
-      data.length,
-      'activities'
-    );
     activitiesArray = data;
   } else if (data?.success && Array.isArray(data.activities)) {
-    console.log(
-      'getClientActivities - Using format: {success: true, activities: [...]}'
-    );
     activitiesArray = data.activities;
   } else if (data?.success && Array.isArray(data.data)) {
-    console.log(
-      'getClientActivities - Using format: {success: true, data: [...]}'
-    );
     activitiesArray = data.data;
   } else if (data?.data?.activities && Array.isArray(data.data.activities)) {
-    console.log(
-      'getClientActivities - Using format: {data: {activities: [...]}}'
-    );
     activitiesArray = data.data.activities;
   } else if (data?.activities && Array.isArray(data.activities)) {
-    console.log('getClientActivities - Using format: {activities: [...]}');
     activitiesArray = data.activities;
   } else if (data?.data && Array.isArray(data.data)) {
-    console.log('getClientActivities - Using format: {data: [...]}');
     activitiesArray = data.data;
   } else {
     console.warn('getClientActivities - Unexpected response format:', data);
@@ -1369,9 +1312,5 @@ export async function getClientActivities(
     normalizeClientActivity(activity, clientId, index)
   );
 
-  console.log(
-    'getClientActivities - Normalized activities:',
-    normalizedActivities
-  );
   return normalizedActivities;
 }

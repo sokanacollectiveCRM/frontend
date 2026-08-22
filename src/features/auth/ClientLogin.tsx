@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { logFailure } from '@/utils/safeLog';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { isStaffRole } from '@/common/auth/roles';
@@ -27,36 +28,6 @@ export default function ClientLogin() {
   const [error, setError] = useState<string | null>(null);
   const [rememberMe, setRememberMe] = useState(false);
   const [hasLoginError, setHasLoginError] = useState(false);
-
-  // Debug: Log when component mounts
-  useEffect(() => {
-    console.log('=== ClientLogin component mounted ===');
-    console.log('Current path:', window.location.pathname);
-    console.log('Current hash:', window.location.hash);
-    console.log('Full URL:', window.location.href);
-
-    // Track navigation changes
-    const interval = setInterval(() => {
-      if (window.location.pathname !== '/auth/client-login') {
-        console.error(
-          '🚨 PATH CHANGED FROM /auth/client-login TO:',
-          window.location.pathname
-        );
-        console.trace('Stack trace of what changed the path');
-      }
-    }, 100);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Prevent any redirects from happening - this page should always be accessible
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      console.log('ClientLogin - Page is about to unload');
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, []);
 
   // Redirect staff who already have an authoritative /auth/me role.
   useEffect(() => {
@@ -99,7 +70,7 @@ export default function ClientLogin() {
       await checkAuth({ silent: true });
       navigate('/', { replace: true });
     } catch (err: any) {
-      console.error('Client login error:', err);
+      logFailure('auth', 'client_login_error');
       const errorMessage =
         err instanceof Error
           ? err.message
@@ -111,26 +82,14 @@ export default function ClientLogin() {
       // Ensure any Supabase session is cleared on error
       try {
         await supabase.auth.signOut();
-        console.log('ClientLogin - Signed out after failed login');
       } catch (signOutError) {
-        console.error('Error signing out after failed login:', signOutError);
+        logFailure('auth', 'error_signing_out_after_failed_login');
       }
     } finally {
       setIsLoading(false);
     }
   };
 
-  console.log('ClientLogin - Rendering component');
-  console.log('ClientLogin - Will NOT redirect to /login from this component');
-
-  // Prevent any navigation away from this page unless explicitly done by user action
-  useEffect(() => {
-    const currentPath = window.location.pathname;
-    console.log('ClientLogin - useEffect: Current path is', currentPath);
-    if (currentPath !== '/auth/client-login') {
-      console.warn('ClientLogin - Path changed unexpectedly to:', currentPath);
-    }
-  }, []);
 
   return (
     <div className='mx-auto flex w-full min-w-0 max-w-md flex-col gap-6 p-4'>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { logFailure } from '@/utils/safeLog';
 
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -49,7 +50,7 @@ export default function Login() {
       await login(formState.email, formState.password);
       navigate('/', { replace: true });
     } catch (submitError) {
-      console.error('Login Error', submitError);
+      logFailure('auth', 'login_error');
       toast.error(
         submitError instanceof Error
           ? submitError.message

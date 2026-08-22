@@ -7,6 +7,7 @@ import {
   stepFields,
 } from '@/features/request/useRequestForm';
 import { DUMMY_TEST_LEAD } from '@/features/request/dummyTestLead';
+import { logFailure } from '@/utils/safeLog';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ReactNode,
@@ -288,7 +289,7 @@ export function RequestFormProvider({
       setStepGateMessage(null);
       return true;
     } catch (error) {
-      console.error('Submission failed:', error);
+      logFailure('request-form', 'submission_failed');
       setStepGateMessage(
         'We could not submit your request. Please try again in a moment. If the problem continues, contact Sokana Collective for help.',
       );

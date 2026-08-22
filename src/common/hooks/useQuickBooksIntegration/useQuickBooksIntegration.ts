@@ -1,5 +1,6 @@
 // src/hooks/useQuickBooksConnect.ts
 import { useCallback, useState } from 'react';
+import { logFailure } from '@/utils/safeLog';
 import { toast } from 'react-toastify';
 import { getQuickBooksAuthUrl } from '@/api/quickbooks/auth/route';
 
@@ -33,7 +34,7 @@ export function useQuickBooksConnect() {
     } catch (err: any) {
       const msg =
         err instanceof Error ? err.message : 'Error connecting QuickBooks';
-      console.error(msg);
+      logFailure('hooks', 'operation_failed');
       setError(msg);
       toast.error(msg);
     } finally {

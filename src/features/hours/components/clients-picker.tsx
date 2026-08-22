@@ -40,7 +40,6 @@ export function ClientsPicker({
 
   React.useEffect(() => {
     if (hookClients && hookClients.length > 0) {
-      // console.log("in client-picker, hookClients is", hookClients);
       setClients(hookClients);
     }
   }, [hookClients]);

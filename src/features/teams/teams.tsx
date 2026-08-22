@@ -1,4 +1,5 @@
 import { Badge } from '@/common/components/ui/badge';
+import { logFailure } from '@/utils/safeLog';
 import { Button } from '@/common/components/ui/button';
 import {
   Card,
@@ -153,7 +154,7 @@ export default function Teams() {
         .filter((member: TeamMember) => ALLOWED_TEAM_ROLES.has(member.role));
       setTeamMembers(normalizedMembers);
     } catch (error) {
-      console.error('Error fetching team members:', error);
+      logFailure('teams', 'error_fetching_team_members');
       toast.error('Failed to fetch team members');
     } finally {
       setIsLoading(false);
@@ -208,7 +209,7 @@ export default function Teams() {
     try {
       window.location.href = `mailto:${member.email}`;
     } catch (error) {
-      console.error('Error opening email client:', error);
+      logFailure('teams', 'error_opening_email_client');
       toast.error('Failed to open email client. Please try again.');
     }
   };
@@ -431,7 +432,7 @@ export default function Teams() {
       setEditingMember(null);
       fetchTeam(); // Refresh the list
     } catch (error: any) {
-      console.error('Error updating team member:', error);
+      logFailure('teams', 'error_updating_team_member');
       toast.error(error.message || 'Failed to update team member');
     } finally {
       setIsUpdating(false);
@@ -537,7 +538,7 @@ export default function Teams() {
       }
     } catch (error: any) {
       clearTimeout(timeoutId);
-      console.error('Error deleting member:', error);
+      logFailure('teams', 'error_deleting_member');
 
       // Handle abort/timeout errors
       if (error.name === 'AbortError' || error.message?.includes('aborted')) {
@@ -618,7 +619,7 @@ export default function Teams() {
       if (!emailResponse.ok) {
         const errorData = await emailResponse.json();
         const errorMessage = errorData.error || 'Failed to send invite email';
-        console.error('Failed to send invite email:', errorData);
+        logFailure('teams', 'failed_to_send_invite_email');
         toast.warning('Team member created but invite email failed to send');
         throw new Error(errorMessage);
       }
@@ -641,7 +642,7 @@ export default function Teams() {
         role: 'doula',
       });
     } catch (error: any) {
-      console.error('Error inviting team member:', error);
+      logFailure('teams', 'error_inviting_team_member');
       // Only show error toast if it wasn't already shown above
       if (
         !error.message ||

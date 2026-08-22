@@ -4,6 +4,7 @@ import {
   getClientNotes,
 } from '@/api/clients/notes';
 import { Button } from '@/common/components/ui/button';
+import { logFailure } from '@/utils/safeLog';
 import { Calendar } from '@/common/components/ui/calendar';
 import {
   Collapsible,
@@ -461,11 +462,6 @@ export function LeadProfileModal({
   // Do not rely solely on list row; backend returns full PHI for authorized users on detail.
   const detailFetchRef = React.useRef<string | null>(null);
   React.useEffect(() => {
-    console.log('🔍 [Effect] Running', {
-      open,
-      hasClient: !!client?.id,
-      refValue: detailFetchRef.current,
-    });
     if (!open) {
       detailFetchRef.current = null;
       setFetchedDetail(null);
@@ -474,7 +470,6 @@ export function LeadProfileModal({
       return;
     }
     if (!client?.id) {
-      console.log('🔍 [Effect] No client ID');
       return;
     }
 
@@ -509,7 +504,7 @@ export function LeadProfileModal({
         setFetchedDetail(data);
       })
       .catch((error) => {
-        console.error('Error fetching client detail:', error);
+        logFailure('clients', 'error_fetching_client_detail');
         detailFetchRef.current = null;
       })
       .finally(() => {
@@ -588,7 +583,7 @@ export function LeadProfileModal({
         setClientDocuments(documents);
       } catch (error) {
         if (!cancelled) {
-          console.error('❌ [Docs] Failed to load client documents:', error);
+          logFailure('clients', 'docs_failed_to_load_client_documents');
           setClientDocuments([]);
         }
       } finally {
@@ -662,40 +657,17 @@ export function LeadProfileModal({
       const fetchedNotes = await getClientNotes(client.id, user?.role);
 
       // Debug: Comprehensive timezone analysis
-      console.log('📝 Fetched notes:', fetchedNotes);
       if (fetchedNotes.length > 0) {
         const firstNote = fetchedNotes[0];
         const rawTimestamp = firstNote.timestamp;
         const parsedDate = new Date(rawTimestamp);
         const now = new Date();
 
-        console.log('🕐 TIMEZONE DEBUG:');
-        console.log('  Raw timestamp from backend:', rawTimestamp);
-        console.log('  Type of timestamp:', typeof rawTimestamp);
-        console.log('  Parsed Date object:', parsedDate);
-        console.log('  Parsed Date ISO string:', parsedDate.toISOString());
-        console.log('  Parsed Date local string:', parsedDate.toString());
-        console.log('  Current time (now):', now);
-        console.log('  Current time ISO:', now.toISOString());
-        console.log('  Current time local:', now.toString());
-        console.log(
-          '  Time difference (ms):',
-          now.getTime() - parsedDate.getTime()
-        );
-        console.log(
-          '  Time difference (minutes):',
-          (now.getTime() - parsedDate.getTime()) / 1000 / 60
-        );
-        console.log(
-          '  Browser timezone offset (minutes):',
-          now.getTimezoneOffset()
-        );
-        console.log('  Is timestamp in future?', parsedDate > now);
       }
 
       setNotes(fetchedNotes);
     } catch (err) {
-      console.error('Error fetching notes:', err);
+      logFailure('clients', 'error_fetching_notes');
       setNotesError('Failed to load notes');
     } finally {
       setLoadingNotes(false);
@@ -769,13 +741,6 @@ export function LeadProfileModal({
         d.payment_method ??
         d.paymentMethod
     );
-    console.log('🔍 [Init] Phone extraction:', {
-      'detailSource.phoneNumber': d.phoneNumber,
-      'detailSource.phone_number': d.phone_number,
-      rawPhone,
-      phoneNumber,
-      phone_number,
-    });
     const initializedData: Partial<Client> = {
       ...client,
       ...detailSource,
@@ -931,10 +896,6 @@ export function LeadProfileModal({
     if (rawChildrenExpected !== undefined) {
       initializedData.children_expected = rawChildrenExpected;
     }
-    console.log('🔍 [Init] Final initializedData:', {
-      phoneNumber: initializedData.phoneNumber,
-      phone_number: (initializedData as any).phone_number,
-    });
     setEditedData(initializedData);
   }, [client, detailSource, dataFingerprint, isEditing]);
 
@@ -984,7 +945,7 @@ export function LeadProfileModal({
       setNoteCategory('General');
       toast.success('Note added successfully!');
     } catch (err) {
-      console.error('Error creating note:', err);
+      logFailure('clients', 'error_creating_note');
       setNotesError('Failed to create note');
       toast.error('Failed to create note');
     } finally {
@@ -1174,8 +1135,6 @@ export function LeadProfileModal({
         }
       }
 
-      console.log('Saving changes:', updateData);
-      console.log('Changed fields:', changedFields);
 
       // Handle status update separately using the dedicated status endpoint
       if (updateData.status !== undefined) {
@@ -1231,12 +1190,6 @@ export function LeadProfileModal({
         billing: billingData,
       } = splitClientUpdatePayload(updateData);
 
-      console.log('PHI fields to update:', Object.keys(phiData));
-      console.log(
-        'Operational fields to update:',
-        Object.keys(operationalData)
-      );
-      console.log('Billing fields to update:', Object.keys(billingData));
 
       // Track update results
       let operationalSuccess = true;
@@ -1251,7 +1204,6 @@ export function LeadProfileModal({
           operationalSuccess = false;
           errors.push(result.error || 'Failed to update operational fields');
         } else if (result.client && typeof result.client === 'object') {
-          console.log('✅ Updated operational fields:', result.client);
           setEditedData((prev) => {
             const merged = { ...prev };
             const c = result.client as Record<string, unknown>;
@@ -1272,7 +1224,6 @@ export function LeadProfileModal({
           phiSuccess = false;
           errors.push(phiResult.error || 'Failed to update PHI fields');
         } else {
-          console.log('✅ Updated PHI fields successfully');
           // Merge PHI data into editedData
           setEditedData((prev) => ({ ...prev, ...phiData }));
         }
@@ -1390,7 +1341,7 @@ export function LeadProfileModal({
         });
       }
     } catch (error) {
-      console.error('Error saving changes:', error);
+      logFailure('clients', 'error_saving_changes');
       toast.error('Failed to save changes. Please try again.');
     } finally {
       setIsSaving(false);
@@ -1485,7 +1436,7 @@ export function LeadProfileModal({
           },
         });
       } catch (noteErr) {
-        console.error('Error creating birth outcomes history note:', noteErr);
+        logFailure('clients', 'error_creating_birth_outcomes_history_note');
         toast.error(
           'Birth outcomes saved, but failed to create history record'
         );
@@ -1500,7 +1451,7 @@ export function LeadProfileModal({
       await fetchNotes();
       toast.success('Birth outcomes saved');
     } catch (error) {
-      console.error('Error saving birth outcomes:', error);
+      logFailure('clients', 'error_saving_birth_outcomes');
       toast.error('Failed to save birth outcomes');
     } finally {
       setIsSavingBirthOutcomes(false);
@@ -2804,14 +2755,17 @@ export function LeadProfileModal({
                     aria-label='Card on file status'
                   >
                     <p className='text-sm font-medium'>
-                      Card on file:{' '}
-                      {cardStatus
-                        ? cardStatus.status
-                            .replace('_', ' ')
-                            .replace(/^./, (c) => c.toUpperCase())
-                        : '—'}
+                      {billingLoading
+                        ? 'Checking QuickBooks for card on file…'
+                        : cardStatus?.message
+                          ? cardStatus.message
+                          : cardStatus?.on_file
+                            ? 'Card is on file in QuickBooks'
+                            : cardStatus
+                              ? 'Card is not on file in QuickBooks'
+                              : 'Unable to verify card status in QuickBooks'}
                     </p>
-                    {cardStatus?.status === 'active' && cardStatus.last4 ? (
+                    {cardStatus?.on_file && cardStatus.last4 ? (
                       <div className='text-sm text-muted-foreground'>
                         <p>
                           {cardStatus.card_brand || 'Card'} ending in{' '}

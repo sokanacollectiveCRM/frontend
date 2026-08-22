@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { logFailure } from '@/utils/safeLog';
 import {
   Dialog,
   DialogContent,
@@ -99,7 +100,7 @@ export function MatchClientModal({
       setClients(data.data || []);
     } catch (err: any) {
       setError('Failed to load clients in matching phase');
-      console.error('Error fetching matching clients:', err);
+      logFailure('hours', 'error_fetching_matching_clients');
       toast.error(err.message || 'Failed to load clients');
     } finally {
       setFetchingClients(false);

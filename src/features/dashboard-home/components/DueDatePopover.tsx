@@ -1,5 +1,6 @@
 // src/features/dashboard-home/components/DueDatePopover.tsx
 import { useState } from 'react';
+import { logFailure } from '@/utils/safeLog';
 import { DueDateEvent } from '@/common/hooks/dashboard/useDueDateCalendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/common/components/ui/popover';
 import { Button } from '@/common/components/ui/button';
@@ -51,7 +52,7 @@ export function DueDatePopover({ date, events, children, open, onOpenChange }: D
         toast.error('Client not found');
       }
     } catch (error) {
-      console.error('Error fetching client:', error);
+      logFailure('app', 'error_fetching_client');
       toast.error('Failed to load client profile');
     } finally {
       setLoadingClient(false);

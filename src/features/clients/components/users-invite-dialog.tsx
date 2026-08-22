@@ -54,8 +54,6 @@ export function UsersInviteDialog({ open, onOpenChange }: Props) {
 
   const onSubmit = (values: UserInviteForm) => {
     // Instead of calling an endpoint, just log the values
-    console.log('Invite email:', values.email);
-    console.log('Invite description:', values.desc);
     form.reset();
     onOpenChange(false);
   };

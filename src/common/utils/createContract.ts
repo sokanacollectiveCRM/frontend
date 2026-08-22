@@ -1,5 +1,6 @@
 import { Client } from '@/features/clients/data/schema';
 import { buildUrl, fetchWithAuth } from '@/api/http';
+import { logHttpFailure } from '@/utils/safeLog';
 
 // New contract generation API interfaces
 export interface ServiceSelectionData {
@@ -126,31 +127,7 @@ export interface ClientInfo {
 export async function generateContract(
   contractData: ContractData
 ): Promise<ContractResponse> {
-  console.log('🔍 API Request Debug:');
-  console.log('- Contract data being sent:', contractData);
-  console.log('- JSON stringified body:', JSON.stringify(contractData));
-  console.log('- Body keys:', Object.keys(contractData));
-  console.log('- Postpartum fields check:');
-  console.log('  - totalHours:', contractData.totalHours);
-  console.log('  - hourlyRate:', contractData.hourlyRate);
-  console.log('  - overnightFee:', contractData.overnightFee);
-  console.log('  - serviceType:', contractData.serviceType);
-
   const requestBody = JSON.stringify(contractData);
-  console.log('🔍 Final HTTP Request Body:');
-  console.log('- Request body:', requestBody);
-  console.log(
-    '- Request body includes totalHours:',
-    requestBody.includes('totalHours')
-  );
-  console.log(
-    '- Request body includes hourlyRate:',
-    requestBody.includes('hourlyRate')
-  );
-  console.log(
-    '- Request body includes overnightFee:',
-    requestBody.includes('overnightFee')
-  );
 
   const response = await fetchWithAuth(
     buildUrl('/api/contract-signing/generate-contract'),
@@ -233,8 +210,6 @@ export interface PaymentIntentResponse {
 export async function calculateContractAmounts(
   contractInput: ContractInput
 ): Promise<ContractCalculationResponse> {
-  console.log('🔍 Sending to backend:', contractInput);
-
   const res = await fetchWithAuth(
     buildUrl('/api/contract/postpartum/calculate'),
     {
@@ -247,10 +222,9 @@ export async function calculateContractAmounts(
   );
 
   const data = await res.json();
-  console.log('🔍 Backend response:', { status: res.status, data });
 
   if (!res.ok) {
-    console.error('🔍 Backend error details:', data);
+    logHttpFailure('contract-api', 'calculate_amounts', res.status);
     throw new Error(data.error || 'Failed to calculate contract amounts');
   }
   return data;

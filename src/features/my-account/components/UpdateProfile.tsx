@@ -1,4 +1,5 @@
 import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
+import { logFailure } from '@/utils/safeLog';
 import { Button } from '@/common/components/ui/button';
 import {
   Card,
@@ -66,7 +67,7 @@ export const Profile = () => {
         profile_picture: undefined,
       });
     } catch (err) {
-      console.error('User NOT saved successfully:', err);
+      logFailure('my-account', 'user_not_saved_successfully');
       toast.error(
         err instanceof Error ? err.message : 'Could not save changes.'
       );

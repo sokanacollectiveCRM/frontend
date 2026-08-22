@@ -1,4 +1,5 @@
 import { useClients } from '@/common/hooks/clients/useClients';
+import { logFailure } from '@/utils/safeLog';
 import { Client, clientListSchema } from '@/features/clients/data/schema';
 import { Template } from '@/common/types/template';
 import useDialogState from '@/common/hooks/ui/use-dialog-state';
@@ -36,7 +37,7 @@ export function ClientsProvider({ children }: { children: React.ReactNode }) {
       const parsed = clientListSchema.parse(rawClients);
       setClients(parsed);
     } catch (err) {
-      console.error('Client list schema parse failed:', err);
+      logFailure('clients', 'client_list_schema_parse_failed');
       setClients([]);
     }
   }, [rawClients]);

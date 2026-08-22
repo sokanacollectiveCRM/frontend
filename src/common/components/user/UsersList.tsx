@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { logFailure } from '@/utils/safeLog';
 
 import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
 import { useUser } from '@/common/hooks/user/useUser';
@@ -73,7 +74,7 @@ export default function UsersList() {
         setUsers(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error fetching users');
-        console.error('Error fetching users:', err);
+        logFailure('ui', 'error_fetching_users');
       } finally {
         setLoading(false);
       }

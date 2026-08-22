@@ -1,4 +1,5 @@
 import { fetchWithAuth, buildUrl } from '@/api/http';
+import { logFailure } from '@/utils/safeLog';
 
 export default async function addWorkSession(
   doula_id: string | undefined,
@@ -42,10 +43,7 @@ export default async function addWorkSession(
         //add backend call right here
       }
     } catch (error) {
-      console.error(
-        'Error trying to add work session or adding new note:',
-        error
-      );
+      logFailure('client-api', 'error_trying_to_add_work_session');
     }
   }
   await addSession();

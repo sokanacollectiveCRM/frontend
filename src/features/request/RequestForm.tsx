@@ -1,4 +1,5 @@
 import { Form } from '@/common/components/ui/form';
+import { logFailure } from '@/utils/safeLog';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -492,7 +493,7 @@ export default function RequestForm() {
       resetIntakeHoneypotValues();
       toast.success('Request Form Submitted Successfully!');
     } catch (error) {
-      console.error('Request submission error:', error);
+      logFailure('request-form', 'request_submission_error');
       toast.error(error instanceof Error ? error.message : 'Submission failed');
       throw error;
     }

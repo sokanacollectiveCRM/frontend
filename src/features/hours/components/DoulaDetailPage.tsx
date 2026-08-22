@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext } from 'react';
+import { logFailure } from '@/utils/safeLog';
 import { useParams, useNavigate } from 'react-router-dom';
 import { UserContext } from '@/common/contexts/UserContext';
 import { fetchWithAuth, buildUrl } from '@/api/http';
@@ -217,7 +218,7 @@ export default function DoulaDetailPage() {
       setNotes([]);
       setActivityLog([]);
     } catch (error: any) {
-      console.error('Error fetching doula data:', error);
+      logFailure('hours', 'error_fetching_doula_data');
       toast.error(error.message || 'Failed to load doula profile');
     } finally {
       setIsLoading(false);
