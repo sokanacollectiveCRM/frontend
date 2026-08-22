@@ -60,11 +60,9 @@ export default function ClientPaymentHistoryTab() {
         }
       } catch (fetchError) {
         // Network error or other issue, show empty state
-        console.log('Payments endpoint not available:', fetchError);
         setPayments([]);
       }
     } catch (error: any) {
-      console.log('Payments endpoint not available (this is expected if backend endpoint is not implemented yet)');
       // Silently handle errors - endpoint may not exist yet
       setPayments([]);
     } finally {

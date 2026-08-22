@@ -1,4 +1,5 @@
 import { API_CONFIG } from '@/api/config';
+import { logFailure } from '@/utils/safeLog';
 import { fetchWithAuth } from '@/api/http';
 import { apiBaseUrl } from '@/config/env';
 import {
@@ -51,7 +52,7 @@ export default function QuickBooksConnectPage() {
       setCompanyDetailsUnavailable(Boolean(status.companyDetailsUnavailable));
       if (showToast) toast.success('QuickBooks connection refreshed');
     } catch (statusError) {
-      console.error('Could not load QuickBooks status', statusError);
+      logFailure('integrations', 'could_not_load_quickbooks_status');
       setConnected(false);
       setCompany(null);
       if (showToast) toast.error('Could not refresh QuickBooks connection');
@@ -134,7 +135,7 @@ export default function QuickBooksConnectPage() {
       setCompany(null);
       toast.info('QuickBooks disconnected');
     } catch (disconnectError) {
-      console.error('Disconnect error:', disconnectError);
+      logFailure('integrations', 'disconnect_error');
       toast.error(
         disconnectError instanceof Error
           ? disconnectError.message

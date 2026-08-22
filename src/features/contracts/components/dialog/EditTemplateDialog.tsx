@@ -1,4 +1,5 @@
 import { Button } from '@/common/components/ui/button';
+import { logFailure } from '@/utils/safeLog';
 import {
   Dialog,
   DialogClose,
@@ -87,7 +88,7 @@ export function EditTemplateDialog({
               onUpdateSuccess();
               closeRef.current?.click();
             } catch (err) {
-              console.error(err);
+              logFailure('contracts', 'operation_failed');
               toast({
                 title: 'Update failed',
                 description: 'Please try again.',

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { logFailure } from '@/utils/safeLog';
 import { fetchWithAuth, buildUrl } from '@/api/http';
 
 export default function useUserData(userId: string) {
@@ -37,7 +38,7 @@ export default function useUserData(userId: string) {
         setUser(userData);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch user');
-        console.error('Error fetching user:', error);
+        logFailure('hooks', 'error_fetching_user');
       } finally {
         setIsLoading(false);
       }

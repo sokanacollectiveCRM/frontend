@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { logFailure } from '@/utils/safeLog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/common/components/ui/card';
 import { Button } from '@/common/components/ui/button';
 import { Checkbox } from '@/common/components/ui/checkbox';
@@ -376,7 +377,7 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
         }
       }
     } catch (error: any) {
-      console.error('Failed to fetch clients:', error);
+      logFailure('doula-dashboard', 'failed_to_fetch_clients');
       setClients([]);
       toast.error(error.message || 'Failed to load clients');
     }
@@ -407,12 +408,12 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
       if (Array.isArray(data)) {
         setActivities(data);
       } else {
-        console.error('Invalid response format:', data);
+        logFailure('doula-dashboard', 'invalid_response_format');
         setActivities([]);
         toast.error('Invalid response format from server');
       }
     } catch (error: any) {
-      console.error('Failed to fetch activities:', error);
+      logFailure('doula-dashboard', 'failed_to_fetch_activities');
       setActivities([]); // Set empty array on error
       toast.error(error.message || 'Failed to load activities');
     } finally {
@@ -456,7 +457,7 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
           setActivities([]);
         }
       } catch (error: any) {
-        console.error('Failed to fetch client details:', error);
+        logFailure('doula-dashboard', 'failed_to_fetch_client_details');
         toast.error(error.message || 'Failed to load client details');
         // Still show modal with basic info from selectedClient
         setClientDetails(null);
@@ -569,14 +570,14 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
             setActivities(activitiesData);
           }
         } catch (error: any) {
-          console.error('Failed to refresh activities:', error);
+          logFailure('doula-dashboard', 'failed_to_refresh_activities');
         } finally {
           setIsLoading(false);
           setIsActivitiesLoading(false);
         }
       }
     } catch (error: any) {
-      console.error('Failed to add activity:', error);
+      logFailure('doula-dashboard', 'failed_to_add_activity');
       toast.error(error.message || 'Failed to add activity');
     } finally {
       setIsAdding(false);
@@ -646,7 +647,7 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
       }
       acc[dateStr].push(activity);
     } catch (error) {
-      console.error('Error formatting date for activity:', activity, error);
+      logFailure('doula-dashboard', 'error_formatting_date_for_activity');
       // Still add the activity to "Unknown Date" group
       if (!acc[dateStr]) {
         acc[dateStr] = [];

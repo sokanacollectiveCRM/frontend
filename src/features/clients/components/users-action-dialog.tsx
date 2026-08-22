@@ -1,6 +1,7 @@
 'use client';
 
 import { PasswordInput } from '@/common/components/form/PasswordInput';
+import { logFailure } from '@/utils/safeLog';
 import { Button } from '@/common/components/ui/button';
 import {
   Dialog,
@@ -181,11 +182,6 @@ export function UsersActionDialog({
       }
 
       // Debug: Log the client data to see what ID we're using
-      console.log('🔍 DEBUG: Client data being updated:', currentRow);
-      console.log('🔍 DEBUG: Client ID being used:', currentRow.id);
-      console.log('🔍 DEBUG: Phone number field:', currentRow.phoneNumber);
-      console.log('🔍 DEBUG: All client fields:', Object.keys(currentRow));
-      console.log('🔍 DEBUG: Update data being sent:', updateData);
 
       // Call the API to update the client
       const result = await updateClient(currentRow.id, updateData);
@@ -207,7 +203,7 @@ export function UsersActionDialog({
         );
       }
     } catch (error) {
-      console.error('Error updating client:', error);
+      logFailure('clients', 'error_updating_client');
       toast.error('Update failed - An unexpected error occurred');
     }
   };

@@ -214,6 +214,8 @@ export interface CardOnFileStatus {
   exp_month: number | null;
   exp_year: number | null;
   last_verified_at: string | null;
+  source?: 'local' | 'quickbooks' | 'none';
+  message?: string;
 }
 
 export interface GenerateInstallmentInvoiceResponse {
@@ -308,6 +310,8 @@ export const fetchCardOnFileStatus = (clientId: string) =>
         exp_month: null,
         exp_year: null,
         last_verified_at: null,
+        source: 'quickbooks',
+        message: 'Card is not on file in QuickBooks',
       })
     : get<CardOnFileStatus>(`/api/payment-methods/${clientId}`);
 

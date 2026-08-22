@@ -1,4 +1,5 @@
 import { Button } from '@/common/components/ui/button';
+import { logFailure } from '@/utils/safeLog';
 import { Textarea } from '@/common/components/ui/textarea';
 import { SquarePlus } from 'lucide-react';
 import * as React from 'react';
@@ -74,7 +75,7 @@ export function UsersPrimaryButtons() {
       setOpen(false);
       setType('');
     } catch (error) {
-      console.error(error);
+      logFailure('hours', 'operation_failed');
     }
   }
 

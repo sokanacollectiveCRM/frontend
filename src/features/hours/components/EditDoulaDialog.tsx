@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { logFailure } from '@/utils/safeLog';
 import {
   Dialog,
   DialogContent,
@@ -166,7 +167,7 @@ export function EditDoulaDialog({
       onOpenChange(false);
       onUpdateSuccess();
     } catch (error: any) {
-      console.error('Error updating doula:', error);
+      logFailure('hours', 'error_updating_doula');
       toast.error(error.message || 'Failed to update doula profile');
     } finally {
       setIsLoading(false);

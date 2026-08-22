@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { logFailure } from '@/utils/safeLog';
 import {
   Card,
   CardContent,
@@ -242,7 +243,7 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
         missingFields,
       });
     } catch (error: any) {
-      console.error('Failed to fetch profile:', error);
+      logFailure('doula-dashboard', 'failed_to_fetch_profile');
       toast.error(error.message || 'Failed to load profile');
     } finally {
       if (showLoading) {
@@ -345,10 +346,6 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
     setIsSaving(true);
 
     // Log the form data being submitted
-    console.log(
-      'ProfileTab - Submitting form data:',
-      JSON.stringify(nextFormData, null, 2)
-    );
 
     try {
       const {
@@ -369,10 +366,6 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
       }
 
       const updated = await updateDoulaProfile(profilePayload);
-      console.log(
-        'ProfileTab - Update response received:',
-        JSON.stringify(updated, null, 2)
-      );
 
       const availabilitySnapshot = await getDoulaAvailability();
       const unavailableRecords = availabilitySnapshot.records.filter(
@@ -411,7 +404,7 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
 
       toast.success('Profile updated successfully');
     } catch (error: any) {
-      console.error('ProfileTab - Failed to update profile:', error);
+      logFailure('doula-dashboard', 'profiletab_failed_to_update_profile');
       toast.error(error.message || 'Failed to update profile');
     } finally {
       setIsSaving(false);

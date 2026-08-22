@@ -1,4 +1,5 @@
 import { Badge } from '@/common/components/ui/badge';
+import { logFailure } from '@/utils/safeLog';
 import { Button } from '@/common/components/ui/button';
 import {
   Card,
@@ -203,7 +204,6 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
   // Load clients when dialog opens
   useEffect(() => {
     if (open) {
-      console.log('🔍 Loading clients for contract dialog...');
       getClients();
       // Remove focus from any input field when dialog opens
       setTimeout(() => {
@@ -219,12 +219,6 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
 
   // Debug clients data
   useEffect(() => {
-    console.log('🔍 Clients data in dialog:', {
-      clients,
-      clientsLength: clients?.length,
-      clientsLoading,
-      firstClient: clients?.[0],
-    });
   }, [clients, clientsLoading]);
 
   const contractForm = useForm<ContractFormData>({
@@ -308,12 +302,6 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
   const calculateAmounts = async (data: ContractFormData) => {
     setLoading(true);
     try {
-      console.log(
-        'Calculating contract amounts with services:',
-        selectedServices,
-        'form:',
-        data
-      );
 
       // Recompute totals to ensure discount and admin fee are reflected
       const discountInfo = applyMultiServiceDiscount(selectedServices);
@@ -328,13 +316,6 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
         const depositType = data.deposit_type ?? formDepositType ?? 'percent';
         const installmentsCount = data.installments_count || 3;
 
-        console.log('Deposit calculation:', {
-          depositValue,
-          depositType,
-          totalAmount,
-          formDepositValue,
-          dataDepositValue: data.deposit_value,
-        });
 
         const depositAmount = calculateDepositAmount(
           totalAmount,
@@ -426,7 +407,7 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
         toast.success('Contract calculated successfully!');
       }
     } catch (error) {
-      console.error('Calculation failed:', error);
+      logFailure('clients', 'calculation_failed');
       toast.error(
         error instanceof Error
           ? error.message
@@ -488,54 +469,19 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
       };
 
       // Add Postpartum-specific fields only for Postpartum contracts
-      console.log('🔍 Conditional Logic Debug:');
-      console.log('- selectedServices:', selectedServices);
 
       const anyHourly = selectedServices.some((s) => s.type === 'hourly');
       if (anyHourly) {
-        console.log('✅ Adding Postpartum fields to API data');
         contractDataForAPI.totalHours =
           contractForm.watch('total_hours')?.toString() || '0';
         contractDataForAPI.hourlyRate =
           contractForm.watch('hourly_rate')?.toString() || '0';
         contractDataForAPI.overnightFee = '0.00'; // Default overnight fee
-        console.log('- Added totalHours:', contractDataForAPI.totalHours);
-        console.log('- Added hourlyRate:', contractDataForAPI.hourlyRate);
-        console.log('- Added overnightFee:', contractDataForAPI.overnightFee);
       } else {
-        console.log(
-          '❌ Not adding hourly fields - no hourly services selected'
-        );
       }
 
-      console.log('🔍 Frontend Contract Fields Debug:');
-      console.log('- totalAmount:', calculatedTotal);
-      console.log(
-        '- total_hours from form:',
-        contractForm.watch('total_hours')
-      );
-      console.log(
-        '- hourly_rate from form:',
-        contractForm.watch('hourly_rate')
-      );
-      console.log('- Form values:', contractForm.getValues());
-      console.log('- anyHourly (has hourly services):', anyHourly);
-      console.log('- Will add hourly fields:', anyHourly);
-      console.log('- Sending contract data to new API:', contractDataForAPI);
-      console.log('- API data keys:', Object.keys(contractDataForAPI));
-      console.log('- Hourly fields included:', anyHourly);
 
       // Verify Postpartum fields are actually in the data
-      console.log('🔍 Postpartum Fields Verification:');
-      console.log('- totalHours in data:', 'totalHours' in contractDataForAPI);
-      console.log('- hourlyRate in data:', 'hourlyRate' in contractDataForAPI);
-      console.log(
-        '- overnightFee in data:',
-        'overnightFee' in contractDataForAPI
-      );
-      console.log('- totalHours value:', contractDataForAPI.totalHours);
-      console.log('- hourlyRate value:', contractDataForAPI.hourlyRate);
-      console.log('- overnightFee value:', contractDataForAPI.overnightFee);
 
       const response = await generateContract(contractDataForAPI);
       if (response.success) {
@@ -549,7 +495,7 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
         toast.error('Failed to generate contract');
       }
     } catch (error) {
-      console.error('Failed to generate contract:', error);
+      logFailure('clients', 'failed_to_generate_contract');
       toast.error(
         error instanceof Error ? error.message : 'Failed to generate contract'
       );
@@ -904,7 +850,6 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                               const value = e.target.value as
                                 | 'percent'
                                 | 'flat';
-                              console.log('Deposit type changed to:', value);
                               field.onChange(value);
                               // Reset deposit value when type changes
                               contractForm.setValue('deposit_value', 0);
@@ -925,7 +870,6 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                     name='deposit_value'
                     render={({ field }) => {
                       const depositType = contractForm.watch('deposit_type');
-                      console.log('Current deposit type:', depositType);
                       return (
                         <FormItem>
                           <FormLabel>
@@ -1005,10 +949,6 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                           <select
                             value={field.value || 'monthly'}
                             onChange={(e) => {
-                              console.log(
-                                'Cadence changed to:',
-                                e.target.value
-                              );
                               field.onChange(e.target.value);
                             }}
                             className='flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
@@ -1108,10 +1048,6 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                     onClick={(e) => {
                       e.preventDefault();
                       const formData = contractForm.getValues();
-                      console.log(
-                        'Manual calculate button clicked with data:',
-                        formData
-                      );
                       calculateAmounts(formData);
                     }}
                   >

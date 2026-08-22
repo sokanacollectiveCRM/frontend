@@ -1,5 +1,6 @@
 // types/signnow.ts
 import { fetchWithAuth } from '@/api/http';
+import { logFailure } from '@/utils/safeLog';
 export interface SignNowClient {
   email: string;
   name: string;
@@ -55,7 +56,7 @@ export const signNowService = {
 
       return response.json();
     } catch (error) {
-      console.error('SignNow service error:', error);
+      logFailure('services', 'signnow_service_error');
       throw error;
     }
   },

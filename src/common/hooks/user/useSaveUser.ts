@@ -1,4 +1,5 @@
 import { User } from '@/common/utils/User';
+import { logFailure } from '@/utils/safeLog';
 import { apiBaseUrl } from '@/config/env';
 import { fetchWithAuth } from '@/api/http';
 
@@ -22,7 +23,7 @@ export default async function useSaveUser(userData: User) {
     }
     return await response.json();
   } catch (error) {
-    console.error("Error: couldn't save user", error);
+    logFailure('hooks', 'error_couldn_t_save_user');
     throw error;
   }
 }

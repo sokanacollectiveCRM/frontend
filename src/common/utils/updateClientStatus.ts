@@ -3,6 +3,7 @@ import {
   isSessionExpiredError,
 } from './sessionUtils';
 import { syncQuickBooksCustomerFromClient } from './syncQuickBooksCustomer';
+import { logFailure, logHttpFailure } from '@/utils/safeLog';
 import { fetchWithAuth, buildUrl } from '@/api/http';
 
 type QuickBooksSyncSource = {
@@ -36,7 +37,7 @@ export default async function updateClientStatus(
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Status update failed:', response.status, errorText);
+      logHttpFailure('client-api', 'status_update_failed', response.status);
 
       if (isSessionExpiredError(response.status, errorText)) {
         throw new Error(getSessionExpirationMessage());
@@ -69,7 +70,7 @@ export default async function updateClientStatus(
 
     return { success: true, client: result.client ?? result.data };
   } catch (err) {
-    console.error("❌ Couldn't save client status: ", err);
+    logFailure('client-api', 'couldn_t_save_client_status');
     return {
       success: false,
       error: err instanceof Error ? err.message : 'Unknown error',

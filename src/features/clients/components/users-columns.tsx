@@ -1,4 +1,5 @@
 import { Badge } from '@/common/components/ui/badge';
+import { logFailure } from '@/utils/safeLog';
 import { Button } from '@/common/components/ui/button';
 import LongText from '@/common/components/ui/long-text';
 import {
@@ -220,9 +221,6 @@ export const columns = (
     cell: ({ row }) => {
       const { id, status } = row.original;
       const handleStatusChange = async (newStatus: string) => {
-        console.log('🚨 STATUS CHANGE TRIGGERED!');
-        console.log('🚨 Client ID:', id);
-        console.log('🚨 New Status:', newStatus);
         const u = row.original as Record<string, unknown>;
         const email = u.email as string | undefined;
 
@@ -241,7 +239,7 @@ export const columns = (
             toast.error(result.error || 'Failed to update client status');
           }
         } catch (err) {
-          console.error('Failed to update status:', err);
+          logFailure('clients', 'failed_to_update_status');
           toast.error('Failed to update client status...');
         }
       };

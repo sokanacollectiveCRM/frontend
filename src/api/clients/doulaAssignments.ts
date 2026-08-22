@@ -46,6 +46,7 @@ export function normalizeAssignmentRole(
 }
 
 import { apiBaseUrl } from '@/config/env';
+import { logHttpFailure } from '@/utils/safeLog';
 import { fetchWithAuth } from '@/api/http';
 
 const getBaseUrl = (): string => apiBaseUrl;
@@ -55,7 +56,6 @@ const getBaseUrl = (): string => apiBaseUrl;
  */
 export const fetchAvailableDoulas = async (): Promise<Doula[]> => {
   const url = `${getBaseUrl()}/clients/team/doulas`;
-  console.log('🔍 API: Fetching available doulas from:', url);
 
   const response = await fetchWithAuth(url, {
     method: 'GET',
@@ -65,18 +65,16 @@ export const fetchAvailableDoulas = async (): Promise<Doula[]> => {
     },
   });
 
-  console.log('🔍 API: Fetch doulas response status:', response.status);
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('🔍 API: Fetch doulas error:', errorText);
+    logHttpFailure('client-api', 'fetch_available_doulas', response.status);
     throw new Error(
       `Failed to fetch doulas: ${response.status} - ${errorText}`
     );
   }
 
   const result = await response.json();
-  console.log('🔍 API: Fetch doulas result:', result);
   return result.doulas || [];
 };
 
@@ -87,7 +85,6 @@ export const fetchAssignedDoulas = async (
   clientId: string
 ): Promise<AssignedDoula[]> => {
   const url = `${getBaseUrl()}/clients/${clientId}/assigned-doulas`;
-  console.log('🔍 API: Fetching assigned doulas from:', url);
 
   const response = await fetchWithAuth(url, {
     method: 'GET',
@@ -97,21 +94,16 @@ export const fetchAssignedDoulas = async (
     },
   });
 
-  console.log(
-    '🔍 API: Fetch assigned doulas response status:',
-    response.status
-  );
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('🔍 API: Fetch assigned doulas error:', errorText);
+    logHttpFailure('client-api', 'fetch_assigned_doulas', response.status);
     throw new Error(
       `Failed to fetch assigned doulas: ${response.status} - ${errorText}`
     );
   }
 
   const result = await response.json();
-  console.log('🔍 API: Fetch assigned doulas result:', result);
   return result.doulas || [];
 };
 

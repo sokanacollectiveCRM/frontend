@@ -1,4 +1,5 @@
 import { Button } from '@/common/components/ui/button';
+import { logFailure } from '@/utils/safeLog';
 import {
   Card,
   CardContent,
@@ -110,7 +111,7 @@ export const Account = () => {
       await checkAuth({ silent: true });
       accountForm.reset(values);
     } catch (err) {
-      console.error('User NOT saved successfully: ', err);
+      logFailure('my-account', 'user_not_saved_successfully');
       toast.error(
         err instanceof Error ? err.message : 'Could not save changes.'
       );

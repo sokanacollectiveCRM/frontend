@@ -1,4 +1,5 @@
 import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
+import { logFailure } from '@/utils/safeLog';
 import { Badge } from '@/common/components/ui/badge';
 import { Card } from '@/common/components/ui/card';
 import {
@@ -137,7 +138,7 @@ export default function Profile() {
         toast.error(result.error || 'Failed to update client status');
       }
     } catch (err) {
-      console.error('Failed to update status:', err);
+      logFailure('profiles', 'failed_to_update_status');
       toast.error('Failed to update client status...');
     }
   };

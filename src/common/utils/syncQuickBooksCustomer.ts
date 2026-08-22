@@ -1,4 +1,5 @@
 import { createQuickBooksCustomer } from '@/api/quickbooks/auth/customer';
+import { logFailure } from '@/utils/safeLog';
 
 type CustomerSource = {
   id?: string;
@@ -57,7 +58,7 @@ export async function syncQuickBooksCustomerFromClient(
     return { success: true, qbCustomerId: result.qbCustomerId };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to sync QuickBooks customer';
-    console.error('Failed to sync QuickBooks customer:', error);
+    logFailure('client-api', 'failed_to_sync_quickbooks_customer');
     return { success: false, error: message };
   }
 }

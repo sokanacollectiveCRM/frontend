@@ -1,4 +1,5 @@
 import { Search } from '@/common/components/header/Search';
+import { logFailure } from '@/utils/safeLog';
 import { ProfileDropdown } from '@/common/components/user/ProfileDropdown';
 import { UserContext } from '@/common/contexts/UserContext';
 import { useClients } from '@/common/hooks/clients/useClients';
@@ -73,65 +74,18 @@ export default function Users() {
     getClients();
   }, [getClients]);
 
-  // Debug: Log the raw clients data before parsing
-  useEffect(() => {
-    if (clients.length > 0) {
-      console.log('Raw clients data from API:', clients);
-      console.log('First client structure:', clients[0]);
-    }
-  }, [clients]);
-
   // parse clients and summarize profile for view
   useEffect(() => {
     if (clients.length === 0) return;
 
     try {
-      console.log(
-        '🔍 DEBUG: About to parse clients with Zod:',
-        clients.length,
-        'clients'
-      );
-      console.log('🔍 DEBUG: First client before parsing:', clients[0]);
-
-      // Try parsing each client individually to see which one fails
-      clients.forEach((client, index) => {
-        try {
-          userListSchema.parse([client]);
-          console.log(`✅ Client ${index} parsed successfully`);
-        } catch (parseError) {
-          console.error(`❌ Client ${index} failed to parse:`, parseError);
-          console.error(`❌ Client ${index} data:`, client);
-        }
-      });
-
       const parsed = userListSchema.parse(clients);
-      console.log(
-        '🔍 DEBUG: Successfully parsed clients:',
-        parsed.length,
-        'clients'
-      );
-      console.log('🔍 DEBUG: First parsed client:', parsed[0]);
-
       setUserList(parsed);
-    } catch (err) {
-      console.error('Failed to parse client list with Zod:', err);
-      console.error('🔍 DEBUG: Zod error details:', err);
-
-      // If Zod parsing fails, try to use the raw data
-      console.log('🔍 DEBUG: Falling back to raw clients data');
+    } catch {
+      logFailure('clients', 'parse_client_list');
       setUserList(clients as any);
     }
   }, [clients]);
-
-  // Debug: Log user data to help troubleshoot permission issue
-  console.log('Clients page - User data:', user);
-  console.log('Clients page - User role:', user?.role);
-  console.log('Clients page - Is admin?', user?.role === 'admin');
-  console.log('Clients page - User loading:', userLoading);
-  console.log('Clients page - Clients data:', clients);
-  console.log('Clients page - Clients loading:', isLoading);
-  console.log('Clients page - UserList data:', userList);
-  console.log('Clients page - UserList length:', userList.length);
 
   const navigateToOnClose = useMemo(() => {
     if (isAdminClientsPath) {
@@ -169,24 +123,16 @@ export default function Users() {
 
   // Portal action handlers
   const handleInviteToPortal = useCallback((lead: UserSummary) => {
-    console.log('🔔 handleInviteToPortal called with lead:', lead);
     setSelectedLeadForPortal(lead);
     setPortalInviteModalOpen(true);
-    console.log('🔔 Modal state set to open');
   }, []);
 
   const handleConfirmInvite = useCallback(async () => {
-    console.log(
-      '🔔 handleConfirmInvite called, selectedLeadForPortal:',
-      selectedLeadForPortal
-    );
     if (!selectedLeadForPortal) {
-      console.error('❌ handleConfirmInvite: No lead selected');
       return;
     }
 
     setIsSendingInvite(true);
-    console.log('✅ Sending invite to:', selectedLeadForPortal.email);
 
     try {
       // Get the frontend URL (production or current origin)
@@ -218,7 +164,6 @@ export default function Users() {
       }
 
       const data = await response.json();
-      console.log('✅ Invite API response:', data);
 
       // Update local state with response data
       setUserList((prevList) =>
@@ -245,7 +190,7 @@ export default function Users() {
       setPortalInviteModalOpen(false);
       setSelectedLeadForPortal(null);
     } catch (error: any) {
-      console.error('❌ Error sending invite:', error);
+      logFailure('clients', 'error_sending_invite');
       toast.error(error.message || 'Failed to send invite. Please try again.');
     } finally {
       setIsSendingInvite(false);
@@ -253,7 +198,6 @@ export default function Users() {
   }, [selectedLeadForPortal]);
 
   const handleResendInvite = useCallback(async (lead: UserSummary) => {
-    console.log('🔔 handleResendInvite called for:', lead.email);
 
     try {
       // Get the frontend URL (production or current origin)
@@ -283,7 +227,6 @@ export default function Users() {
       }
 
       const data = await response.json();
-      console.log('✅ Resend invite API response:', data);
 
       // Update local state with response data
       setUserList((prevList) =>
@@ -304,7 +247,7 @@ export default function Users() {
 
       toast.success(`Invite resent to ${lead.email || 'client'}`);
     } catch (error: any) {
-      console.error('❌ Error resending invite:', error);
+      logFailure('clients', 'error_resending_invite');
       toast.error(
         error.message || 'Failed to resend invite. Please try again.'
       );
@@ -312,7 +255,6 @@ export default function Users() {
   }, []);
 
   const handleDisablePortal = useCallback(async (lead: UserSummary) => {
-    console.log('🔔 handleDisablePortal called for:', lead.email);
 
     try {
       const response = await fetchWithAuth(
@@ -336,7 +278,6 @@ export default function Users() {
       }
 
       const data = await response.json();
-      console.log('✅ Disable portal API response:', data);
 
       // Update local state with response data
       setUserList((prevList) =>
@@ -353,7 +294,7 @@ export default function Users() {
 
       toast.success(`Portal access disabled for ${lead.email || 'client'}`);
     } catch (error: any) {
-      console.error('❌ Error disabling portal access:', error);
+      logFailure('clients', 'error_disabling_portal_access');
       toast.error(
         error.message || 'Failed to disable portal access. Please try again.'
       );
@@ -569,7 +510,7 @@ function RouteAwareLeadProfileLoader({
         lastRequestedIdRef.current = normalizedId;
         setMissingClientId(null);
       } catch (error) {
-        console.error('Error loading client from deep link:', error);
+        logFailure('clients', 'error_loading_client_from_deep_link');
         toast.error('Failed to load client profile.');
         setMissingClientId(normalizedId);
         setCurrentRow(null);
@@ -869,7 +810,7 @@ function mapApiClientToUserSummary(
     }
     return merged;
   } catch (error) {
-    console.error('Failed to parse client from API response:', error, client);
+    logFailure('clients', 'failed_to_parse_client_from_api');
     const rawClient = client ?? {};
     if (fallbackId && !rawClient.id) {
       rawClient.id = fallbackId;

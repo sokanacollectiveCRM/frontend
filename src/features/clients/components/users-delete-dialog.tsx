@@ -5,6 +5,7 @@ import {
   AlertTitle,
 } from '@/common/components/ui/alert';
 import { ConfirmDialog } from '@/common/components/ui/confirm-dialog';
+import { logFailure } from '@/utils/safeLog';
 import { Input } from '@/common/components/ui/input';
 import { Label } from '@/common/components/ui/label';
 import deleteClient from '@/common/utils/deleteClient';
@@ -64,7 +65,7 @@ export function UsersDeleteDialog({ open, onOpenChange, currentRow, onDeleteSucc
         setErrorMessage(result.error || 'Failed to delete client. Please try again.');
       }
     } catch (error) {
-      console.error('Error deleting client:', error);
+      logFailure('clients', 'error_deleting_client');
       setErrorMessage('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);

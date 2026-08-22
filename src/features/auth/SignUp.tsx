@@ -4,6 +4,7 @@ import {
   AlertTitle,
 } from '@/common/components/ui/alert';
 import { Button } from '@/common/components/ui/button';
+import { logFailure } from '@/utils/safeLog';
 import {
   Card,
   CardContent,
@@ -86,7 +87,7 @@ export default function SignUp() {
           : 'Failed to sign up. Please try again.';
 
       setError(message);
-      console.error('Signup error:', message);
+      logFailure('auth', 'signup_error');
       toast.error(message);
     } finally {
       setIsLoading(false);

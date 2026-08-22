@@ -27,7 +27,6 @@ export default function ClientInfo({ client }: any) {
   const handleBirthDateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // TODO: Implement birth date submission
-    console.log('Birth date submitted:', birthDate);
   };
 
   return (

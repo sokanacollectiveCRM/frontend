@@ -1,4 +1,5 @@
 import type { UserContextType } from '@/common/types/auth';
+import { logFailure } from '@/utils/safeLog';
 import { User } from '@/common/types/user';
 import React, { createContext, ReactNode, useEffect, useState } from 'react';
 import { buildUrl, fetchWithAuth } from '@/api/http';
@@ -44,7 +45,7 @@ export function UserProvider({
       });
       if (!response.ok) throw new Error('Logout failed');
     } catch (error) {
-      console.error('Logout error:', error);
+      logFailure('auth', 'logout_error');
     } finally {
       clearSessionAccessToken();
       setUser(null);
@@ -125,7 +126,7 @@ export function UserProvider({
       }
       return true;
     } catch (error) {
-      console.error('Login error:', error);
+      logFailure('auth', 'login_error');
       // Surface actionable message for "Failed to fetch" (Supabase or backend)
       if (
         error instanceof ApiError &&
@@ -170,7 +171,7 @@ export function UserProvider({
         throw new Error('No authorization URL received');
       }
     } catch (error) {
-      console.error('Google auth error:', error);
+      logFailure('auth', 'google_auth_error');
       throw new Error('Failed to initialize Google authentication');
     }
   };
@@ -186,16 +187,14 @@ export function UserProvider({
       });
 
       const data = await response.json();
-      console.log(data);
 
       if (!response.ok) {
-        console.log(data);
         throw new Error(data.error || 'Password reset request failed');
       }
 
       return true;
     } catch (error) {
-      console.error('Password reset request error:', error);
+      logFailure('auth', 'password_reset_request_error');
       throw error;
     }
   };
@@ -220,7 +219,7 @@ export function UserProvider({
 
       return true;
     } catch (error) {
-      console.error('Password update error:', error);
+      logFailure('auth', 'password_update_error');
       throw error;
     }
   };

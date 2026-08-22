@@ -1,4 +1,5 @@
 import { Template } from '@/common/types/template';
+import { logFailure } from '@/utils/safeLog';
 import { useState } from 'react';
 import { fetchWithAuth, buildUrl } from '@/api/http';
 
@@ -27,13 +28,12 @@ export function useTemplates() {
         : Array.isArray((data as { data?: Template[] })?.data)
           ? (data as { data: Template[] }).data
           : [];
-      console.log('templates response count', list.length);
       setTemplates(list);
       return list;
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Error fetching templates';
-      console.error(message);
+      logFailure('hooks', 'operation_failed');
       setError(message);
       setTemplates([]);
       return [];

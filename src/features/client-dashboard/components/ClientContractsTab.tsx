@@ -66,7 +66,6 @@ export default function ClientContractsTab() {
       }
     } catch (error: any) {
       // Outer catch for session errors
-      console.log('Error fetching contracts (endpoint may not exist):', error);
       setContracts([]);
     } finally {
       setIsLoading(false);

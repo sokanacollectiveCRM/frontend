@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { logFailure } from '@/utils/safeLog';
 import {
   Card,
   CardContent,
@@ -611,7 +612,7 @@ export default function ClientProfileTab({
         // Keep backward compatibility: ignore if endpoint is unavailable or unreachable.
       }
     } catch (error: any) {
-      console.error('Error fetching profile:', error);
+      logFailure('client-dashboard', 'error_fetching_profile');
       // Fallback to session metadata so profile tab still works locally.
       setFormData({
         firstname: effectiveClientFirstName,
@@ -1224,7 +1225,7 @@ export default function ClientProfileTab({
       });
       setIsBillingEditing(false);
     } catch (error: any) {
-      console.error('Error updating profile:', error);
+      logFailure('client-dashboard', 'error_updating_profile');
       toast.error(error.message || 'Failed to update profile');
     } finally {
       setIsSaving(false);

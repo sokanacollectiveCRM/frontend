@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { logFailure } from '@/utils/safeLog';
 import { normalizeHourType, type HourType } from '@/features/hours/data/hour-types';
 import { fetchWithAuth, buildUrl } from '@/api/http';
 
@@ -88,7 +89,7 @@ export default function useWorkLog(userId?: string) {
           })
         );
       } catch (error) {
-        console.error('Error fetching work logs:', error);
+        logFailure('hooks', 'error_fetching_work_logs');
       } finally {
         setIsLoading(false);
       }

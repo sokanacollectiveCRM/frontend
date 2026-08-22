@@ -4,6 +4,7 @@
 // VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { logFailure } from '@/utils/safeLog';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -19,7 +20,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
     'VITE_SUPABASE_ANON_KEY=your_supabase_anon_key\n\n' +
     'Use the same Supabase project as your backend (e.g. https://xxxxx.supabase.co).\n' +
     'Get URL and anon key from Supabase Dashboard → Project Settings → API.';
-  console.error(errorMessage);
+  logFailure('supabase', 'operation_failed');
   
   // Create a placeholder client that will throw helpful errors when used
   // This allows the app to load but will fail gracefully when Supabase is accessed

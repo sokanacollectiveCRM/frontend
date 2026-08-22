@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { logFailure } from '@/utils/safeLog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/common/components/ui/card';
 import { Button } from '@/common/components/ui/button';
 import { Badge } from '@/common/components/ui/badge';
@@ -32,21 +33,17 @@ export default function ClientsTab({ onClientSelect }: ClientsTabProps) {
     setIsLoading(true);
     try {
       const data = await getAssignedClients(detailedView);
-      console.log('ClientsTab - Received clients data:', data);
-      console.log('ClientsTab - Is array?', Array.isArray(data));
-      console.log('ClientsTab - Data length:', Array.isArray(data) ? data.length : 'N/A');
       
       // Ensure data is always an array
       if (Array.isArray(data)) {
         setClients(data);
-        console.log('ClientsTab - Set clients:', data);
       } else {
-        console.error('Invalid response format:', data);
+        logFailure('doula-dashboard', 'invalid_response_format');
         setClients([]);
         toast.error('Invalid response format from server');
       }
     } catch (error: any) {
-      console.error('Failed to fetch clients:', error);
+      logFailure('doula-dashboard', 'failed_to_fetch_clients');
       setClients([]); // Set empty array on error
       toast.error(error.message || 'Failed to load clients');
     } finally {

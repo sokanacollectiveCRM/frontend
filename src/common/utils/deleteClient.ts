@@ -4,19 +4,11 @@ import {
 } from './sessionUtils';
 import { apiBaseUrl } from '@/config/env';
 import { fetchWithAuth } from '@/api/http';
+import { logFailure, logHttpFailure } from '@/utils/safeLog';
 
 export default async function deleteClient(
   clientId: string
 ): Promise<{ success: boolean; error?: string }> {
-
-  // Debug logging
-  console.log('🚨 DEBUG START - Client Delete');
-  console.log('🚨 Client ID:', clientId);
-  console.log('🚨 Client ID type:', typeof clientId);
-  console.log(
-    '🚨 Full request URL:',
-    `${apiBaseUrl}/clients/delete`
-  );
 
   try {
     const url = `${apiBaseUrl}/clients/delete`;
@@ -29,28 +21,22 @@ export default async function deleteClient(
     });
 
     if (response.status === 204 || response.ok) {
-      // Success: No Content or OK
-      console.log('✅ Client deleted successfully');
       return { success: true };
     }
 
-    // Handle errors
     const errorText = await response.text();
-    console.error('❌ Client delete failed:', response.status, errorText);
+    logHttpFailure('client-api', 'delete_client', response.status);
 
-    // Check for authentication/session expiration errors
     if (isSessionExpiredError(response.status, errorText)) {
       throw new Error(getSessionExpirationMessage());
     }
 
-    throw new Error(
-      `Failed to delete client: ${response.status} - ${errorText}`
-    );
+    throw new Error(`Failed to delete client (${response.status})`);
   } catch (err) {
-    console.error("❌ Couldn't delete client: ", err);
+    logFailure('client-api', 'delete_client');
     return {
       success: false,
       error: err instanceof Error ? err.message : 'Unknown error',
     };
   }
-} 
+}
