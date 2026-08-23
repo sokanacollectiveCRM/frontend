@@ -41,6 +41,7 @@ import updateClient from '@/common/utils/updateClient';
 import updateClientStatus from '@/common/utils/updateClientStatus';
 import {
   updateClientPhi,
+  updateClientBirthOutcomes,
   fetchClientPaymentSchedule,
   fetchCardOnFileStatus,
   generateInstallmentInvoice,
@@ -657,17 +658,8 @@ export function LeadProfileModal({
       setNotesError(null);
       const fetchedNotes = await getClientNotes(client.id, user?.role);
 
-      // Debug: Comprehensive timezone analysis
-      if (fetchedNotes.length > 0) {
-        const firstNote = fetchedNotes[0];
-        const rawTimestamp = firstNote.timestamp;
-        const parsedDate = new Date(rawTimestamp);
-        const now = new Date();
-
-      }
-
       setNotes(fetchedNotes);
-    } catch (err) {
+    } catch {
       logFailure('clients', 'error_fetching_notes');
       setNotesError('Failed to load notes');
     } finally {
@@ -1136,7 +1128,6 @@ export function LeadProfileModal({
         }
       }
 
-
       // Handle status update separately using the dedicated status endpoint
       if (updateData.status !== undefined) {
         const statusResult = await updateClientStatus(
@@ -1190,7 +1181,6 @@ export function LeadProfileModal({
         operational: operationalData,
         billing: billingData,
       } = splitClientUpdatePayload(updateData);
-
 
       // Track update results
       let operationalSuccess = true;
@@ -1396,10 +1386,14 @@ export function LeadProfileModal({
       toast.error(`Complete required fields: ${missing.join(', ')}`);
       return;
     }
+    if (induction === undefined) {
+      toast.error('Complete required fields: Induction (Yes/No)');
+      return;
+    }
 
     setIsSavingBirthOutcomes(true);
     try {
-      const result = await updateClient(client.id, {
+      const result = await updateClientBirthOutcomes(client.id, {
         birth_outcomes_induction: induction,
         birth_outcomes_delivery_type: deliveryType,
         birth_outcomes_medications_used: medicationsUsed,
@@ -1475,7 +1469,7 @@ export function LeadProfileModal({
           ?.field;
         return (
           isBirthOutcomesCategory(category) ||
-          String(field ?? '') === 'birth_outcomes'
+          String(field ?? '') === 'birth_outcomes_structured'
         );
       }),
     [notes]
@@ -1970,24 +1964,22 @@ export function LeadProfileModal({
                 ? 'firstname'
                 : fieldKey === 'last_name'
                   ? 'lastname'
-                  : fieldKey === 'birth_outcomes'
-                    ? 'birthOutcomes'
-                    : fieldKey === 'birth_outcomes_induction'
-                      ? 'birthOutcomesInduction'
-                      : fieldKey === 'birth_outcomes_delivery_type'
-                        ? 'birthOutcomesDeliveryType'
-                        : fieldKey === 'payment_authorization_status'
-                          ? 'paymentAuthorizationStatus'
-                          : fieldKey === 'insurance_policy_holder_name'
-                            ? 'insurancePolicyHolderName'
-                            : fieldKey === 'insurance_policy_holder_dob'
-                              ? 'insurancePolicyHolderDob'
-                              : fieldKey ===
-                                  'insurance_policy_holder_relationship'
-                                ? 'insurancePolicyHolderRelationship'
-                                : fieldKey === 'insurance_plan_type'
-                                  ? 'insurancePlanType'
-                                  : null;
+                  : fieldKey === 'birth_outcomes_induction'
+                    ? 'birthOutcomesInduction'
+                    : fieldKey === 'birth_outcomes_delivery_type'
+                      ? 'birthOutcomesDeliveryType'
+                      : fieldKey === 'payment_authorization_status'
+                        ? 'paymentAuthorizationStatus'
+                        : fieldKey === 'insurance_policy_holder_name'
+                          ? 'insurancePolicyHolderName'
+                          : fieldKey === 'insurance_policy_holder_dob'
+                            ? 'insurancePolicyHolderDob'
+                            : fieldKey ===
+                                'insurance_policy_holder_relationship'
+                              ? 'insurancePolicyHolderRelationship'
+                              : fieldKey === 'insurance_plan_type'
+                                ? 'insurancePlanType'
+                                : null;
     let value: string | Date | unknown = resolveProfileFieldValue(
       fieldKey,
       altKey,
@@ -3660,21 +3652,6 @@ export function LeadProfileModal({
                     </div>
                   </div>
 
-                  {String(
-                    getDisplayValue('birth_outcomes', 'birthOutcomes') || ''
-                  ).trim() ? (
-                    <div className='pt-3'>
-                      <Label className='text-sm font-medium text-muted-foreground'>
-                        Legacy Birth Outcomes (read-only)
-                      </Label>
-                      <div className='mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm min-h-[72px] whitespace-pre-wrap'>
-                        {String(
-                          getDisplayValue('birth_outcomes', 'birthOutcomes') ||
-                            ''
-                        )}
-                      </div>
-                    </div>
-                  ) : null}
                   {isEditing && (
                     <div className='flex justify-end pt-1'>
                       <Button

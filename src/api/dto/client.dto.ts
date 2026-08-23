@@ -121,7 +121,6 @@ export interface ClientDetailDTO {
   due_date?: string;
   health_history?: string;
   health_notes?: string;
-  birth_outcomes?: string;
   birth_outcomes_induction?: boolean;
   birth_outcomes_delivery_type?: string;
   birth_outcomes_medications_used?: string[];

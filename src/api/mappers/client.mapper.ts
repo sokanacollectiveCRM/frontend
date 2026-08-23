@@ -197,7 +197,6 @@ export function mapClientDetail(dto: ClientDetailDTO): ClientDetail {
     dueDate: dto.due_date,
     healthHistory: dto.health_history,
     healthNotes: dto.health_notes,
-    birthOutcomes: dto.birth_outcomes,
     birthOutcomesInduction: dto.birth_outcomes_induction,
     birthOutcomesDeliveryType: dto.birth_outcomes_delivery_type,
     birthOutcomesMedicationsUsed: dto.birth_outcomes_medications_used,

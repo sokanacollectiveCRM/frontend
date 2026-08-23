@@ -363,6 +363,54 @@ export const generateInstallmentInvoice = (
   );
 };
 
+export async function updateClientBirthOutcomes(
+  clientId: string,
+  payload: {
+    birth_outcomes_induction: boolean;
+    birth_outcomes_delivery_type: string;
+    birth_outcomes_medications_used: string[];
+  }
+): Promise<{
+  success: boolean;
+  data?: {
+    birth_outcomes_induction: boolean;
+    birth_outcomes_delivery_type: string;
+    birth_outcomes_medications_used: string[];
+  };
+  error?: string;
+}> {
+  if (API_CONFIG.useLegacyApi) {
+    throw new Error('Legacy mode disabled. Set VITE_USE_LEGACY_API=false.');
+  }
+
+  try {
+    const response = await put<
+      {
+        birth_outcomes_induction: boolean;
+        birth_outcomes_delivery_type: string;
+        birth_outcomes_medications_used: string[];
+      },
+      typeof payload
+    >(`/clients/${clientId}/birth-outcomes`, payload);
+
+    return {
+      success: true,
+      data: response,
+    };
+  } catch (error: unknown) {
+    let message = 'Failed to update birth outcomes';
+    if (error instanceof ApiError) {
+      message = error.message;
+    } else if (error instanceof Error) {
+      message = error.message;
+    }
+    return {
+      success: false,
+      error: message,
+    };
+  }
+}
+
 export async function updateClientPhi(
   clientId: string,
   phiData: PhiUpdatePayload
