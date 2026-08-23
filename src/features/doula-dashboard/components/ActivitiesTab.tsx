@@ -521,6 +521,10 @@ export default function ActivitiesTab({
       toast.error(`Complete required fields: ${missing.join(', ')}`);
       return;
     }
+    if (birthOutcomesInductionDraft === undefined) {
+      toast.error('Complete required fields: Induction (Yes/No)');
+      return;
+    }
 
     setIsSavingBirthOutcomes(true);
     try {

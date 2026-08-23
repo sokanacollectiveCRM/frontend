@@ -1386,6 +1386,10 @@ export function LeadProfileModal({
       toast.error(`Complete required fields: ${missing.join(', ')}`);
       return;
     }
+    if (induction === undefined) {
+      toast.error('Complete required fields: Induction (Yes/No)');
+      return;
+    }
 
     setIsSavingBirthOutcomes(true);
     try {
