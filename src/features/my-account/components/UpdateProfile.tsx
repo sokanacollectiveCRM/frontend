@@ -16,14 +16,16 @@ import {
   FormLabel,
   FormMessage,
 } from '@/common/components/ui/form';
-import { Input } from '@/common/components/ui/input';
 import { Separator } from '@/common/components/ui/separator';
 import { Textarea } from '@/common/components/ui/textarea';
-import UserAvatar from '@/common/components/user/UserAvatar';
+import UserAvatar, {
+  preloadProfileImage,
+} from '@/common/components/user/UserAvatar';
 import { useUser } from '@/common/hooks/user/useUser';
 import saveUser from '@/common/utils/saveUser';
+import { ProfileImageInput } from '@/common/components/form/ProfileImageInput';
 import { Loader2 } from 'lucide-react';
-import { ChangeEvent, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
@@ -34,20 +36,36 @@ interface ProfileFormValues {
 
 export const Profile = () => {
   const { user, isLoading, checkAuth, setUser } = useUser();
+  const [isSaving, setIsSaving] = useState(false);
+  const [heldPreviewUrl, setHeldPreviewUrl] = useState<string | null>(null);
+  const [isWaitingForRemoteImage, setIsWaitingForRemoteImage] = useState(false);
 
   const profileForm = useForm<ProfileFormValues>({
     defaultValues: {
       bio: '',
     },
   });
+  const selectedPicture = profileForm.watch('profile_picture');
+  const isUploadingPicture =
+    isWaitingForRemoteImage || (isSaving && selectedPicture instanceof File);
+  const displayPicture = heldPreviewUrl || user?.profile_picture;
 
   useEffect(() => {
-    if (!user) return;
+    if (!(selectedPicture instanceof File)) return;
+    const previewUrl = URL.createObjectURL(selectedPicture);
+    setHeldPreviewUrl(previewUrl);
+    return () => {
+      URL.revokeObjectURL(previewUrl);
+    };
+  }, [selectedPicture]);
+
+  useEffect(() => {
+    if (!user || isSaving || isWaitingForRemoteImage) return;
     profileForm.reset({
       bio: user.bio || '',
       profile_picture: undefined,
     });
-  }, [user, profileForm]);
+  }, [user, profileForm, isSaving, isWaitingForRemoteImage]);
 
   const submitProfileForm = async (values: ProfileFormValues) => {
     if (!user?.id) return;
@@ -55,13 +73,34 @@ export const Profile = () => {
     const formData = new FormData();
     formData.append('id', user.id);
     formData.append('bio', values.bio ?? '');
-    formData.append('profile_picture', values.profile_picture ?? '');
+    if (values.profile_picture instanceof File) {
+      formData.append('profile_picture', values.profile_picture);
+    }
 
+    setIsSaving(true);
     try {
       const savedUser = await saveUser(formData);
-      toast.success('Changes saved.');
+      const uploadedPictureUrl =
+        typeof savedUser?.profile_picture === 'string' &&
+        savedUser.profile_picture.trim().length > 0
+          ? savedUser.profile_picture
+          : null;
+
       setUser((prev) => (prev ? { ...prev, ...savedUser } : savedUser));
+
+      if (values.profile_picture instanceof File && uploadedPictureUrl) {
+        setIsWaitingForRemoteImage(true);
+        await preloadProfileImage(uploadedPictureUrl);
+      }
+
+      toast.success('Changes saved.');
       await checkAuth({ silent: true });
+      if (uploadedPictureUrl) {
+        setUser((prev) =>
+          prev ? { ...prev, profile_picture: uploadedPictureUrl } : prev
+        );
+        setHeldPreviewUrl(null);
+      }
       profileForm.reset({
         bio: values.bio ?? '',
         profile_picture: undefined,
@@ -71,6 +110,9 @@ export const Profile = () => {
       toast.error(
         err instanceof Error ? err.message : 'Could not save changes.'
       );
+    } finally {
+      setIsSaving(false);
+      setIsWaitingForRemoteImage(false);
     }
   };
 
@@ -85,11 +127,18 @@ export const Profile = () => {
         <CardContent className='flex flex-col flex-1'>
           <Card>
             <CardContent>
-              <UserAvatar
-                profile_picture={user?.profile_picture}
-                fullName={`${user?.firstname || ''} ${user?.lastname || ''}`}
-                className={'h-35 w-35'}
-              />
+              <div className='relative w-fit'>
+                <UserAvatar
+                  profile_picture={displayPicture}
+                  fullName={`${user?.firstname || ''} ${user?.lastname || ''}`}
+                  className={'h-35 w-35'}
+                />
+                {isUploadingPicture ? (
+                  <div className='absolute inset-0 flex items-center justify-center rounded-full bg-black/50'>
+                    <Loader2 className='h-8 w-8 animate-spin text-white' />
+                  </div>
+                ) : null}
+              </div>
             </CardContent>
             <CardHeader>
               <CardTitle>{`${user?.firstname || ''} ${user?.lastname || ''}`}</CardTitle>
@@ -110,14 +159,12 @@ export const Profile = () => {
                   <FormItem>
                     <FormLabel>Profile Picture</FormLabel>
                     <FormControl>
-                      <Input
-                        type='file'
+                      <ProfileImageInput
                         accept='image/jpeg,image/png,image/webp'
-                        onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                          const file = e.target.files?.[0];
-                          field.onChange(file || undefined);
-                        }}
-                        className='cursor-pointer'
+                        selectedFile={field.value}
+                        currentImageUrl={user?.profile_picture}
+                        isUploading={isUploadingPicture}
+                        onFileChange={(file) => field.onChange(file)}
                       />
                     </FormControl>
                     <FormMessage />
@@ -142,8 +189,12 @@ export const Profile = () => {
                 )}
               />
 
-              <Button type='submit' className='cursor-pointer mt-10'>
-                {isLoading ? (
+              <Button
+                type='submit'
+                className='cursor-pointer mt-10'
+                disabled={isUploadingPicture}
+              >
+                {isSaving ? (
                   <Loader2 className='h-4 w-4 animate-spin mx-auto' />
                 ) : (
                   'Save Changes'

@@ -10,6 +10,18 @@ interface UserAvatarProps {
   fullName: string;
   className?: string;
   large?: boolean;
+  onLoadingStatusChange?: (
+    status: 'idle' | 'loading' | 'loaded' | 'error'
+  ) => void;
+}
+
+export function preloadProfileImage(src: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const image = new window.Image();
+    image.onload = () => resolve();
+    image.onerror = () => reject(new Error('Failed to load profile picture'));
+    image.src = src;
+  });
 }
 
 export default function UserAvatar({
@@ -17,15 +29,16 @@ export default function UserAvatar({
   fullName,
   className,
   large = false,
+  onLoadingStatusChange,
 }: UserAvatarProps) {
   // Handle undefined/null fullName
   const safeFullName = fullName || '';
-  const initials = safeFullName
-    .split(' ')
-    .filter((word) => word.length > 0)
-    .map((word) => word[0]?.toUpperCase())
-    .join('')
-    || '?';
+  const initials =
+    safeFullName
+      .split(' ')
+      .filter((word) => word.length > 0)
+      .map((word) => word[0]?.toUpperCase())
+      .join('') || '?';
 
   return (
     <div className={cn('flex items-center justify-center', className)}>
@@ -39,6 +52,7 @@ export default function UserAvatar({
           src={profile_picture || ''}
           alt={`${fullName}'s profile`}
           className='size-full object-cover object-center'
+          onLoadingStatusChange={onLoadingStatusChange}
         />
         <AvatarFallback
           className={cn(
