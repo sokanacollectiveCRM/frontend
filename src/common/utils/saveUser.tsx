@@ -11,7 +11,13 @@ export default async function saveUser(userData: FormData) {
       });
 
     if (!response.ok) {
-      throw new Error('Failed to save user');
+      const errorBody = (await response.json().catch(() => null)) as {
+        error?: string;
+        message?: string;
+      } | null;
+      throw new Error(
+        errorBody?.error || errorBody?.message || 'Failed to save user'
+      );
     }
     return await response.json();
   } catch (error) {
