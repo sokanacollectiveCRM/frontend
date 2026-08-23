@@ -47,8 +47,7 @@ export const Profile = () => {
   });
   const selectedPicture = profileForm.watch('profile_picture');
   const isUploadingPicture =
-    isWaitingForRemoteImage ||
-    (isSaving && selectedPicture instanceof File);
+    isWaitingForRemoteImage || (isSaving && selectedPicture instanceof File);
   const displayPicture = heldPreviewUrl || user?.profile_picture;
 
   useEffect(() => {

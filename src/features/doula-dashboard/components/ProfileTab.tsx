@@ -35,8 +35,8 @@ import {
   normalizeRaceEthnicityFromApi,
   RACE_ETHNICITY_FIELD_LABEL,
   toggleRaceEthnicitySelection,
-} from '../doulaDemographics';
-import type { ProfileCompletionStatus } from '../doulaDashboardTypes';
+} from '@/features/doula-dashboard/doulaDemographics';
+import type { ProfileCompletionStatus } from '@/features/doula-dashboard/doulaDashboardTypes';
 import { getDoulaSchedulingInfo } from '@/common/utils/doulaScheduling';
 
 interface ProfileTabProps {

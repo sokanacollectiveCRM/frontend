@@ -33,12 +33,12 @@ export default function UserAvatar({
 }: UserAvatarProps) {
   // Handle undefined/null fullName
   const safeFullName = fullName || '';
-  const initials = safeFullName
-    .split(' ')
-    .filter((word) => word.length > 0)
-    .map((word) => word[0]?.toUpperCase())
-    .join('')
-    || '?';
+  const initials =
+    safeFullName
+      .split(' ')
+      .filter((word) => word.length > 0)
+      .map((word) => word[0]?.toUpperCase())
+      .join('') || '?';
 
   return (
     <div className={cn('flex items-center justify-center', className)}>
