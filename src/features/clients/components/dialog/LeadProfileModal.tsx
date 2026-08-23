@@ -657,17 +657,8 @@ export function LeadProfileModal({
       setNotesError(null);
       const fetchedNotes = await getClientNotes(client.id, user?.role);
 
-      // Debug: Comprehensive timezone analysis
-      if (fetchedNotes.length > 0) {
-        const firstNote = fetchedNotes[0];
-        const rawTimestamp = firstNote.timestamp;
-        const parsedDate = new Date(rawTimestamp);
-        const now = new Date();
-
-      }
-
       setNotes(fetchedNotes);
-    } catch (err) {
+    } catch {
       logFailure('clients', 'error_fetching_notes');
       setNotesError('Failed to load notes');
     } finally {
@@ -1136,7 +1127,6 @@ export function LeadProfileModal({
         }
       }
 
-
       // Handle status update separately using the dedicated status endpoint
       if (updateData.status !== undefined) {
         const statusResult = await updateClientStatus(
@@ -1190,7 +1180,6 @@ export function LeadProfileModal({
         operational: operationalData,
         billing: billingData,
       } = splitClientUpdatePayload(updateData);
-
 
       // Track update results
       let operationalSuccess = true;
