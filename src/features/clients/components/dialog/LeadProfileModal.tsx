@@ -14,6 +14,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -2344,6 +2345,9 @@ export function LeadProfileModal({
         <DialogContent className='max-h-[100dvh] w-full max-w-full translate-x-0 translate-y-0 left-0 top-0 h-[100dvh] rounded-none overflow-y-auto sm:left-[50%] sm:top-[50%] sm:h-auto sm:max-h-[90vh] sm:max-w-lg sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg'>
           <DialogHeader>
             <DialogTitle>Client Not Found</DialogTitle>
+            <DialogDescription>
+              The requested client profile could not be loaded.
+            </DialogDescription>
           </DialogHeader>
           <div className='space-y-4 text-sm text-muted-foreground'>
             <p>
@@ -2402,6 +2406,9 @@ export function LeadProfileModal({
                     return title as React.ReactNode;
                   })()}
                 </DialogTitle>
+                <DialogDescription>
+                  View and edit lead profile information, notes, and status.
+                </DialogDescription>
               </div>
             </div>
           </DialogHeader>
