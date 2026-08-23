@@ -137,8 +137,6 @@ export interface ClientDetail {
   dueDate?: string;
   healthHistory?: string;
   healthNotes?: string;
-  /** Doula narrative: delivery type, complications, interventions, birth weight, etc. */
-  birthOutcomes?: string;
   /** Structured birth outcomes: was labor induced? */
   birthOutcomesInduction?: boolean;
   /** Structured delivery type (reportable enum). */

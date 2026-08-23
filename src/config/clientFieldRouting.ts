@@ -80,8 +80,6 @@ const FIELD_ALIAS_MAP: Record<string, string> = {
   healthhistory: 'health_history',
   healthNotes: 'health_notes',
   healthnotes: 'health_notes',
-  birthOutcomes: 'birth_outcomes',
-  birthoutcomes: 'birth_outcomes',
   serviceNeeded: 'service_needed',
   serviceneeded: 'service_needed',
   servicesInterested: 'services_interested',

@@ -1,13 +1,22 @@
 import { useState, useEffect } from 'react';
 import { logFailure } from '@/utils/safeLog';
-import { Card, CardContent, CardHeader, CardTitle } from '@/common/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/common/components/ui/card';
 import { Button } from '@/common/components/ui/button';
 import { Checkbox } from '@/common/components/ui/checkbox';
 import { Input } from '@/common/components/ui/input';
 import { Label } from '@/common/components/ui/label';
 import { Textarea } from '@/common/components/ui/textarea';
 import { Badge } from '@/common/components/ui/badge';
-import { Alert, AlertDescription, AlertTitle } from '@/common/components/ui/alert';
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from '@/common/components/ui/alert';
 import {
   Dialog,
   DialogContent,
@@ -28,10 +37,21 @@ import {
   type AssignedClientLite,
   type AssignedClientDetailed,
 } from '@/api/doulas/doulaService';
+import { updateClientBirthOutcomes } from '@/api/services/clients.service';
 import { buildUrl, fetchWithAuth } from '@/api/http';
-import updateClient from '@/common/utils/updateClient';
 import { toast } from 'sonner';
-import { MessageSquare, Phone, Calendar, Mail, FileText, Plus, ArrowLeft, User, MapPin, AlertCircle } from 'lucide-react';
+import {
+  MessageSquare,
+  Phone,
+  Calendar,
+  Mail,
+  FileText,
+  Plus,
+  ArrowLeft,
+  User,
+  MapPin,
+  AlertCircle,
+} from 'lucide-react';
 import { format } from 'date-fns';
 import React from 'react';
 import { PREGNANCY_BABY_POSTPARTUM_QUESTION_LABEL } from '@/features/request/stepConfig';
@@ -70,13 +90,18 @@ const INTERNAL_METADATA_KEYS = new Set([
 
 function displayMetadataEntries(metadata?: Record<string, any>) {
   if (!metadata) return [];
-  return Object.entries(metadata).filter(([key]) => !INTERNAL_METADATA_KEYS.has(key));
+  return Object.entries(metadata).filter(
+    ([key]) => !INTERNAL_METADATA_KEYS.has(key)
+  );
 }
 
 function isBirthOutcomesStructuredActivity(activity: ClientActivity): boolean {
   const meta = activity.metadata;
   if (!meta || typeof meta !== 'object') return false;
-  const category = String((meta as any).category ?? '').toLowerCase().replace(/[_\s]+/g, '-').trim();
+  const category = String((meta as any).category ?? '')
+    .toLowerCase()
+    .replace(/[_\s]+/g, '-')
+    .trim();
   const field = String((meta as any).field ?? '');
   return category === 'birth-outcomes' && field === 'birth_outcomes_structured';
 }
@@ -121,11 +146,16 @@ function ActivityPortalToggle({
   );
 }
 
-export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) {
+export default function ActivitiesTab({
+  clientId,
+  onBack,
+}: ActivitiesTabProps) {
   const [activities, setActivities] = useState<ClientActivity[]>([]);
   const [clients, setClients] = useState<AssignedClientLite[]>([]);
-  const [selectedClient, setSelectedClient] = useState<AssignedClientLite | null>(null);
-  const [clientDetails, setClientDetails] = useState<AssignedClientDetailed | null>(null);
+  const [selectedClient, setSelectedClient] =
+    useState<AssignedClientLite | null>(null);
+  const [clientDetails, setClientDetails] =
+    useState<AssignedClientDetailed | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [isActivitiesLoading, setIsActivitiesLoading] = useState(false);
@@ -139,9 +169,9 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
   const [activityTypeFilter, setActivityTypeFilter] = useState<
     'all' | ActivityType
   >('all');
-  const [collapsedActivityDates, setCollapsedActivityDates] = useState<Set<string>>(
-    new Set()
-  );
+  const [collapsedActivityDates, setCollapsedActivityDates] = useState<
+    Set<string>
+  >(new Set());
   const [visibleActivityCount, setVisibleActivityCount] = useState(30);
   const [formData, setFormData] = useState({
     type: 'note' as ActivityType,
@@ -149,20 +179,24 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
     metadata: {} as Record<string, any>,
     visibleToClient: false,
   });
-  const [visibilityUpdatingId, setVisibilityUpdatingId] = useState<string | null>(null);
-  const [birthOutcomesInductionDraft, setBirthOutcomesInductionDraft] = useState<
-    boolean | undefined
-  >(undefined);
+  const [visibilityUpdatingId, setVisibilityUpdatingId] = useState<
+    string | null
+  >(null);
+  const [birthOutcomesInductionDraft, setBirthOutcomesInductionDraft] =
+    useState<boolean | undefined>(undefined);
   const [birthOutcomesDeliveryTypeDraft, setBirthOutcomesDeliveryTypeDraft] =
     useState('');
-  const [birthOutcomesMedicationsUsedDraft, setBirthOutcomesMedicationsUsedDraft] =
-    useState<string[]>([]);
+  const [
+    birthOutcomesMedicationsUsedDraft,
+    setBirthOutcomesMedicationsUsedDraft,
+  ] = useState<string[]>([]);
   const [isSavingBirthOutcomes, setIsSavingBirthOutcomes] = useState(false);
-  const [birthOutcomesLastSavedAt, setBirthOutcomesLastSavedAt] = useState<Date | null>(null);
+  const [birthOutcomesLastSavedAt, setBirthOutcomesLastSavedAt] =
+    useState<Date | null>(null);
   const birthOutcomesSectionRef = React.useRef<HTMLDivElement | null>(null);
-  const [authorNamesById, setAuthorNamesById] = useState<Record<string, string>>(
-    {}
-  );
+  const [authorNamesById, setAuthorNamesById] = useState<
+    Record<string, string>
+  >({});
 
   const isLikelyUuid = (value: string): boolean =>
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -203,7 +237,8 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
   const getActivityAuthorRoleLabel = (activity: ClientActivity): string => {
     const directRole = toRoleLabel(String(activity.createdByRole || ''));
     if (directRole) return directRole;
-    const fromMeta = activity.metadata?.createdByRole ?? activity.metadata?.created_by_role;
+    const fromMeta =
+      activity.metadata?.createdByRole ?? activity.metadata?.created_by_role;
     return toRoleLabel(String(fromMeta || ''));
   };
 
@@ -212,12 +247,6 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
     const role = getActivityAuthorRoleLabel(activity);
     if (!name) return '';
     return role ? `Added by ${name} (${role})` : `Added by ${name}`;
-  };
-
-  const extractLegacyBirthOutcomes = (raw: unknown): string => {
-    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return '';
-    const row = raw as Record<string, unknown>;
-    return String(row.birthOutcomes ?? row.birth_outcomes ?? '').trim();
   };
 
   const extractBirthOutcomesInduction = (raw: unknown): boolean | undefined => {
@@ -312,12 +341,15 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
       let fallbackNames: Record<string, string> = {};
       if (unresolvedIds.length > 0) {
         try {
-          const teamResponse = await fetchWithAuth(buildUrl('/clients/team/all'), {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          });
+          const teamResponse = await fetchWithAuth(
+            buildUrl('/clients/team/all'),
+            {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            }
+          );
           if (teamResponse.ok) {
             const teamPayload = await teamResponse.json();
             const teamRows = Array.isArray(teamPayload)
@@ -368,7 +400,9 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
     try {
       const data = await getAssignedClients(false);
       // Ensure data is always an array
-      const clientsArray = Array.isArray(data) ? (data as AssignedClientLite[]) : [];
+      const clientsArray = Array.isArray(data)
+        ? (data as AssignedClientLite[])
+        : [];
       setClients(clientsArray);
       if (clientId) {
         const client = clientsArray.find((c) => c.id === clientId);
@@ -390,8 +424,12 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
       const typed = details as AssignedClientDetailed;
       setClientDetails(typed);
       setBirthOutcomesInductionDraft(extractBirthOutcomesInduction(typed));
-      setBirthOutcomesDeliveryTypeDraft(extractBirthOutcomesDeliveryType(typed));
-      setBirthOutcomesMedicationsUsedDraft(extractBirthOutcomesMedicationsUsed(typed));
+      setBirthOutcomesDeliveryTypeDraft(
+        extractBirthOutcomesDeliveryType(typed)
+      );
+      setBirthOutcomesMedicationsUsedDraft(
+        extractBirthOutcomesMedicationsUsed(typed)
+      );
     } catch {
       // Keep activities usable even when details fetch fails.
     } finally {
@@ -436,7 +474,7 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
           getAssignedClientDetails(id, true).catch(() => null),
           getClientActivities(id),
         ]);
-        
+
         if (details) {
           const typed = details as AssignedClientDetailed;
           setClientDetails(typed);
@@ -448,7 +486,7 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
             extractBirthOutcomesMedicationsUsed(typed)
           );
         }
-        
+
         // Set activities
         if (Array.isArray(activitiesData)) {
           setActivities(activitiesData);
@@ -474,9 +512,11 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
     if (!selectedClient?.id) return;
 
     const missing: string[] = [];
-    if (birthOutcomesInductionDraft === undefined) missing.push('Induction (Yes/No)');
+    if (birthOutcomesInductionDraft === undefined)
+      missing.push('Induction (Yes/No)');
     if (!birthOutcomesDeliveryTypeDraft.trim()) missing.push('Delivery type');
-    if (birthOutcomesMedicationsUsedDraft.length === 0) missing.push('Medications used');
+    if (birthOutcomesMedicationsUsedDraft.length === 0)
+      missing.push('Medications used');
     if (missing.length > 0) {
       toast.error(`Complete required fields: ${missing.join(', ')}`);
       return;
@@ -484,7 +524,7 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
 
     setIsSavingBirthOutcomes(true);
     try {
-      const result = await updateClient(selectedClient.id, {
+      const result = await updateClientBirthOutcomes(selectedClient.id, {
         birth_outcomes_induction: birthOutcomesInductionDraft,
         birth_outcomes_delivery_type: birthOutcomesDeliveryTypeDraft.trim(),
         birth_outcomes_medications_used: birthOutcomesMedicationsUsedDraft,
@@ -523,7 +563,10 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
         });
       } catch (e: any) {
         // Non-blocking: birth outcomes are saved even if activity creation fails.
-        console.warn('Birth outcomes saved but failed to create activity entry:', e?.message || e);
+        console.warn(
+          'Birth outcomes saved but failed to create activity entry:',
+          e?.message || e
+        );
       }
 
       // Refresh activities so the new entry shows with date/time in the feed.
@@ -554,12 +597,20 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
       await addClientActivity(selectedClient.id, {
         type: formData.type,
         description: formData.description,
-        metadata: Object.keys(formData.metadata).length > 0 ? formData.metadata : undefined,
+        metadata:
+          Object.keys(formData.metadata).length > 0
+            ? formData.metadata
+            : undefined,
         visibleToClient: formData.visibleToClient,
       });
       toast.success('Activity added successfully');
       setAddDialogOpen(false);
-      setFormData({ type: 'note', description: '', metadata: {}, visibleToClient: false });
+      setFormData({
+        type: 'note',
+        description: '',
+        metadata: {},
+        visibleToClient: false,
+      });
       // Refresh activities for the selected client
       if (selectedClient) {
         setIsLoading(true);
@@ -584,13 +635,24 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
     }
   };
 
-  const handlePortalVisibilityToggle = async (activityId: string, next: boolean) => {
+  const handlePortalVisibilityToggle = async (
+    activityId: string,
+    next: boolean
+  ) => {
     if (!selectedClient) return;
     setVisibilityUpdatingId(activityId);
     try {
-      const updated = await patchClientActivityVisibility(selectedClient.id, activityId, next);
-      setActivities((prev) => prev.map((a) => (a.id === activityId ? updated : a)));
-      toast.success(next ? 'Shown on client portal' : 'Hidden from client portal');
+      const updated = await patchClientActivityVisibility(
+        selectedClient.id,
+        activityId,
+        next
+      );
+      setActivities((prev) =>
+        prev.map((a) => (a.id === activityId ? updated : a))
+      );
+      toast.success(
+        next ? 'Shown on client portal' : 'Hidden from client portal'
+      );
     } catch (e: any) {
       toast.error(e?.message || 'Could not update visibility');
     } finally {
@@ -628,42 +690,43 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
     }
   };
 
-  const groupedActivities = activities.reduce((acc, activity) => {
-    // Safely handle date parsing - use current date as fallback
-    let dateStr = 'Unknown Date';
-    
-    try {
-      if (activity.createdAt) {
-        const dateObj = new Date(activity.createdAt);
-        // Check if date is valid
-        if (!isNaN(dateObj.getTime())) {
-          dateStr = format(dateObj, 'yyyy-MM-dd');
-        }
-      }
-      
-      // Always add activity, even if date is missing (use "Unknown Date" group)
-      if (!acc[dateStr]) {
-        acc[dateStr] = [];
-      }
-      acc[dateStr].push(activity);
-    } catch (error) {
-      logFailure('doula-dashboard', 'error_formatting_date_for_activity');
-      // Still add the activity to "Unknown Date" group
-      if (!acc[dateStr]) {
-        acc[dateStr] = [];
-      }
-      acc[dateStr].push(activity);
-    }
-    return acc;
-  }, {} as Record<string, ClientActivity[]>);
+  const groupedActivities = activities.reduce(
+    (acc, activity) => {
+      // Safely handle date parsing - use current date as fallback
+      let dateStr = 'Unknown Date';
 
-  const normalizedActivitiesSorted = activities
-    .slice()
-    .sort((a, b) => {
-      const ta = new Date(a.createdAt || 0).getTime();
-      const tb = new Date(b.createdAt || 0).getTime();
-      return (Number.isNaN(tb) ? 0 : tb) - (Number.isNaN(ta) ? 0 : ta);
-    });
+      try {
+        if (activity.createdAt) {
+          const dateObj = new Date(activity.createdAt);
+          // Check if date is valid
+          if (!isNaN(dateObj.getTime())) {
+            dateStr = format(dateObj, 'yyyy-MM-dd');
+          }
+        }
+
+        // Always add activity, even if date is missing (use "Unknown Date" group)
+        if (!acc[dateStr]) {
+          acc[dateStr] = [];
+        }
+        acc[dateStr].push(activity);
+      } catch (error) {
+        logFailure('doula-dashboard', 'error_formatting_date_for_activity');
+        // Still add the activity to "Unknown Date" group
+        if (!acc[dateStr]) {
+          acc[dateStr] = [];
+        }
+        acc[dateStr].push(activity);
+      }
+      return acc;
+    },
+    {} as Record<string, ClientActivity[]>
+  );
+
+  const normalizedActivitiesSorted = activities.slice().sort((a, b) => {
+    const ta = new Date(a.createdAt || 0).getTime();
+    const tb = new Date(b.createdAt || 0).getTime();
+    return (Number.isNaN(tb) ? 0 : tb) - (Number.isNaN(ta) ? 0 : ta);
+  });
 
   const filteredActivities = normalizedActivitiesSorted.filter((a) => {
     if (activityVisibilityFilter === 'client' && a.visibleToClient !== true) {
@@ -682,7 +745,9 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
       a.type,
       a.createdBy,
       a.createdByRole,
-      ...(displayMetadataEntries(a.metadata).map(([k, v]) => `${k} ${String(v)}`)),
+      ...displayMetadataEntries(a.metadata).map(
+        ([k, v]) => `${k} ${String(v)}`
+      ),
     ]
       .filter(Boolean)
       .join(' ')
@@ -692,22 +757,25 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
 
   const visibleActivities = filteredActivities.slice(0, visibleActivityCount);
 
-  const visibleActivitiesGrouped = visibleActivities.reduce((acc, activity) => {
-    let dateStr = 'Unknown Date';
-    try {
-      if (activity.createdAt) {
-        const dateObj = new Date(activity.createdAt);
-        if (!Number.isNaN(dateObj.getTime())) {
-          dateStr = format(dateObj, 'yyyy-MM-dd');
+  const visibleActivitiesGrouped = visibleActivities.reduce(
+    (acc, activity) => {
+      let dateStr = 'Unknown Date';
+      try {
+        if (activity.createdAt) {
+          const dateObj = new Date(activity.createdAt);
+          if (!Number.isNaN(dateObj.getTime())) {
+            dateStr = format(dateObj, 'yyyy-MM-dd');
+          }
         }
+      } catch {
+        // ignore
       }
-    } catch {
-      // ignore
-    }
-    if (!acc[dateStr]) acc[dateStr] = [];
-    acc[dateStr].push(activity);
-    return acc;
-  }, {} as Record<string, ClientActivity[]>);
+      if (!acc[dateStr]) acc[dateStr] = [];
+      acc[dateStr].push(activity);
+      return acc;
+    },
+    {} as Record<string, ClientActivity[]>
+  );
 
   const visibleDateKeys = Object.keys(visibleActivitiesGrouped).sort((a, b) =>
     b.localeCompare(a)
@@ -739,17 +807,20 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
   const birthOutcomesCompletion = React.useMemo(() => {
     const induction =
       clientDetails?.birthOutcomesInduction ?? birthOutcomesInductionDraft;
-    const deliveryType =
-      String(clientDetails?.birthOutcomesDeliveryType ?? birthOutcomesDeliveryTypeDraft ?? '').trim();
-    const meds =
-      Array.isArray(clientDetails?.birthOutcomesMedicationsUsed)
-        ? clientDetails?.birthOutcomesMedicationsUsed ?? []
-        : birthOutcomesMedicationsUsedDraft;
+    const deliveryType = String(
+      clientDetails?.birthOutcomesDeliveryType ??
+        birthOutcomesDeliveryTypeDraft ??
+        ''
+    ).trim();
+    const meds = Array.isArray(clientDetails?.birthOutcomesMedicationsUsed)
+      ? (clientDetails?.birthOutcomesMedicationsUsed ?? [])
+      : birthOutcomesMedicationsUsedDraft;
 
     const missing: string[] = [];
     if (induction === undefined) missing.push('Induction');
     if (!deliveryType) missing.push('Delivery type');
-    if (!Array.isArray(meds) || meds.length === 0) missing.push('Medications used');
+    if (!Array.isArray(meds) || meds.length === 0)
+      missing.push('Medications used');
 
     return { isComplete: missing.length === 0, missing };
   }, [
@@ -765,7 +836,9 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
     return (
       <div className='space-y-6'>
         <div>
-          <h2 className='text-xl font-semibold text-gray-900'>Client Activities</h2>
+          <h2 className='text-xl font-semibold text-gray-900'>
+            Client Activities
+          </h2>
           <p className='text-sm text-gray-600 mt-1'>
             Select a client to view and add activities
           </p>
@@ -792,7 +865,8 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                 ) : (
                   clients.map((client) => (
                     <option key={client.id} value={client.id}>
-                      {client.firstname || 'No'} {client.lastname || 'Name'} {client.email ? `(${client.email})` : ''}
+                      {client.firstname || 'No'} {client.lastname || 'Name'}{' '}
+                      {client.email ? `(${client.email})` : ''}
                     </option>
                   ))
                 )}
@@ -810,8 +884,8 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                 View client details and manage activities
               </DialogDescription>
             </DialogHeader>
-            
-            {(isLoadingDetails || isLoading) ? (
+
+            {isLoadingDetails || isLoading ? (
               <div className='py-8 text-center'>
                 <p className='text-gray-500'>Loading client information...</p>
               </div>
@@ -819,14 +893,19 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
               <div className='space-y-6 py-4'>
                 {/* Client Information Section */}
                 <div className='bg-gray-50 rounded-lg p-4 border border-gray-200'>
-                  <h3 className='text-lg font-semibold text-gray-900 mb-4'>Client Information</h3>
+                  <h3 className='text-lg font-semibold text-gray-900 mb-4'>
+                    Client Information
+                  </h3>
                   <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                     <div className='flex items-center gap-2'>
                       <User className='h-4 w-4 text-gray-400' />
                       <div>
                         <p className='text-xs text-gray-500'>Name</p>
                         <p className='text-sm font-medium text-gray-900'>
-                          {(selectedClient as AssignedClientLite).firstname || 'No'} {(selectedClient as AssignedClientLite).lastname || 'Name'}
+                          {(selectedClient as AssignedClientLite).firstname ||
+                            'No'}{' '}
+                          {(selectedClient as AssignedClientLite).lastname ||
+                            'Name'}
                         </p>
                       </div>
                     </div>
@@ -835,7 +914,8 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                       <div>
                         <p className='text-xs text-gray-500'>Email</p>
                         <p className='text-sm font-medium text-gray-900'>
-                          {(selectedClient as AssignedClientLite).email || 'No email provided'}
+                          {(selectedClient as AssignedClientLite).email ||
+                            'No email provided'}
                         </p>
                       </div>
                     </div>
@@ -844,7 +924,9 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                         <Phone className='h-4 w-4 text-gray-400' />
                         <div>
                           <p className='text-xs text-gray-500'>Phone</p>
-                          <p className='text-sm font-medium text-gray-900'>{(selectedClient as AssignedClientLite).phone}</p>
+                          <p className='text-sm font-medium text-gray-900'>
+                            {(selectedClient as AssignedClientLite).phone}
+                          </p>
                         </div>
                       </div>
                     )}
@@ -854,7 +936,12 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                         <div>
                           <p className='text-xs text-gray-500'>Due Date</p>
                           <p className='text-sm font-medium text-gray-900'>
-                            {format(new Date((selectedClient as AssignedClientLite).dueDate), 'MMM dd, yyyy')}
+                            {format(
+                              new Date(
+                                (selectedClient as AssignedClientLite).dueDate
+                              ),
+                              'MMM dd, yyyy'
+                            )}
                           </p>
                         </div>
                       </div>
@@ -868,7 +955,8 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                             {clientDetails.address}
                             {clientDetails.city && `, ${clientDetails.city}`}
                             {clientDetails.state && `, ${clientDetails.state}`}
-                            {clientDetails.zipCode && ` ${clientDetails.zipCode}`}
+                            {clientDetails.zipCode &&
+                              ` ${clientDetails.zipCode}`}
                           </p>
                         </div>
                       </div>
@@ -878,19 +966,25 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                         <p className='text-xs text-gray-500'>
                           {PREGNANCY_BABY_POSTPARTUM_QUESTION_LABEL}
                         </p>
-                        <p className='text-sm text-gray-900'>{clientDetails.healthHistory}</p>
+                        <p className='text-sm text-gray-900'>
+                          {clientDetails.healthHistory}
+                        </p>
                       </div>
                     )}
                     {clientDetails?.allergies && (
                       <div className='md:col-span-2'>
                         <p className='text-xs text-gray-500'>Allergies</p>
-                        <p className='text-sm text-gray-900'>{clientDetails.allergies}</p>
+                        <p className='text-sm text-gray-900'>
+                          {clientDetails.allergies}
+                        </p>
                       </div>
                     )}
                     {clientDetails?.hospital && (
                       <div className='md:col-span-2'>
                         <p className='text-xs text-gray-500'>Hospital</p>
-                        <p className='text-sm text-gray-900'>{clientDetails.hospital}</p>
+                        <p className='text-sm text-gray-900'>
+                          {clientDetails.hospital}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -899,8 +993,16 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                 {/* Activities Section */}
                 <div>
                   <div className='flex justify-between items-center mb-4'>
-                    <h3 className='text-lg font-semibold text-gray-900'>Activities</h3>
-                    <Button onClick={() => setAddDialogOpen(true)} size='sm' disabled={isLoading || isLoadingDetails || isActivitiesLoading}>
+                    <h3 className='text-lg font-semibold text-gray-900'>
+                      Activities
+                    </h3>
+                    <Button
+                      onClick={() => setAddDialogOpen(true)}
+                      size='sm'
+                      disabled={
+                        isLoading || isLoadingDetails || isActivitiesLoading
+                      }
+                    >
                       <Plus className='h-4 w-4 mr-2' />
                       Add Activity
                     </Button>
@@ -916,7 +1018,9 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                     <Card>
                       <CardContent className='text-center py-8'>
                         <MessageSquare className='h-12 w-12 text-gray-400 mx-auto mb-4' />
-                        <p className='text-gray-500 mb-4'>No activities recorded yet</p>
+                        <p className='text-gray-500 mb-4'>
+                          No activities recorded yet
+                        </p>
                         <Button onClick={() => setAddDialogOpen(true)}>
                           <Plus className='h-4 w-4 mr-2' />
                           Add First Activity
@@ -958,48 +1062,79 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                                             {activity.type}
                                           </Badge>
                                           {activity.visibleToClient ? (
-                                            <Badge variant='outline' className='text-xs border-emerald-600 text-emerald-800'>
+                                            <Badge
+                                              variant='outline'
+                                              className='text-xs border-emerald-600 text-emerald-800'
+                                            >
                                               Visible to client
                                             </Badge>
                                           ) : (
-                                            <Badge variant='secondary' className='text-xs text-muted-foreground'>
+                                            <Badge
+                                              variant='secondary'
+                                              className='text-xs text-muted-foreground'
+                                            >
                                               Staff only
                                             </Badge>
                                           )}
                                           <span className='text-xs text-gray-500'>
                                             {(() => {
                                               try {
-                                                if (!activity.createdAt) return '';
-                                                const dateObj = new Date(activity.createdAt);
-                                                if (isNaN(dateObj.getTime())) return '';
-                                                return format(dateObj, 'h:mm a');
+                                                if (!activity.createdAt)
+                                                  return '';
+                                                const dateObj = new Date(
+                                                  activity.createdAt
+                                                );
+                                                if (isNaN(dateObj.getTime()))
+                                                  return '';
+                                                return format(
+                                                  dateObj,
+                                                  'h:mm a'
+                                                );
                                               } catch {
                                                 return '';
                                               }
                                             })()}
                                           </span>
                                         </div>
-                                        <p className='text-sm text-gray-900'>{activity.description}</p>
+                                        <p className='text-sm text-gray-900'>
+                                          {activity.description}
+                                        </p>
                                         {getActivityAuthorDisplay(activity) && (
                                           <p className='text-xs text-muted-foreground'>
                                             {getActivityAuthorDisplay(activity)}
                                           </p>
                                         )}
-                                        {displayMetadataEntries(activity.metadata).length > 0 && (
-                                            <div className='text-xs text-gray-600 space-y-1 pt-2 border-t'>
-                                              {displayMetadataEntries(activity.metadata).map(([key, value]) => (
-                                                <p key={key}>
-                                                  <span className='font-medium'>{key}:</span> {String(value)}
-                                                </p>
-                                              ))}
-                                            </div>
-                                          )}
+                                        {displayMetadataEntries(
+                                          activity.metadata
+                                        ).length > 0 && (
+                                          <div className='text-xs text-gray-600 space-y-1 pt-2 border-t'>
+                                            {displayMetadataEntries(
+                                              activity.metadata
+                                            ).map(([key, value]) => (
+                                              <p key={key}>
+                                                <span className='font-medium'>
+                                                  {key}:
+                                                </span>{' '}
+                                                {String(value)}
+                                              </p>
+                                            ))}
+                                          </div>
+                                        )}
                                         {selectedClient ? (
                                           <ActivityPortalToggle
-                                            clientId={(selectedClient as AssignedClientLite).id}
+                                            clientId={
+                                              (
+                                                selectedClient as AssignedClientLite
+                                              ).id
+                                            }
                                             activity={activity}
-                                            busy={visibilityUpdatingId === activity.id}
-                                            onToggle={handlePortalVisibilityToggle}
+                                            busy={
+                                              visibilityUpdatingId ===
+                                              activity.id
+                                            }
+                                            onToggle={
+                                              handlePortalVisibilityToggle
+                                            }
                                           />
                                         ) : null}
                                       </div>
@@ -1017,7 +1152,10 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
             ) : null}
 
             <DialogFooter>
-              <Button variant='outline' onClick={() => setClientModalOpen(false)}>
+              <Button
+                variant='outline'
+                onClick={() => setClientModalOpen(false)}
+              >
                 Close
               </Button>
             </DialogFooter>
@@ -1037,20 +1175,30 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                 <ArrowLeft className='h-4 w-4' />
               </Button>
             )}
-            <h2 className='text-xl font-semibold text-gray-900'>Client Activities</h2>
+            <h2 className='text-xl font-semibold text-gray-900'>
+              Client Activities
+            </h2>
           </div>
           {selectedClient && (
             <div className='space-y-1'>
               <p className='text-sm font-medium text-gray-900'>
-                {selectedClient.firstname || 'No'} {selectedClient.lastname || 'Name'}
+                {selectedClient.firstname || 'No'}{' '}
+                {selectedClient.lastname || 'Name'}
               </p>
               {selectedClient.email && (
                 <p className='text-sm text-gray-600'>{selectedClient.email}</p>
               )}
               <p className='text-sm text-muted-foreground pt-1 max-w-xl'>
-                Click <span className='font-medium text-foreground'>Add Activity</span> to add a note or log. In that form, use{' '}
-                <span className='font-medium text-foreground'>Show to client</span> if this entry should appear on the
-                client&apos;s portal; leave it off to keep it staff-only.
+                Click{' '}
+                <span className='font-medium text-foreground'>
+                  Add Activity
+                </span>{' '}
+                to add a note or log. In that form, use{' '}
+                <span className='font-medium text-foreground'>
+                  Show to client
+                </span>{' '}
+                if this entry should appear on the client&apos;s portal; leave
+                it off to keep it staff-only.
               </p>
             </div>
           )}
@@ -1122,9 +1270,12 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
             <CardContent className='py-5 space-y-3'>
               <div ref={birthOutcomesSectionRef} />
               <div className='space-y-1'>
-                <h3 className='text-base font-semibold text-gray-900'>Birth Outcomes</h3>
+                <h3 className='text-base font-semibold text-gray-900'>
+                  Birth Outcomes
+                </h3>
                 <p className='text-sm text-muted-foreground'>
-                  Structured birth outcomes for reporting. All fields are required.
+                  Structured birth outcomes for reporting. All fields are
+                  required.
                 </p>
               </div>
               <div className='rounded-lg border p-3 space-y-4'>
@@ -1141,7 +1292,10 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                         checked={birthOutcomesInductionDraft === true}
                         onChange={() => setBirthOutcomesInductionDraft(true)}
                       />
-                      <Label htmlFor='bo-induction-yes' className='text-sm font-normal'>
+                      <Label
+                        htmlFor='bo-induction-yes'
+                        className='text-sm font-normal'
+                      >
                         Yes
                       </Label>
                     </div>
@@ -1153,7 +1307,10 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                         checked={birthOutcomesInductionDraft === false}
                         onChange={() => setBirthOutcomesInductionDraft(false)}
                       />
-                      <Label htmlFor='bo-induction-no' className='text-sm font-normal'>
+                      <Label
+                        htmlFor='bo-induction-no'
+                        className='text-sm font-normal'
+                      >
                         No
                       </Label>
                     </div>
@@ -1167,7 +1324,9 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                   <select
                     className='w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
                     value={birthOutcomesDeliveryTypeDraft}
-                    onChange={(e) => setBirthOutcomesDeliveryTypeDraft(e.target.value)}
+                    onChange={(e) =>
+                      setBirthOutcomesDeliveryTypeDraft(e.target.value)
+                    }
                   >
                     <option value=''>Select...</option>
                     {BIRTH_OUTCOMES_DELIVERY_TYPE_OPTIONS.map((opt) => (
@@ -1184,7 +1343,8 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                   </Label>
                   <div className='grid gap-2 sm:grid-cols-2'>
                     {BIRTH_OUTCOMES_MEDICATION_OPTIONS.map((opt) => {
-                      const checked = birthOutcomesMedicationsUsedDraft.includes(opt);
+                      const checked =
+                        birthOutcomesMedicationsUsedDraft.includes(opt);
                       return (
                         <div key={opt} className='flex items-center gap-2'>
                           <Checkbox
@@ -1198,7 +1358,10 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                               );
                             }}
                           />
-                          <Label htmlFor={`bo-med-${opt}`} className='text-sm font-normal'>
+                          <Label
+                            htmlFor={`bo-med-${opt}`}
+                            className='text-sm font-normal'
+                          >
                             {opt}
                           </Label>
                         </div>
@@ -1206,48 +1369,51 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                     })}
                   </div>
                 </div>
-
-                {extractLegacyBirthOutcomes(clientDetails).trim() ? (
-                  <div className='space-y-2 pt-2 border-t'>
-                    <Label className='text-sm font-medium text-muted-foreground'>
-                      Legacy Birth Outcomes (read-only)
-                    </Label>
-                    <Textarea
-                      value={extractLegacyBirthOutcomes(clientDetails)}
-                      rows={4}
-                      readOnly
-                    />
-                  </div>
-                ) : null}
               </div>
               <div className='flex justify-end'>
                 <div className='flex flex-col items-end gap-1'>
                   {birthOutcomesLastSavedAt ? (
                     <span className='text-xs text-muted-foreground'>
-                      Saved {format(birthOutcomesLastSavedAt, 'MMM dd, yyyy h:mm a')}
+                      Saved{' '}
+                      {format(birthOutcomesLastSavedAt, 'MMM dd, yyyy h:mm a')}
                     </span>
                   ) : null}
-                  <Button onClick={handleSaveBirthOutcomes} disabled={isSavingBirthOutcomes}>
-                  {isSavingBirthOutcomes ? 'Saving...' : 'Save Birth Outcomes'}
+                  <Button
+                    onClick={handleSaveBirthOutcomes}
+                    disabled={isSavingBirthOutcomes}
+                  >
+                    {isSavingBirthOutcomes
+                      ? 'Saving...'
+                      : 'Save Birth Outcomes'}
                   </Button>
                 </div>
               </div>
 
               <div className='pt-3 border-t'>
                 <div className='flex items-center justify-between gap-2'>
-                  <h4 className='text-sm font-semibold text-gray-900'>Birth Outcomes Records</h4>
+                  <h4 className='text-sm font-semibold text-gray-900'>
+                    Birth Outcomes Records
+                  </h4>
                   <span className='text-xs text-muted-foreground'>
-                    {birthOutcomesRecords.length} record{birthOutcomesRecords.length === 1 ? '' : 's'}
+                    {birthOutcomesRecords.length} record
+                    {birthOutcomesRecords.length === 1 ? '' : 's'}
                   </span>
                 </div>
                 {birthOutcomesRecords.length === 0 ? (
-                  <p className='text-sm text-muted-foreground mt-2'>No saved birth outcomes records yet.</p>
+                  <p className='text-sm text-muted-foreground mt-2'>
+                    No saved birth outcomes records yet.
+                  </p>
                 ) : (
                   <div className='mt-3 space-y-2'>
                     {birthOutcomesRecords.slice(0, 3).map((record) => (
-                      <div key={record.id} className='rounded-lg border bg-background p-3 space-y-1'>
+                      <div
+                        key={record.id}
+                        className='rounded-lg border bg-background p-3 space-y-1'
+                      >
                         <div className='flex flex-wrap items-center gap-2 text-xs text-muted-foreground'>
-                          <Badge variant='secondary' className='text-xs'>Staff only</Badge>
+                          <Badge variant='secondary' className='text-xs'>
+                            Staff only
+                          </Badge>
                           <span>
                             {(() => {
                               try {
@@ -1261,7 +1427,9 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                             })()}
                           </span>
                         </div>
-                        <p className='text-sm whitespace-pre-wrap text-gray-900'>{record.description}</p>
+                        <p className='text-sm whitespace-pre-wrap text-gray-900'>
+                          {record.description}
+                        </p>
                         {getActivityAuthorDisplay(record) ? (
                           <p className='text-xs text-muted-foreground'>
                             {getActivityAuthorDisplay(record)}
@@ -1271,7 +1439,8 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                     ))}
                     {birthOutcomesRecords.length > 3 ? (
                       <p className='text-xs text-muted-foreground'>
-                        Showing the latest 3 records. See the Activities list below for the full history.
+                        Showing the latest 3 records. See the Activities list
+                        below for the full history.
                       </p>
                     ) : null}
                   </div>
@@ -1280,7 +1449,7 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
             </CardContent>
           </Card>
 
-          {(isLoadingDetails || isActivitiesLoading) ? (
+          {isLoadingDetails || isActivitiesLoading ? (
             <Card>
               <CardContent className='text-center py-12'>
                 <p className='text-gray-500'>Loading activities...</p>
@@ -1304,8 +1473,12 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                   <div className='flex flex-wrap items-center justify-between gap-2'>
                     <CardTitle className='text-base'>Activities</CardTitle>
                     <div className='text-xs text-muted-foreground'>
-                      Showing {Math.min(visibleActivities.length, filteredActivities.length)} of{' '}
-                      {filteredActivities.length}
+                      Showing{' '}
+                      {Math.min(
+                        visibleActivities.length,
+                        filteredActivities.length
+                      )}{' '}
+                      of {filteredActivities.length}
                     </div>
                   </div>
 
@@ -1393,7 +1566,8 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                 ) : (
                   <div className='max-h-[70vh] overflow-y-auto pr-1 space-y-4'>
                     {visibleDateKeys.map((date) => {
-                      const dateActivities = visibleActivitiesGrouped[date] ?? [];
+                      const dateActivities =
+                        visibleActivitiesGrouped[date] ?? [];
                       const isCollapsed = collapsedActivityDates.has(date);
                       return (
                         <div key={date}>
@@ -1413,7 +1587,8 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                               {(() => {
                                 try {
                                   const dateObj = new Date(date);
-                                  if (Number.isNaN(dateObj.getTime())) return date;
+                                  if (Number.isNaN(dateObj.getTime()))
+                                    return date;
                                   return format(dateObj, 'MMMM dd, yyyy');
                                 } catch {
                                   return date;
@@ -1421,8 +1596,9 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                               })()}
                             </span>
                             <span className='text-xs text-muted-foreground'>
-                              {dateActivities.length} item{dateActivities.length === 1 ? '' : 's'}{' '}
-                              • {isCollapsed ? 'Show' : 'Hide'}
+                              {dateActivities.length} item
+                              {dateActivities.length === 1 ? '' : 's'} •{' '}
+                              {isCollapsed ? 'Show' : 'Hide'}
                             </span>
                           </button>
 
@@ -1445,21 +1621,38 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                                             {activity.type}
                                           </Badge>
                                           {activity.visibleToClient ? (
-                                            <Badge variant='outline' className='text-xs border-emerald-600 text-emerald-800'>
+                                            <Badge
+                                              variant='outline'
+                                              className='text-xs border-emerald-600 text-emerald-800'
+                                            >
                                               Visible to client
                                             </Badge>
                                           ) : (
-                                            <Badge variant='secondary' className='text-xs text-muted-foreground'>
+                                            <Badge
+                                              variant='secondary'
+                                              className='text-xs text-muted-foreground'
+                                            >
                                               Staff only
                                             </Badge>
                                           )}
                                           <span className='text-xs text-gray-500'>
                                             {(() => {
                                               try {
-                                                if (!activity.createdAt) return '';
-                                                const dateObj = new Date(activity.createdAt);
-                                                if (Number.isNaN(dateObj.getTime())) return '';
-                                                return format(dateObj, 'h:mm a');
+                                                if (!activity.createdAt)
+                                                  return '';
+                                                const dateObj = new Date(
+                                                  activity.createdAt
+                                                );
+                                                if (
+                                                  Number.isNaN(
+                                                    dateObj.getTime()
+                                                  )
+                                                )
+                                                  return '';
+                                                return format(
+                                                  dateObj,
+                                                  'h:mm a'
+                                                );
                                               } catch {
                                                 return '';
                                               }
@@ -1474,21 +1667,37 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                                             {getActivityAuthorDisplay(activity)}
                                           </p>
                                         )}
-                                        {displayMetadataEntries(activity.metadata).length > 0 && (
+                                        {displayMetadataEntries(
+                                          activity.metadata
+                                        ).length > 0 && (
                                           <div className='text-xs text-gray-600 space-y-1 pt-2 border-t'>
-                                            {displayMetadataEntries(activity.metadata).map(([key, value]) => (
+                                            {displayMetadataEntries(
+                                              activity.metadata
+                                            ).map(([key, value]) => (
                                               <p key={key}>
-                                                <span className='font-medium'>{key}:</span> {String(value)}
+                                                <span className='font-medium'>
+                                                  {key}:
+                                                </span>{' '}
+                                                {String(value)}
                                               </p>
                                             ))}
                                           </div>
                                         )}
                                         {selectedClient ? (
                                           <ActivityPortalToggle
-                                            clientId={(selectedClient as AssignedClientLite).id}
+                                            clientId={
+                                              (
+                                                selectedClient as AssignedClientLite
+                                              ).id
+                                            }
                                             activity={activity}
-                                            busy={visibilityUpdatingId === activity.id}
-                                            onToggle={handlePortalVisibilityToggle}
+                                            busy={
+                                              visibilityUpdatingId ===
+                                              activity.id
+                                            }
+                                            onToggle={
+                                              handlePortalVisibilityToggle
+                                            }
                                           />
                                         ) : null}
                                       </div>
@@ -1515,9 +1724,12 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
           <DialogHeader>
             <DialogTitle>Add Activity</DialogTitle>
             <DialogDescription>
-              Record an activity for {selectedClient?.firstname || 'No'} {selectedClient?.lastname || 'Name'}. Use{' '}
-              <span className='font-medium text-foreground'>Show to client</span> below only if they should see this on
-              their portal.
+              Record an activity for {selectedClient?.firstname || 'No'}{' '}
+              {selectedClient?.lastname || 'Name'}. Use{' '}
+              <span className='font-medium text-foreground'>
+                Show to client
+              </span>{' '}
+              below only if they should see this on their portal.
             </DialogDescription>
           </DialogHeader>
           <div className='space-y-4 py-4'>
@@ -1528,7 +1740,10 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                 className='w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
                 value={formData.type}
                 onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, type: e.target.value as ActivityType }))
+                  setFormData((prev) => ({
+                    ...prev,
+                    type: e.target.value as ActivityType,
+                  }))
                 }
               >
                 <option value='note'>Note</option>
@@ -1544,7 +1759,10 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                 id='description'
                 value={formData.description}
                 onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, description: e.target.value }))
+                  setFormData((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
                 }
                 rows={4}
                 placeholder='Describe the activity...'
@@ -1563,12 +1781,16 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
                 }
               />
               <div className='space-y-1'>
-                <Label htmlFor='visible-to-client' className='cursor-pointer font-medium leading-snug'>
+                <Label
+                  htmlFor='visible-to-client'
+                  className='cursor-pointer font-medium leading-snug'
+                >
                   Show to client
                 </Label>
                 <p className='text-xs text-muted-foreground leading-snug'>
-                  Off (default): staff only — not shown on the client portal. On: appears under &quot;Updates from your
-                  care team&quot; for this client.
+                  Off (default): staff only — not shown on the client portal.
+                  On: appears under &quot;Updates from your care team&quot; for
+                  this client.
                 </p>
               </div>
             </div>
@@ -1607,7 +1829,10 @@ export default function ActivitiesTab({ clientId, onBack }: ActivitiesTabProps) 
             <Button variant='outline' onClick={() => setAddDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAddActivity} disabled={isAdding || !formData.description.trim()}>
+            <Button
+              onClick={handleAddActivity}
+              disabled={isAdding || !formData.description.trim()}
+            >
               {isAdding ? 'Adding...' : 'Add Activity'}
             </Button>
           </DialogFooter>

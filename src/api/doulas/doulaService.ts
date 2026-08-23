@@ -445,8 +445,7 @@ export async function uploadDocument(
   }
 
   // Debug: Log FormData contents
-  formData.forEach((value, key) => {
-  });
+  formData.forEach((value, key) => {});
 
   const response = await fetchWithAuth(`${API_BASE}/doulas/documents`, {
     method: 'POST',
@@ -672,7 +671,6 @@ export interface AssignedClientDetailed extends AssignedClientLite {
   healthHistory?: string;
   allergies?: string;
   hospital?: string;
-  birthOutcomes?: string;
   birthOutcomesInduction?: boolean;
   birthOutcomesDeliveryType?: string;
   birthOutcomesMedicationsUsed?: string[];
@@ -689,7 +687,6 @@ export async function getAssignedClients(
       'Content-Type': 'application/json',
     },
   });
-
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -748,12 +745,6 @@ export async function getAssignedClients(
         healthHistory: client.user.health_history || client.healthHistory || '',
         allergies: client.user.allergies || client.allergies || '',
         hospital: client.user.hospital || client.hospital || '',
-        birthOutcomes:
-          client.user.birth_outcomes ||
-          client.user.birthOutcomes ||
-          client.birth_outcomes ||
-          client.birthOutcomes ||
-          '',
         birthOutcomesInduction:
           client.user.birth_outcomes_induction ??
           client.user.birthOutcomesInduction ??
@@ -791,7 +782,6 @@ export async function getAssignedClients(
       healthHistory: client.healthHistory || client.health_history || '',
       allergies: client.allergies || '',
       hospital: client.hospital || '',
-      birthOutcomes: client.birthOutcomes || client.birth_outcomes || '',
       birthOutcomesInduction:
         client.birthOutcomesInduction ??
         client.birth_outcomes_induction ??
@@ -854,9 +844,6 @@ export async function getAssignedClientDetails(
     ),
     allergies: String(source?.allergies ?? ''),
     hospital: String(source?.hospital ?? ''),
-    birthOutcomes: String(
-      source?.birthOutcomes ?? source?.birth_outcomes ?? ''
-    ),
     birthOutcomesInduction:
       source?.birthOutcomesInduction ??
       source?.birth_outcomes_induction ??

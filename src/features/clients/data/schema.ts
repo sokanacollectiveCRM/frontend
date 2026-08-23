@@ -55,7 +55,9 @@ const serviceSchema = z.union([
   z.literal('Other'),
   // Add more flexible service names that appear in the API
   z.literal('labor support'),
-  z.literal('Full doula support package including labor and postpartum services'),
+  z.literal(
+    'Full doula support package including labor and postpartum services'
+  ),
   // Allow any string for services not in the enum
   z.string(),
 ]);
@@ -76,18 +78,24 @@ const userSchema = z
     role: z.string().optional(),
     serviceNeeded: serviceSchema.optional(),
     service_needed: serviceSchema.optional(),
-    requestedAt: z.union([z.string(), z.date()]).transform((val) => {
-      if (typeof val === 'string') {
-        return new Date(val);
-      }
-      return val;
-    }).optional(),
-    updatedAt: z.union([z.string(), z.date()]).transform((val) => {
-      if (typeof val === 'string') {
-        return new Date(val);
-      }
-      return val;
-    }).optional(),
+    requestedAt: z
+      .union([z.string(), z.date()])
+      .transform((val) => {
+        if (typeof val === 'string') {
+          return new Date(val);
+        }
+        return val;
+      })
+      .optional(),
+    updatedAt: z
+      .union([z.string(), z.date()])
+      .transform((val) => {
+        if (typeof val === 'string') {
+          return new Date(val);
+        }
+        return val;
+      })
+      .optional(),
     status: userStatusSchema,
     // Add client_info specific fields
     uuid: z.string().optional(),
@@ -165,8 +173,10 @@ const userSchema = z
     portal_status: data.portal_status,
     portal_blockers: data.portal_blockers ?? data.portalBlockers,
     portalBlockers: data.portalBlockers ?? data.portal_blockers,
-    primary_portal_blocker: data.primary_portal_blocker ?? data.primaryPortalBlocker,
-    primaryPortalBlocker: data.primaryPortalBlocker ?? data.primary_portal_blocker,
+    primary_portal_blocker:
+      data.primary_portal_blocker ?? data.primaryPortalBlocker,
+    primaryPortalBlocker:
+      data.primaryPortalBlocker ?? data.primary_portal_blocker,
     billing_path: data.billing_path ?? data.billingPath,
     billingPath: data.billingPath ?? data.billing_path,
     payment_authorization_required:
@@ -174,9 +184,11 @@ const userSchema = z
     paymentAuthorizationRequired:
       data.paymentAuthorizationRequired ?? data.payment_authorization_required,
     payment_authorization_satisfied:
-      data.payment_authorization_satisfied ?? data.paymentAuthorizationSatisfied,
+      data.payment_authorization_satisfied ??
+      data.paymentAuthorizationSatisfied,
     paymentAuthorizationSatisfied:
-      data.paymentAuthorizationSatisfied ?? data.payment_authorization_satisfied,
+      data.paymentAuthorizationSatisfied ??
+      data.payment_authorization_satisfied,
     card_on_file: data.card_on_file ?? data.cardOnFile,
     cardOnFile: data.cardOnFile ?? data.card_on_file,
     payment_method: data.payment_method ?? data.paymentMethod,
@@ -187,14 +199,17 @@ const userSchema = z
       data.paymentAuthorizationStatus ?? data.payment_authorization_status,
     has_signed_contract: data.has_signed_contract ?? data.hasSignedContract,
     hasSignedContract: data.hasSignedContract ?? data.has_signed_contract,
-    has_completed_payment: data.has_completed_payment ?? data.hasCompletedPayment,
+    has_completed_payment:
+      data.has_completed_payment ?? data.hasCompletedPayment,
     hasCompletedPayment: data.hasCompletedPayment ?? data.has_completed_payment,
     contract_status: data.contract_status ?? data.contractStatus,
     contractStatus: data.contractStatus ?? data.contract_status,
     payment_status: data.payment_status ?? data.paymentStatus,
     paymentStatus: data.paymentStatus ?? data.payment_status,
-    verification_invoice_id: data.verification_invoice_id ?? data.verificationInvoiceId,
-    verificationInvoiceId: data.verificationInvoiceId ?? data.verification_invoice_id,
+    verification_invoice_id:
+      data.verification_invoice_id ?? data.verificationInvoiceId,
+    verificationInvoiceId:
+      data.verificationInvoiceId ?? data.verification_invoice_id,
     verification_invoice_sent_at:
       data.verification_invoice_sent_at ?? data.verificationInvoiceSentAt,
     verificationInvoiceSentAt:
@@ -211,11 +226,7 @@ export type User = z.infer<typeof userSchema>;
 
 // Portal status types (UI-only, not in Zod schema yet)
 // portal_status reflects invitation state, not eligibility
-export type PortalStatus =
-  | 'not_invited'
-  | 'invited'
-  | 'active'
-  | 'disabled';
+export type PortalStatus = 'not_invited' | 'invited' | 'active' | 'disabled';
 
 // Extended User type with portal fields (UI-only for now)
 export type UserWithPortal = User & {
@@ -251,7 +262,7 @@ export type Client = User & {
   pets?: string;
   home_adults_count?: string;
   home_youth_count?: string;
-  
+
   // Services
   services_interested?: string[];
   service_support_details?: string;
@@ -270,7 +281,7 @@ export type Client = User & {
   secondary_insurance_member_id?: string;
   secondary_policy_number?: string;
   self_pay_card_info?: string;
-  
+
   // Family
   relationship_status?: string;
   first_name?: string;
@@ -280,13 +291,13 @@ export type Client = User & {
   family_email?: string;
   mobile_phone?: string;
   work_phone?: string;
-  
+
   // Referral
   referral_source?: string;
   referral_source_other?: string;
   referral_name?: string;
   referral_email?: string;
-  
+
   // Health & Pregnancy
   due_date?: string | Date;
   birth_location?: string;
@@ -296,17 +307,16 @@ export type Client = User & {
   provider_type?: string;
   pregnancy_number?: number;
   health_notes?: string;
-  birth_outcomes?: string;
   birth_outcomes_induction?: boolean;
   birth_outcomes_delivery_type?: string;
   birth_outcomes_medications_used?: string[];
-  
+
   // Past Pregnancies
   had_previous_pregnancies?: boolean;
   previous_pregnancies_count?: number;
   living_children_count?: number;
   past_pregnancy_experience?: string;
-  
+
   // Demographics
   race_ethnicity?: string;
   primary_language?: string;
@@ -314,11 +324,11 @@ export type Client = User & {
   insurance?: string;
   demographics_multi?: string[];
   demographics_annual_income?: string;
-  
+
   // Account
   account_status?: string;
   created_at?: string | Date;
-  
+
   // Allow any additional properties from the API
   [key: string]: any;
 };
