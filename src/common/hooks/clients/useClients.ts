@@ -68,7 +68,8 @@ export function useClients() {
         !normalizedOptions?.force && !!getCachedClientDetail(id);
       if (!hasCached) {
         setIsLoading(true);
-        setError(null);
+        // Do not clear list-level error here — a detail miss must not wipe or
+        // replace the clients-list error banner.
       }
 
       try {
@@ -77,13 +78,9 @@ export function useClients() {
         if (err instanceof ApiError) {
           if (isSessionExpiredError(err.status, err.message)) {
             setError(getSessionExpirationMessage());
-          } else {
-            setError(err.message);
           }
-        } else if (err instanceof Error) {
-          setError(err.message);
-        } else {
-          setError('An unknown error occurred');
+          // 404 / other detail failures: return null for the caller. Do not set
+          // list-level `error` (that banner is for getClients failures only).
         }
         return null;
       } finally {

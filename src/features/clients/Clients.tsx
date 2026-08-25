@@ -198,7 +198,6 @@ export default function Users() {
   }, [selectedLeadForPortal]);
 
   const handleResendInvite = useCallback(async (lead: UserSummary) => {
-
     try {
       // Get the frontend URL (production or current origin)
       const frontendUrl =
@@ -255,7 +254,6 @@ export default function Users() {
   }, []);
 
   const handleDisablePortal = useCallback(async (lead: UserSummary) => {
-
     try {
       const response = await fetchWithAuth(
         buildUrl(`/api/admin/clients/${lead.id}/portal/disable`),
@@ -481,11 +479,14 @@ function RouteAwareLeadProfileLoader({
         if (isCancelled) return;
 
         if (!fetchedClient) {
-          toast.error('Client profile not found.');
-          setMissingClientId(normalizedId);
+          // Missing / unauthorized deep-link: return to list quietly (no banner, no modal).
+          setMissingClientId(null);
           setCurrentRow(null);
-          setOpen('lead-profile');
+          setOpen(null);
           lastRequestedIdRef.current = normalizedId;
+          if (location.pathname !== navigateToOnClose) {
+            navigate(navigateToOnClose, { replace: true });
+          }
           return;
         }
 
@@ -495,11 +496,13 @@ function RouteAwareLeadProfileLoader({
         );
 
         if (!parsedClient) {
-          toast.error('Unable to load client profile.');
-          setMissingClientId(normalizedId);
+          setMissingClientId(null);
           setCurrentRow(null);
-          setOpen('lead-profile');
+          setOpen(null);
           lastRequestedIdRef.current = normalizedId;
+          if (location.pathname !== navigateToOnClose) {
+            navigate(navigateToOnClose, { replace: true });
+          }
           return;
         }
 
@@ -509,13 +512,16 @@ function RouteAwareLeadProfileLoader({
         setOpen('lead-profile');
         lastRequestedIdRef.current = normalizedId;
         setMissingClientId(null);
-      } catch (error) {
+      } catch {
         logFailure('clients', 'error_loading_client_from_deep_link');
-        toast.error('Failed to load client profile.');
-        setMissingClientId(normalizedId);
+        // Quiet fallback — do not surface list banner or not-found modal.
+        setMissingClientId(null);
         setCurrentRow(null);
-        setOpen('lead-profile');
+        setOpen(null);
         lastRequestedIdRef.current = normalizedId;
+        if (location.pathname !== navigateToOnClose) {
+          navigate(navigateToOnClose, { replace: true });
+        }
       } finally {
         if (!isCancelled) {
           setIsFetchingFromRoute(false);
@@ -539,6 +545,9 @@ function RouteAwareLeadProfileLoader({
     attemptedRouteIdsRef,
     setMissingClientId,
     manualCloseRef,
+    navigate,
+    navigateToOnClose,
+    location.pathname,
   ]);
 
   useEffect(() => {
