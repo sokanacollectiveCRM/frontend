@@ -42,7 +42,7 @@ export function buildUrl(path: string, params?: QueryParams): string {
   return url.toString();
 }
 
-/** Throw if production build is using localhost or has no API URL (env not set in Vercel). */
+/** Throw if production build is using localhost or has no API URL (env not set at build time). */
 function assertProductionBackendUrl(_path: string): void {
   const isProductionBuild = import.meta.env.MODE === 'production';
   const base = API_CONFIG.baseUrl;
@@ -50,7 +50,7 @@ function assertProductionBackendUrl(_path: string): void {
     !base || base.includes('localhost') || base.startsWith('http://127.');
   if (isProductionBuild && isLocalhost) {
     throw new ApiError(
-      'Backend URL is not set for production. Set VITE_APP_BACKEND_URL, VITE_API_BASE_URL, or VITE_CLOUD_RUN_API_URL in Vercel to your backend, e.g. https://your-backend.run.app',
+      'Backend URL is not set for production. Set VITE_APP_BACKEND_URL, VITE_API_BASE_URL, or VITE_CLOUD_RUN_API_URL at Cloud Run build time to your backend, e.g. https://your-backend.run.app',
       0,
       { code: 'MISSING_BACKEND_URL' }
     );
