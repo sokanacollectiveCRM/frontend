@@ -179,7 +179,7 @@ describe('useClients', () => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    it('should handle client not found', async () => {
+    it('should handle client not found without setting list error', async () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: false,
         status: 404,
@@ -193,19 +193,25 @@ describe('useClients', () => {
       });
 
       expect(client).toBeNull();
-      expect(result.current.error).toBe('Client not found');
+      // Deep-link / detail 404 must not poison the clients list banner
+      expect(result.current.error).toBeNull();
     });
   });
 
   describe('Loading States', () => {
     it('should set loading state during fetch', async () => {
-      (global.fetch as any).mockImplementationOnce(() =>
-        new Promise(resolve =>
-          setTimeout(() => resolve({
-            ok: true,
-            text: async () => JSON.stringify({ success: true, data: [] }),
-          }), 100)
-        )
+      (global.fetch as any).mockImplementationOnce(
+        () =>
+          new Promise((resolve) =>
+            setTimeout(
+              () =>
+                resolve({
+                  ok: true,
+                  text: async () => JSON.stringify({ success: true, data: [] }),
+                }),
+              100
+            )
+          )
       );
 
       const { result } = renderHook(() => useClients());
@@ -240,7 +246,6 @@ describe('useClients', () => {
       });
 
       expect(result.current.error).toBe('Server error');
-      
 
       // Then, make a successful request
       (global.fetch as any).mockResolvedValueOnce({
@@ -257,4 +262,4 @@ describe('useClients', () => {
       });
     });
   });
-}); 
+});
