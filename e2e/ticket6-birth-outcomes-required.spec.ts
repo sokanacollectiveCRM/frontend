@@ -163,9 +163,9 @@ test.describe('Ticket 6 — Birth Outcomes mandatory reminder (E2E)', () => {
       return route.continue();
     });
 
-    // ---- Client update endpoint used to save structured birth outcomes
+    // ---- Dedicated birth-outcomes endpoint used by updateClientBirthOutcomes
     await page.route(
-      `http://localhost:5050/clients/${clientId}`,
+      `**/clients/${clientId}/birth-outcomes**`,
       async (route) => {
         const req = route.request();
         if (req.method() !== 'PUT') return route.continue();
