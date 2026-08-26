@@ -27,6 +27,8 @@ function renderWithUser(role: string, initialPath: string, element: ReactNode) {
         setUser: vi.fn(),
         isLoading: false,
         login: vi.fn(),
+        verifyIdentityMfa: vi.fn(),
+        resendIdentityMfa: vi.fn(),
         logout: vi.fn(),
         checkAuth: vi.fn(),
         googleAuth: vi.fn(),

@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useUser } from '@/common/hooks/user/useUser';
+import { API_CONFIG } from '@/api/config';
 import { toast } from 'sonner';
 
 import { Button } from '@/common/components/ui/button';
@@ -55,25 +56,45 @@ const PasswordRequirements = styled.ul`
   padding-left: 20px;
 `;
 
+function getSupabaseAccessTokenFromHash(): string | null {
+  const hash = window.location.hash.substring(1);
+  const hashParams = new URLSearchParams(hash);
+  const access_token = hashParams.get('access_token');
+  const type = hashParams.get('type');
+  if (!access_token) return null;
+  if (type && type !== 'recovery') return null;
+  return access_token;
+}
+
+function getIdentityOobCode(
+  searchParams: URLSearchParams
+): string | null {
+  // Firebase action links: ?mode=resetPassword&oobCode=...
+  const mode = searchParams.get('mode');
+  const oobCode = searchParams.get('oobCode');
+  if (oobCode && (!mode || mode === 'resetPassword')) return oobCode;
+  return oobCode;
+}
+
 export default function ResetPassword() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { updatePassword } = useUser();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const identityMode = API_CONFIG.authMode === 'identity';
+
+  const resetToken = useMemo(() => {
+    if (identityMode) return getIdentityOobCode(searchParams);
+    return getSupabaseAccessTokenFromHash();
+  }, [identityMode, searchParams]);
 
   useEffect(() => {
-    const hash = window.location.hash.substring(1);
-    const hashParams = new URLSearchParams(hash);
-    const access_token = hashParams.get('access_token');
-    const type = hashParams.get('type');
-
-    if (!access_token) {
+    if (!resetToken) {
       toast.error('No reset token found. Please request a new link.');
-    } else if (type !== 'recovery') {
-      toast.error('Invalid reset link type.');
     }
-  }, []);
+  }, [resetToken]);
 
   const checkPasswordStrength = (password: string) => {
     const hasUpperCase = /[A-Z]/.test(password);
@@ -117,11 +138,8 @@ export default function ResetPassword() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const hash = window.location.hash.substring(1);
-    const hashParams = new URLSearchParams(hash);
-    const access_token = hashParams.get('access_token');
 
-    if (!access_token) {
+    if (!resetToken) {
       toast.error('Reset token not found. Please request a new link.');
       return;
     }
@@ -140,7 +158,7 @@ export default function ResetPassword() {
     setIsLoading(true);
 
     try {
-      await updatePassword(password, access_token);
+      await updatePassword(password, resetToken);
       toast.success('Password updated! You can now log in.');
       navigate('/login', {
         state: {
@@ -191,7 +209,7 @@ export default function ResetPassword() {
               <Input
                 id='confirmPassword'
                 type='password'
-                placeholder='Confirm New Password'
+                placeholder='Confirm Password'
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
