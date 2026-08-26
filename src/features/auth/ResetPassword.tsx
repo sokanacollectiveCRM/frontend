@@ -66,9 +66,7 @@ function getSupabaseAccessTokenFromHash(): string | null {
   return access_token;
 }
 
-function getIdentityOobCode(
-  searchParams: URLSearchParams
-): string | null {
+function getIdentityOobCode(searchParams: URLSearchParams): string | null {
   // Firebase action links: ?mode=resetPassword&oobCode=...
   const mode = searchParams.get('mode');
   const oobCode = searchParams.get('oobCode');

@@ -66,7 +66,7 @@ export function UserProvider({
         credentials: 'include',
       });
       if (!response.ok) throw new Error('Logout failed');
-    } catch (error) {
+    } catch {
       logFailure('auth', 'logout_error');
     } finally {
       clearSessionAccessToken();
@@ -120,11 +120,7 @@ export function UserProvider({
         } catch {
           // ignore
         }
-        const cred = await signInWithEmailAndPassword(
-          auth,
-          email,
-          password
-        );
+        const cred = await signInWithEmailAndPassword(auth, email, password);
         const idToken = await cred.user.getIdToken(true);
         const response = await fetch(buildUrl('/auth/session'), {
           method: 'POST',
@@ -274,7 +270,9 @@ export function UserProvider({
 
   const googleAuth = async (): Promise<void> => {
     if (API_CONFIG.authMode === 'identity') {
-      throw new Error('Google sign-in is not enabled for Identity Platform login');
+      throw new Error(
+        'Google sign-in is not enabled for Identity Platform login'
+      );
     }
     try {
       const opts =
@@ -298,7 +296,7 @@ export function UserProvider({
       } else {
         throw new Error('No authorization URL received');
       }
-    } catch (error) {
+    } catch {
       logFailure('auth', 'google_auth_error');
       throw new Error('Failed to initialize Google authentication');
     }

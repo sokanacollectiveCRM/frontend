@@ -26,8 +26,7 @@ import { toast } from 'sonner';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, googleAuth, verifyIdentityMfa, resendIdentityMfa } =
-    useUser();
+  const { login, googleAuth, verifyIdentityMfa, resendIdentityMfa } = useUser();
   const [isLoading, setIsLoading] = useState(false);
   const [mfa, setMfa] = useState<IdentityMfaPending | null>(null);
   const [mfaCode, setMfaCode] = useState('');
