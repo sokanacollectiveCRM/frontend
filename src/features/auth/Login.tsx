@@ -41,6 +41,17 @@ export default function Login() {
     }
   }, [oauthError]);
 
+  // Identity migration emails use continueUrl=/login; forward oobCode to reset page.
+  useEffect(() => {
+    if (!identityMode) return;
+    const mode = searchParams.get('mode');
+    const oobCode = searchParams.get('oobCode');
+    if (!oobCode || (mode && mode !== 'resetPassword')) return;
+    navigate(`/auth/reset-password?${searchParams.toString()}`, {
+      replace: true,
+    });
+  }, [identityMode, navigate, searchParams]);
+
   // Drop stale Identity Platform browser sessions (password resets invalidate
   // persisted refresh tokens and otherwise spam accounts:lookup 400).
   useEffect(() => {
