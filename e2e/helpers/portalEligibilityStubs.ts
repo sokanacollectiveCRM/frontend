@@ -89,7 +89,11 @@ export const SCENARIOS = {
   unsignedContract: buildJordanClient({
     billing_path: 'self_pay',
     is_eligible: false,
-    portal_blockers: ['contract_unsigned', 'deposit_unpaid', 'missing_card_on_file'],
+    portal_blockers: [
+      'contract_unsigned',
+      'deposit_unpaid',
+      'missing_card_on_file',
+    ],
     primary_portal_blocker: 'contract_unsigned',
     card_on_file: false,
     contract_signed: false,
@@ -130,21 +134,39 @@ function apiEnvelope(data: unknown) {
   });
 }
 
+function isApiRequest(route: {
+  request: () => { resourceType: () => string };
+}) {
+  const t = route.request().resourceType();
+  return t === 'fetch' || t === 'xhr';
+}
+
 /** Stub GET /clients list (canonical ApiResponse wrapper). */
 export async function stubClientsList(
   page: Page,
   clients: Record<string, unknown>[],
   headers: CorsHeaders = defaultCorsHeaders()
 ) {
-  await page.route(`${BACKEND_ORIGIN}/clients`, (route) => {
-    if (route.request().method() !== 'GET') return route.continue();
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      headers,
-      body: apiEnvelope(clients),
-    });
-  });
+  await page.route(
+    (url) => {
+      try {
+        const pathname = new URL(url).pathname;
+        return pathname === '/clients' || pathname === '/api/clients';
+      } catch {
+        return false;
+      }
+    },
+    (route) => {
+      if (!isApiRequest(route)) return route.continue();
+      if (route.request().method() !== 'GET') return route.continue();
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers,
+        body: apiEnvelope(clients),
+      });
+    }
+  );
 }
 
 /** Stub GET /clients/:id for profile modal detail fetch. */
@@ -154,15 +176,29 @@ export async function stubClientDetail(
   headers: CorsHeaders = defaultCorsHeaders()
 ) {
   const clientId = String(client.id);
-  await page.route(`${BACKEND_ORIGIN}/clients/${clientId}`, (route) => {
-    if (route.request().method() !== 'GET') return route.continue();
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      headers,
-      body: apiEnvelope(client),
-    });
-  });
+  await page.route(
+    (url) => {
+      try {
+        const pathname = new URL(url).pathname;
+        return (
+          pathname === `/clients/${clientId}` ||
+          pathname === `/api/clients/${clientId}`
+        );
+      } catch {
+        return false;
+      }
+    },
+    (route) => {
+      if (!isApiRequest(route)) return route.continue();
+      if (route.request().method() !== 'GET') return route.continue();
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers,
+        body: apiEnvelope(client),
+      });
+    }
+  );
 }
 
 /** Empty stubs for ancillary modal requests (documents, activities). */
@@ -171,45 +207,57 @@ export async function stubAuxiliaryClientRoutes(
   clientId: string = JORDAN_CLIENT_ID,
   headers: CorsHeaders = defaultCorsHeaders()
 ) {
-  await page.route(`${BACKEND_ORIGIN}/api/clients/${clientId}/documents**`, (route) => {
-    if (route.request().method() !== 'GET') return route.continue();
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      headers,
-      body: JSON.stringify({ success: true, data: [] }),
-    });
-  });
+  await page.route(
+    `${BACKEND_ORIGIN}/api/clients/${clientId}/documents**`,
+    (route) => {
+      if (route.request().method() !== 'GET') return route.continue();
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers,
+        body: JSON.stringify({ success: true, data: [] }),
+      });
+    }
+  );
 
-  await page.route(`${BACKEND_ORIGIN}/clients/${clientId}/activities**`, (route) => {
-    if (route.request().method() !== 'GET') return route.continue();
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      headers,
-      body: JSON.stringify({ success: true, data: [] }),
-    });
-  });
+  await page.route(
+    `${BACKEND_ORIGIN}/clients/${clientId}/activities**`,
+    (route) => {
+      if (route.request().method() !== 'GET') return route.continue();
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers,
+        body: JSON.stringify({ success: true, data: [] }),
+      });
+    }
+  );
 
-  await page.route(`${BACKEND_ORIGIN}/api/clients/${clientId}/activities**`, (route) => {
-    if (route.request().method() !== 'GET') return route.continue();
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      headers,
-      body: JSON.stringify({ success: true, data: [] }),
-    });
-  });
+  await page.route(
+    `${BACKEND_ORIGIN}/api/clients/${clientId}/activities**`,
+    (route) => {
+      if (route.request().method() !== 'GET') return route.continue();
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers,
+        body: JSON.stringify({ success: true, data: [] }),
+      });
+    }
+  );
 
-  await page.route(`${BACKEND_ORIGIN}/api/clients/${clientId}/activity**`, (route) => {
-    if (route.request().method() !== 'GET') return route.continue();
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      headers,
-      body: JSON.stringify({ success: true, data: [] }),
-    });
-  });
+  await page.route(
+    `${BACKEND_ORIGIN}/api/clients/${clientId}/activity**`,
+    (route) => {
+      if (route.request().method() !== 'GET') return route.continue();
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers,
+        body: JSON.stringify({ success: true, data: [] }),
+      });
+    }
+  );
 }
 
 /** Register list + detail + ancillary stubs for a single Jordan scenario. */
@@ -251,7 +299,9 @@ export async function stubVerificationInvoiceTransition(
       status: 200,
       contentType: 'application/json',
       headers,
-      body: apiEnvelope([invoiceSent ? options.refreshedClient : options.initialClient]),
+      body: apiEnvelope([
+        invoiceSent ? options.refreshedClient : options.initialClient,
+      ]),
     });
   });
 
@@ -261,25 +311,31 @@ export async function stubVerificationInvoiceTransition(
       status: 200,
       contentType: 'application/json',
       headers,
-      body: apiEnvelope(invoiceSent ? options.refreshedClient : options.initialClient),
+      body: apiEnvelope(
+        invoiceSent ? options.refreshedClient : options.initialClient
+      ),
     });
   });
 
-  await page.route(`${BACKEND_ORIGIN}/clients/${clientId}/billing/send-verification-invoice`, (route) => {
-    if (route.request().method() !== 'POST') return route.continue();
-    invoiceSent = true;
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      headers,
-      body: JSON.stringify({
-        success: true,
-        data: {
-          message: 'Verification invoice sent.',
-          invoice_id: 'invoice_123',
-          payment_link: options.paymentLink ?? 'https://pay.example.com/invoice_123',
-        },
-      }),
-    });
-  });
+  await page.route(
+    `${BACKEND_ORIGIN}/clients/${clientId}/billing/send-verification-invoice`,
+    (route) => {
+      if (route.request().method() !== 'POST') return route.continue();
+      invoiceSent = true;
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers,
+        body: JSON.stringify({
+          success: true,
+          data: {
+            message: 'Verification invoice sent.',
+            invoice_id: 'invoice_123',
+            payment_link:
+              options.paymentLink ?? 'https://pay.example.com/invoice_123',
+          },
+        }),
+      });
+    }
+  );
 }
