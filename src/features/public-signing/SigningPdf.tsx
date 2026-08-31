@@ -1,5 +1,9 @@
 import { buildUrl } from '@/api/http';
 import {
+  fetchSigningDocument,
+  isSessionDocumentUrl,
+} from '@/features/public-signing/signingApi';
+import {
   appliedFieldTextStyle,
   fieldBoxClasses,
   initialsStyle,
@@ -334,7 +338,30 @@ export function SigningPdf({
   const fieldElements = useRef(new Map<string, HTMLButtonElement>());
   const [pageCount, setPageCount] = useState(0);
   const [width, setWidth] = useState(0);
+  const [pdfSource, setPdfSource] = useState<string | ArrayBuffer | null>(null);
   const resolvedPdfUrl = pdfUrl.startsWith('/') ? buildUrl(pdfUrl) : pdfUrl;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPdf = async () => {
+      if (isSessionDocumentUrl(pdfUrl)) {
+        try {
+          const bytes = await fetchSigningDocument();
+          if (!cancelled) setPdfSource(bytes);
+        } catch {
+          if (!cancelled) onLoadFailure();
+        }
+        return;
+      }
+      if (!cancelled) setPdfSource(resolvedPdfUrl);
+    };
+
+    void loadPdf();
+    return () => {
+      cancelled = true;
+    };
+  }, [onLoadFailure, pdfUrl, resolvedPdfUrl]);
 
   useEffect(() => {
     const element = containerRef.current;
@@ -356,47 +383,53 @@ export function SigningPdf({
 
   return (
     <div ref={containerRef} className='min-w-0' aria-label='Contract document'>
-      <Document
-        key={resolvedPdfUrl}
-        file={resolvedPdfUrl}
-        loading={
-          <div className='rounded-lg border bg-white p-10 text-center text-sm text-muted-foreground'>
-            Loading contract…
+      {pdfSource ? (
+        <Document
+          key={typeof pdfSource === 'string' ? pdfSource : 'session-document'}
+          file={pdfSource}
+          loading={
+            <div className='rounded-lg border bg-white p-10 text-center text-sm text-muted-foreground'>
+              Loading contract…
+            </div>
+          }
+          error={
+            <div className='rounded-lg border bg-white p-10 text-center text-sm text-destructive'>
+              The contract preview could not be loaded. Refreshing its secure
+              link…
+            </div>
+          }
+          onLoadSuccess={({ numPages }) => {
+            setPageCount(numPages);
+            onLoadSuccess();
+          }}
+          onLoadError={onLoadFailure}
+        >
+          <div className='space-y-8'>
+            {Array.from({ length: pageCount }, (_, index) => {
+              const page = index + 1;
+              return (
+                <SigningPdfPage
+                  key={page}
+                  pageNumber={page}
+                  width={width}
+                  pageFields={fields.filter((field) => field.page === page)}
+                  adoptedSignature={adoptedSignature}
+                  adoptedInitials={adoptedInitials}
+                  appliedFieldIds={appliedFieldIds}
+                  activeFieldId={activeFieldId}
+                  guidedMode={guidedMode}
+                  onFieldActivate={onFieldActivate}
+                  fieldElements={fieldElements}
+                />
+              );
+            })}
           </div>
-        }
-        error={
-          <div className='rounded-lg border bg-white p-10 text-center text-sm text-destructive'>
-            The contract preview could not be loaded. Refreshing its secure
-            link…
-          </div>
-        }
-        onLoadSuccess={({ numPages }) => {
-          setPageCount(numPages);
-          onLoadSuccess();
-        }}
-        onLoadError={onLoadFailure}
-      >
-        <div className='space-y-8'>
-          {Array.from({ length: pageCount }, (_, index) => {
-            const page = index + 1;
-            return (
-              <SigningPdfPage
-                key={page}
-                pageNumber={page}
-                width={width}
-                pageFields={fields.filter((field) => field.page === page)}
-                adoptedSignature={adoptedSignature}
-                adoptedInitials={adoptedInitials}
-                appliedFieldIds={appliedFieldIds}
-                activeFieldId={activeFieldId}
-                guidedMode={guidedMode}
-                onFieldActivate={onFieldActivate}
-                fieldElements={fieldElements}
-              />
-            );
-          })}
+        </Document>
+      ) : (
+        <div className='rounded-lg border bg-white p-10 text-center text-sm text-muted-foreground'>
+          Loading contract…
         </div>
-      </Document>
+      )}
     </div>
   );
 }

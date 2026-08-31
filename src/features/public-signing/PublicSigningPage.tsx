@@ -43,7 +43,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 function errorMessage(error: unknown): string {
   if (error instanceof SigningApiError) {
@@ -68,7 +68,6 @@ function buildAdoptedSignature(
 }
 
 export default function PublicSigningPage() {
-  const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const [session, setSession] = useState<SigningSession | null>(null);
   const [loading, setLoading] = useState(true);
@@ -97,32 +96,24 @@ export default function PublicSigningPage() {
   const pdfRefreshAttempted = useRef(false);
   const autoSavePending = useRef(false);
 
-  const load = useCallback(
-    async (refreshPdf = false) => {
-      if (!token) {
-        setError('This signing link is unavailable.');
-        setLoading(false);
-        return;
-      }
-      if (!refreshPdf) setLoading(true);
-      setError(null);
-      try {
-        const next = await getSigningSession(token);
-        setSession(next);
-        setAppliedFieldIds(new Set(next.progress.map((item) => item.fieldId)));
-      } catch (requestError) {
-        setError(errorMessage(requestError));
-        setRetryAfter(
-          requestError instanceof SigningApiError
-            ? requestError.retryAfterSeconds
-            : null
-        );
-      } finally {
-        setLoading(false);
-      }
-    },
-    [token]
-  );
+  const load = useCallback(async (refreshPdf = false) => {
+    if (!refreshPdf) setLoading(true);
+    setError(null);
+    try {
+      const next = await getSigningSession();
+      setSession(next);
+      setAppliedFieldIds(new Set(next.progress.map((item) => item.fieldId)));
+    } catch (requestError) {
+      setError(errorMessage(requestError));
+      setRetryAfter(
+        requestError instanceof SigningApiError
+          ? requestError.retryAfterSeconds
+          : null
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     void load();
@@ -183,28 +174,24 @@ export default function PublicSigningPage() {
     [activeFieldId, fieldQueue]
   );
 
-  const persistProgress = useCallback(
-    async (fieldIds: string[]) => {
-      if (!token) return;
-      setBusy('saving');
-      setError(null);
-      try {
-        const next = await saveSigningProgress(token, fieldIds);
-        setSession(next);
-        setSaved(true);
-      } catch (requestError) {
-        setError(errorMessage(requestError));
-        setRetryAfter(
-          requestError instanceof SigningApiError
-            ? requestError.retryAfterSeconds
-            : null
-        );
-      } finally {
-        setBusy(null);
-      }
-    },
-    [token]
-  );
+  const persistProgress = useCallback(async (fieldIds: string[]) => {
+    setBusy('saving');
+    setError(null);
+    try {
+      const next = await saveSigningProgress(fieldIds);
+      setSession(next);
+      setSaved(true);
+    } catch (requestError) {
+      setError(errorMessage(requestError));
+      setRetryAfter(
+        requestError instanceof SigningApiError
+          ? requestError.retryAfterSeconds
+          : null
+      );
+    } finally {
+      setBusy(null);
+    }
+  }, []);
 
   const focusField = useCallback((fieldId: string | null) => {
     setActiveFieldId(fieldId);
@@ -250,7 +237,7 @@ export default function PublicSigningPage() {
       setSaved(false);
       advanceAfterApply(session.signingManifest, nextApplied);
 
-      if (session.canContinue && token) {
+      if (session.canContinue) {
         autoSavePending.current = true;
         const ids = completedFieldIds(session.signingManifest, nextApplied);
         await persistProgress(ids);
@@ -264,7 +251,6 @@ export default function PublicSigningPage() {
       appliedFieldIds,
       persistProgress,
       session,
-      token,
     ]
   );
 
@@ -326,7 +312,7 @@ export default function PublicSigningPage() {
   }, [activeIndex, appliedFieldIds, fieldQueue, focusField]);
 
   const submit = async () => {
-    if (!token || !session || !adoptedSignature) return;
+    if (!session || !adoptedSignature) return;
     if (!consentAccepted || !adoptedInitials.trim() || missingIds.length > 0) {
       setError(
         'Complete every required field and accept the consent statement.'
@@ -337,7 +323,7 @@ export default function PublicSigningPage() {
     setError(null);
     try {
       const ids = completedFieldIds(session.signingManifest, appliedFieldIds);
-      const result = await completeSigning(token, {
+      const result = await completeSigning({
         signature: adoptedSignature,
         consent: true,
         initials: adoptedInitials.trim(),
