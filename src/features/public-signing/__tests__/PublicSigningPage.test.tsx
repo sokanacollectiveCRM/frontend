@@ -26,7 +26,7 @@ const session: SigningSession = {
   title: 'Labor Support Agreement',
   signerName: 'Jane Doe',
   status: 'pending_signature',
-  pdfUrl: '/signing/test-token/document',
+  pdfUrl: '/signing/session/document',
   signingManifest: [
     {
       id: 'initials-1',
@@ -81,9 +81,9 @@ vi.mock('@/features/public-signing/signingApi', () => ({
 
 function renderPage() {
   return render(
-    <MemoryRouter initialEntries={['/signing/test-token']}>
+    <MemoryRouter initialEntries={['/signing']}>
       <Routes>
-        <Route path='/signing/:token' element={<PublicSigningPage />} />
+        <Route path='/signing' element={<PublicSigningPage />} />
         <Route
           path='/contract-signed'
           element={<div>Signed confirmation</div>}
@@ -97,15 +97,13 @@ describe('PublicSigningPage guided flow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getSigningSession.mockResolvedValue(session);
-    saveSigningProgress.mockImplementation(
-      async (_token, completedFieldIds) => ({
-        ...session,
-        progress: completedFieldIds.map((fieldId: string) => ({
-          fieldId,
-          completedAt: '2026-08-29T00:00:00.000Z',
-        })),
-      })
-    );
+    saveSigningProgress.mockImplementation(async (_completedFieldIds) => ({
+      ...session,
+      progress: _completedFieldIds.map((fieldId: string) => ({
+        fieldId,
+        completedAt: '2026-08-29T00:00:00.000Z',
+      })),
+    }));
     completeSigning.mockResolvedValue({
       contractId: 'contract-1',
       status: 'signed',
@@ -186,9 +184,7 @@ describe('PublicSigningPage guided flow', () => {
 
     await user.click(screen.getByRole('button', { name: 'Apply initials-1' }));
     await waitFor(() =>
-      expect(saveSigningProgress).toHaveBeenCalledWith('test-token', [
-        'initials-1',
-      ])
+      expect(saveSigningProgress).toHaveBeenCalledWith(['initials-1'])
     );
 
     expect(screen.getByRole('button', { name: 'FINISH' })).toBeDisabled();
