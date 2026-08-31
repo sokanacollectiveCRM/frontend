@@ -34,6 +34,7 @@ export const LEGACY_PAYMENT_METHOD_OPTIONS = [
   'Commercial Insurance',
   'Private Insurance',
   'Self-Pay',
+  'No Payment Required',
   'Other',
 ] as const;
 
@@ -50,7 +51,10 @@ export type PaymentAuthorizationStatus =
   | 'on_file'
   | 'failed';
 
-export const PAYMENT_AUTHORIZATION_STATUS_LABELS: Record<PaymentAuthorizationStatus, string> = {
+export const PAYMENT_AUTHORIZATION_STATUS_LABELS: Record<
+  PaymentAuthorizationStatus,
+  string
+> = {
   not_required: 'Not Required',
   required: 'Required',
   on_file: 'On File',
@@ -95,7 +99,11 @@ export function isFullSupportMethod(method: unknown): boolean {
   const n = normalize(method);
   return (
     n === 'i am unable to pay / full support option' ||
-    (n.includes('full support') && n.includes('unable to pay'))
+    (n.includes('full support') && n.includes('unable to pay')) ||
+    n === 'no payment required' ||
+    n === 'no client payment' ||
+    n === 'payment waived' ||
+    n === 'complimentary'
   );
 }
 
@@ -167,7 +175,9 @@ export interface PaymentMethodMessage {
   variant: PaymentMethodMessageVariant;
 }
 
-export function getPaymentMethodMessage(method: unknown): PaymentMethodMessage | null {
+export function getPaymentMethodMessage(
+  method: unknown
+): PaymentMethodMessage | null {
   if (!normalize(method)) return null;
 
   if (isMedicaidMethod(method)) {
@@ -237,14 +247,22 @@ export function derivePaymentAuthorizationStatus(
 export function normalizePaymentMethod(raw: unknown): string {
   const n = normalize(raw);
 
+  if (n === 'no payment required' || n === 'no client payment') {
+    return 'No Payment Required';
+  }
   if (isMedicaidMethod(n)) return 'Medicaid';
-  if (n === 'self-pay, sliding scale available') return 'Self-Pay, Sliding Scale Available';
-  if (isSelfPayMethod(raw) && !isSelfPaySlidingScaleMethod(raw)) return 'Self-Pay';
-  if (n === 'private/commercial insurance') return 'Private/Commercial Insurance';
+  if (n === 'self-pay, sliding scale available')
+    return 'Self-Pay, Sliding Scale Available';
+  if (isSelfPayMethod(raw) && !isSelfPaySlidingScaleMethod(raw))
+    return 'Self-Pay';
+  if (n === 'private/commercial insurance')
+    return 'Private/Commercial Insurance';
   if (n === 'commercial insurance') return 'Commercial Insurance';
   if (n === 'private insurance') return 'Private Insurance';
-  if (isNotSurePaymentMethod(raw)) return 'Not sure / Need help figuring this out';
-  if (isFullSupportMethod(raw)) return 'I am unable to pay / Full Support Option';
+  if (isNotSurePaymentMethod(raw))
+    return 'Not sure / Need help figuring this out';
+  if (isFullSupportMethod(raw))
+    return 'I am unable to pay / Full Support Option';
 
   return String(raw ?? '').trim();
 }
@@ -261,7 +279,11 @@ export function normalizeBillingPaymentMethod(method: unknown): string {
   if (normalized === 'self-pay, sliding scale available') {
     return 'Self-Pay, Sliding Scale Available';
   }
-  if (normalized === 'self-pay' || normalized === 'self pay' || normalized === 'selfpay') {
+  if (
+    normalized === 'self-pay' ||
+    normalized === 'self pay' ||
+    normalized === 'selfpay'
+  ) {
     return 'Self-Pay';
   }
   if (normalized === 'private/commercial insurance') {
@@ -279,7 +301,18 @@ export function normalizeBillingPaymentMethod(method: unknown): string {
   if (normalized === 'not sure / need help figuring this out') {
     return 'Not sure / Need help figuring this out';
   }
-  if (normalized.includes('unable to pay') && normalized.includes('full support')) {
+  if (
+    normalized === 'no payment required' ||
+    normalized === 'no client payment' ||
+    normalized === 'payment waived' ||
+    normalized === 'complimentary'
+  ) {
+    return 'No Payment Required';
+  }
+  if (
+    normalized.includes('unable to pay') &&
+    normalized.includes('full support')
+  ) {
     return 'I am unable to pay / Full Support Option';
   }
   if (normalized === 'other') {
@@ -294,6 +327,9 @@ const BILLING_API_PAYMENT_METHODS = new Set([
   'Commercial Insurance',
   'Private Insurance',
   'Medicaid',
+  'I am unable to pay / Full Support Option',
+  'No Payment Required',
+  'Not sure / Need help figuring this out',
 ]);
 
 /**
@@ -312,12 +348,7 @@ export function toBillingApiPaymentMethod(method: unknown): string {
   }
 
   const lower = normalized.toLowerCase();
-  if (
-    lower.startsWith('self-pay') ||
-    lower.includes('unable to pay') ||
-    lower.includes('full support') ||
-    lower.includes('not sure')
-  ) {
+  if (lower.startsWith('self-pay')) {
     return 'Self-Pay';
   }
 
@@ -360,7 +391,8 @@ export function getAdminPaymentCardColumn(
       label: '—',
       sublabel: null,
       badgeClass: 'bg-muted text-muted-foreground border-border',
-      tooltip: 'Payment method not set. Open the client profile to set billing.',
+      tooltip:
+        'Payment method not set. Open the client profile to set billing.',
     };
   }
 
@@ -371,7 +403,8 @@ export function getAdminPaymentCardColumn(
         label: 'On file',
         sublabel: null,
         badgeClass: 'bg-blue-100 text-blue-800 border-blue-200',
-        tooltip: 'Payment authorization is on file (e.g. form received or recorded in the system).',
+        tooltip:
+          'Payment authorization is on file (e.g. form received or recorded in the system).',
       };
     }
     if (auth === 'failed') {
@@ -394,7 +427,8 @@ export function getAdminPaymentCardColumn(
       label: 'Needed',
       sublabel: null,
       badgeClass: 'bg-amber-100 text-amber-800 border-amber-200',
-      tooltip: 'Card on file expected; open profile for payment method details.',
+      tooltip:
+        'Card on file expected; open profile for payment method details.',
     };
   }
 
@@ -407,7 +441,10 @@ export function getAdminPaymentCardColumn(
     };
   }
 
-  if (isFullSupportMethod(paymentMethod) || isNotSurePaymentMethod(paymentMethod)) {
+  if (
+    isFullSupportMethod(paymentMethod) ||
+    isNotSurePaymentMethod(paymentMethod)
+  ) {
     return {
       label: 'Not needed',
       sublabel: methodDisplay,
@@ -441,7 +478,8 @@ export function getAdminPaymentCardColumn(
       label: 'Failed',
       sublabel: methodDisplay,
       badgeClass: 'bg-red-100 text-red-800 border-red-200',
-      tooltip: 'Authorization failed. Client should retry adding a card or use another method.',
+      tooltip:
+        'Authorization failed. Client should retry adding a card or use another method.',
     };
   }
 

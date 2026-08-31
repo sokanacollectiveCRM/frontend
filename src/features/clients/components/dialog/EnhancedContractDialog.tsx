@@ -218,8 +218,7 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
   }, [open, getClients]);
 
   // Debug clients data
-  useEffect(() => {
-  }, [clients, clientsLoading]);
+  useEffect(() => {}, [clients, clientsLoading]);
 
   const contractForm = useForm<ContractFormData>({
     resolver: zodResolver(contractInputSchema),
@@ -302,7 +301,6 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
   const calculateAmounts = async (data: ContractFormData) => {
     setLoading(true);
     try {
-
       // Recompute totals to ensure discount and admin fee are reflected
       const discountInfo = applyMultiServiceDiscount(selectedServices);
       const totalAmount =
@@ -315,7 +313,6 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
         const depositValue = data.deposit_value ?? formDepositValue ?? 0;
         const depositType = data.deposit_type ?? formDepositType ?? 'percent';
         const installmentsCount = data.installments_count || 3;
-
 
         const depositAmount = calculateDepositAmount(
           totalAmount,
@@ -438,6 +435,7 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
 
       // Prepare contract data for new API
       const contractDataForAPI: ContractData = {
+        clientId: selectedClient.id,
         clientName: clientData.name,
         clientEmail: clientData.email,
         totalInvestment: `$${calculatedAmounts?.total_amount?.toFixed(2) || '0.00'}`,
@@ -477,9 +475,7 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
         contractDataForAPI.hourlyRate =
           contractForm.watch('hourly_rate')?.toString() || '0';
         contractDataForAPI.overnightFee = '0.00'; // Default overnight fee
-      } else {
       }
-
 
       // Verify Postpartum fields are actually in the data
 
@@ -1395,6 +1391,19 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                       {selectedClient.lastname ?? selectedClient.user?.lastname}{' '}
                       ({selectedClient.email ?? selectedClient.user?.email})
                     </p>
+                    <p className='mt-1 text-sm text-green-700'>
+                      Payment method:{' '}
+                      <strong>
+                        {selectedClient.payment_method || 'Not configured'}
+                      </strong>
+                    </p>
+                    {!selectedClient.payment_method && (
+                      <p className='mt-1 text-xs text-amber-700'>
+                        Configure the payment method before portal invitation.
+                        Unknown billing paths do not generate an automatic
+                        invoice.
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
@@ -1440,16 +1449,17 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
 
               <div className='space-y-2'>
                 <h3 className='text-lg font-semibold text-green-800'>
-                  Contract Sent Successfully via SignNow!
+                  Contract Sent Successfully!
                 </h3>
                 <p className='text-gray-600'>
                   The contract has been generated with all calculated amounts
-                  and sent to the client for signature via SignNow.
+                  and sent through Sokana&apos;s secure signing workflow.
                 </p>
                 <p className='text-sm text-gray-500'>
                   The client will receive an email with instructions to sign the
-                  contract through SignNow. After signing, they will be directed
-                  to make the deposit payment.
+                  contract. After signing, billing and portal eligibility follow
+                  the client&apos;s configured payment method. Only eligible
+                  self-pay deposits generate a client invoice.
                 </p>
                 {contractId && (
                   <div className='mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg'>

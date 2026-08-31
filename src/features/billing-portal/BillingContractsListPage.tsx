@@ -8,7 +8,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/common/components/ui/select';
-import { getLimitedBillingContracts } from '@/features/billing-portal/billingPortalApi';
+import {
+  getLimitedBillingContracts,
+  openSignedContractPdf,
+} from '@/features/billing-portal/billingPortalApi';
 import {
   isActionRequiredForContract,
   openContractBillingOutreachEmail,
@@ -43,6 +46,10 @@ type PaymentMethodFilter =
   | 'invoice'
   | 'unknown';
 const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
+
+function isSignedContractStatus(status: string): boolean {
+  return status.trim().toLowerCase() === 'signed';
+}
 
 function formatAmount(value: number): string {
   return new Intl.NumberFormat('en-US', {
@@ -519,7 +526,14 @@ export default function BillingContractsListPage() {
                   >
                     <td className='px-4 py-3'>{contract.clientName}</td>
                     <td className='px-4 py-3'>
-                      <div className='font-medium'>{contract.contractType}</div>
+                      <div className='font-medium'>
+                        <Link
+                          to={`/billing/contracts/${contract.contractId}`}
+                          className='text-primary underline-offset-4 hover:underline'
+                        >
+                          {contract.contractType}
+                        </Link>
+                      </div>
                       <div className='text-xs text-muted-foreground'>
                         {contract.installmentCount ?? 0} installments
                       </div>
@@ -543,11 +557,31 @@ export default function BillingContractsListPage() {
                     </td>
                     <td className='px-4 py-3'>
                       <div className='flex flex-wrap gap-2'>
+                        {isSignedContractStatus(contract.contractStatus) && (
+                          <Button
+                            type='button'
+                            variant='default'
+                            size='sm'
+                            onClick={() => {
+                              void openSignedContractPdf(
+                                contract.contractId
+                              ).catch((error) => {
+                                toast.error(
+                                  error instanceof ApiError
+                                    ? error.message
+                                    : 'Unable to open the signed contract PDF.'
+                                );
+                              });
+                            }}
+                          >
+                            View contract
+                          </Button>
+                        )}
                         <Button asChild variant='outline' size='sm'>
                           <Link
                             to={`/billing/contracts/${contract.contractId}`}
                           >
-                            View schedule
+                            Billing details
                           </Link>
                         </Button>
                         <Button

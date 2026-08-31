@@ -4,7 +4,7 @@ import {
   isBillingOnlyRole,
   canAccessBillingPortal,
 } from '@/common/auth/roles';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
 import { useUser } from '@/common/hooks/user/useUser';
 import { useClientAuth } from '@/common/hooks/auth/useClientAuth';
@@ -17,6 +17,7 @@ function SessionLoading() {
 export function PrivateRoute() {
   const { user, isLoading } = useUser();
   const { client, isLoading: isClientLoading } = useClientAuth();
+  const location = useLocation();
 
   if ((isLoading || isClientLoading) && !user && !client) {
     return <SessionLoading />;
@@ -26,7 +27,8 @@ export function PrivateRoute() {
     return <Outlet />;
   }
 
-  return <Navigate to='/login' replace />;
+  const next = encodeURIComponent(`${location.pathname}${location.search}`);
+  return <Navigate to={`/login?next=${next}`} replace />;
 }
 
 export function PublicOnlyRoute() {

@@ -33,6 +33,7 @@ import TeamRoutes from './features/teams/teamRoutes';
 import DoulaDashboardRoutes from './features/doula-dashboard/DoulaDashboardRoutes';
 import ContractSignedPage from './pages/ContractSignedPage';
 import BillingPortalRoutes from './features/billing-portal/BillingPortalRoutes';
+import PublicSigningPage from './features/public-signing/PublicSigningPage';
 
 const AppRoutes = () => (
   <Routes>
@@ -40,9 +41,7 @@ const AppRoutes = () => (
     {/* These routes are completely standalone, outside all wrappers */}
     <Route path='/auth/set-password' element={<SetPassword />} />
     <Route path='/auth/client-login' element={<ClientLogin />} />
-
-    {/* Contract Signed Success Page - No Sidebar, No Auth */}
-    <Route path='/contract-signed' element={<ContractSignedPage />} />
+    <Route path='/signing/:token' element={<PublicSigningPage />} />
 
     <Route>
       <Route element={<NavLayout />}>
