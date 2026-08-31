@@ -1,4 +1,4 @@
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, useLocation } from 'react-router-dom';
 
 import { UserProvider } from '@/common/contexts/UserContext.jsx';
 import AppRoutes from './Routes';
@@ -8,14 +8,19 @@ import 'react-toastify/dist/ReactToastify.css';
 import { Toaster } from 'sonner';
 import './App.css';
 
+function RoutedApp() {
+  const isPublicSigningRoute = useLocation().pathname.startsWith('/signing/');
+  const routes = <AppRoutes />;
+
+  return isPublicSigningRoute ? routes : <UserProvider>{routes}</UserProvider>;
+}
+
 export default function App() {
   return (
     <>
-      <UserProvider>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </UserProvider>
+      <BrowserRouter>
+        <RoutedApp />
+      </BrowserRouter>
       <Toaster
         richColors
         position='bottom-right'

@@ -1,6 +1,9 @@
 import { ApiError } from '@/api/errors';
 import { Button } from '@/common/components/ui/button';
-import { getLimitedContractPaymentSchedule } from '@/features/billing-portal/billingPortalApi';
+import {
+  getLimitedContractPaymentSchedule,
+  openSignedContractPdf,
+} from '@/features/billing-portal/billingPortalApi';
 import {
   isActionRequiredForInstallment,
   openBillingOutreachEmail,
@@ -12,6 +15,16 @@ import type { LimitedContractPaymentSchedule } from '@/features/billing-portal/t
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { FileText, Loader2 } from 'lucide-react';
+
+function hasSignedContractPdf(
+  contract: LimitedContractPaymentSchedule
+): boolean {
+  return (
+    contract.contractStatus?.toLowerCase() === 'signed' ||
+    Boolean(contract.signedAt)
+  );
+}
 
 function formatAmount(value?: number | null): string {
   if (value == null) return 'Not available';
@@ -65,6 +78,7 @@ export default function BillingContractDetailPage() {
   const [errorState, setErrorState] = useState<
     'not-found' | 'access-denied' | 'load-error' | null
   >(null);
+  const [openingSignedContract, setOpeningSignedContract] = useState(false);
 
   useEffect(() => {
     if (!contractId) {
@@ -161,6 +175,39 @@ export default function BillingContractDetailPage() {
           </div>
         </div>
         <div className='flex flex-wrap gap-2'>
+          {hasSignedContractPdf(contract) && contractId && (
+            <Button
+              type='button'
+              variant='default'
+              disabled={openingSignedContract}
+              onClick={() => {
+                void (async () => {
+                  setOpeningSignedContract(true);
+                  try {
+                    await openSignedContractPdf(contractId);
+                  } catch (error) {
+                    toast.error(
+                      error instanceof ApiError
+                        ? error.message
+                        : 'Unable to open the signed contract PDF.'
+                    );
+                  } finally {
+                    setOpeningSignedContract(false);
+                  }
+                })();
+              }}
+            >
+              {openingSignedContract ? (
+                <Loader2
+                  className='mr-2 size-4 animate-spin'
+                  aria-hidden='true'
+                />
+              ) : (
+                <FileText className='mr-2 size-4' aria-hidden='true' />
+              )}
+              View signed contract
+            </Button>
+          )}
           <Button
             type='button'
             variant='outline'

@@ -3,12 +3,16 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { getLimitedContractPaymentSchedule } = vi.hoisted(() => ({
-  getLimitedContractPaymentSchedule: vi.fn(),
-}));
+const { getLimitedContractPaymentSchedule, openSignedContractPdf } = vi.hoisted(
+  () => ({
+    getLimitedContractPaymentSchedule: vi.fn(),
+    openSignedContractPdf: vi.fn(),
+  })
+);
 
 vi.mock('@/features/billing-portal/billingPortalApi', () => ({
   getLimitedContractPaymentSchedule,
+  openSignedContractPdf,
 }));
 
 import BillingContractDetailPage from '@/features/billing-portal/BillingContractDetailPage';
@@ -16,6 +20,7 @@ import BillingContractDetailPage from '@/features/billing-portal/BillingContract
 describe('BillingContractDetailPage', () => {
   beforeEach(() => {
     getLimitedContractPaymentSchedule.mockReset();
+    openSignedContractPdf.mockReset();
   });
 
   it('renders only billing-safe contract and payment schedule fields', async () => {
@@ -49,7 +54,10 @@ describe('BillingContractDetailPage', () => {
     render(
       <MemoryRouter initialEntries={['/billing/contracts/contract-1']}>
         <Routes>
-          <Route path='/billing/contracts/:contractId' element={<BillingContractDetailPage />} />
+          <Route
+            path='/billing/contracts/:contractId'
+            element={<BillingContractDetailPage />}
+          />
         </Routes>
       </MemoryRouter>
     );
@@ -62,6 +70,9 @@ describe('BillingContractDetailPage', () => {
     expect(screen.queryByText('Health information')).not.toBeInTheDocument();
     expect(screen.queryByText('Pregnancy history')).not.toBeInTheDocument();
     expect(screen.queryByText('Admin settings')).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'View signed contract' })
+    ).toBeInTheDocument();
   });
 
   it('renders loading and empty-installment states', async () => {
@@ -77,24 +88,34 @@ describe('BillingContractDetailPage', () => {
     render(
       <MemoryRouter initialEntries={['/billing/contracts/contract-2']}>
         <Routes>
-          <Route path='/billing/contracts/:contractId' element={<BillingContractDetailPage />} />
+          <Route
+            path='/billing/contracts/:contractId'
+            element={<BillingContractDetailPage />}
+          />
         </Routes>
       </MemoryRouter>
     );
 
     expect(screen.getByText('Loading payment schedule')).toBeInTheDocument();
-    expect(await screen.findByText('No installments available.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('No installments available.')
+    ).toBeInTheDocument();
     expect(screen.getByText('No invoice connected')).toBeInTheDocument();
     expect(screen.getByText('QuickBooks sync unavailable')).toBeInTheDocument();
   });
 
   it('renders access denied and load errors', async () => {
-    getLimitedContractPaymentSchedule.mockRejectedValueOnce(new ApiError('Forbidden', 403));
+    getLimitedContractPaymentSchedule.mockRejectedValueOnce(
+      new ApiError('Forbidden', 403)
+    );
 
     render(
       <MemoryRouter initialEntries={['/billing/contracts/contract-3']}>
         <Routes>
-          <Route path='/billing/contracts/:contractId' element={<BillingContractDetailPage />} />
+          <Route
+            path='/billing/contracts/:contractId'
+            element={<BillingContractDetailPage />}
+          />
         </Routes>
       </MemoryRouter>
     );
@@ -108,11 +129,16 @@ describe('BillingContractDetailPage', () => {
     render(
       <MemoryRouter initialEntries={['/billing/contracts/contract-3']}>
         <Routes>
-          <Route path='/billing/contracts/:contractId' element={<BillingContractDetailPage />} />
+          <Route
+            path='/billing/contracts/:contractId'
+            element={<BillingContractDetailPage />}
+          />
         </Routes>
       </MemoryRouter>
     );
 
-    expect(await screen.findByText('Unable to load billing information')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Unable to load billing information')
+    ).toBeInTheDocument();
   });
 });

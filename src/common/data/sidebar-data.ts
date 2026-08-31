@@ -56,8 +56,13 @@ export const sidebarSections = [
         billingAccess: true,
       },
       {
-        // Admin contract template manager (/contracts), not the billing schedules list.
-        title: 'Contracts',
+        title: 'Signed Contracts',
+        url: '/billing/contracts',
+        icon: Scale,
+        billingAccess: true,
+      },
+      {
+        title: 'Contract Templates',
         url: '/contracts',
         icon: FileText,
         adminOnly: true,

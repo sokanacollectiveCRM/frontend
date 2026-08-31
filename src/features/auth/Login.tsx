@@ -3,6 +3,7 @@ import { logFailure } from '@/utils/safeLog';
 
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
+import { safePostLoginPath } from '@/common/auth/postLoginRedirect';
 import { useUser } from '@/common/hooks/user/useUser';
 import type { IdentityMfaPending } from '@/common/types/auth';
 import GoogleButton from '@/features/auth/GoogleButton';
@@ -33,6 +34,7 @@ export default function Login() {
   const [resendInSec, setResendInSec] = useState(0);
   const [searchParams] = useSearchParams();
   const oauthError = searchParams.get('error');
+  const postLoginPath = safePostLoginPath(searchParams.get('next'));
   const identityMode = API_CONFIG.authMode === 'identity';
 
   useEffect(() => {
@@ -97,7 +99,7 @@ export default function Login() {
         );
         return;
       }
-      navigate('/', { replace: true });
+      navigate(postLoginPath ?? '/', { replace: true });
     } catch (submitError) {
       logFailure('auth', 'login_error');
       toast.error(
@@ -116,7 +118,7 @@ export default function Login() {
     setIsLoading(true);
     try {
       await verifyIdentityMfa(mfa.challengeId, mfaCode.trim(), mfa.idToken);
-      navigate('/', { replace: true });
+      navigate(postLoginPath ?? '/', { replace: true });
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : 'Invalid verification code'

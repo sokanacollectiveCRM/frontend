@@ -13,6 +13,7 @@ export interface ServiceSelectionData {
 }
 
 export interface ContractData {
+  clientId?: string;
   clientName: string;
   clientEmail: string;
   totalInvestment: string; // Format: "$2,500"
