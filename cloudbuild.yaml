@@ -8,10 +8,11 @@ substitutions:
   _VITE_APP_FRONTEND_URL: ''
   _VITE_SUPABASE_URL: ''
   _VITE_SUPABASE_ANON_KEY: ''
-  _VITE_AUTH_MODE: ''
-  _VITE_FIREBASE_API_KEY: ''
-  _VITE_FIREBASE_AUTH_DOMAIN: ''
-  _VITE_FIREBASE_PROJECT_ID: ''
+  # Production admin auth uses Identity Platform (Firebase), not Supabase cookie mode.
+  _VITE_AUTH_MODE: identity
+  _VITE_FIREBASE_API_KEY: AIzaSyCYi0daAulf325svrrQllREnV087Gx5zGg
+  _VITE_FIREBASE_AUTH_DOMAIN: sokana-private-data.firebaseapp.com
+  _VITE_FIREBASE_PROJECT_ID: sokana-private-data
   _VITE_FIREBASE_APP_ID: ''
   _VITE_QUICKBOOKS_PAYMENTS_TOKEN_ENDPOINT: ''
   _VITE_QUICKBOOKS_PAYMENTS_SAVE_ENDPOINT: ''
