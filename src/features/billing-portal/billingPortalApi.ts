@@ -21,7 +21,7 @@ export async function getLimitedBillingContracts(
   filters?: BillingContractListFilters
 ): Promise<LimitedContractBillingSummary[]> {
   return get<LimitedContractBillingSummary[]>('/api/billing/contracts', {
-    params: filters,
+    params: filters as Record<string, string | undefined>,
   });
 }
 
