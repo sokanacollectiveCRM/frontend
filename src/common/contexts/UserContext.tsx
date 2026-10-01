@@ -9,10 +9,7 @@ import React, { createContext, ReactNode, useEffect, useState } from 'react';
 import { buildUrl, fetchWithAuth } from '@/api/http';
 import { ApiError } from '@/api/errors';
 import { API_CONFIG } from '@/api/config';
-import {
-  clearSessionAccessToken,
-  setSessionAccessToken,
-} from '@/api/sessionAccessToken';
+import { clearSessionAccessToken } from '@/api/sessionAccessToken';
 import { useIdleTimeout } from '@/common/hooks/auth/useIdleTimeout';
 import { getFirebaseAuth } from '@/lib/firebase';
 import { supabase } from '@/lib/supabase';
@@ -155,11 +152,10 @@ export function UserProvider({
         });
         if (error) throw new Error(error.message);
         if (!data.session) throw new Error('No session after sign in');
-        setSessionAccessToken(data.session.access_token);
         await checkAuth();
         return true;
       }
-      // Backend: POST /auth/login, body { email, password }; success: { message, user, token } + Set-Cookie sb-access-token
+      // Backend: POST /auth/login — session is HttpOnly cookie sokana_session_token.
       const response = await fetch(buildUrl('/auth/login'), {
         method: 'POST',
         credentials: 'include',
@@ -170,20 +166,11 @@ export function UserProvider({
       if (!response.ok) {
         throw new Error((data as { error?: string })?.error || 'Login failed');
       }
-      // Phones often block the cross-site session cookie. The JSON token is the
-      // fallback: fetchWithAuth sends it as Bearer + X-Session-Token.
-      const token =
-        typeof (data as { token?: unknown }).token === 'string'
-          ? (data as { token: string }).token.trim()
-          : '';
-      if (token) {
-        setSessionAccessToken(token);
-      }
       const sessionOk = await checkAuth();
       if (!sessionOk) {
         clearSessionAccessToken();
         throw new Error(
-          'Signed in, but the session could not be verified. If you are on a phone, confirm the API URL is reachable (not localhost) and that cookies are allowed.'
+          'Signed in, but the session could not be verified. Confirm the API URL is reachable and that cookies are allowed for this site.'
         );
       }
       return true;
@@ -228,11 +215,6 @@ export function UserProvider({
         (data as { error?: string })?.error || 'Verification failed'
       );
     }
-    const token =
-      typeof (data as { token?: unknown }).token === 'string'
-        ? (data as { token: string }).token.trim()
-        : idToken;
-    setSessionAccessToken(token);
     const sessionOk = await checkAuth();
     if (!sessionOk) {
       clearSessionAccessToken();

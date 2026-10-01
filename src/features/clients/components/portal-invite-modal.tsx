@@ -8,7 +8,7 @@ import {
 } from '@/common/components/ui/dialog';
 import { Button } from '@/common/components/ui/button';
 import { Loader2 } from 'lucide-react';
-import type { User } from '../data/schema';
+import type { User } from 'features/clients/data/schema';
 
 interface PortalInviteModalProps {
   open: boolean;
@@ -25,7 +25,6 @@ export function PortalInviteModal({
   onConfirm,
   isLoading = false,
 }: PortalInviteModalProps) {
-
   if (!lead) {
     return null;
   }
@@ -35,12 +34,15 @@ export function PortalInviteModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(open) => {
-      // Prevent closing while loading
-      if (!isLoading) {
-        onOpenChange(open);
-      }
-    }}>
+    <Dialog
+      open={open}
+      onOpenChange={(open) => {
+        // Prevent closing while loading
+        if (!isLoading) {
+          onOpenChange(open);
+        }
+      }}
+    >
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Invite client to portal</DialogTitle>
@@ -50,14 +52,15 @@ export function PortalInviteModal({
               client dashboard.
             </p>
             <p>
-              Invite is available after contract is signed and first payment is
-              completed.
+              Portal invites are sent automatically once contract signing and
+              any required deposit or card-on-file steps are complete. Use this
+              only to resend or recover a missed invite.
             </p>
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button 
-            variant='outline' 
+          <Button
+            variant='outline'
             onClick={() => onOpenChange(false)}
             disabled={isLoading}
           >
@@ -78,4 +81,3 @@ export function PortalInviteModal({
     </Dialog>
   );
 }
-
