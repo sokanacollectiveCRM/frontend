@@ -198,16 +198,30 @@ export function UserProvider({
     }
   };
 
+  const resolveIdentityIdToken = async (fallback: string): Promise<string> => {
+    try {
+      const auth = getFirebaseAuth();
+      const current = auth.currentUser;
+      if (current) {
+        return await current.getIdToken(true);
+      }
+    } catch {
+      // Fall back to the token captured at password sign-in.
+    }
+    return fallback;
+  };
+
   const verifyIdentityMfa = async (
     challengeId: string,
     code: string,
     idToken: string
   ): Promise<boolean> => {
+    const freshIdToken = await resolveIdentityIdToken(idToken);
     const response = await fetch(buildUrl('/auth/mfa/verify'), {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ challengeId, code, idToken }),
+      body: JSON.stringify({ challengeId, code, idToken: freshIdToken }),
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -227,11 +241,12 @@ export function UserProvider({
     challengeId: string,
     idToken: string
   ): Promise<IdentityMfaPending> => {
+    const freshIdToken = await resolveIdentityIdToken(idToken);
     const response = await fetch(buildUrl('/auth/mfa/resend'), {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ challengeId, idToken }),
+      body: JSON.stringify({ challengeId, idToken: freshIdToken }),
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -243,7 +258,7 @@ export function UserProvider({
       mfaRequired: true,
       challengeId: String((data as { challengeId: string }).challengeId),
       emailHint: String((data as { emailHint?: string }).emailHint || ''),
-      idToken,
+      idToken: freshIdToken,
       expiresInSec: (data as { expiresInSec?: number }).expiresInSec,
       resendAvailableInSec: (data as { resendAvailableInSec?: number })
         .resendAvailableInSec,
