@@ -8,7 +8,7 @@ import {
 } from '@/common/components/ui/dialog';
 import { Button } from '@/common/components/ui/button';
 import { Loader2 } from 'lucide-react';
-import type { User } from 'features/clients/data/schema';
+import type { User } from '@/features/clients/data/schema';
 
 interface PortalInviteModalProps {
   open: boolean;
