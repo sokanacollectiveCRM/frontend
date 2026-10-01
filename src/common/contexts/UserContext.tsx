@@ -229,11 +229,27 @@ export function UserProvider({
         (data as { error?: string })?.error || 'Verification failed'
       );
     }
-    const sessionOk = await checkAuth();
-    if (!sessionOk) {
+
+    // MFA verify sets HttpOnly cookie, but cross-origin browsers may not attach
+    // it on the very next request. Use the verify response token once (not
+    // localStorage) while credentials: include picks up the cookie when ready.
+    const sessionToken =
+      typeof (data as { token?: unknown }).token === 'string'
+        ? (data as { token: string }).token.trim()
+        : freshIdToken;
+    const meResponse = await fetch(buildUrl('/auth/me'), {
+      credentials: 'include',
+      headers: {
+        Authorization: `Bearer ${sessionToken}`,
+        'X-Session-Token': sessionToken,
+      },
+    });
+    if (!meResponse.ok) {
       clearSessionAccessToken();
       throw new Error('Code accepted, but session could not be verified.');
     }
+    const userData = await meResponse.json();
+    setUser(userData);
     return true;
   };
 
