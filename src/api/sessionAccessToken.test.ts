@@ -10,14 +10,16 @@ describe('sessionAccessToken', () => {
     clearSessionAccessToken();
   });
 
-  it('stores and reads a login JWT for header auth', () => {
+  it('does not persist tokens in browser storage', () => {
     setSessionAccessToken('abc.def.ghi');
-    expect(getSessionAccessToken()).toBe('abc.def.ghi');
+    expect(getSessionAccessToken()).toBeNull();
+    expect(localStorage.getItem('sokana.session-token')).toBeNull();
   });
 
-  it('clears an empty or missing token', () => {
-    setSessionAccessToken('abc.def.ghi');
-    setSessionAccessToken('  ');
+  it('purges legacy stored tokens on read and clear', () => {
+    localStorage.setItem('sokana.session-token', 'legacy-token');
+    clearSessionAccessToken();
+    expect(localStorage.getItem('sokana.session-token')).toBeNull();
     expect(getSessionAccessToken()).toBeNull();
   });
 });

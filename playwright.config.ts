@@ -16,6 +16,15 @@ export default defineConfig({
     command: 'npm run dev -- --port 3001',
     url: 'http://localhost:3001',
     reuseExistingServer: !process.env.CI,
+    env: {
+      ...process.env,
+      VITE_API_BASE_URL: 'http://localhost:5050',
+      VITE_APP_BACKEND_URL: 'http://localhost:5050',
+      VITE_SUPABASE_URL:
+        process.env.VITE_SUPABASE_URL || 'https://example.supabase.co',
+      VITE_SUPABASE_ANON_KEY:
+        process.env.VITE_SUPABASE_ANON_KEY || 'test-anon-key',
+    },
   },
 
   use: {

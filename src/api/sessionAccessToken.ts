@@ -1,44 +1,28 @@
 const STORAGE_KEY = 'sokana.session-token';
 
-function canUseStorage(): boolean {
-  return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
+/** Remove any legacy browser-stored session tokens (HttpOnly cookie is authoritative). */
+function purgeLegacyBrowserToken(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Safari private mode can throw; ignore.
+  }
 }
 
+/** @deprecated Session JWT lives in HttpOnly cookie `sokana_session_token` only. */
 export function getSessionAccessToken(): string | null {
-  if (!canUseStorage()) return null;
-  try {
-    const value = localStorage.getItem(STORAGE_KEY);
-    if (value && value.length > 0) return value;
-
-    if (typeof sessionStorage !== 'undefined') {
-      const legacy = sessionStorage.getItem(STORAGE_KEY);
-      if (legacy && legacy.length > 0) {
-        localStorage.setItem(STORAGE_KEY, legacy);
-        sessionStorage.removeItem(STORAGE_KEY);
-        return legacy;
-      }
-    }
-
-    return null;
-  } catch {
-    return null;
-  }
+  purgeLegacyBrowserToken();
+  return null;
 }
 
-export function setSessionAccessToken(token: string | null | undefined): void {
-  if (!canUseStorage()) return;
-  try {
-    const trimmed = typeof token === 'string' ? token.trim() : '';
-    if (!trimmed) {
-      localStorage.removeItem(STORAGE_KEY);
-      return;
-    }
-    localStorage.setItem(STORAGE_KEY, trimmed);
-  } catch {
-    // Safari private mode can throw; cookie auth may still work on desktop.
-  }
+/** @deprecated No-op — do not persist session tokens in browser storage. */
+export function setSessionAccessToken(_token: string | null | undefined): void {
+  purgeLegacyBrowserToken();
 }
 
+/** Clears legacy local/session storage entries from pre-cookie auth. */
 export function clearSessionAccessToken(): void {
-  setSessionAccessToken(null);
+  purgeLegacyBrowserToken();
 }

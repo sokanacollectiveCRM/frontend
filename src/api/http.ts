@@ -1,6 +1,5 @@
 import { API_CONFIG } from './config';
 import { ApiError } from './errors';
-import { getSessionAccessToken } from './sessionAccessToken';
 import { logger } from '@/utils/logger';
 
 export type ApiResponse<T> =
@@ -118,23 +117,23 @@ function buildBaseHeaders(
   return { ...base, ...(fetchHeaders as Record<string, string>) };
 }
 
-/** Resolve credentials and Authorization.
- * Prefer the login JSON token (needed when cross-site cookies are blocked on mobile),
- * then a Supabase session. Cookie mode still sends credentials: include. */
+/**
+ * Staff CRM auth: HttpOnly `sokana_session_token` cookie (credentials: include).
+ * Supabase client-portal mode still sends Bearer from the Supabase session only.
+ */
 export async function getRequestAuth(): Promise<{
   credentials: FetchCredentials;
   headers: Record<string, string>;
 }> {
-  const token = getSessionAccessToken() ?? (await getSupabaseTokenSafe());
   const headers: Record<string, string> = {};
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-    headers['X-Session-Token'] = token;
+  if (API_CONFIG.authMode === 'supabase') {
+    const token = await getSupabaseTokenSafe();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+      headers['X-Session-Token'] = token;
+    }
   }
-  if (API_CONFIG.authMode === 'cookie') {
-    return { credentials: 'include', headers };
-  }
-  return { credentials: 'omit', headers };
+  return { credentials: 'include', headers };
 }
 
 async function getSupabaseTokenSafe(): Promise<string | null> {
@@ -155,8 +154,7 @@ async function getSupabaseTokenSafe(): Promise<string | null> {
 }
 
 /**
- * Fetch with auth applied: cookie mode sends credentials; supabase mode sends Bearer + X-Session-Token.
- * Use for any direct fetch to the backend so session is always sent. Prefer get/post/put/del when possible.
+ * Fetch with auth applied: always sends cookies; Supabase mode also sends Bearer.
  */
 export async function fetchWithAuth(
   url: string,
@@ -167,7 +165,7 @@ export async function fetchWithAuth(
   Object.entries(auth.headers).forEach(([k, v]) => headers.set(k, v));
   return fetch(url, {
     ...init,
-    credentials: auth.credentials,
+    credentials: 'include',
     headers,
   });
 }
@@ -191,7 +189,7 @@ async function requestLegacy<T>(
     response = await fetch(url, {
       ...fetchOptions,
       method: fetchOptions.method ?? 'GET',
-      credentials: auth.credentials,
+      credentials: 'include',
       headers,
       body: hasBody ? JSON.stringify(body) : undefined,
     });
@@ -234,7 +232,7 @@ async function requestCanonical<T>(
     response = await fetch(url, {
       ...fetchOptions,
       method: fetchOptions.method ?? 'GET',
-      credentials: auth.credentials,
+      credentials: 'include',
       headers,
       body: hasBody ? JSON.stringify(body) : undefined,
     });
