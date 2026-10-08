@@ -1,5 +1,5 @@
 import React from 'react';
-import { getStepTitle } from '../stepConfig';
+import { getStepTitle } from 'features/intake/stepConfig';
 import styles from './StepHeader.module.scss';
 
 interface StepHeaderProps {
@@ -8,13 +8,13 @@ interface StepHeaderProps {
   showProgressText?: boolean;
 }
 
-export const StepHeader: React.FC<StepHeaderProps> = ({ 
-  currentStep, 
-  totalSteps, 
-  showProgressText = true 
+export const StepHeader: React.FC<StepHeaderProps> = ({
+  currentStep,
+  totalSteps,
+  showProgressText = true,
 }) => {
   const stepTitle = getStepTitle(currentStep);
-  
+
   return (
     <div className={styles.stepHeader}>
       <div className={styles.stepTitleContainer}>

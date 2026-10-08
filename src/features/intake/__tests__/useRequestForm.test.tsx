@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { vi } from 'vitest';
-import { fullSchema, useRequestForm } from '../useRequestForm';
+import { fullSchema, useRequestForm } from 'features/intake/useRequestForm';
 
 // Mock document.getElementById and scrollIntoView
 const mockScrollIntoView = vi.fn();
@@ -59,9 +59,11 @@ describe('useRequestForm', () => {
         had_previous_pregnancies: true,
         previous_pregnancies_count: '1',
         living_children_count: '1',
-        past_pregnancy_experience: 'Healthy previous pregnancy, no complications',
+        past_pregnancy_experience:
+          'Healthy previous pregnancy, no complications',
         services_interested: ['Labor Support', 'Postpartum Support'],
-        service_support_details: 'I am looking for both labor and postpartum support, including overnight care for 2 weeks.',
+        service_support_details:
+          'I am looking for both labor and postpartum support, including overnight care for 2 weeks.',
         service_needed: 'Labor Support',
         payment_method: 'Private/Commercial Insurance',
         insurance_policy_holder_name: 'Jane Doe',
@@ -164,7 +166,9 @@ describe('useRequestForm', () => {
       expect(emptyOther.success).toBe(false);
       if (!emptyOther.success) {
         expect(
-          emptyOther.error.issues.some((i) => i.path.includes('home_type_other'))
+          emptyOther.error.issues.some((i) =>
+            i.path.includes('home_type_other')
+          )
         ).toBe(true);
       }
 
@@ -292,7 +296,9 @@ describe('useRequestForm', () => {
       expect(emptyOther.success).toBe(false);
       if (!emptyOther.success) {
         expect(
-          emptyOther.error.issues.some((i) => i.path.includes('referral_source_other'))
+          emptyOther.error.issues.some((i) =>
+            i.path.includes('referral_source_other')
+          )
         ).toBe(true);
       }
 
@@ -337,7 +343,9 @@ describe('useRequestForm', () => {
       expect(unset.success).toBe(false);
       if (!unset.success) {
         expect(
-          unset.error.issues.some((i) => i.path.includes('had_previous_pregnancies'))
+          unset.error.issues.some((i) =>
+            i.path.includes('had_previous_pregnancies')
+          )
         ).toBe(true);
       }
 
@@ -387,13 +395,20 @@ describe('useRequestForm', () => {
         payment_method: 'Not sure / Need help figuring this out',
       };
 
-      const homeMissing = fullSchema.safeParse({ ...base, birth_location: 'Home' });
+      const homeMissing = fullSchema.safeParse({
+        ...base,
+        birth_location: 'Home',
+      });
       expect(homeMissing.success).toBe(false);
       if (!homeMissing.success) {
-        expect(homeMissing.error.issues.some((i) => i.path.includes('birth_hospital'))).toBe(
-          true
-        );
-        expect(homeMissing.error.issues.map((i) => i.message).join(' ')).toMatch(/home birth/i);
+        expect(
+          homeMissing.error.issues.some((i) =>
+            i.path.includes('birth_hospital')
+          )
+        ).toBe(true);
+        expect(
+          homeMissing.error.issues.map((i) => i.message).join(' ')
+        ).toMatch(/home birth/i);
       }
 
       const hospitalOk = fullSchema.safeParse({
@@ -669,9 +684,10 @@ describe('useRequestForm', () => {
 
       expect(advanced).toBe(false);
       expect(result.current.step).toBe(3);
-      expect(result.current.form.getFieldState('referral_source_other').error?.message).toBe(
-        'Please describe how you heard about Sokana.'
-      );
+      expect(
+        result.current.form.getFieldState('referral_source_other').error
+          ?.message
+      ).toBe('Please describe how you heard about Sokana.');
     });
   });
 
@@ -873,7 +889,10 @@ describe('useRequestForm', () => {
 
       // Test that the hook can handle validation failures
       // The form starts empty, so validation should fail
-      const isValid = await result.current.form.trigger(['firstname', 'lastname']);
+      const isValid = await result.current.form.trigger([
+        'firstname',
+        'lastname',
+      ]);
       expect(isValid).toBe(false);
 
       // Test that the form state is accessible
@@ -881,4 +900,4 @@ describe('useRequestForm', () => {
       expect(formState).toBeDefined();
     });
   });
-}); 
+});

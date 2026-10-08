@@ -5,11 +5,10 @@ import {
   type ReactNode,
 } from 'react';
 
-import type { PublicIntakeBrandingResponse } from '../application/usePublicIntakeBranding';
+import type { PublicIntakeBrandingResponse } from 'features/intake/application/usePublicIntakeBranding';
 
-const IntakeBrandingContext = createContext<PublicIntakeBrandingResponse | null>(
-  null
-);
+const IntakeBrandingContext =
+  createContext<PublicIntakeBrandingResponse | null>(null);
 
 export function IntakeBrandingProvider({
   branding,

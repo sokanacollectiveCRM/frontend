@@ -49,7 +49,10 @@ function HomeTypeField({
   const handleToggle = (option: string) => {
     const updated = toggleHomeTypeSelection(selected, option);
     form.setValue('home_type', updated, { shouldValidate: true });
-    if (option === HOME_TYPE_OTHER_VALUE && !updated.includes(HOME_TYPE_OTHER_VALUE)) {
+    if (
+      option === HOME_TYPE_OTHER_VALUE &&
+      !updated.includes(HOME_TYPE_OTHER_VALUE)
+    ) {
       form.setValue('home_type_other', '', { shouldValidate: true });
     }
   };
@@ -370,10 +373,20 @@ export function Step2Home({
 
         {/* City and State Row - Desktop Only */}
         {isDesktopOrTablet ? (
-          <div style={{ display: 'flex', gap: '1rem', width: '100%', marginBottom: '1rem' }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: '1rem',
+              width: '100%',
+              marginBottom: '1rem',
+            }}
+          >
             <div className={styles['form-field']} style={{ flex: 1 }}>
               {errors.city && (
-                <div className={styles['form-error']} style={{ marginBottom: 6 }}>
+                <div
+                  className={styles['form-error']}
+                  style={{ marginBottom: 6 }}
+                >
                   Please enter a city.
                 </div>
               )}
@@ -399,7 +412,10 @@ export function Step2Home({
             </div>
             <div className={styles['form-field']} style={{ flex: 1 }}>
               {errors.state && (
-                <div className={styles['form-error']} style={{ marginBottom: 6 }}>
+                <div
+                  className={styles['form-error']}
+                  style={{ marginBottom: 6 }}
+                >
                   Please enter a state/province.
                 </div>
               )}
@@ -428,7 +444,10 @@ export function Step2Home({
           <>
             <div className={styles['form-field']}>
               {errors.city && (
-                <div className={styles['form-error']} style={{ marginBottom: 6 }}>
+                <div
+                  className={styles['form-error']}
+                  style={{ marginBottom: 6 }}
+                >
                   Please enter a city.
                 </div>
               )}
@@ -455,7 +474,10 @@ export function Step2Home({
 
             <div className={styles['form-field']}>
               {errors.state && (
-                <div className={styles['form-error']} style={{ marginBottom: 6 }}>
+                <div
+                  className={styles['form-error']}
+                  style={{ marginBottom: 6 }}
+                >
                   Please enter a state/province.
                 </div>
               )}

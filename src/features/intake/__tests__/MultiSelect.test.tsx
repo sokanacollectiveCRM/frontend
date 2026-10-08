@@ -35,27 +35,29 @@ const MockMultiSelect = ({ form, onSelectionChange }: any) => {
   };
 
   return (
-    <div data-testid="multi-select">
-      <div data-testid="selected-count">{selectedMulti.length}</div>
-      <div data-testid="selected-items">
+    <div data-testid='multi-select'>
+      <div data-testid='selected-count'>{selectedMulti.length}</div>
+      <div data-testid='selected-items'>
         {selectedMulti.map((item: string) => (
-          <span key={item} data-testid={`selected-${item}`}>{item}</span>
+          <span key={item} data-testid={`selected-${item}`}>
+            {item}
+          </span>
         ))}
       </div>
       <button
-        data-testid="option-person-of-color"
+        data-testid='option-person-of-color'
         onClick={() => handleMultiSelect('Identify as a person of color')}
       >
         Identify as a person of color
       </button>
       <button
-        data-testid="option-lgbtq"
+        data-testid='option-lgbtq'
         onClick={() => handleMultiSelect('Identify as LGBTQ+')}
       >
         Identify as LGBTQ+
       </button>
       <button
-        data-testid="option-none"
+        data-testid='option-none'
         onClick={() => handleMultiSelect('None apply')}
       >
         None apply
@@ -83,27 +85,29 @@ function StatefulMultiSelect() {
   };
 
   return (
-    <div data-testid="multi-select">
-      <div data-testid="selected-count">{selectedMulti.length}</div>
-      <div data-testid="selected-items">
+    <div data-testid='multi-select'>
+      <div data-testid='selected-count'>{selectedMulti.length}</div>
+      <div data-testid='selected-items'>
         {selectedMulti.map((item) => (
-          <span key={item} data-testid={`selected-${item}`}>{item}</span>
+          <span key={item} data-testid={`selected-${item}`}>
+            {item}
+          </span>
         ))}
       </div>
       <button
-        data-testid="option-person-of-color"
+        data-testid='option-person-of-color'
         onClick={() => handleMultiSelect('Identify as a person of color')}
       >
         Identify as a person of color
       </button>
       <button
-        data-testid="option-lgbtq"
+        data-testid='option-lgbtq'
         onClick={() => handleMultiSelect('Identify as LGBTQ+')}
       >
         Identify as LGBTQ+
       </button>
       <button
-        data-testid="option-none"
+        data-testid='option-none'
         onClick={() => handleMultiSelect('None apply')}
       >
         None apply
@@ -123,63 +127,98 @@ describe('Multi-Select Functionality', () => {
     // Select first option
     fireEvent.click(screen.getByTestId('option-person-of-color'));
     expect(screen.getByTestId('selected-count')).toHaveTextContent('1');
-    expect(screen.getByTestId('selected-Identify as a person of color')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('selected-Identify as a person of color')
+    ).toBeInTheDocument();
     // Select second option
     fireEvent.click(screen.getByTestId('option-lgbtq'));
     expect(screen.getByTestId('selected-count')).toHaveTextContent('2');
-    expect(screen.getByTestId('selected-Identify as a person of color')).toBeInTheDocument();
-    expect(screen.getByTestId('selected-Identify as LGBTQ+')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('selected-Identify as a person of color')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTestId('selected-Identify as LGBTQ+')
+    ).toBeInTheDocument();
   });
 
   test('allows deselecting options', () => {
     const onSelectionChange = vi.fn();
-    mockForm.getValues.mockReturnValue(['Identify as a person of color', 'Identify as LGBTQ+']);
+    mockForm.getValues.mockReturnValue([
+      'Identify as a person of color',
+      'Identify as LGBTQ+',
+    ]);
 
-    render(<MockMultiSelect form={mockForm} onSelectionChange={onSelectionChange} />);
+    render(
+      <MockMultiSelect form={mockForm} onSelectionChange={onSelectionChange} />
+    );
 
     // Deselect first option
     fireEvent.click(screen.getByTestId('option-person-of-color'));
-    expect(mockForm.setValue).toHaveBeenCalledWith('demographics_multi', ['Identify as LGBTQ+']);
+    expect(mockForm.setValue).toHaveBeenCalledWith('demographics_multi', [
+      'Identify as LGBTQ+',
+    ]);
   });
 
   test('"None apply" deselects all other options', () => {
     const onSelectionChange = vi.fn();
-    mockForm.getValues.mockReturnValue(['Identify as a person of color', 'Identify as LGBTQ+']);
+    mockForm.getValues.mockReturnValue([
+      'Identify as a person of color',
+      'Identify as LGBTQ+',
+    ]);
 
-    render(<MockMultiSelect form={mockForm} onSelectionChange={onSelectionChange} />);
+    render(
+      <MockMultiSelect form={mockForm} onSelectionChange={onSelectionChange} />
+    );
 
     // Click "None apply"
     fireEvent.click(screen.getByTestId('option-none'));
-    expect(mockForm.setValue).toHaveBeenCalledWith('demographics_multi', ['None apply']);
+    expect(mockForm.setValue).toHaveBeenCalledWith('demographics_multi', [
+      'None apply',
+    ]);
   });
 
   test('selecting other options removes "None apply"', () => {
     const onSelectionChange = vi.fn();
     mockForm.getValues.mockReturnValue(['None apply']);
 
-    render(<MockMultiSelect form={mockForm} onSelectionChange={onSelectionChange} />);
+    render(
+      <MockMultiSelect form={mockForm} onSelectionChange={onSelectionChange} />
+    );
 
     // Select another option
     fireEvent.click(screen.getByTestId('option-person-of-color'));
-    expect(mockForm.setValue).toHaveBeenCalledWith('demographics_multi', ['Identify as a person of color']);
+    expect(mockForm.setValue).toHaveBeenCalledWith('demographics_multi', [
+      'Identify as a person of color',
+    ]);
   });
 
   test('displays correct number of selected items', () => {
     const onSelectionChange = vi.fn();
-    mockForm.getValues.mockReturnValue(['Identify as a person of color', 'Identify as LGBTQ+']);
+    mockForm.getValues.mockReturnValue([
+      'Identify as a person of color',
+      'Identify as LGBTQ+',
+    ]);
 
-    render(<MockMultiSelect form={mockForm} onSelectionChange={onSelectionChange} />);
+    render(
+      <MockMultiSelect form={mockForm} onSelectionChange={onSelectionChange} />
+    );
 
     expect(screen.getByTestId('selected-count')).toHaveTextContent('2');
-    expect(screen.getByTestId('selected-Identify as a person of color')).toBeInTheDocument();
-    expect(screen.getByTestId('selected-Identify as LGBTQ+')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('selected-Identify as a person of color')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTestId('selected-Identify as LGBTQ+')
+    ).toBeInTheDocument();
   });
 
   test('handles empty selection state', () => {
     const onSelectionChange = vi.fn();
     mockForm.getValues.mockReturnValue([]);
 
-    render(<MockMultiSelect form={mockForm} onSelectionChange={onSelectionChange} />);
+    render(
+      <MockMultiSelect form={mockForm} onSelectionChange={onSelectionChange} />
+    );
 
     expect(screen.getByTestId('selected-count')).toHaveTextContent('0');
     expect(screen.queryByTestId('selected-items')).toBeEmptyDOMElement();
@@ -191,7 +230,9 @@ describe('Multi-Select Edge Cases', () => {
     const onSelectionChange = vi.fn();
     mockForm.getValues.mockReturnValue(['Identify as a person of color']);
 
-    render(<MockMultiSelect form={mockForm} onSelectionChange={onSelectionChange} />);
+    render(
+      <MockMultiSelect form={mockForm} onSelectionChange={onSelectionChange} />
+    );
 
     // Try to select the same option again
     fireEvent.click(screen.getByTestId('option-person-of-color'));
@@ -205,15 +246,22 @@ describe('Multi-Select Edge Cases', () => {
     fireEvent.click(screen.getByTestId('option-person-of-color'));
     expect(screen.getByTestId('selected-count')).toHaveTextContent('2');
     // Only get the selected pills (spans with data-testid starting with 'selected-')
-    const items = Array.from(document.querySelectorAll('span[data-testid^="selected-"]')).map((el) => el.textContent);
-    expect(items).toEqual(['Identify as LGBTQ+', 'Identify as a person of color']);
+    const items = Array.from(
+      document.querySelectorAll('span[data-testid^="selected-"]')
+    ).map((el) => el.textContent);
+    expect(items).toEqual([
+      'Identify as LGBTQ+',
+      'Identify as a person of color',
+    ]);
   });
 
   test('handles rapid selection changes', () => {
     const onSelectionChange = vi.fn();
     mockForm.getValues.mockReturnValue([]);
 
-    render(<MockMultiSelect form={mockForm} onSelectionChange={onSelectionChange} />);
+    render(
+      <MockMultiSelect form={mockForm} onSelectionChange={onSelectionChange} />
+    );
 
     // Rapidly click multiple options
     fireEvent.click(screen.getByTestId('option-person-of-color'));
@@ -221,6 +269,8 @@ describe('Multi-Select Edge Cases', () => {
     fireEvent.click(screen.getByTestId('option-none'));
 
     // Should end up with only "None apply"
-    expect(mockForm.setValue).toHaveBeenLastCalledWith('demographics_multi', ['None apply']);
+    expect(mockForm.setValue).toHaveBeenLastCalledWith('demographics_multi', [
+      'None apply',
+    ]);
   });
-}); 
+});

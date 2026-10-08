@@ -15,8 +15,8 @@ import {
   type RequestFormPaymentMethod,
 } from '@/lib/paymentRules';
 import { SELF_PAY_SLIDING_SUPPORT_TYPES } from '@/lib/slidingScaleData';
-import { HOME_PEOPLE_COUNT_OPTIONS } from '../domain/homePeopleCountOptions';
-import { HOME_TYPE_OTHER_VALUE } from '../domain/homeTypeOptions';
+import { HOME_PEOPLE_COUNT_OPTIONS } from 'features/intake/domain/homePeopleCountOptions';
+import { HOME_TYPE_OTHER_VALUE } from 'features/intake/domain/homeTypeOptions';
 
 export const PAYMENT_METHOD_OPTIONS = REQUEST_FORM_PAYMENT_METHOD_OPTIONS;
 
@@ -53,7 +53,9 @@ export const fullSchema = z
     phone_number: z.string().min(1, 'Please enter your mobile phone number.'),
     pronouns: z.string().min(1, 'Please select your pronouns.'),
     pronouns_other: z.string().optional(),
-    preferred_contact_method: z.string().min(1, 'Please select your preferred contact method.'),
+    preferred_contact_method: z
+      .string()
+      .min(1, 'Please select your preferred contact method.'),
     preferred_name: z.string().optional(),
     age: z
       .union([z.string(), z.number()])
@@ -87,7 +89,10 @@ export const fullSchema = z
     pets: z
       .string()
       .trim()
-      .min(1, 'Please list the types of any pets/animals that are in the home.'),
+      .min(
+        1,
+        'Please list the types of any pets/animals that are in the home.'
+      ),
     home_adults_count: z
       .union([z.literal(''), z.enum(HOME_PEOPLE_COUNT_OPTIONS)])
       .refine((val) => val !== '', {
@@ -104,10 +109,13 @@ export const fullSchema = z
     first_name: z.string().optional(),
     last_name: z.string().optional(),
     middle_name: z.string().optional(),
-    family_email: z.string().optional().refine((val) => {
-      if (!val || val.trim() === '') return true; // Allow empty
-      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val); // Validate email if provided
-    }, 'Please enter a valid email address.'),
+    family_email: z
+      .string()
+      .optional()
+      .refine((val) => {
+        if (!val || val.trim() === '') return true; // Allow empty
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val); // Validate email if provided
+      }, 'Please enter a valid email address.'),
     mobile_phone: z.string().optional(),
     work_phone: z.string().optional(),
     family_pronouns: z.string().optional(),
@@ -304,7 +312,10 @@ export const fullSchema = z
         });
       }
       const plan = data.insurance_plan_type?.trim() ?? '';
-      if (!plan || !INSURANCE_PLAN_TYPE_OPTIONS.includes(plan as InsurancePlanType)) {
+      if (
+        !plan ||
+        !INSURANCE_PLAN_TYPE_OPTIONS.includes(plan as InsurancePlanType)
+      ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'Please select a plan type.',
@@ -339,17 +350,24 @@ export const fullSchema = z
 
     if (isSelfPaySlidingScaleMethod(data.payment_method)) {
       const scope = data.self_pay_sliding_support_type?.trim() ?? '';
-      if (!scope || !SELF_PAY_SLIDING_SUPPORT_TYPES.includes(scope as (typeof SELF_PAY_SLIDING_SUPPORT_TYPES)[number])) {
+      if (
+        !scope ||
+        !SELF_PAY_SLIDING_SUPPORT_TYPES.includes(
+          scope as (typeof SELF_PAY_SLIDING_SUPPORT_TYPES)[number]
+        )
+      ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Please select whether you are interested in labor support, postpartum support, or both.',
+          message:
+            'Please select whether you are interested in labor support, postpartum support, or both.',
           path: ['self_pay_sliding_support_type'],
         });
       }
       if (!data.self_pay_sliding_tier?.trim()) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Please select the income row that best matches your household from the sliding scale chart.',
+          message:
+            'Please select the income row that best matches your household from the sliding scale chart.',
           path: ['self_pay_sliding_tier'],
         });
       }
@@ -397,7 +415,12 @@ export const stepFields: (keyof RequestFormInput)[][] = [
     'mobile_phone',
   ],
   // 4. Referral
-  ['referral_source', 'referral_source_other', 'referral_name', 'referral_email'],
+  [
+    'referral_source',
+    'referral_source_other',
+    'referral_name',
+    'referral_email',
+  ],
   // 6. Health (pregnancy/baby/postpartum + allergies only on this step)
   ['health_history', 'allergies'],
   // 7. Pregnancy/Baby

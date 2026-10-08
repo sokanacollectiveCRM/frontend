@@ -2,10 +2,13 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useEffect } from 'react';
 import { vi } from 'vitest';
-import { RequestFormProvider, useRequestFormContext } from '../contexts/RequestFormContext';
-import { DUMMY_TEST_LEAD } from '../dummyTestLead';
-import RequestForm from '../RequestForm';
-import type { RequestFormInput } from '../useRequestForm';
+import {
+  RequestFormProvider,
+  useRequestFormContext,
+} from 'features/intake/contexts/RequestFormContext';
+import { DUMMY_TEST_LEAD } from 'features/intake/dummyTestLead';
+import RequestForm from 'features/intake/RequestForm';
+import type { RequestFormInput } from 'features/intake/useRequestForm';
 
 vi.mock('sonner', () => ({
   toast: {
@@ -34,9 +37,7 @@ function FinalStepInvalidSubmitHarness() {
 
   return (
     <div>
-      {stepGateMessage ? (
-        <div role='alert'>{stepGateMessage}</div>
-      ) : null}
+      {stepGateMessage ? <div role='alert'>{stepGateMessage}</div> : null}
       <button type='button' onClick={() => void handleNextStep()}>
         Submit
       </button>
@@ -68,12 +69,12 @@ describe('Request form validation banner', () => {
     render(
       <RequestFormProvider onSubmit={onSubmit}>
         <FinalStepInvalidSubmitHarness />
-      </RequestFormProvider>,
+      </RequestFormProvider>
     );
 
     await waitFor(() => {
       expect(
-        screen.getByRole('button', { name: /^submit$/i }),
+        screen.getByRole('button', { name: /^submit$/i })
       ).toBeInTheDocument();
     });
 

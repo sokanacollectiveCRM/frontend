@@ -20,7 +20,9 @@ export const HOME_TYPE_PREFER_NOT_VALUE = 'Prefer not to answer' as const;
 /** Normalize API / legacy values to a string array for the form and admin UI. */
 export function normalizeHomeTypeFromApi(raw: unknown): string[] {
   if (Array.isArray(raw)) {
-    return raw.filter((item): item is string => typeof item === 'string' && item.trim() !== '');
+    return raw.filter(
+      (item): item is string => typeof item === 'string' && item.trim() !== ''
+    );
   }
   if (typeof raw === 'string') {
     const trimmed = raw.trim();
@@ -54,7 +56,10 @@ export function singleHomeTypeFromApi(raw: unknown): string[] {
 }
 
 /** Single-select for staff CRM — clicking an option replaces the current selection. */
-export function selectSingleHomeType(current: string[], option: string): string[] {
+export function selectSingleHomeType(
+  current: string[],
+  option: string
+): string[] {
   const selected = singleHomeTypeFromApi(current);
   if (selected.includes(option)) {
     return [];
@@ -63,9 +68,14 @@ export function selectSingleHomeType(current: string[], option: string): string[
 }
 
 /** Toggle one home type; "Prefer not to answer" is mutually exclusive with other options. */
-export function toggleHomeTypeSelection(current: string[], option: string): string[] {
+export function toggleHomeTypeSelection(
+  current: string[],
+  option: string
+): string[] {
   if (option === HOME_TYPE_PREFER_NOT_VALUE) {
-    return current.includes(HOME_TYPE_PREFER_NOT_VALUE) ? [] : [HOME_TYPE_PREFER_NOT_VALUE];
+    return current.includes(HOME_TYPE_PREFER_NOT_VALUE)
+      ? []
+      : [HOME_TYPE_PREFER_NOT_VALUE];
   }
   const withoutPrefer = current.filter((v) => v !== HOME_TYPE_PREFER_NOT_VALUE);
   if (withoutPrefer.includes(option)) {

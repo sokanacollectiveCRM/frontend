@@ -1,1 +1,1 @@
-export * from "@/features/intake/domain/homeTypeOptions";
+export * from '@/features/intake/domain/homeTypeOptions';

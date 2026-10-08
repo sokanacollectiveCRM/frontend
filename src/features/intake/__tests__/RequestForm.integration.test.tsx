@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
-import RequestForm from '../RequestForm';
+import RequestForm from 'features/intake/RequestForm';
 
 // Mock the toast
 vi.mock('sonner', () => ({
@@ -31,7 +31,9 @@ describe('RequestForm Integration Tests', () => {
 
       // Verify form renders correctly
       expect(screen.getByText('Request for Service Form')).toBeInTheDocument();
-      expect(screen.getByRole('heading', { name: /Services Interested In/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { name: /Services Interested In/i })
+      ).toBeInTheDocument();
 
       // Check for required fields on initial step (one open-ended prompt; service_need is derived on submit)
       expect(
@@ -86,13 +88,18 @@ describe('RequestForm Integration Tests', () => {
 
     it('shows loading state during submission', async () => {
       // Mock a delayed response
-      (global.fetch as any).mockImplementationOnce(() =>
-        new Promise(resolve =>
-          setTimeout(() => resolve({
-            ok: true,
-            json: async () => ({ success: true }),
-          }), 200)
-        )
+      (global.fetch as any).mockImplementationOnce(
+        () =>
+          new Promise((resolve) =>
+            setTimeout(
+              () =>
+                resolve({
+                  ok: true,
+                  json: async () => ({ success: true }),
+                }),
+              200
+            )
+          )
       );
 
       const user = userEvent.setup();
@@ -130,10 +137,11 @@ describe('RequestForm Integration Tests', () => {
     });
 
     it('handles timeout errors', async () => {
-      (global.fetch as any).mockImplementationOnce(() =>
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Request timeout')), 100)
-        )
+      (global.fetch as any).mockImplementationOnce(
+        () =>
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Request timeout')), 100)
+          )
       );
 
       const user = userEvent.setup();
@@ -150,7 +158,9 @@ describe('RequestForm Integration Tests', () => {
       render(<RequestForm />);
 
       // Check for form sections
-      expect(screen.getByRole('heading', { name: /Services Interested In/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { name: /Services Interested In/i })
+      ).toBeInTheDocument();
 
       expect(
         screen.getByLabelText(/Describe the support you are looking for/i)
@@ -195,13 +205,18 @@ describe('RequestForm Integration Tests', () => {
   describe('Form State Management', () => {
     it('prevents multiple submissions while processing', async () => {
       // Mock a delayed response
-      (global.fetch as any).mockImplementationOnce(() =>
-        new Promise(resolve =>
-          setTimeout(() => resolve({
-            ok: true,
-            json: async () => ({ success: true }),
-          }), 300)
-        )
+      (global.fetch as any).mockImplementationOnce(
+        () =>
+          new Promise((resolve) =>
+            setTimeout(
+              () =>
+                resolve({
+                  ok: true,
+                  json: async () => ({ success: true }),
+                }),
+              300
+            )
+          )
       );
 
       const user = userEvent.setup();
@@ -229,4 +244,4 @@ describe('RequestForm Integration Tests', () => {
       expect(screen.getByText('Request for Service Form')).toBeInTheDocument();
     });
   });
-}); 
+});

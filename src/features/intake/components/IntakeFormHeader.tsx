@@ -1,6 +1,6 @@
 import { isRequestTestDataEnabled } from '@/config/env';
 
-import { useIntakeBranding } from '../contexts/IntakeBrandingContext';
+import { useIntakeBranding } from 'features/intake/contexts/IntakeBrandingContext';
 
 type IntakeFormHeaderProps = {
   onFillTestData?: () => void;

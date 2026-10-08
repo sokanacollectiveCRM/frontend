@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { fullSchema, type RequestFormValues } from '../useRequestForm';
+import {
+  fullSchema,
+  type RequestFormValues,
+} from 'features/intake/useRequestForm';
 
-function buildMinimalValidRequest(overrides: Partial<RequestFormValues> = {}): RequestFormValues {
+function buildMinimalValidRequest(
+  overrides: Partial<RequestFormValues> = {}
+): RequestFormValues {
   return {
     // Step 0 (services)
     services_interested: ['Labor Support'],
@@ -231,4 +236,3 @@ describe('Request form payment validation (schema)', () => {
     }
   });
 });
-

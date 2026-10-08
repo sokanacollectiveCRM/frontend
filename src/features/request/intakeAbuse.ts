@@ -1,1 +1,1 @@
-export * from "@/features/intake/domain/intakeAbuse";
+export * from '@/features/intake/domain/intakeAbuse';

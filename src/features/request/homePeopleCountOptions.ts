@@ -1,1 +1,1 @@
-export * from "@/features/intake/domain/homePeopleCountOptions";
+export * from '@/features/intake/domain/homePeopleCountOptions';

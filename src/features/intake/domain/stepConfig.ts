@@ -18,18 +18,18 @@ export interface StepInfo {
 export const STEP_CONFIG: StepInfo[] = [
   {
     id: 0,
-    title: "Services Interested In",
-    shortTitle: "Services"
+    title: 'Services Interested In',
+    shortTitle: 'Services',
   },
   {
     id: 1,
-    title: "Client Details",
-    shortTitle: "Personal"
+    title: 'Client Details',
+    shortTitle: 'Personal',
   },
   {
     id: 2,
-    title: "Home Details",
-    shortTitle: "Home"
+    title: 'Home Details',
+    shortTitle: 'Home',
   },
   {
     id: 3,
@@ -45,32 +45,32 @@ export const STEP_CONFIG: StepInfo[] = [
   },
   {
     id: 5,
-    title: "Pregnancy/Baby",
-    shortTitle: "Pregnancy"
+    title: 'Pregnancy/Baby',
+    shortTitle: 'Pregnancy',
   },
   {
     id: 6,
-    title: "Past Pregnancies",
-    shortTitle: "Past"
+    title: 'Past Pregnancies',
+    shortTitle: 'Past',
   },
   {
     id: 7,
-    title: "Payment",
-    shortTitle: "Payment"
+    title: 'Payment',
+    shortTitle: 'Payment',
   },
   {
     id: 8,
-    title: "Client Demographics",
-    shortTitle: "Demographics"
-  }
+    title: 'Client Demographics',
+    shortTitle: 'Demographics',
+  },
 ];
 
 export const getStepTitle = (stepIndex: number): string => {
-  const step = STEP_CONFIG.find(s => s.id === stepIndex);
+  const step = STEP_CONFIG.find((s) => s.id === stepIndex);
   return step ? step.title : `Step ${stepIndex + 1}`;
 };
 
 export const getStepShortTitle = (stepIndex: number): string => {
-  const step = STEP_CONFIG.find(s => s.id === stepIndex);
+  const step = STEP_CONFIG.find((s) => s.id === stepIndex);
   return step ? step.shortTitle : `${stepIndex + 1}`;
 };

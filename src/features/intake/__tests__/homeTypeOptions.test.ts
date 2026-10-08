@@ -6,7 +6,7 @@ import {
   selectSingleHomeType,
   singleHomeTypeFromApi,
   toggleHomeTypeSelection,
-} from '../homeTypeOptions';
+} from 'features/intake/homeTypeOptions';
 
 describe('homeTypeOptions', () => {
   describe('normalizeHomeTypeFromApi', () => {
@@ -27,22 +27,28 @@ describe('homeTypeOptions', () => {
     });
 
     it('passes through arrays', () => {
-      expect(normalizeHomeTypeFromApi(['Shelter or emergency housing'])).toEqual([
-        'Shelter or emergency housing',
-      ]);
+      expect(
+        normalizeHomeTypeFromApi(['Shelter or emergency housing'])
+      ).toEqual(['Shelter or emergency housing']);
     });
   });
 
   describe('selectSingleHomeType', () => {
     it('replaces the current selection with the new option', () => {
       expect(
-        selectSingleHomeType(['Rent, apartment or house'], 'Transitional housing')
+        selectSingleHomeType(
+          ['Rent, apartment or house'],
+          'Transitional housing'
+        )
       ).toEqual(['Transitional housing']);
     });
 
     it('deselects when the same option is clicked again', () => {
       expect(
-        selectSingleHomeType(['Rent, apartment or house'], 'Rent, apartment or house')
+        selectSingleHomeType(
+          ['Rent, apartment or house'],
+          'Rent, apartment or house'
+        )
       ).toEqual([]);
     });
   });
@@ -68,28 +74,36 @@ describe('homeTypeOptions', () => {
     });
 
     it('selecting "Prefer not to answer" clears other selections', () => {
-      const current = ['Rent, apartment or house', 'Own, apartment, condo, or house'];
-      expect(toggleHomeTypeSelection(current, HOME_TYPE_PREFER_NOT_VALUE)).toEqual([
-        HOME_TYPE_PREFER_NOT_VALUE,
-      ]);
+      const current = [
+        'Rent, apartment or house',
+        'Own, apartment, condo, or house',
+      ];
+      expect(
+        toggleHomeTypeSelection(current, HOME_TYPE_PREFER_NOT_VALUE)
+      ).toEqual([HOME_TYPE_PREFER_NOT_VALUE]);
     });
 
     it('deselecting "Prefer not to answer" returns empty', () => {
       expect(
-        toggleHomeTypeSelection([HOME_TYPE_PREFER_NOT_VALUE], HOME_TYPE_PREFER_NOT_VALUE)
+        toggleHomeTypeSelection(
+          [HOME_TYPE_PREFER_NOT_VALUE],
+          HOME_TYPE_PREFER_NOT_VALUE
+        )
       ).toEqual([]);
     });
 
     it('selecting another option removes "Prefer not to answer"', () => {
       const current = [HOME_TYPE_PREFER_NOT_VALUE];
-      expect(toggleHomeTypeSelection(current, 'Experiencing homelessness')).toEqual([
-        'Experiencing homelessness',
-      ]);
+      expect(
+        toggleHomeTypeSelection(current, 'Experiencing homelessness')
+      ).toEqual(['Experiencing homelessness']);
     });
 
     it('deselecting Other does not require clearing other text (handled in form)', () => {
       const current = [HOME_TYPE_OTHER_VALUE];
-      expect(toggleHomeTypeSelection(current, HOME_TYPE_OTHER_VALUE)).toEqual([]);
+      expect(toggleHomeTypeSelection(current, HOME_TYPE_OTHER_VALUE)).toEqual(
+        []
+      );
     });
   });
 });

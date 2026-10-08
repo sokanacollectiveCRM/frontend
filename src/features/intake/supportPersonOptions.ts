@@ -1,1 +1,1 @@
-export * from "./domain/supportPersonOptions";
+export * from './domain/supportPersonOptions';

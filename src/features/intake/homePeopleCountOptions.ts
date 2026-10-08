@@ -1,1 +1,1 @@
-export * from "./domain/homePeopleCountOptions";
+export * from './domain/homePeopleCountOptions';

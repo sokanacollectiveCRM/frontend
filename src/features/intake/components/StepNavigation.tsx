@@ -1,6 +1,6 @@
 import React from 'react';
-import { STEP_CONFIG } from '../stepConfig';
-import { useRequestFormContext } from '../contexts/RequestFormContext';
+import { STEP_CONFIG } from 'features/intake/stepConfig';
+import { useRequestFormContext } from 'features/intake/contexts/RequestFormContext';
 import styles from './StepNavigation.module.scss';
 
 interface StepNavigationProps {
@@ -11,21 +11,19 @@ interface StepNavigationProps {
 function renderStepLabel(label: string) {
   return label.split('/').flatMap((part, index, parts) => {
     if (index === parts.length - 1) return [part];
-    return [
-      part,
-      '/',
-      <wbr key={`${label}-break-${index}`} />,
-    ];
+    return [part, '/', <wbr key={`${label}-break-${index}`} />];
   });
 }
 
-export const StepNavigation: React.FC<StepNavigationProps> = ({ 
-  currentStep, 
-  isDesktop = false 
+export const StepNavigation: React.FC<StepNavigationProps> = ({
+  currentStep,
+  isDesktop = false,
 }) => {
   const { jumpToStep, isStepValid } = useRequestFormContext();
 
-  const getStepStatus = (stepIndex: number): 'completed' | 'current' | 'upcoming' | 'invalid' => {
+  const getStepStatus = (
+    stepIndex: number
+  ): 'completed' | 'current' | 'upcoming' | 'invalid' => {
     if (stepIndex < currentStep) {
       return isStepValid(stepIndex) ? 'completed' : 'invalid';
     } else if (stepIndex === currentStep) {
@@ -57,7 +55,10 @@ export const StepNavigation: React.FC<StepNavigationProps> = ({
 
   if (isDesktop) {
     return (
-      <nav className={styles.desktopNavigation} aria-label="Form step navigation">
+      <nav
+        className={styles.desktopNavigation}
+        aria-label='Form step navigation'
+      >
         <div
           className={styles.stepsContainer}
           style={{
@@ -72,7 +73,7 @@ export const StepNavigation: React.FC<StepNavigationProps> = ({
             return (
               <div key={step.id} className={styles.stepItem}>
                 <button
-                  type="button"
+                  type='button'
                   onClick={() => handleStepClick(step.id)}
                   disabled={!canNavigate}
                   className={`${styles.stepButton} ${styles[`step-${status}`]}`}
@@ -85,7 +86,9 @@ export const StepNavigation: React.FC<StepNavigationProps> = ({
                   }
                 >
                   <span className={styles.stepNumber}>{step.id + 1}</span>
-                  <span className={styles.stepTitle}>{renderStepLabel(desktopLabel)}</span>
+                  <span className={styles.stepTitle}>
+                    {renderStepLabel(desktopLabel)}
+                  </span>
                 </button>
               </div>
             );
@@ -97,16 +100,16 @@ export const StepNavigation: React.FC<StepNavigationProps> = ({
 
   // Mobile/Tablet Navigation - Horizontal scrollable
   return (
-    <nav className={styles.mobileNavigation} aria-label="Form step navigation">
+    <nav className={styles.mobileNavigation} aria-label='Form step navigation'>
       <div className={styles.mobileStepsContainer}>
         {STEP_CONFIG.map((step) => {
           const status = getStepStatus(step.id);
           const canNavigate = canNavigateToStep(step.id);
-          
+
           return (
             <button
               key={step.id}
-              type="button"
+              type='button'
               onClick={() => handleStepClick(step.id)}
               disabled={!canNavigate}
               className={`${styles.mobileStepButton} ${styles[`step-${status}`]}`}

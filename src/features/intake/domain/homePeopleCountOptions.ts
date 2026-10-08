@@ -1,4 +1,11 @@
-export const HOME_PEOPLE_COUNT_OPTIONS = ['0', '1', '2', '3', '4', '5+'] as const;
+export const HOME_PEOPLE_COUNT_OPTIONS = [
+  '0',
+  '1',
+  '2',
+  '3',
+  '4',
+  '5+',
+] as const;
 
 export type HomePeopleCount = (typeof HOME_PEOPLE_COUNT_OPTIONS)[number];
 

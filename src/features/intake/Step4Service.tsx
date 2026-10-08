@@ -128,10 +128,7 @@ export function Step4Service({
         <Button type='button' onClick={handleBack} disabled={step === 0}>
           Back
         </Button>
-        <Button
-          type='submit'
-          disabled={form.formState.isSubmitting}
-        >
+        <Button type='submit' disabled={form.formState.isSubmitting}>
           {step === totalSteps - 1 ? 'Submit' : 'Next'}
         </Button>
       </div>

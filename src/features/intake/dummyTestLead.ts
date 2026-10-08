@@ -56,7 +56,9 @@ export const DUMMY_TEST_LEAD: Partial<RequestFormInput> = {
   health_notes: 'First pregnancy',
 
   // Step 6 — Pregnancy / baby
-  due_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10), // ~3 months from now
+  due_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10), // ~3 months from now
   birth_location: 'Hospital',
   birth_hospital: 'Springfield General Hospital',
   number_of_babies: 'Singleton',

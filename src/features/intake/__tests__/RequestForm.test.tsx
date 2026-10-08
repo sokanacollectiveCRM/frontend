@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
-import RequestForm from '../RequestForm';
+import RequestForm from 'features/intake/RequestForm';
 
 // Mock the toast
 vi.mock('sonner', () => ({
@@ -30,7 +30,9 @@ describe('RequestForm', () => {
       render(<RequestForm />);
 
       expect(screen.getByText('Request for Service Form')).toBeInTheDocument();
-      expect(screen.getByText(/Please complete this form as thoroughly as possible/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Please complete this form as thoroughly as possible/)
+      ).toBeInTheDocument();
       expect(screen.getByAltText('Sokana360 Logo')).toBeInTheDocument();
     });
 
@@ -38,7 +40,9 @@ describe('RequestForm', () => {
       render(<RequestForm />);
 
       expect(screen.getByRole('button', { name: /next/i })).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /submit/i })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /submit/i })
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -71,7 +75,9 @@ describe('RequestForm', () => {
 
       // Test that the form renders correctly
       expect(screen.getByText('Request for Service Form')).toBeInTheDocument();
-      expect(screen.getByRole('heading', { name: /Services Interested In/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { name: /Services Interested In/i })
+      ).toBeInTheDocument();
     });
 
     it('handles submission error with error message', async () => {
@@ -100,13 +106,18 @@ describe('RequestForm', () => {
   describe('Loading States', () => {
     it('shows loading spinner during submission', async () => {
       // Mock a delayed response
-      (global.fetch as any).mockImplementationOnce(() =>
-        new Promise(resolve =>
-          setTimeout(() => resolve({
-            ok: true,
-            json: async () => ({ success: true }),
-          }), 100)
-        )
+      (global.fetch as any).mockImplementationOnce(
+        () =>
+          new Promise((resolve) =>
+            setTimeout(
+              () =>
+                resolve({
+                  ok: true,
+                  json: async () => ({ success: true }),
+                }),
+              100
+            )
+          )
       );
 
       render(<RequestForm />);
@@ -121,7 +132,9 @@ describe('RequestForm', () => {
       render(<RequestForm />);
 
       // Initial mobile step is services interested.
-      expect(screen.getByRole('heading', { name: /Services Interested In/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { name: /Services Interested In/i })
+      ).toBeInTheDocument();
       expect(
         screen.getByText(/Which services are you interested in\?/i)
       ).toBeInTheDocument();
@@ -156,7 +169,9 @@ describe('RequestForm', () => {
 
       // Test that form renders correctly
       expect(screen.getByText('Request for Service Form')).toBeInTheDocument();
-      expect(screen.getByRole('heading', { name: /Services Interested In/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { name: /Services Interested In/i })
+      ).toBeInTheDocument();
     });
   });
-}); 
+});

@@ -1,1 +1,1 @@
-export * from "./domain/homeTypeOptions";
+export * from './domain/homeTypeOptions';

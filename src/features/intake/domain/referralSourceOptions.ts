@@ -15,7 +15,9 @@ export const REFERRAL_SOURCE_OTHER_VALUE = 'Other';
 export const REFERRAL_SOURCE_LEGACY_FORMER_CLIENT = 'Former client';
 
 /** Map legacy stored values to current option text for display and selects. */
-export function normalizeReferralSourceStoredValue(value: string | null | undefined): string {
+export function normalizeReferralSourceStoredValue(
+  value: string | null | undefined
+): string {
   const s = String(value ?? '').trim();
   if (s === REFERRAL_SOURCE_LEGACY_FORMER_CLIENT) return "I'm a former client.";
   return s;

@@ -1,1 +1,1 @@
-export * from "./domain/intakeAbuse";
+export * from './domain/intakeAbuse';

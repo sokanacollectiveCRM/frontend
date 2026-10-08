@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useWatch, type UseFormReturn } from 'react-hook-form';
-import styles from '../RequestForm.module.scss';
-import type { RequestFormInput } from '../useRequestForm';
+import styles from 'features/intake/RequestForm.module.scss';
+import type { RequestFormInput } from 'features/intake/useRequestForm';
 import {
   SUPPORT_PERSON_PRONOUN_OPTIONS,
   SUPPORT_PERSON_RELATIONSHIP_OPTIONS,
   SUPPORT_PERSON_SECTION_LABEL,
-} from '../supportPersonOptions';
+} from 'features/intake/supportPersonOptions';
 
 function hasFilledFloatingValue(v: unknown): boolean {
   if (v === undefined || v === null) return false;
@@ -21,15 +21,7 @@ type SupportPersonFieldsProps = {
 export function SupportPersonFields({ form }: SupportPersonFieldsProps) {
   const errors = form.formState.errors;
 
-  const [
-    wRelationship,
-    wFirst,
-    wLast,
-    wPronouns,
-    wMiddle,
-    wEmail,
-    wMobile,
-  ] =
+  const [wRelationship, wFirst, wLast, wPronouns, wMiddle, wEmail, wMobile] =
     useWatch({
       control: form.control,
       name: [

@@ -52,20 +52,19 @@ export function Step1Personal({
     wPronouns,
     wPreferredName,
     wAge,
-  ] =
-    useWatch({
-      control: form.control,
-      name: [
-        'firstname',
-        'lastname',
-        'email',
-        'phone_number',
-        'preferred_contact_method',
-        'pronouns',
-        'preferred_name',
-        'age',
-      ] as const,
-    }) ?? ['', '', '', '', '', '', '', ''];
+  ] = useWatch({
+    control: form.control,
+    name: [
+      'firstname',
+      'lastname',
+      'email',
+      'phone_number',
+      'preferred_contact_method',
+      'pronouns',
+      'preferred_name',
+      'age',
+    ] as const,
+  }) ?? ['', '', '', '', '', '', '', ''];
 
   // Floating label focus state (blur uses live getValues; "filled" uses useWatch so labels stay up after reset/fill)
   const [focus, setFocus] = useState<Record<FocusField, boolean>>({
@@ -233,7 +232,8 @@ export function Step1Personal({
             htmlFor='preferred_contact_method'
             className={
               styles['form-floating-label'] +
-              (focus.preferred_contact_method || hasFilledValue(wPreferredContact)
+              (focus.preferred_contact_method ||
+              hasFilledValue(wPreferredContact)
                 ? ' ' + styles['form-label--active']
                 : '')
             }

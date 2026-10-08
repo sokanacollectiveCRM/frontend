@@ -5,8 +5,8 @@ import {
   RequestFormValues,
   fullSchema,
   stepFields,
-} from '../useRequestForm';
-import { DUMMY_TEST_LEAD } from '../dummyTestLead';
+} from 'features/intake/useRequestForm';
+import { DUMMY_TEST_LEAD } from 'features/intake/dummyTestLead';
 import { logFailure } from '@/utils/safeLog';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -177,7 +177,9 @@ export function RequestFormProvider({
     }
   };
 
-  const applyZodIssuesToForm = (issues: { path: (string | number)[]; message: string }[]) => {
+  const applyZodIssuesToForm = (
+    issues: { path: (string | number)[]; message: string }[]
+  ) => {
     applyIssuesToForm(form.setError, issues);
   };
 
@@ -244,7 +246,7 @@ export function RequestFormProvider({
       if (stepIssues.length > 0) {
         applyZodIssuesToForm(stepIssues);
         setStepGateMessage(
-          'Some required information is missing or invalid. Please review the highlighted fields on this page before continuing.',
+          'Some required information is missing or invalid. Please review the highlighted fields on this page before continuing.'
         );
         setTimeout(() => scrollFirstErroredFieldIntoView(), 0);
         return false;
@@ -255,7 +257,7 @@ export function RequestFormProvider({
       });
       if (!valid) {
         setStepGateMessage(
-          'Some required information is missing or invalid. Please review the highlighted fields on this page before continuing.',
+          'Some required information is missing or invalid. Please review the highlighted fields on this page before continuing.'
         );
         setTimeout(() => scrollFirstErroredFieldIntoView(), 0);
         return false;
@@ -275,7 +277,7 @@ export function RequestFormProvider({
     if (!parsed.success) {
       applyZodIssuesToForm(parsed.error.issues);
       setStepGateMessage(
-        'Some required information is missing or invalid. Please review the highlighted fields before submitting.',
+        'Some required information is missing or invalid. Please review the highlighted fields before submitting.'
       );
       setTimeout(() => scrollFirstErroredFieldIntoView(), 0);
       return false;
@@ -291,7 +293,7 @@ export function RequestFormProvider({
     } catch (error) {
       logFailure('request-form', 'submission_failed');
       setStepGateMessage(
-        'We could not submit your request. Please try again in a moment. If the problem continues, contact Sokana Collective for help.',
+        'We could not submit your request. Please try again in a moment. If the problem continues, contact Sokana Collective for help.'
       );
       return false;
     } finally {
@@ -326,7 +328,7 @@ export function RequestFormProvider({
         form.clearErrors(stepFields[i]);
         applyZodIssuesToForm(stepIssues);
         setStepGateMessage(
-          'Please complete the earlier steps before jumping ahead. Some required information is missing or invalid.',
+          'Please complete the earlier steps before jumping ahead. Some required information is missing or invalid.'
         );
         setTimeout(() => scrollFirstErroredFieldIntoView(), 0);
         return false;

@@ -1,1 +1,1 @@
-export * from "@/features/intake/domain/supportPersonOptions";
+export * from '@/features/intake/domain/supportPersonOptions';

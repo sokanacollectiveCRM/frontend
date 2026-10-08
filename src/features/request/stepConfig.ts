@@ -1,1 +1,1 @@
-export * from "@/features/intake/domain/stepConfig";
+export * from '@/features/intake/domain/stepConfig';

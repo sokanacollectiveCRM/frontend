@@ -1,1 +1,1 @@
-export * from "./domain/stepConfig";
+export * from './domain/stepConfig';

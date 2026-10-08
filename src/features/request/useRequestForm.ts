@@ -1,1 +1,1 @@
-export * from "@/features/intake/application/useRequestForm";
+export * from '@/features/intake/application/useRequestForm';

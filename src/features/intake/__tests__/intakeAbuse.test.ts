@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatIntakeRateLimitError } from '../intakeAbuse';
+import { formatIntakeRateLimitError } from 'features/intake/intakeAbuse';
 
 describe('formatIntakeRateLimitError', () => {
   it('returns null for non-rate-limit responses', () => {

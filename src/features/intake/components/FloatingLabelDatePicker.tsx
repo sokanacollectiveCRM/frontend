@@ -1,9 +1,9 @@
-import clsx from "clsx";
-import { useEffect, useRef, useState } from "react";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
-import { UseFormRegisterReturn, useFormContext } from "react-hook-form";
-import styles from '../RequestForm.module.scss';
+import clsx from 'clsx';
+import { useEffect, useRef, useState } from 'react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { UseFormRegisterReturn, useFormContext } from 'react-hook-form';
+import styles from 'features/intake/RequestForm.module.scss';
 
 interface FloatingLabelDatePickerProps {
   label: string;
@@ -17,12 +17,12 @@ interface FloatingLabelDatePickerProps {
 
 export default function FloatingLabelDatePicker({
   label,
-  placeholder = "mm/dd/yyyy",
+  placeholder = 'mm/dd/yyyy',
   register,
   error,
   onFocus,
   onBlur,
-  className = "",
+  className = '',
 }: FloatingLabelDatePickerProps) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isFocused, setIsFocused] = useState(false);
@@ -44,15 +44,28 @@ export default function FloatingLabelDatePicker({
         setSelectedDate(date);
         lastSelectedDate.current = date;
       }
-    } else if (!hasUserSelected && (formValue === '' || formValue === undefined)) {
+    } else if (
+      !hasUserSelected &&
+      (formValue === '' || formValue === undefined)
+    ) {
       // Only clear if user hasn't manually selected a date
       setSelectedDate(null);
       lastSelectedDate.current = null;
-    } else if (hasUserSelected && lastSelectedDate.current && (formValue === '' || formValue === undefined)) {
+    } else if (
+      hasUserSelected &&
+      lastSelectedDate.current &&
+      (formValue === '' || formValue === undefined)
+    ) {
       // Restore the last selected date if form validation cleared it
       setSelectedDate(lastSelectedDate.current);
-      const formattedDate = lastSelectedDate.current.toISOString().split('T')[0];
-      setValue(fieldName, formattedDate, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+      const formattedDate = lastSelectedDate.current
+        .toISOString()
+        .split('T')[0];
+      setValue(fieldName, formattedDate, {
+        shouldValidate: true,
+        shouldDirty: true,
+        shouldTouch: true,
+      });
     }
   }, [formValue, fieldName, hasUserSelected, setValue]);
 
@@ -80,7 +93,7 @@ export default function FloatingLabelDatePicker({
       setValue(fieldName, formattedDate, {
         shouldValidate: true,
         shouldDirty: true,
-        shouldTouch: true
+        shouldTouch: true,
       });
 
       // Verify the value was set
@@ -91,7 +104,7 @@ export default function FloatingLabelDatePicker({
       setValue(fieldName, '', {
         shouldValidate: true,
         shouldDirty: true,
-        shouldTouch: true
+        shouldTouch: true,
       });
     }
   };
@@ -103,7 +116,9 @@ export default function FloatingLabelDatePicker({
 
   const handleWrapperClick = () => {
     // Try to focus the input manually
-    const input = document.querySelector(`input[name="${fieldName}"]`) as HTMLInputElement;
+    const input = document.querySelector(
+      `input[name="${fieldName}"]`
+    ) as HTMLInputElement;
     if (input) {
       input.focus();
       input.click();
@@ -121,34 +136,27 @@ export default function FloatingLabelDatePicker({
         onChange={handleDateChange}
         onFocus={handleFocus}
         onBlur={handleBlur}
-        dateFormat="MM/dd/yyyy"
-        placeholderText=""
+        dateFormat='MM/dd/yyyy'
+        placeholderText=''
         className={styles['form-input']}
         name={register.name}
         ref={register.ref}
         popperClassName={styles['datepicker-popper']}
-        autoComplete="off"
+        autoComplete='off'
         isClearable={false}
         showYearDropdown
         showMonthDropdown
-        dropdownMode="select"
+        dropdownMode='select'
         openToDate={selectedDate || new Date()}
       />
       <label
-        className={clsx(
-          styles['form-floating-label'],
-          {
-            [styles['form-label--active']]: isFocused || hasValue,
-          }
-        )}
+        className={clsx(styles['form-floating-label'], {
+          [styles['form-label--active']]: isFocused || hasValue,
+        })}
       >
         {label}
       </label>
-      {shouldShowError && (
-        <div className={styles['form-error']}>
-          {error}
-        </div>
-      )}
+      {shouldShowError && <div className={styles['form-error']}>{error}</div>}
     </div>
   );
-} 
+}

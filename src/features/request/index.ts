@@ -1,1 +1,1 @@
-export * from "@/features/intake";
+export * from '@/features/intake';
