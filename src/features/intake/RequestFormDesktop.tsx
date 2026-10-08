@@ -11,8 +11,8 @@ import {
   Step8ServicesInterested,
   Step9Payment,
 } from './Step3Home';
-import { isRequestTestDataEnabled } from '@/config/env';
 import { IntakeHoneypotFields } from './IntakeHoneypotFields';
+import { IntakeFormHeader } from './components/IntakeFormHeader';
 import { useRequestFormContext } from './contexts/RequestFormContext';
 import { StepNavigation } from './components/StepNavigation';
 import { StepHeader } from './components/StepHeader';
@@ -52,12 +52,18 @@ export default function RequestFormDesktop() {
               width: 48,
               height: 48,
               border: '6px solid #e0e0e0',
-              borderTop: '6px solid #00bcd4',
+              borderTop: '6px solid var(--intake-accent, #00bcd4)',
               borderRadius: '50%',
               animation: 'spin 1s linear infinite',
             }}
           />
-          <div style={{ fontSize: 20, fontWeight: 500, color: '#00bcd4' }}>
+          <div
+            style={{
+              fontSize: 20,
+              fontWeight: 500,
+              color: 'var(--intake-accent, #00bcd4)',
+            }}
+          >
             Submitting your request...
           </div>
         </div>
@@ -90,7 +96,7 @@ export default function RequestFormDesktop() {
         >
           <h2
             style={{
-              color: '#009688',
+              color: 'var(--intake-primary, #009688)',
               fontWeight: 700,
               fontSize: '1.7rem',
               marginBottom: 16,
@@ -104,7 +110,7 @@ export default function RequestFormDesktop() {
           </p>
           <h3
             style={{
-              color: '#009688',
+              color: 'var(--intake-primary, #009688)',
               fontWeight: 600,
               fontSize: '1.2rem',
               margin: '24px 0 8px 0',
@@ -141,71 +147,7 @@ export default function RequestFormDesktop() {
 
   return (
     <div className={styles.requestForm}>
-      {/* Main Header Section */}
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          marginBottom: '2rem',
-          paddingBottom: '1.5rem',
-          borderBottom: '1px solid #e0e0e0',
-        }}
-      >
-        <img
-          src='/logo.jpeg'
-          alt='Sokana Collective Logo'
-          style={{
-            width: 160,
-            height: 'auto',
-            margin: '0 auto 1rem auto',
-            display: 'block',
-          }}
-        />
-        <h1
-          style={{
-            fontWeight: 700,
-            fontSize: '1.8rem',
-            margin: 0,
-            textAlign: 'center',
-            color: '#333',
-          }}
-        >
-          Request for Service Form
-        </h1>
-        <div
-          style={{
-            color: '#666',
-            fontSize: '1rem',
-            margin: '0.8rem 0 0 0',
-            textAlign: 'center',
-            maxWidth: 600,
-            lineHeight: 1.5,
-          }}
-        >
-          Please complete this form as thoroughly as possible so we can match
-          you with a doula according to your needs.
-        </div>
-        {isRequestTestDataEnabled() && (
-          <button
-            type='button'
-            onClick={fillTestData}
-            title='Loads a complete sample (including age, provider type, primary + secondary insurance). Resets the form and returns to the first step. Dev/QA only.'
-            style={{
-              marginTop: 12,
-              padding: '6px 12px',
-              fontSize: 12,
-              color: '#009688',
-              background: 'transparent',
-              border: '1px dashed #009688',
-              borderRadius: 4,
-              cursor: 'pointer',
-            }}
-          >
-            Fill with test data
-          </button>
-        )}
-      </div>
+      <IntakeFormHeader onFillTestData={fillTestData} />
 
       {/* Combined Progress and Navigation Section */}
       <div style={{ marginBottom: '2rem' }}>
@@ -224,7 +166,7 @@ export default function RequestFormDesktop() {
             style={{
               width: `${progress}%`,
               height: '100%',
-              background: '#00bcd4',
+              background: 'var(--intake-accent, #00bcd4)',
               transition: 'width 0.3s cubic-bezier(.4,0,.2,1)',
             }}
           />

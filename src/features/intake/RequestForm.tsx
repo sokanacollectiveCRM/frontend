@@ -22,7 +22,14 @@ import {
 import { RequestFormValues } from './useRequestForm';
 import { StepNavigation } from './components/StepNavigation';
 import { StepHeader } from './components/StepHeader';
-import { apiBaseUrl, isRequestTestDataEnabled } from '@/config/env';
+import { apiBaseUrl } from '@/config/env';
+import { useParams } from 'react-router-dom';
+import { usePublicIntakeBranding } from './application/usePublicIntakeBranding';
+import { IntakeFormHeader } from './components/IntakeFormHeader';
+import {
+  IntakeBrandingProvider,
+  useIntakeBranding,
+} from './contexts/IntakeBrandingContext';
 import { IntakeHoneypotFields } from './IntakeHoneypotFields';
 import {
   createIntakeIdempotencyKey,
@@ -108,6 +115,7 @@ function RefreshWarningModal({
 }
 
 function RequestFormContent() {
+  const { branding: orgBranding } = useIntakeBranding();
   const [isDesktop, setIsDesktop] = useState(
     () => window.matchMedia('(min-width: 600px)').matches
   );
@@ -166,12 +174,18 @@ function RequestFormContent() {
               width: 48,
               height: 48,
               border: '6px solid #e0e0e0',
-              borderTop: '6px solid #00bcd4',
+              borderTop: '6px solid var(--intake-accent, #00bcd4)',
               borderRadius: '50%',
               animation: 'spin 1s linear infinite',
             }}
           />
-          <div style={{ fontSize: 20, fontWeight: 500, color: '#00bcd4' }}>
+          <div
+            style={{
+              fontSize: 20,
+              fontWeight: 500,
+              color: 'var(--intake-accent, #00bcd4)',
+            }}
+          >
             Submitting your request...
           </div>
         </div>
@@ -204,13 +218,13 @@ function RequestFormContent() {
         >
           <h2
             style={{
-              color: '#009688',
+              color: 'var(--intake-primary, #009688)',
               fontWeight: 700,
               fontSize: '1.7rem',
               marginBottom: 16,
             }}
           >
-            Thank you for contacting Sokana Collective!
+            Thank you for contacting {orgBranding.branding.displayName}!
           </h2>
           <p style={{ color: '#333', fontSize: 17, marginBottom: 16 }}>
             We are excited to get to know you and find out how we can support
@@ -227,72 +241,7 @@ function RequestFormContent() {
   return (
     <>
       <div className={styles.requestForm}>
-        {/* Main Header Section */}
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            marginBottom: '1.5rem',
-            paddingBottom: '1rem',
-            borderBottom: '1px solid #e0e0e0',
-          }}
-        >
-          <img
-            src='/logo.jpeg'
-            alt='Sokana Collective Logo'
-            style={{
-              width: 140,
-              height: 'auto',
-              margin: '0 auto 0.8rem auto',
-              display: 'block',
-            }}
-          />
-          <h1
-            style={{
-              fontWeight: 700,
-              fontSize: '1.5rem',
-              margin: 0,
-              textAlign: 'center',
-              color: '#333',
-            }}
-          >
-            Request for Service Form
-          </h1>
-          <div
-            style={{
-              color: '#666',
-              fontSize: '0.9rem',
-              margin: '0.6rem 0 0 0',
-              textAlign: 'center',
-              maxWidth: 500,
-              lineHeight: 1.4,
-              padding: '0 1rem',
-            }}
-          >
-            Please complete this form as thoroughly as possible so we can match
-            you with a doula according to your needs.
-          </div>
-          {isRequestTestDataEnabled() && (
-            <button
-              type='button'
-              onClick={fillTestData}
-              title='Loads a complete sample (including age, provider type, primary + secondary insurance). Resets the form and returns to the first step. Dev/QA only.'
-              style={{
-                marginTop: 10,
-                padding: '5px 10px',
-                fontSize: 11,
-                color: '#009688',
-                background: 'transparent',
-                border: '1px dashed #009688',
-                borderRadius: 4,
-                cursor: 'pointer',
-              }}
-            >
-              Fill with test data
-            </button>
-          )}
-        </div>
+        <IntakeFormHeader onFillTestData={fillTestData} />
 
         {/* Combined Progress and Navigation Section */}
         <div style={{ marginBottom: '1.5rem' }}>
@@ -311,7 +260,7 @@ function RequestFormContent() {
               style={{
                 width: `${progress}%`,
                 height: '100%',
-                background: '#00bcd4',
+                background: 'var(--intake-accent, #00bcd4)',
                 transition: 'width 0.3s cubic-bezier(.4,0,.2,1)',
               }}
             />
@@ -426,7 +375,7 @@ function RequestFormContent() {
   );
 }
 
-export default function RequestForm() {
+function RequestFormInner({ tenantSlug }: { tenantSlug: string }) {
   const idempotencyKeyRef = useRef(createIntakeIdempotencyKey());
 
   const onSubmit = async (
@@ -460,7 +409,7 @@ export default function RequestForm() {
 
     try {
       const response = await fetch(
-        `${backendUrl}/requestService/requestSubmission`,
+        `${backendUrl}/requestService/${encodeURIComponent(tenantSlug)}/requestSubmission`,
         {
           method: 'POST',
           credentials: 'omit',
@@ -503,5 +452,50 @@ export default function RequestForm() {
     <RequestFormProvider onSubmit={onSubmit}>
       <RequestFormContent />
     </RequestFormProvider>
+  );
+}
+
+export default function RequestForm() {
+  const { tenantSlug: routeSlug } = useParams<{ tenantSlug: string }>();
+  const tenantSlug = routeSlug?.trim() || 'sokana360';
+  const brandingState = usePublicIntakeBranding(tenantSlug);
+
+  useEffect(() => {
+    if (brandingState.status !== 'ready') return;
+    document.title = `${brandingState.data.branding.pageTitle} | ${brandingState.data.branding.displayName}`;
+  }, [brandingState]);
+
+  if (brandingState.status === 'loading') {
+    return (
+      <div
+        className={styles.requestForm}
+        style={{ minHeight: 240, display: 'grid', placeItems: 'center' }}
+      >
+        Loading intake form…
+      </div>
+    );
+  }
+
+  if (brandingState.status === 'error') {
+    return (
+      <div
+        className={styles.requestForm}
+        style={{
+          minHeight: 240,
+          display: 'grid',
+          placeItems: 'center',
+          padding: '1rem',
+          textAlign: 'center',
+        }}
+      >
+        {brandingState.message}
+      </div>
+    );
+  }
+
+  return (
+    <IntakeBrandingProvider branding={brandingState.data}>
+      <RequestFormInner tenantSlug={tenantSlug} />
+    </IntakeBrandingProvider>
   );
 }

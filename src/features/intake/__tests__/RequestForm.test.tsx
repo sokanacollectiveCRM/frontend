@@ -31,7 +31,7 @@ describe('RequestForm', () => {
 
       expect(screen.getByText('Request for Service Form')).toBeInTheDocument();
       expect(screen.getByText(/Please complete this form as thoroughly as possible/)).toBeInTheDocument();
-      expect(screen.getByAltText('Sokana Collective Logo')).toBeInTheDocument();
+      expect(screen.getByAltText('Sokana360 Logo')).toBeInTheDocument();
     });
 
     it('shows Next button on first step', () => {
