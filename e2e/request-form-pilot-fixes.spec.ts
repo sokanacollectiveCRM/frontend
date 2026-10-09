@@ -29,7 +29,6 @@ import {
   stubIntakeSubmitNetworkError,
   stubIntakeSubmitServerError,
   stubIntakeSubmitSuccess,
-  unstubIntakeSubmission,
 } from './helpers/requestForm';
 
 const ARTIFACT_DIR = '/opt/cursor/artifacts';
@@ -181,7 +180,7 @@ test.describe('Request form — Oct 2026 pilot fixes', () => {
     await saveShot(page, 'intake-success');
   });
 
-  test('server / network error shows a clear message instead of Failed to fetch', async ({
+  test('network error shows a clear message instead of Failed to fetch', async ({
     page,
   }) => {
     await stubIntakeSubmitNetworkError(page);
@@ -196,15 +195,24 @@ test.describe('Request form — Oct 2026 pilot fixes', () => {
       0
     );
     await saveShot(page, 'intake-network-error');
+  });
 
-    await unstubIntakeSubmission(page);
+  test('server error shows a clear message instead of Failed to fetch', async ({
+    page,
+  }) => {
     await stubIntakeSubmitServerError(page);
+    await reachDemographicsNancyRequired(page, 'nancy.server@example.com');
     await clickFormSubmit(page);
-    await expect(page.getByRole('alert')).toBeVisible({ timeout: 15000 });
-    await expect(page.getByRole('alert')).toContainText(
+
+    const alert = page.getByRole('alert');
+    await expect(alert).toBeVisible({ timeout: 15000 });
+    await expect(alert).toContainText(
       'The intake service is temporarily unavailable.'
     );
-    await expect(page.getByRole('alert')).not.toContainText(/failed to fetch/i);
+    await expect(alert).not.toContainText(/failed to fetch/i);
+    await expect(page.getByRole('heading', { name: /thank you/i })).toHaveCount(
+      0
+    );
     await saveShot(page, 'intake-server-error');
   });
 });
