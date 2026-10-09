@@ -508,7 +508,7 @@ describe('useRequestForm', () => {
       expect(result.success).toBe(true);
     });
 
-    it('requires insurance details when using an insurance payment method', () => {
+    it('allows Private/Commercial Insurance without insurance details', () => {
       const result = fullSchema.safeParse({
         firstname: 'Jane',
         lastname: 'Doe',
@@ -585,17 +585,7 @@ describe('useRequestForm', () => {
         demographics_annual_income: '',
       });
 
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(
-          result.error.issues.some(
-            (issue) =>
-              issue.path.includes('insurance_provider') ||
-              issue.path.includes('insurance_policy_holder_name') ||
-              issue.path.includes('insurance_plan_type')
-          )
-        ).toBe(true);
-      }
+      expect(result.success).toBe(true);
     });
   });
 

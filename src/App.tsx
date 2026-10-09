@@ -9,10 +9,12 @@ import { Toaster } from 'sonner';
 import './App.css';
 
 function RoutedApp() {
-  const isPublicSigningRoute = useLocation().pathname.startsWith('/signing/');
+  const pathname = useLocation().pathname;
+  const isPublicUnauthedRoute =
+    pathname.startsWith('/signing/') || pathname.startsWith('/request');
   const routes = <AppRoutes />;
 
-  return isPublicSigningRoute ? routes : <UserProvider>{routes}</UserProvider>;
+  return isPublicUnauthedRoute ? routes : <UserProvider>{routes}</UserProvider>;
 }
 
 export default function App() {

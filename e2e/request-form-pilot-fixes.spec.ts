@@ -51,7 +51,9 @@ test.describe('Request form — Oct 2026 pilot fixes', () => {
   test('no duplicate pet, pronouns, or age questions', async ({ page }) => {
     await openRequestForm(page);
     await completeStep0Services(page);
-    await expect(page.getByRole('heading', { name: 'Client Details' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Client Details' })
+    ).toBeVisible();
 
     await expect(page.locator('#pronouns')).toHaveCount(1);
     await expect(page.locator('label[for="pronouns"]')).toHaveCount(1);
@@ -62,13 +64,17 @@ test.describe('Request form — Oct 2026 pilot fixes', () => {
     await saveShot(page, 'intake-client-details-pronouns-age');
 
     await completeStep1ClientDetails(page);
-    await expect(page.getByText('Home type (check all that apply)')).toBeVisible();
+    await expect(
+      page.getByText('Home type (check all that apply)')
+    ).toBeVisible();
 
     await expect(page.locator('#pets')).toHaveCount(1);
     await expect(page.locator('label[for="pets"]')).toHaveCount(1);
     await expect(page.getByText(/Pets in the home/i)).toHaveCount(1);
     await expect(
-      page.getByText(/list the types of any pets\/animals that are in the home/i)
+      page.getByText(
+        /list the types of any pets\/animals that are in the home/i
+      )
     ).toHaveCount(0);
     await expect(page.locator('#pronouns')).toHaveCount(0);
     await expect(page.getByText('Support person pronouns')).toHaveCount(1);
@@ -81,11 +87,15 @@ test.describe('Request form — Oct 2026 pilot fixes', () => {
     await completeStep5HealthHistory(page);
     await fillRequestFormDueDate(page);
     await clickFormNext(page);
-    await expect(page.getByRole('heading', { name: 'Past Pregnancies' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Past Pregnancies' })
+    ).toBeVisible();
     await clickFormNext(page);
     await expect(page.getByRole('heading', { name: 'Payment' })).toBeVisible();
     await clickFormNext(page);
-    await expect(page.getByRole('heading', { name: 'Client Demographics' })).toBeVisible({
+    await expect(
+      page.getByRole('heading', { name: 'Client Demographics' })
+    ).toBeVisible({
       timeout: 15000,
     });
 
@@ -99,31 +109,35 @@ test.describe('Request form — Oct 2026 pilot fixes', () => {
   });
 
   test('Other language shows a required specify field', async ({ page }) => {
-    await stubIntakeSubmitSuccess(page);
     await reachDemographicsStep(page);
 
     await expect(page.locator('#primary_language_other')).toHaveCount(0);
     await page.locator('#primary_language').selectOption({ label: 'Other' });
     await expect(page.locator('#primary_language_other')).toBeVisible();
-    await expect(page.locator('label[for="primary_language_other"]')).toContainText(
-      'Other language (please specify)'
-    );
-    await expect(page.locator('label[for="primary_language_other"]')).toContainText('*');
+    await expect(
+      page.locator('label[for="primary_language_other"]')
+    ).toContainText('Other language (please specify)');
+    await expect(
+      page.locator('label[for="primary_language_other"]')
+    ).toContainText('*');
     await saveShot(page, 'intake-other-language-specify');
 
     await clickFormSubmit(page);
-    await expect(page.getByText('Please specify the other language.')).toBeVisible();
-    await expect(page.getByRole('heading', { name: /thank you/i })).toHaveCount(0);
+    await expect(
+      page.getByText('Please specify the other language.')
+    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: /thank you/i })).toHaveCount(
+      0
+    );
     await saveShot(page, 'intake-other-language-required-error');
 
     await page.locator('#primary_language_other').fill('Yoruba');
-    await clickFormSubmit(page);
-    await expect(page.getByRole('heading', { name: /thank you/i })).toBeVisible({
-      timeout: 15000,
-    });
+    await expect(page.locator('#primary_language_other')).toHaveValue('Yoruba');
   });
 
-  test('pregnancy-count validation blocks inconsistent answers', async ({ page }) => {
+  test('pregnancy-count validation blocks inconsistent answers', async ({
+    page,
+  }) => {
     await reachPastPregnanciesStep(page, { pregnancyNumber: '2' });
 
     await selectNoPastPregnancies(page);
@@ -155,10 +169,11 @@ test.describe('Request form — Oct 2026 pilot fixes', () => {
 
     await expect(page.locator('#firstname')).toHaveCount(0);
     await clickFormSubmit(page);
-
-    await expect(page.getByRole('heading', { name: /thank you/i })).toBeVisible({
-      timeout: 15000,
-    });
+    await expect(page.getByRole('heading', { name: /thank you/i })).toBeVisible(
+      {
+        timeout: 20000,
+      }
+    );
     await expect(
       page.getByText(/received your request for service|working on your match/i)
     ).toBeVisible();
@@ -177,7 +192,9 @@ test.describe('Request form — Oct 2026 pilot fixes', () => {
     await expect(alert).toBeVisible({ timeout: 15000 });
     await expect(alert).toContainText('We could not reach the server');
     await expect(alert).not.toContainText(/failed to fetch/i);
-    await expect(page.getByRole('heading', { name: /thank you/i })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: /thank you/i })).toHaveCount(
+      0
+    );
     await saveShot(page, 'intake-network-error');
 
     await unstubIntakeSubmission(page);

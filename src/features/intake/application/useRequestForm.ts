@@ -95,14 +95,12 @@ export const fullSchema = z
     home_type_other: z.string().optional(),
     home_access: z.string().optional(),
     pets: z.string().optional(),
-    home_adults_count: z.union([
-      z.literal(''),
-      z.enum(HOME_PEOPLE_COUNT_OPTIONS),
-    ]),
-    home_youth_count: z.union([
-      z.literal(''),
-      z.enum(HOME_PEOPLE_COUNT_OPTIONS),
-    ]),
+    home_adults_count: z
+      .union([z.literal(''), z.enum(HOME_PEOPLE_COUNT_OPTIONS)])
+      .optional(),
+    home_youth_count: z
+      .union([z.literal(''), z.enum(HOME_PEOPLE_COUNT_OPTIONS)])
+      .optional(),
 
     // 3. Family Members (all optional)
     relationship_status: z.string().optional(),
@@ -187,7 +185,9 @@ export const fullSchema = z
     service_needed: z.string().optional(),
 
     // 9. Payment
-    payment_method: z.union([z.literal(''), z.enum(PAYMENT_METHOD_OPTIONS)]),
+    payment_method: z
+      .union([z.literal(''), z.enum(PAYMENT_METHOD_OPTIONS)])
+      .optional(),
     insurance_policy_holder_name: z.string().optional(),
     insurance_policy_holder_dob: z.string().optional(),
     insurance_policy_holder_relationship: z.string().optional(),

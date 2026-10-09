@@ -13,7 +13,8 @@ import { defineConfig, devices } from '@playwright/test';
  * Do not run the PLAYWRIGHT_BASE_URL command against the real dev site from the
  * Cloud Agent VM. Video is always on (`video: 'on'`).
  */
-const baseURL = process.env.PLAYWRIGHT_BASE_URL?.trim() || 'http://localhost:3001';
+const baseURL =
+  process.env.PLAYWRIGHT_BASE_URL?.trim() || 'http://localhost:3001';
 const isRemoteTarget = Boolean(process.env.PLAYWRIGHT_BASE_URL?.trim());
 
 export default defineConfig({
@@ -34,7 +35,7 @@ export default defineConfig({
     : {
         command: 'npm run dev -- --port 3001',
         url: 'http://localhost:3001',
-        reuseExistingServer: !process.env.CI,
+        reuseExistingServer: false,
         timeout: 120_000,
         env: {
           ...process.env,
@@ -60,7 +61,10 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'], viewport: { width: 500, height: 900 } },
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 500, height: 900 },
+      },
     },
   ],
 });

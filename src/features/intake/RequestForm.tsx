@@ -229,7 +229,7 @@ function RequestFormContent() {
               marginBottom: 16,
             }}
           >
-            Thank you for contacting {orgBranding.branding.displayName}!
+            Thank you for contacting {orgBranding.displayName}!
           </h2>
           <p style={{ color: '#333', fontSize: 17, marginBottom: 16 }}>
             We are excited to get to know you and find out how we can support
