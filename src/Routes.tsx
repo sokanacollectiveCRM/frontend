@@ -1,7 +1,10 @@
 import NavLayout from '@/common/layouts/NavLayout';
 import { AuthPublicRoutes, AuthRoutes } from '@/features/auth/AuthRoutes';
 import ClientLogin from '@/features/auth/ClientLogin';
+import AcceptInvite from '@/features/auth/AcceptInvite';
 import SetPassword from '@/features/auth/SetPassword';
+import VerifyEmail from '@/features/auth/VerifyEmail';
+import { EmailVerifiedRoute } from '@/common/components/routes/EmailVerifiedRoute';
 import ClientRoutes from '@/features/clients/ClientRoutes';
 import Home from '@/features/dashboard-home/Home';
 import ClientDashboard from '@/features/client-dashboard/ClientDashboard';
@@ -43,13 +46,17 @@ const AppRoutes = () => (
     {/* Client Portal Auth Routes - Must be first, No Sidebar, Always Accessible */}
     {/* These routes are completely standalone, outside all wrappers */}
     <Route path='/auth/set-password' element={<SetPassword />} />
+    <Route path='/auth/verify-email' element={<VerifyEmail />} />
     <Route path='/auth/client-login' element={<ClientLogin />} />
+    <Route path='/accept-invite' element={<AcceptInvite />} />
     <Route path='/signing/:token' element={<LegacySigningRedirect />} />
     <Route path='/signing' element={<PublicSigningEntry />} />
 
+    {/* Public org-branded intake — no platform Cove NavBar */}
+    {RequestRoutes()}
+
     <Route>
       <Route element={<NavLayout />}>
-        {RequestRoutes()}
         <Route element={<PublicOnlyRoute />}>
           {AuthRoutes()}
           {AuthPublicRoutes()}
@@ -63,37 +70,39 @@ const AppRoutes = () => (
     <Route>
       <Route element={<DashboardLayout />}>
         <Route element={<PrivateRoute />}>
-          <Route element={<BillingPortalRoute />}>
-            {BillingPortalRoutes()}
-          </Route>
-          <Route element={<NonBillingOnlyRoute />}>
-            <Route index element={<Home />} />
-            {MyAccountRoutes()}
-            <Route element={<ClientPortalRoute />}>
-              <Route
-                path='/profile'
-                element={<ClientDashboard view='profile' />}
-              />
-              <Route
-                path='/billing'
-                element={<ClientDashboard view='billing' />}
-              />
+          <Route element={<EmailVerifiedRoute />}>
+            <Route element={<BillingPortalRoute />}>
+              {BillingPortalRoutes()}
             </Route>
-            <Route element={<StaffCrmRoute />}>
-              {ContractRoutes()}
-              {PipelineRoutes()}
-              {ClientRoutes()}
-              {PaymentsRoute()}
-              {HoursRoutes()}
-              {ProfileRoutes()}
-              {TeamRoutes()}
-              {InboxRoutes()}
-              {QuickBooksRoutes()}
-              {CreateCustomerRoutes()}
-              {InvoiceRoute()}
-              {FinancialRoute()}
-              {DemographicsRoute()}
-              {DoulaDashboardRoutes()}
+            <Route element={<NonBillingOnlyRoute />}>
+              <Route index element={<Home />} />
+              {MyAccountRoutes()}
+              <Route element={<ClientPortalRoute />}>
+                <Route
+                  path='/profile'
+                  element={<ClientDashboard view='profile' />}
+                />
+                <Route
+                  path='/billing'
+                  element={<ClientDashboard view='billing' />}
+                />
+              </Route>
+              <Route element={<StaffCrmRoute />}>
+                {ContractRoutes()}
+                {PipelineRoutes()}
+                {ClientRoutes()}
+                {PaymentsRoute()}
+                {HoursRoutes()}
+                {ProfileRoutes()}
+                {TeamRoutes()}
+                {InboxRoutes()}
+                {QuickBooksRoutes()}
+                {CreateCustomerRoutes()}
+                {InvoiceRoute()}
+                {FinancialRoute()}
+                {DemographicsRoute()}
+                {DoulaDashboardRoutes()}
+              </Route>
             </Route>
           </Route>
         </Route>

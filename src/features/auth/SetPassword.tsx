@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
+import { confirmPasswordReset, verifyPasswordResetCode } from 'firebase/auth';
+import { buildUrl } from '@/api/http';
+import { getFirebaseAuth } from '@/lib/firebase';
 import { Button } from '@/common/components/ui/button';
 import {
   Card,
@@ -15,8 +17,6 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/common/components/ui/alert';
 import { cn } from '@/lib/utils';
-import { consumeSensitiveHash } from './consumeSensitiveHash';
-
 export default function SetPassword() {
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
@@ -25,94 +25,24 @@ export default function SetPassword() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [accountEmail, setAccountEmail] = useState<string | null>(null);
   const [isInitializingSession, setIsInitializingSession] = useState(true);
   const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
 
-  // Extract tokens from URL hash and establish Supabase session
   useEffect(() => {
-    let cancelled = false;
-
-    const initializeSessionFromHash = async () => {
-      try {
-        const hashParams = consumeSensitiveHash(
-          window.location,
-          window.history
-        );
-        const token = hashParams.get('access_token');
-        const refreshToken = hashParams.get('refresh_token');
-        const type = hashParams.get('type');
-
-        // If hash tokens exist, establish session explicitly.
-        if (token && refreshToken) {
-          if (type && type !== 'recovery') {
-            if (!cancelled) {
-              setError(
-                'Invalid invite link type. Please use the link from your email.'
-              );
-              setAccessToken(null);
-            }
-            return;
-          }
-
-          const { error: setSessionError } = await supabase.auth.setSession({
-            access_token: token,
-            refresh_token: refreshToken,
-          });
-
-          if (setSessionError) {
-            throw new Error(
-              setSessionError.message ||
-                'Invalid or expired token. Please request a new invite.'
-            );
-          }
-
-          if (!cancelled) {
-            setAccessToken(token);
-            setError(null);
-          }
-
-          return;
-        }
-
-        // Fallback: if no hash tokens, use existing session if available.
-        const { data: sessionData, error: sessionError } =
-          await supabase.auth.getSession();
-        if (sessionError) {
-          throw new Error(sessionError.message);
-        }
-        if (!cancelled && sessionData.session) {
-          setAccessToken(sessionData.session.access_token);
-          setError(null);
-          return;
-        }
-
-        if (!cancelled) {
-          setAccessToken(null);
-          setError(
-            'Invalid or missing access token. Please request a new invite.'
-          );
-        }
-      } catch (err) {
-        if (!cancelled) {
-          const message =
-            err instanceof Error
-              ? err.message
-              : 'Invalid or expired token. Please request a new invite.';
-          setAccessToken(null);
-          setError(message);
-        }
-      } finally {
-        if (!cancelled) {
-          setIsInitializingSession(false);
-        }
-      }
-    };
-
-    initializeSessionFromHash();
-
-    return () => {
-      cancelled = true;
-    };
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('oobCode');
+    if (!code) {
+      setAccessToken(null);
+      setError('Invalid or missing access token. Please request a new invite.');
+    } else {
+      setAccessToken(code);
+      setError(null);
+      void verifyPasswordResetCode(getFirebaseAuth(), code)
+        .then((email) => setAccountEmail(email))
+        .catch(() => undefined);
+    }
+    setIsInitializingSession(false);
   }, []);
 
   // Validate password requirements
@@ -167,36 +97,20 @@ export default function SetPassword() {
     setIsLoading(true);
 
     try {
-      const { data: sessionData, error: sessionError } =
-        await supabase.auth.getSession();
+      await confirmPasswordReset(getFirebaseAuth(), accessToken, password);
 
-      if (sessionError) {
-        throw new Error(
-          sessionError.message ||
-            'Invalid or expired token. Please request a new invite.'
-        );
-      }
-
-      if (!sessionData.session) {
-        // If no session was created from the hash, the token might be invalid
-        throw new Error(
-          'Email link is invalid or has expired. Please request a new invite.'
-        );
-      }
-
-      // Update password - the session is already established from the hash
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: password,
-      });
-
-      if (updateError) {
-        throw new Error(
-          updateError.message || 'Failed to set password. Please try again.'
-        );
+      if (accountEmail) {
+        await fetch(buildUrl('/auth/email-verification/post-password-setup'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: accountEmail }),
+        }).catch(() => undefined);
       }
 
       setSuccess(true);
-      toast.success('Password set successfully! Redirecting to login...');
+      toast.success(
+        'Password set! Check your email to verify your address, then sign in.'
+      );
 
       // Auto-redirect after 3 seconds
       setTimeout(() => {

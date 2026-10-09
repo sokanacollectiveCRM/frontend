@@ -10,6 +10,9 @@
 /playwright-report/
 /test-results/
 /e2e/portfolio/.auth/
+/e2e/.fixtures/
+/e2e/test-results/
+/e2e/reports/
 
 # production
 /build
