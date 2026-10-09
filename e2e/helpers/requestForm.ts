@@ -201,7 +201,13 @@ export async function clickFormNext(page: Page) {
 export async function clickFormSubmit(page: Page) {
   const submit = page.getByRole('button', { name: 'Submit', exact: true });
   await expect(submit).toBeEnabled({ timeout: 25000 });
-  await submit.click();
+  // Sonner error toasts sit over the Submit button on the last step.
+  await page
+    .locator('[data-sonner-toast] [data-close-button]')
+    .first()
+    .click({ timeout: 1000 })
+    .catch(() => {});
+  await submit.click({ force: true });
 }
 
 /**
