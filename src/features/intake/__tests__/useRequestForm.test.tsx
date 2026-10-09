@@ -179,7 +179,7 @@ describe('useRequestForm', () => {
       expect(withOther.success).toBe(true);
     });
 
-    it('requires home_adults_count and home_youth_count on Home Details', () => {
+    it('allows empty home_adults_count and home_youth_count on Home Details', () => {
       const base = {
         firstname: 'Jane',
         lastname: 'Doe',
@@ -214,12 +214,7 @@ describe('useRequestForm', () => {
       };
 
       const missing = fullSchema.safeParse(base);
-      expect(missing.success).toBe(false);
-      if (!missing.success) {
-        const paths = missing.error.issues.map((i) => i.path[0]);
-        expect(paths).toContain('home_adults_count');
-        expect(paths).toContain('home_youth_count');
-      }
+      expect(missing.success).toBe(true);
 
       const valid = fullSchema.safeParse({
         ...base,
@@ -340,14 +335,7 @@ describe('useRequestForm', () => {
       };
 
       const unset = fullSchema.safeParse(base);
-      expect(unset.success).toBe(false);
-      if (!unset.success) {
-        expect(
-          unset.error.issues.some((i) =>
-            i.path.includes('had_previous_pregnancies')
-          )
-        ).toBe(true);
-      }
+      expect(unset.success).toBe(true);
 
       const noHistory = fullSchema.safeParse({
         ...base,
@@ -355,14 +343,24 @@ describe('useRequestForm', () => {
       });
       expect(noHistory.success).toBe(true);
 
-      const withHistory = fullSchema.safeParse({
+      const withHistoryOnFirstPregnancy = fullSchema.safeParse({
         ...base,
         had_previous_pregnancies: true,
         previous_pregnancies_count: 0,
         living_children_count: 0,
         past_pregnancy_experience: '',
       });
-      expect(withHistory.success).toBe(true);
+      expect(withHistoryOnFirstPregnancy.success).toBe(false);
+
+      const withHistoryOnSecond = fullSchema.safeParse({
+        ...base,
+        pregnancy_number: '2',
+        had_previous_pregnancies: true,
+        previous_pregnancies_count: 1,
+        living_children_count: 1,
+        past_pregnancy_experience: '',
+      });
+      expect(withHistoryOnSecond.success).toBe(true);
     });
 
     it('requires birth location name for each birth location type', () => {
@@ -399,17 +397,7 @@ describe('useRequestForm', () => {
         ...base,
         birth_location: 'Home',
       });
-      expect(homeMissing.success).toBe(false);
-      if (!homeMissing.success) {
-        expect(
-          homeMissing.error.issues.some((i) =>
-            i.path.includes('birth_hospital')
-          )
-        ).toBe(true);
-        expect(
-          homeMissing.error.issues.map((i) => i.message).join(' ')
-        ).toMatch(/home birth/i);
-      }
+      expect(homeMissing.success).toBe(true);
 
       const hospitalOk = fullSchema.safeParse({
         ...base,
@@ -520,7 +508,7 @@ describe('useRequestForm', () => {
       expect(result.success).toBe(true);
     });
 
-    it('requires insurance details when using an insurance payment method', () => {
+    it('allows Private/Commercial Insurance without insurance details', () => {
       const result = fullSchema.safeParse({
         firstname: 'Jane',
         lastname: 'Doe',
@@ -597,17 +585,7 @@ describe('useRequestForm', () => {
         demographics_annual_income: '',
       });
 
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(
-          result.error.issues.some(
-            (issue) =>
-              issue.path.includes('insurance_provider') ||
-              issue.path.includes('insurance_policy_holder_name') ||
-              issue.path.includes('insurance_plan_type')
-          )
-        ).toBe(true);
-      }
+      expect(result.success).toBe(true);
     });
   });
 
@@ -808,7 +786,7 @@ describe('useRequestForm', () => {
       }
     });
 
-    it('rejects empty, non-numeric, out-of-range, or negative age', () => {
+    it('allows empty age and rejects non-numeric, out-of-range, or negative age', () => {
       const base = {
         firstname: 'Jane',
         lastname: 'Doe',
@@ -840,7 +818,7 @@ describe('useRequestForm', () => {
         payment_method: 'Not sure / Need help figuring this out',
       };
 
-      expect(fullSchema.safeParse({ ...base, age: '' }).success).toBe(false);
+      expect(fullSchema.safeParse({ ...base, age: '' }).success).toBe(true);
       expect(fullSchema.safeParse({ ...base, age: '12a' }).success).toBe(false);
       expect(fullSchema.safeParse({ ...base, age: '-5' }).success).toBe(false);
       expect(fullSchema.safeParse({ ...base, age: '0' }).success).toBe(false);

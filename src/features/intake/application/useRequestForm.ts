@@ -4,19 +4,19 @@ import { useForm, type FieldPath, type Resolver } from 'react-hook-form';
 import { z } from 'zod';
 import {
   REQUEST_FORM_PAYMENT_METHOD_OPTIONS,
-  INSURANCE_PLAN_TYPE_OPTIONS,
-  INSURANCE_POLICY_HOLDER_RELATIONSHIP_OPTIONS,
   isMedicaidMethod,
   isSelfPayMethod as sharedIsSelfPayMethod,
-  isSelfPaySlidingScaleMethod,
-  requiresInsuranceDetails,
-  type InsurancePlanType,
-  type InsurancePolicyHolderRelationship,
   type RequestFormPaymentMethod,
 } from '@/lib/paymentRules';
-import { SELF_PAY_SLIDING_SUPPORT_TYPES } from '@/lib/slidingScaleData';
 import { HOME_PEOPLE_COUNT_OPTIONS } from 'features/intake/domain/homePeopleCountOptions';
 import { HOME_TYPE_OTHER_VALUE } from 'features/intake/domain/homeTypeOptions';
+import {
+  minimumPriorPregnancies,
+  parsePregnancyNumber,
+  parsePriorCount,
+  priorPregnanciesCountTooLowMessage,
+  priorPregnanciesMismatchMessage,
+} from 'features/intake/domain/pregnancyConsistency';
 
 export const PAYMENT_METHOD_OPTIONS = REQUEST_FORM_PAYMENT_METHOD_OPTIONS;
 
@@ -24,7 +24,7 @@ export type PaymentMethod = RequestFormPaymentMethod;
 
 /** Pregnancy step — place name field (legacy JSON key: `birth_hospital`). */
 export const BIRTH_LOCATION_NAME_LABEL =
-  'Name of hospital or birth center, if home, type home*';
+  'Name of hospital or birth center, if home, type home';
 
 export function getBirthLocationNameError(birthLocation: string): string {
   switch (birthLocation) {
@@ -46,63 +46,61 @@ export { isMedicaidMethod };
 
 export const fullSchema = z
   .object({
-    // 1. Client Details
+    // 1. Client Details — required: first + last name, email, phone
     firstname: z.string().min(1, 'Please enter your first name.'),
     lastname: z.string().min(1, 'Please enter your last name.'),
     email: z.string().email('Please enter a valid email address.'),
     phone_number: z.string().min(1, 'Please enter your mobile phone number.'),
-    pronouns: z.string().min(1, 'Please select your pronouns.'),
+    pronouns: z.string().optional(),
     pronouns_other: z.string().optional(),
-    preferred_contact_method: z
-      .string()
-      .min(1, 'Please select your preferred contact method.'),
+    preferred_contact_method: z.string().optional(),
     preferred_name: z.string().optional(),
     age: z
       .union([z.string(), z.number()])
-      .transform((val: string | number) => {
-        if (val === '' || val === null || val === undefined) return NaN;
+      .optional()
+      .transform((val: string | number | undefined) => {
+        if (val === '' || val === null || val === undefined) return undefined;
         if (typeof val === 'number') {
           return Number.isFinite(val) ? val : NaN;
         }
         const t = String(val).trim();
-        if (t === '') return NaN;
+        if (t === '') return undefined;
         if (!/^\d+$/.test(t)) return NaN;
         return parseInt(t, 10);
       })
-      .refine((n) => !Number.isNaN(n), { message: 'Please enter your age.' })
-      .refine((n) => Number.isInteger(n), {
+      .refine((n) => n === undefined || !Number.isNaN(n), {
+        message: 'Please enter a valid age.',
+      })
+      .refine((n) => n === undefined || Number.isInteger(n), {
         message: 'Please enter a whole number for your age.',
       })
-      .refine((n) => n >= 1, { message: 'Age must be at least 1.' })
-      .refine((n) => n <= 120, { message: 'Please enter a valid age.' }),
+      .refine((n) => n === undefined || n >= 1, {
+        message: 'Age must be at least 1.',
+      })
+      .refine((n) => n === undefined || n <= 120, {
+        message: 'Please enter a valid age.',
+      }),
     children_expected: z.string().optional(),
 
-    // 2. Home Details
-    address: z.string().min(1, 'Please enter your address.'),
+    // 2. Home Details — required: city + zip only
+    address: z.string().optional(),
     city: z.string().min(1, 'Please enter your city.'),
-    state: z.string().min(1, 'Please enter your state.'),
-    zip_code: z.string().min(1, 'Please enter your zip code.'),
-    home_phone: z.string().optional(), // removed from form, made optional
+    state: z.string().optional(),
+    zip_code: z
+      .string()
+      .min(1, 'Please enter your zip code.')
+      .regex(/^\d{5}(-\d{4})?$/, 'Please enter a valid 5-digit zip code.'),
+    home_phone: z.string().optional(),
     home_type: z.array(z.string()).optional(),
     home_type_other: z.string().optional(),
-    home_access: z.string().optional(), // made optional
-    pets: z
-      .string()
-      .trim()
-      .min(
-        1,
-        'Please list the types of any pets/animals that are in the home.'
-      ),
+    home_access: z.string().optional(),
+    pets: z.string().optional(),
     home_adults_count: z
       .union([z.literal(''), z.enum(HOME_PEOPLE_COUNT_OPTIONS)])
-      .refine((val) => val !== '', {
-        message: 'Please select how many adults live in the home.',
-      }),
+      .optional(),
     home_youth_count: z
       .union([z.literal(''), z.enum(HOME_PEOPLE_COUNT_OPTIONS)])
-      .refine((val) => val !== '', {
-        message: 'Please select how many youth live in the home.',
-      }),
+      .optional(),
 
     // 3. Family Members (all optional)
     relationship_status: z.string().optional(),
@@ -121,10 +119,7 @@ export const fullSchema = z
     family_pronouns: z.string().optional(),
 
     // 4. Referral
-    referral_source: z
-      .string()
-      .trim()
-      .min(1, 'Please select how you heard about Sokana.'), // required — blocks Next until chosen
+    referral_source: z.string().optional(),
     /** Free text when referral_source is "Other". */
     referral_source_other: z.string().optional(),
     referral_name: z.string().optional(), // made optional, allow "N/A"
@@ -135,33 +130,28 @@ export const fullSchema = z
     allergies: z.string().optional(),
     health_notes: z.string().optional(),
 
-    // 6. Pregnancy & Baby
+    // 6. Pregnancy & Baby — required: due date only
     due_date: z.string().min(1, 'Please enter your due date.'),
-    birth_location: z.string().min(1, 'Please enter your birth location.'),
+    birth_location: z.string().optional(),
     birth_hospital: z.string().optional(),
-    number_of_babies: z
-      .string()
-      .min(1, 'Please select the number of babies you are expecting'),
-    baby_name: z.string().optional(), // made optional
-    provider_type: z.string().min(1, 'Please select your provider type.'),
+    number_of_babies: z.string().optional(),
+    baby_name: z.string().optional(),
+    provider_type: z.string().optional(),
     pregnancy_number: z
       .union([z.string(), z.number()])
-      .transform((val: string | number) => {
-        if (typeof val === 'string') return parseInt(val) || 0;
+      .optional()
+      .transform((val: string | number | undefined) => {
+        if (val === '' || val === null || val === undefined) return 0;
+        if (typeof val === 'string') return parseInt(val, 10) || 0;
         return val || 0;
       })
-      .refine((val) => val >= 1, {
-        message: 'Please enter a valid pregnancy number (must be at least 1)',
+      .refine((val) => val >= 0, {
+        message: 'Please enter a valid pregnancy number',
       }),
     hospital: z.string().optional(),
 
-    // 7. Past Pregnancies — explicit yes/no; follow-up fields optional when "yes"
-    had_previous_pregnancies: z
-      .boolean()
-      .optional()
-      .refine((val): val is boolean => val === true || val === false, {
-        message: 'Please indicate whether you have had past pregnancies.',
-      }),
+    // 7. Past Pregnancies — optional; consistency checked only when answered
+    had_previous_pregnancies: z.boolean().optional(),
     previous_pregnancies_count: z
       .union([z.string(), z.number()])
       .optional()
@@ -195,7 +185,9 @@ export const fullSchema = z
     service_needed: z.string().optional(),
 
     // 9. Payment
-    payment_method: z.union([z.literal(''), z.enum(PAYMENT_METHOD_OPTIONS)]),
+    payment_method: z
+      .union([z.literal(''), z.enum(PAYMENT_METHOD_OPTIONS)])
+      .optional(),
     insurance_policy_holder_name: z.string().optional(),
     insurance_policy_holder_dob: z.string().optional(),
     insurance_policy_holder_relationship: z.string().optional(),
@@ -214,9 +206,10 @@ export const fullSchema = z
     self_pay_sliding_support_type: z.string().optional(),
     self_pay_sliding_tier: z.string().optional(),
 
-    // 10. Client Demographics (ALL OPTIONAL)
+    // 10. Client Demographics (ALL OPTIONAL except Other-language specify)
     race_ethnicity: z.string().optional(),
     primary_language: z.string().optional(),
+    primary_language_other: z.string().optional(),
     client_age_range: z.string().optional(),
     insurance: z.string().optional(),
     demographics_multi: z.array(z.string()).optional(),
@@ -249,128 +242,45 @@ export const fullSchema = z
       path: ['home_type_other'],
     }
   )
+  .refine(
+    (data) =>
+      data.primary_language !== 'Other' ||
+      Boolean(data.primary_language_other?.trim()),
+    {
+      message: 'Please specify the other language.',
+      path: ['primary_language_other'],
+    }
+  )
   .superRefine((data, ctx) => {
-    if (data.birth_location?.trim() && !data.birth_hospital?.trim()) {
+    const pregnancyNumber = parsePregnancyNumber(data.pregnancy_number);
+    const priorCount = parsePriorCount(data.previous_pregnancies_count);
+    const minPrior = minimumPriorPregnancies(pregnancyNumber);
+    // Only when the client answered both questions inconsistently.
+    if (pregnancyNumber >= 2 && data.had_previous_pregnancies === false) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: getBirthLocationNameError(data.birth_location),
-        path: ['birth_hospital'],
+        message: priorPregnanciesMismatchMessage(pregnancyNumber),
+        path: ['had_previous_pregnancies'],
       });
-    }
-
-    if (!data.payment_method) {
+    } else if (
+      pregnancyNumber >= 2 &&
+      data.had_previous_pregnancies === true &&
+      priorCount < minPrior
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Please select how you plan to pay for services.',
-        path: ['payment_method'],
+        message: priorPregnanciesCountTooLowMessage(pregnancyNumber),
+        path: ['previous_pregnancies_count'],
       });
-    }
-
-    // Insurance details for commercial, private, or Medicaid. Self-Pay / Full Support have none.
-    const needsInsuranceDetails = requiresInsuranceDetails(data.payment_method);
-
-    if (needsInsuranceDetails) {
-      if (!data.insurance_policy_holder_name?.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Please enter the policy holder name.',
-          path: ['insurance_policy_holder_name'],
-        });
-      }
-      if (!data.insurance_policy_holder_dob?.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Please enter the policy holder date of birth.',
-          path: ['insurance_policy_holder_dob'],
-        });
-      }
-      const rel = data.insurance_policy_holder_relationship?.trim() ?? '';
-      if (
-        !rel ||
-        !INSURANCE_POLICY_HOLDER_RELATIONSHIP_OPTIONS.includes(
-          rel as InsurancePolicyHolderRelationship
-        )
-      ) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Please select the policy holder’s relationship to you.',
-          path: ['insurance_policy_holder_relationship'],
-        });
-      }
-      if (!data.insurance_provider?.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Please enter your insurance company name.',
-          path: ['insurance_provider'],
-        });
-      }
-      if (!data.insurance_member_id?.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Please enter your member ID or subscriber ID.',
-          path: ['insurance_member_id'],
-        });
-      }
-      const plan = data.insurance_plan_type?.trim() ?? '';
-      if (
-        !plan ||
-        !INSURANCE_PLAN_TYPE_OPTIONS.includes(plan as InsurancePlanType)
-      ) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Please select a plan type.',
-          path: ['insurance_plan_type'],
-        });
-      }
-    }
-
-    if (data.has_secondary_insurance) {
-      if (!data.secondary_insurance_provider?.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Please enter the secondary insurance provider.',
-          path: ['secondary_insurance_provider'],
-        });
-      }
-      if (!data.secondary_insurance_member_id?.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Please enter the secondary insurance member ID.',
-          path: ['secondary_insurance_member_id'],
-        });
-      }
-      if (!data.secondary_policy_number?.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Please enter the secondary policy number.',
-          path: ['secondary_policy_number'],
-        });
-      }
-    }
-
-    if (isSelfPaySlidingScaleMethod(data.payment_method)) {
-      const scope = data.self_pay_sliding_support_type?.trim() ?? '';
-      if (
-        !scope ||
-        !SELF_PAY_SLIDING_SUPPORT_TYPES.includes(
-          scope as (typeof SELF_PAY_SLIDING_SUPPORT_TYPES)[number]
-        )
-      ) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message:
-            'Please select whether you are interested in labor support, postpartum support, or both.',
-          path: ['self_pay_sliding_support_type'],
-        });
-      }
-      if (!data.self_pay_sliding_tier?.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message:
-            'Please select the income row that best matches your household from the sliding scale chart.',
-          path: ['self_pay_sliding_tier'],
-        });
-      }
+    } else if (
+      pregnancyNumber === 1 &&
+      data.had_previous_pregnancies === true
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: priorPregnanciesMismatchMessage(pregnancyNumber),
+        path: ['had_previous_pregnancies'],
+      });
     }
   });
 
@@ -464,7 +374,7 @@ export const stepFields: (keyof RequestFormInput)[][] = [
   [
     'race_ethnicity',
     'primary_language',
-    'client_age_range',
+    'primary_language_other',
     'insurance',
     'demographics_multi',
     'demographics_annual_income',
@@ -584,6 +494,7 @@ export function useRequestForm(
       self_pay_sliding_tier: '',
       race_ethnicity: '',
       primary_language: '',
+      primary_language_other: '',
       client_age_range: '',
       insurance: '',
       demographics_multi: [],

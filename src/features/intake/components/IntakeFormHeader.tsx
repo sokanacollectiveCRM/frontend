@@ -8,7 +8,7 @@ type IntakeFormHeaderProps = {
 
 export function IntakeFormHeader({ onFillTestData }: IntakeFormHeaderProps) {
   const { branding } = useIntakeBranding();
-  const { displayName, logoPath, pageTitle } = branding.branding;
+  const { displayName, logoPath, pageTitle } = branding;
 
   return (
     <div

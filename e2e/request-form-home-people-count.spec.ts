@@ -4,6 +4,7 @@ import {
   clickFormNext,
   completeStep2HomeDetailsAddress,
   reachHomeDetailsStep,
+  stubPublicIntakeBranding,
   submitRequestForm,
 } from './helpers/requestForm';
 
@@ -29,30 +30,14 @@ test.describe('Request form — People in the Home counts (E2E)', () => {
     }
   });
 
-  test('requires adult and youth counts before advancing', async ({ page }) => {
+  test('can advance without adult and youth counts', async ({ page }) => {
     await reachHomeDetailsStep(page);
 
-    await page.locator('#address').fill('123 Main St');
     await page.locator('#city').fill('Chicago');
-    await page.locator('#state').fill('IL');
     await page.locator('#zip_code').fill('60601');
-    await page.locator('#pets').fill('None');
 
     await clickFormNext(page);
-
-    await expect(
-      page.getByText('Home type (check all that apply)')
-    ).toBeVisible();
-    await expect(
-      page.locator('[class*="form-error"]').filter({
-        hasText: /adults live in the home/i,
-      })
-    ).toBeVisible();
-    await expect(
-      page.locator('[class*="form-error"]').filter({
-        hasText: /youth live in the home/i,
-      })
-    ).toBeVisible();
+    await expect(page.locator('#referral_source')).toBeVisible();
   });
 
   test('allows Next when both counts are selected', async ({ page }) => {
@@ -80,18 +65,25 @@ test.describe('Request form — People in the Home counts (E2E)', () => {
         }
       | undefined;
 
-    await page.route('**/requestService/requestSubmission', async (route) => {
-      capturedPayload = route
-        .request()
-        .postDataJSON() as typeof capturedPayload;
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ success: true, clientId: 'e2e-mock-client' }),
-      });
-    });
+    await page.route(
+      (url) =>
+        /\/requestService\/(?:[^/]+\/)?requestSubmission\/?$/.test(
+          new URL(url).pathname
+        ),
+      async (route) => {
+        capturedPayload = route
+          .request()
+          .postDataJSON() as typeof capturedPayload;
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ success: true, clientId: 'e2e-mock-client' }),
+        });
+      }
+    );
 
     await page.setViewportSize({ width: 500, height: 900 });
+    await stubPublicIntakeBranding(page);
     await page.goto('/request', { waitUntil: 'load' });
     await page.getByRole('button', { name: 'Fill with test data' }).click();
     await page
