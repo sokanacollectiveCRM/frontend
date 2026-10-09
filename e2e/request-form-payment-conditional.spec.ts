@@ -32,19 +32,6 @@ test.describe('Request form — payment method selection (E2E)', () => {
     await expect(page.locator('#policy_number')).toBeVisible();
     await expect(page.locator('#insurance_plan_type')).toBeVisible();
 
-    // Try Next without filling; should show required errors.
-    await clickFormNext(page);
-    await expect(page.getByText('Please enter the policy holder name.', { exact: true })).toBeVisible();
-    await expect(page.getByText('Please enter your insurance company name.', { exact: true })).toBeVisible();
-
-    // Fill required insurance fields and proceed.
-    await page.locator('#insurance_policy_holder_name').fill('Test User');
-    await page.locator('#insurance_policy_holder_dob').fill('1990-01-15');
-    await page.locator('#insurance_policy_holder_relationship').selectOption({ label: 'Self' });
-    await page.locator('#insurance_provider').fill('Aetna');
-    await page.locator('#insurance_member_id').fill('MEMBER-123');
-    await page.locator('#insurance_plan_type').selectOption({ label: 'PPO' });
-
     await clickFormNext(page);
     await expect(page.getByText('Client Demographics')).toBeVisible();
   });

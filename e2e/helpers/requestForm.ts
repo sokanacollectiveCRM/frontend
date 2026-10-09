@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Page, type Route } from '@playwright/test';
 
 export const HOME_ADULTS_COUNT_LABEL = 'Adult(s) (18 and older)';
 export const HOME_YOUTH_COUNT_LABEL = 'Youth (under 18)';
@@ -15,12 +15,113 @@ export const VIEWPORT_PRESETS = {
 
 export type ViewportPreset = keyof typeof VIEWPORT_PRESETS;
 
+export const PUBLIC_INTAKE_BRANDING = {
+  slug: 'sokana360',
+  name: 'Sokana360',
+  branding: {
+    displayName: 'Sokana360',
+    logoPath: '/sokana360-logo.png',
+    markPath: '/sokana360-mark.png',
+    pageTitle: 'Request for Service',
+    primaryColor: '#0A3147',
+    accentColor: '#D6704D',
+  },
+};
+
+/** Mock GET /requestService/public/:slug so the form loads without a live API. */
+export async function stubPublicIntakeBranding(page: Page) {
+  await page.route('**/requestService/public/**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(PUBLIC_INTAKE_BRANDING),
+    });
+  });
+}
+
+export function isIntakeSubmissionUrl(url: string | URL): boolean {
+  try {
+    return /\/requestService\/(?:[^/]+\/)?requestSubmission\/?$/.test(
+      new URL(url.toString()).pathname
+    );
+  } catch {
+    return false;
+  }
+}
+
+export function matchIntakeSubmission(url: URL | string): boolean {
+  return isIntakeSubmissionUrl(url);
+}
+
+/** Intercept POST /requestService/:slug/requestSubmission (and the legacy path). */
+export async function stubIntakeSubmission(
+  page: Page,
+  handler: (route: Route) => Promise<void>
+) {
+  await page.route(matchIntakeSubmission, handler);
+}
+
+export async function unstubIntakeSubmission(page: Page) {
+  await page.unroute(matchIntakeSubmission);
+}
+
+const INTAKE_CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
+export async function stubIntakeSubmitSuccess(page: Page) {
+  await stubIntakeSubmission(page, async (route) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: INTAKE_CORS_HEADERS });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: INTAKE_CORS_HEADERS,
+      body: JSON.stringify({ message: 'Form data received, onto processing' }),
+    });
+  });
+}
+
+export async function stubIntakeSubmitNetworkError(page: Page) {
+  await stubIntakeSubmission(page, async (route) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: INTAKE_CORS_HEADERS });
+      return;
+    }
+    await route.abort('failed');
+  });
+}
+
+export async function stubIntakeSubmitServerError(
+  page: Page,
+  status = 500,
+  error = 'The intake service is temporarily unavailable.'
+) {
+  await stubIntakeSubmission(page, async (route) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: INTAKE_CORS_HEADERS });
+      return;
+    }
+    await route.fulfill({
+      status,
+      contentType: 'application/json',
+      headers: INTAKE_CORS_HEADERS,
+      body: JSON.stringify({ error }),
+    });
+  });
+}
+
 /** Open the public /request form and wait for step 0. */
 export async function openRequestForm(
   page: Page,
   viewport: { width: number; height: number } = VIEWPORT_PRESETS.mobile
 ) {
   await page.setViewportSize(viewport);
+  await stubPublicIntakeBranding(page);
   await page.goto('/request', { waitUntil: 'load' });
   await page
     .getByRole('heading', { name: /Services Interested In/i })
@@ -128,14 +229,15 @@ const BIRTH_LOCATION_NAME_SAMPLES: Record<
 
 export async function fillPregnancyStepWithBirthLocation(
   page: Page,
-  birthLocation: 'Home' | 'Hospital' | 'Birth Center' | 'Other'
+  birthLocation: 'Home' | 'Hospital' | 'Birth Center' | 'Other',
+  pregnancyNumber = '1'
 ) {
   await fillRequestFormDueDate(page);
   await page.locator('#birth_location').selectOption({ label: birthLocation });
   await page.locator('#birth_hospital').fill(BIRTH_LOCATION_NAME_SAMPLES[birthLocation]);
   await page.locator('#number_of_babies').selectOption({ label: 'Singleton' });
   await page.locator('#provider_type').selectOption({ label: 'Midwife' });
-  await page.locator('#pregnancy_number').fill('1');
+  await page.locator('#pregnancy_number').fill(pregnancyNumber);
 }
 
 export const HOME_TYPE_CHECKBOX_LABELS = {
@@ -171,6 +273,60 @@ export async function completeStep1ClientDetails(
   await page.locator('#pronouns').selectOption({ label: 'They/Them' });
   await page.locator('#age').fill('28');
   await clickFormNext(page);
+}
+
+/** Nancy required-only: first/last name, email, phone — skip pronouns, age, contact method. */
+export async function completeStep1NancyRequired(
+  page: Page,
+  email = 'nancy.pilot@example.com'
+) {
+  await page.locator('#firstname').fill('Nancy');
+  await page.locator('#lastname').fill('Cowans');
+  await page.locator('#email').fill(email);
+  await page.locator('#phone_number').fill('312-555-0100');
+  await clickFormNext(page);
+}
+
+/** Nancy required-only: city + zip. */
+export async function completeStep2CityZipOnly(page: Page) {
+  await page.locator('#city').fill('Chicago');
+  await page.locator('#zip_code').fill('60614');
+  await clickFormNext(page);
+}
+
+/** Fill due date only on Pregnancy/Baby (Nancy required set). */
+export async function completePregnancyDueDateOnly(page: Page) {
+  await fillRequestFormDueDate(page);
+  await clickFormNext(page);
+}
+
+/**
+ * Nancy required-only path from an open form through Client Demographics.
+ * Does not fill pronouns, age, address, pets, payment, referral, or language.
+ */
+export async function reachDemographicsNancyRequired(
+  page: Page,
+  email = 'nancy.pilot@example.com'
+) {
+  await openRequestForm(page);
+  await completeStep0Services(page);
+  await expect(page.getByRole('heading', { name: 'Client Details' })).toBeVisible();
+  await completeStep1NancyRequired(page, email);
+  await expect(page.getByText('Home type (check all that apply)')).toBeVisible();
+  await completeStep2CityZipOnly(page);
+  await expect(page.locator('#referral_source')).toBeVisible({ timeout: 15000 });
+  await clickFormNext(page);
+  await expect(page.getByRole('heading', { name: 'Health information' })).toBeVisible();
+  await clickFormNext(page);
+  await expect(page.getByText('Pregnancy/Baby', { exact: true })).toBeVisible();
+  await completePregnancyDueDateOnly(page);
+  await expect(page.getByRole('heading', { name: 'Past Pregnancies' })).toBeVisible();
+  await clickFormNext(page);
+  await expect(page.getByRole('heading', { name: 'Payment' })).toBeVisible();
+  await clickFormNext(page);
+  await expect(page.getByRole('heading', { name: 'Client Demographics' })).toBeVisible({
+    timeout: 15000,
+  });
 }
 
 /** Step 2 — home details address + pets (home type optional). */
@@ -210,11 +366,18 @@ export async function reachReferralStep(page: Page) {
 }
 
 /** Full path to Past Pregnancies step. */
-export async function reachPastPregnanciesStep(page: Page) {
+export async function reachPastPregnanciesStep(
+  page: Page,
+  options?: { pregnancyNumber?: string }
+) {
   await reachReferralStep(page);
   await completeStep4Referral(page);
   await completeStep5HealthHistory(page);
-  await fillPregnancyStepMinimum(page);
+  await fillPregnancyStepWithBirthLocation(
+    page,
+    'Home',
+    options?.pregnancyNumber ?? '1'
+  );
   await clickFormNext(page);
   await expect(page.getByRole('heading', { name: 'Past Pregnancies' })).toBeVisible();
 }
@@ -305,4 +468,25 @@ export async function advanceFromHomeDetailsToSubmit(page: Page) {
 /** Call after `advanceFromHomeDetailsToSubmit` when on the demographics step. */
 export async function submitRequestForm(page: Page) {
   await clickFormSubmit(page);
+}
+
+/** Open the form, fill required steps, and land on Client Demographics. */
+export async function reachDemographicsStep(page: Page) {
+  await openRequestForm(page);
+  await completeStep0Services(page);
+  await completeStep1ClientDetails(page);
+  await completeStep2HomeDetailsAddress(page);
+  await clickFormNext(page);
+  await completeStep4Referral(page);
+  await completeStep5HealthHistory(page);
+  await fillPregnancyStepMinimum(page);
+  await clickFormNext(page);
+  await completeStep6PastPregnanciesNoHistory(page);
+  await expect(page.getByRole('heading', { name: 'Payment' })).toBeVisible();
+  await page.locator('#payment_method').click();
+  await page.getByText('Not sure / Need help figuring this out', { exact: true }).click();
+  await clickFormNext(page);
+  await expect(page.getByRole('heading', { name: 'Client Demographics' })).toBeVisible({
+    timeout: 15000,
+  });
 }

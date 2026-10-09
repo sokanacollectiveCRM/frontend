@@ -216,7 +216,7 @@ export function SupportPersonFields({ form }: SupportPersonFieldsProps) {
             maxWidth: 'calc(100% - 36px)',
           }}
         >
-          Pronouns
+          Support person pronouns
         </label>
         <span
           className={styles['form-select-arrow']}

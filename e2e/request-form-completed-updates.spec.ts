@@ -115,7 +115,9 @@ test.describe('Ticket 4 — Referral Contact Info label and flexible validation'
     const uniqueEmail = `referral-contact-e2e-${Date.now()}@example.com`;
     let capturedReferralEmail: string | undefined;
 
-    await page.route('**/requestService/requestSubmission', async (route) => {
+    await page.route(
+      (url) => /\/requestService\/(?:[^/]+\/)?requestSubmission\/?$/.test(new URL(url).pathname),
+      async (route) => {
       const postData = route.request().postDataJSON() as { referral_email?: string };
       capturedReferralEmail = postData.referral_email;
       await route.fulfill({
@@ -167,7 +169,7 @@ test.describe('Ticket 5 — Past Pregnancies two-option flow', () => {
   test('Had past pregnancies: exclusive selection, follow-up visible, can continue', async ({
     page,
   }) => {
-    await reachPastPregnanciesStep(page);
+    await reachPastPregnanciesStep(page, { pregnancyNumber: '2' });
 
     await selectHadPastPregnancies(page);
 

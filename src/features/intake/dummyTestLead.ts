@@ -17,6 +17,7 @@ export const DUMMY_TEST_LEAD: Partial<RequestFormInput> = {
   email: 'test.lead@example.com',
   phone_number: '555-123-4567',
   pronouns: 'She/Her',
+  pronouns_other: '',
   preferred_contact_method: 'Email',
   preferred_name: 'Test',
   age: '30',
@@ -93,7 +94,8 @@ export const DUMMY_TEST_LEAD: Partial<RequestFormInput> = {
   // Step 9 — Demographics
   race_ethnicity: 'Caucasian/White',
   primary_language: 'English',
-  client_age_range: '26-35',
+  primary_language_other: '',
+  client_age_range: '',
   insurance: 'Private',
   demographics_multi: [],
   demographics_annual_income: '$45,000-$64,999',

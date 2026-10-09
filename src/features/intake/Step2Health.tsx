@@ -155,7 +155,7 @@ function HomePeopleCountSelect({
         {...register(id)}
         id={id}
         defaultValue=''
-        aria-required='true'
+        aria-required='false'
         onFocus={onFocus}
         onBlur={onBlur}
       >
@@ -179,7 +179,7 @@ function HomePeopleCountSelect({
           maxWidth: 'calc(100% - 36px)',
         }}
       >
-        {label} *
+        {label}
       </label>
       <span
         className={styles['form-select-arrow']}
@@ -536,8 +536,22 @@ export function Step2Home({
 
         {peopleCountFields}
 
-        {/* Pets / Animals in Home - Full Width (required) */}
-        <div className={styles['form-field']}>
+        {/* Pets / Animals in Home — single field; label above so the long
+            question is not also overlaid as a floating label. */}
+        <div
+          className={`${styles['form-field']} ${styles['form-field-label-above']}`}
+        >
+          <label
+            htmlFor='pets'
+            className={
+              styles['form-floating-label'] +
+              (focus.pets || hasFilledValue(wPets)
+                ? ' ' + styles['form-label--active']
+                : '')
+            }
+          >
+            Pets in the home (list types, or enter None)
+          </label>
           {errors.pets && (
             <div className={styles['form-error']} style={{ marginBottom: 6 }}>
               {(errors.pets.message as string) ||
@@ -549,22 +563,10 @@ export function Step2Home({
             {...form.register('pets')}
             id='pets'
             autoComplete='off'
-            aria-required='true'
+            aria-required='false'
             onFocus={() => handleFocus('pets')}
             onBlur={() => handleBlur('pets')}
           />
-          <label
-            htmlFor='pets'
-            className={
-              styles['form-floating-label'] +
-              (focus.pets || hasFilledValue(wPets)
-                ? ' ' + styles['form-label--active']
-                : '')
-            }
-            style={{ left: 0, right: 0, maxWidth: 'calc(100% - 36px)' }}
-          >
-            Please list the types of any pets/animals that are in the home. *
-          </label>
         </div>
 
         <SupportPersonFields form={form} />

@@ -9,6 +9,11 @@ import { useWatch, useFormState } from 'react-hook-form';
 import styles from './RequestForm.module.scss';
 import { PREGNANCY_BABY_POSTPARTUM_QUESTION_LABEL } from './stepConfig';
 import {
+  minimumPriorPregnancies,
+  parsePregnancyNumber,
+  parsePriorCount,
+} from './domain/pregnancyConsistency';
+import {
   REFERRAL_SOURCE_OPTIONS,
   REFERRAL_SOURCE_OTHER_VALUE,
 } from './referralSourceOptions';
@@ -114,7 +119,7 @@ export function Step4Referral({
             }
             style={{ left: 0, right: 0, maxWidth: 'calc(100% - 36px)' }}
           >
-            How did you hear about us? *
+            How did you hear about us?
           </label>
           <select
             className={
@@ -523,7 +528,7 @@ export function Step6PregnancyBaby({
               maxWidth: 'calc(100% - 36px)',
             }}
           >
-            Birth location*
+            Birth location
           </label>
           <span
             className={styles['form-select-arrow']}
@@ -629,7 +634,7 @@ export function Step6PregnancyBaby({
               maxWidth: 'calc(100% - 36px)',
             }}
           >
-            Number of babies*
+            Number of babies
           </label>
           <span
             className={styles['form-select-arrow']}
@@ -717,7 +722,7 @@ export function Step6PregnancyBaby({
                 : '')
             }
           >
-            What # pregnancy/baby is this?*
+            What # pregnancy/baby is this?
           </label>
           {errors.pregnancy_number && (
             <div className={styles['form-error']}>
@@ -755,6 +760,14 @@ export function Step7PastPregnancies({
     control: form.control,
     name: 'had_previous_pregnancies',
   });
+  const pregnancyNumberRaw = useWatch({
+    control: form.control,
+    name: 'pregnancy_number',
+  });
+  const previousCountRaw = useWatch({
+    control: form.control,
+    name: 'previous_pregnancies_count',
+  });
   const [focus, setFocus] = useState({
     previous_pregnancies_count: false,
     living_children_count: false,
@@ -764,6 +777,33 @@ export function Step7PastPregnancies({
     setFocus((f) => ({ ...f, [field]: true }));
   const handleBlur = (field: keyof typeof focus) =>
     setFocus((f) => ({ ...f, [field]: false }));
+
+  useEffect(() => {
+    const pregnancyNumber = parsePregnancyNumber(pregnancyNumberRaw);
+    if (pregnancyNumber < 1) return;
+    const minPrior = minimumPriorPregnancies(pregnancyNumber);
+    if (pregnancyNumber >= 2) {
+      if (hadPrevious !== true) {
+        form.setValue('had_previous_pregnancies', true, {
+          shouldValidate: false,
+        });
+      }
+      if (parsePriorCount(previousCountRaw) < minPrior) {
+        form.setValue('previous_pregnancies_count', minPrior, {
+          shouldValidate: false,
+        });
+      }
+      return;
+    }
+    if (pregnancyNumber === 1 && hadPrevious !== false) {
+      form.setValue('had_previous_pregnancies', false, {
+        shouldValidate: false,
+      });
+    }
+    // Prefill from the Pregnancy/Baby step on first visit / when the
+    // pregnancy number changes; the user can still edit, then Next validates.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sync from pregnancy_number only
+  }, [pregnancyNumberRaw]);
 
   const selectHadPastPregnancies = () => {
     form.setValue('had_previous_pregnancies', true, { shouldValidate: true });
@@ -2195,10 +2235,18 @@ export function Step10ClientDemographics({
 }: any) {
   const values = form.getValues();
   const errors = form.formState.errors;
+  const primaryLanguage = useWatch({
+    control: form.control,
+    name: 'primary_language',
+  });
+  const primaryLanguageOther = useWatch({
+    control: form.control,
+    name: 'primary_language_other',
+  });
   const [focus, setFocus] = useState({
     race_ethnicity: false,
     primary_language: false,
-    client_age_range: false,
+    primary_language_other: false,
     insurance: false,
     demographics_multi: false,
     demographics_annual_income: false,
@@ -2226,7 +2274,6 @@ export function Step10ClientDemographics({
     'Arabic',
     'Other',
   ];
-  const ageOptions = ['Under 20', '20-25', '26-35', '36 and older'];
   const insuranceOptions = [
     'Private',
     'Public Aid',
@@ -2402,51 +2449,45 @@ export function Step10ClientDemographics({
             </div>
           )}
         </div>
-        {/* Client Age Range */}
-        <div
-          className={styles['form-field']}
-          style={{ gridColumn: '1 / span 2', position: 'relative' }}
-        >
-          <select
-            className={styles['form-select']}
-            {...form.register('client_age_range')}
-            id='client_age_range'
-            defaultValue=''
-            onFocus={() => handleFocus('client_age_range')}
-            onBlur={() => handleBlur('client_age_range')}
+        {primaryLanguage === 'Other' ? (
+          <div
+            className={`${styles['form-field']} ${styles['form-field-label-above']}`}
+            style={{ gridColumn: '1 / span 2' }}
           >
-            <option value='' disabled hidden></option>
-            {ageOptions.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
-          <label
-            htmlFor='client_age_range'
-            className={
-              styles['form-floating-label'] +
-              (focus.client_age_range || values.client_age_range
-                ? ' ' + styles['form-label--active']
-                : '')
-            }
-          >
-            Client age range (optional)
-          </label>
-          <span className={styles['form-select-arrow']}>▼</span>
-          {errors.client_age_range && (
-            <div className={styles['form-error']}>
-              {getUserError(
-                errors.client_age_range,
-                'Please select your age range.'
-              )}
-            </div>
-          )}
-        </div>
+            <label
+              htmlFor='primary_language_other'
+              className={
+                styles['form-floating-label'] +
+                (focus.primary_language_other ||
+                hasFilledFloatingValue(primaryLanguageOther)
+                  ? ' ' + styles['form-label--active']
+                  : '')
+              }
+            >
+              Other language (please specify) *
+            </label>
+            <input
+              className={styles['form-input']}
+              {...form.register('primary_language_other')}
+              id='primary_language_other'
+              autoComplete='off'
+              onFocus={() => handleFocus('primary_language_other')}
+              onBlur={() => handleBlur('primary_language_other')}
+            />
+            {errors.primary_language_other && (
+              <div className={styles['form-error']}>
+                {getUserError(
+                  errors.primary_language_other,
+                  'Please specify the other language.'
+                )}
+              </div>
+            )}
+          </div>
+        ) : null}
         {/* Medical Insurance Coverage */}
         <div
           className={styles['form-field']}
-          style={{ gridColumn: '3 / span 2', position: 'relative' }}
+          style={{ gridColumn: '1 / span 2', position: 'relative' }}
         >
           <select
             className={styles['form-select']}

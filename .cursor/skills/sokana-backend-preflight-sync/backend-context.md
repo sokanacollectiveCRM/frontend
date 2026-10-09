@@ -486,3 +486,90 @@ Use this checklist at the top of every new preflight entry:
 ### Action
 - [x] Context updated before coding
 - [x] Implementation started after preflight
+
+## Preflight 2026-10-09 (Public intake / request form pilot bugs)
+
+### Preflight Entry Checklist
+- **Gate Result**: `run_preflight`
+- **Reason**: `preflight_required_every_task`
+- **Task Intent**: Fix Nancy Cowans (Oct 9) public intake bugs: duplicate pet/pronouns/age questions, pregnancy-number vs prior-pregnancies consistency, Other language specify, Failed to fetch on submit.
+- **Repos Scanned**: both
+- **Files Scanned**:
+  - `/tmp/backend/src/features/intake/http/requestRoute.ts`
+  - `/tmp/backend/src/features/intake/http/requestFormController.ts`
+  - `/tmp/backend/src/features/intake/domain/normalizePublicSubmission.ts`
+  - `/tmp/backend/src/features/intake/infrastructure/intakeAbuseProtection.ts`
+  - `/tmp/backend/src/server.ts` (CORS `allowedHeaders`)
+  - `/tmp/backend/src/config/env.ts` (`getAllowedOrigins` / `FRONTEND_ORIGIN`)
+  - `src/features/intake/RequestForm.tsx`
+  - `src/features/intake/application/useRequestForm.ts`
+  - `src/features/intake/Step1Personal.tsx`
+  - `src/features/intake/Step2Health.tsx`
+  - `src/features/intake/Step3Home.tsx`
+  - `src/features/intake/components/SupportPersonFields.tsx`
+  - `src/config/env.ts`
+  - `cloudbuild.yaml`
+  - `Dockerfile`
+- **Context Updated**: yes
+- **Implementation Started After Gate**: yes
+
+### Contract Expectations
+- **POST** `/requestService/:tenantSlug/requestSubmission` (legacy also `/requestService/requestSubmission`).
+- Success: HTTP 200 `{ message: "Form data received, onto processing" }`.
+- Required body includes `firstname`, `lastname`, `email`, `phone_number`, address fields, **`age`** (persisted as `intake_age_years`), `service_needed`, `provider_type`, home people counts, birth place, `payment_method`, `referral_source`.
+- Extra JSON keys are ignored (do not 400). `pronouns`, `pets`, `pregnancy_number`, `had_previous_pregnancies`, `previous_pregnancies_count`, `primary_language`, `client_age_range` passthrough.
+- **`primary_language_other` is not in the backend schema** — persist Other-language text in `primary_language` until backend adds the column.
+- Idempotency is optional: `readIdempotencyKey` returns null when `Idempotency-Key` is absent.
+
+### Drift Risks
+- Live dev CORS (`https://sokana-private-api-dev-46lcr3n2qa-uc.a.run.app`) allows origin `https://sokana-front-end-dev-46lcr3n2qa-uc.a.run.app` but `allowedHeaders` is only `Content-Type, Authorization, X-Session-Token, X-Signing-Session`. Browser preflight for `Idempotency-Key` fails → TypeError `Failed to fetch`. Confirmed with OPTIONS on 2026-10-09 (204 returned without `idempotency-key` in Allow-Headers). curl POST still reaches validation.
+- Frontend Cloud Build correctly inlines `VITE_APP_BACKEND_URL=https://sokana-private-api-dev-46lcr3n2qa-uc.a.run.app` (not a wrong/empty API URL).
+
+### Compatibility Required
+- Keep sending `age` (not only `intake_age_years`).
+- Derive `client_age_range` from exact age on submit so CRM still receives it once after removing the demographics duplicate.
+- When primary language is Other, send the specified language in `primary_language` (existing column) and also `primary_language_other` for a future backend column.
+- Do not send `Idempotency-Key` until backend CORS allowlists it; continue rate-limit/honeypot as today.
+
+### Action
+- [x] Context updated before coding
+- [x] Implementation started after preflight
+
+## Preflight 2026-10-09 (Jerry: Playwright + video proof for intake pilot)
+
+### Preflight Entry Checklist
+- **Gate Result**: `run_preflight`
+- **Reason**: `preflight_required_every_task`
+- **Task Intent**: Prove the public intake fixes with Playwright e2e + video (`video: 'on'`), mock submit locally, honor `PLAYWRIGHT_BASE_URL` for post-deploy reruns, never POST against the live dev API from this VM.
+- **Repos Scanned**: both
+- **Files Scanned**:
+  - `/tmp/backend/src/features/intake/domain/normalizePublicSubmission.ts`
+  - `/tmp/backend/src/features/intake/domain/requestSubmissionDto.ts`
+  - `/tmp/backend/src/constants/referralSource.ts`
+  - `/tmp/backend/src/server.ts` (CORS `allowedHeaders`)
+  - `playwright.config.ts`
+  - `e2e/helpers/requestForm.ts`
+  - `src/features/intake/RequestForm.tsx`
+  - `src/features/intake/application/useRequestForm.ts`
+  - `src/features/intake/domain/intakeSubmitErrors.ts`
+- **Context Updated**: yes
+- **Implementation Started After Gate**: yes
+
+### Contract Expectations
+- Local/dev e2e intercepts `POST /requestService/:tenantSlug/requestSubmission` (and legacy `/requestService/requestSubmission`) so no real lead is created.
+- Success JSON `{ message: "Form data received, onto processing" }` (or `{ success: true }`) shows the thank-you screen.
+- Browser abort / TypeError `Failed to fetch` must surface `NETWORK_SUBMIT_MESSAGE`, never a bare "Failed to fetch".
+- Backend still requires address/state, age, provider_type, home people counts, birth place, payment_method, referral_source (and insurance when commercial) — frontend Nancy-required-only submits will 400 until backend relaxes those checks.
+
+### Drift Risks
+- Running Playwright against the deployed SPA without route stubs would POST real PHI to the live API. Specs always mock submit.
+- `PLAYWRIGHT_BASE_URL` against the live site exercises the **deployed** bundle, not local uncommitted code.
+
+### Compatibility Required
+- Same spec runs locally (`npm run test:intake-pilot:e2e`) or after deploy:
+  `PLAYWRIGHT_BASE_URL=https://sokana-front-end-dev-46lcr3n2qa-uc.a.run.app npm run test:intake-pilot:e2e`
+- Do not execute that remote command from this VM.
+
+### Action
+- [x] Context updated before coding
+- [x] Implementation started after preflight
