@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
 import RequestForm from 'features/intake/RequestForm';
 
@@ -16,8 +17,34 @@ vi.mock('import.meta.env', () => ({
   VITE_APP_BACKEND_URL: 'http://localhost:5050',
 }));
 
+vi.mock('features/intake/application/usePublicIntakeBranding', () => ({
+  usePublicIntakeBranding: () => ({
+    status: 'ready',
+    data: {
+      slug: 'sokana360',
+      name: 'Sokana360',
+      branding: {
+        displayName: 'Sokana360',
+        logoPath: '/sokana360-logo.png',
+        markPath: null,
+        pageTitle: 'Request for Service Form',
+        primaryColor: '#0A3147',
+        accentColor: '#D6704D',
+      },
+    },
+  }),
+}));
+
 // Mock fetch
 global.fetch = vi.fn();
+
+function renderRequestForm() {
+  return render(
+    <MemoryRouter initialEntries={['/request/sokana360']}>
+      <RequestForm />
+    </MemoryRouter>
+  );
+}
 
 describe('RequestForm Integration Tests', () => {
   beforeEach(() => {
@@ -27,7 +54,7 @@ describe('RequestForm Integration Tests', () => {
 
   describe('Complete Form Submission Flow', () => {
     it('renders form with all required fields', async () => {
-      render(<RequestForm />);
+      renderRequestForm();
 
       // Verify form renders correctly
       expect(screen.getByText('Request for Service Form')).toBeInTheDocument();
@@ -43,7 +70,7 @@ describe('RequestForm Integration Tests', () => {
 
     it('allows user to fill form fields', async () => {
       const user = userEvent.setup();
-      render(<RequestForm />);
+      renderRequestForm();
 
       // Fill out the form fields
       const supportDetailsInput = screen.getByLabelText(
@@ -62,8 +89,7 @@ describe('RequestForm Integration Tests', () => {
     });
 
     it('shows Next button on first step', async () => {
-      const user = userEvent.setup();
-      render(<RequestForm />);
+      renderRequestForm();
 
       // Verify Next button is present
       const nextButton = screen.getByRole('button', { name: /next/i });
@@ -76,7 +102,7 @@ describe('RequestForm Integration Tests', () => {
 
     it('handles form validation errors', async () => {
       const user = userEvent.setup();
-      render(<RequestForm />);
+      renderRequestForm();
 
       // Try to submit without filling required fields
       const nextButton = screen.getByRole('button', { name: /next/i });
@@ -103,7 +129,7 @@ describe('RequestForm Integration Tests', () => {
       );
 
       const user = userEvent.setup();
-      render(<RequestForm />);
+      renderRequestForm();
 
       const nextButton = screen.getByRole('button', { name: /next/i });
       await user.click(nextButton);
@@ -116,7 +142,7 @@ describe('RequestForm Integration Tests', () => {
       (global.fetch as any).mockRejectedValueOnce(new Error('Network error'));
 
       const user = userEvent.setup();
-      render(<RequestForm />);
+      renderRequestForm();
 
       const nextButton = screen.getByRole('button', { name: /next/i });
       await user.click(nextButton);
@@ -127,7 +153,7 @@ describe('RequestForm Integration Tests', () => {
 
     it('validates required fields on initial step', async () => {
       const user = userEvent.setup();
-      render(<RequestForm />);
+      renderRequestForm();
 
       const nextButton = screen.getByRole('button', { name: /next/i });
       await user.click(nextButton);
@@ -145,7 +171,7 @@ describe('RequestForm Integration Tests', () => {
       );
 
       const user = userEvent.setup();
-      render(<RequestForm />);
+      renderRequestForm();
 
       const nextButton = screen.getByRole('button', { name: /next/i });
       await user.click(nextButton);
@@ -155,7 +181,7 @@ describe('RequestForm Integration Tests', () => {
     });
 
     it('renders form sections correctly', async () => {
-      render(<RequestForm />);
+      renderRequestForm();
 
       // Check for form sections
       expect(
@@ -169,7 +195,7 @@ describe('RequestForm Integration Tests', () => {
 
     it('handles multiple submission attempts', async () => {
       const user = userEvent.setup();
-      render(<RequestForm />);
+      renderRequestForm();
 
       const nextButton = screen.getByRole('button', { name: /next/i });
 
@@ -184,7 +210,7 @@ describe('RequestForm Integration Tests', () => {
 
     it('maintains form state after errors', async () => {
       const user = userEvent.setup();
-      render(<RequestForm />);
+      renderRequestForm();
 
       // Fill some fields
       const supportDetailsInput = screen.getByLabelText(
@@ -220,7 +246,7 @@ describe('RequestForm Integration Tests', () => {
       );
 
       const user = userEvent.setup();
-      render(<RequestForm />);
+      renderRequestForm();
 
       const nextButton = screen.getByRole('button', { name: /next/i });
 
@@ -235,7 +261,7 @@ describe('RequestForm Integration Tests', () => {
 
     it('resets form state after error', async () => {
       const user = userEvent.setup();
-      render(<RequestForm />);
+      renderRequestForm();
 
       const nextButton = screen.getByRole('button', { name: /next/i });
       await user.click(nextButton);

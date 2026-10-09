@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
 import RequestForm from 'features/intake/RequestForm';
 
@@ -16,8 +17,34 @@ vi.mock('import.meta.env', () => ({
   VITE_APP_BACKEND_URL: 'http://localhost:5050',
 }));
 
+vi.mock('features/intake/application/usePublicIntakeBranding', () => ({
+  usePublicIntakeBranding: () => ({
+    status: 'ready',
+    data: {
+      slug: 'sokana360',
+      name: 'Sokana360',
+      branding: {
+        displayName: 'Sokana360',
+        logoPath: '/sokana360-logo.png',
+        markPath: null,
+        pageTitle: 'Request for Service Form',
+        primaryColor: '#0A3147',
+        accentColor: '#D6704D',
+      },
+    },
+  }),
+}));
+
 // Mock fetch
 global.fetch = vi.fn();
+
+function renderRequestForm() {
+  return render(
+    <MemoryRouter initialEntries={['/request/sokana360']}>
+      <RequestForm />
+    </MemoryRouter>
+  );
+}
 
 describe('RequestForm', () => {
   beforeEach(() => {
@@ -27,17 +54,17 @@ describe('RequestForm', () => {
 
   describe('Form Rendering', () => {
     it('renders the request form with initial step', () => {
-      render(<RequestForm />);
+      renderRequestForm();
 
       expect(screen.getByText('Request for Service Form')).toBeInTheDocument();
       expect(
         screen.getByText(/Please complete this form as thoroughly as possible/)
       ).toBeInTheDocument();
-      expect(screen.getByAltText('Sokana360 Logo')).toBeInTheDocument();
+      expect(screen.getByAltText(/sokana360 logo/i)).toBeInTheDocument();
     });
 
     it('shows Next button on first step', () => {
-      render(<RequestForm />);
+      renderRequestForm();
 
       expect(screen.getByRole('button', { name: /next/i })).toBeInTheDocument();
       expect(
@@ -54,7 +81,7 @@ describe('RequestForm', () => {
         json: async () => mockResponse,
       });
 
-      render(<RequestForm />);
+      renderRequestForm();
 
       // Fill out the form (this would be done by the user)
       // For now, we'll test the submission logic
@@ -71,7 +98,7 @@ describe('RequestForm', () => {
         json: async () => mockResponse,
       });
 
-      render(<RequestForm />);
+      renderRequestForm();
 
       // Test that the form renders correctly
       expect(screen.getByText('Request for Service Form')).toBeInTheDocument();
@@ -87,7 +114,7 @@ describe('RequestForm', () => {
         json: async () => mockError,
       });
 
-      render(<RequestForm />);
+      renderRequestForm();
 
       // Test form rendering
       expect(screen.getByText('Request for Service Form')).toBeInTheDocument();
@@ -96,7 +123,7 @@ describe('RequestForm', () => {
     it('handles network error during submission', async () => {
       (global.fetch as any).mockRejectedValueOnce(new Error('Network error'));
 
-      render(<RequestForm />);
+      renderRequestForm();
 
       // Test form rendering
       expect(screen.getByText('Request for Service Form')).toBeInTheDocument();
@@ -120,7 +147,7 @@ describe('RequestForm', () => {
           )
       );
 
-      render(<RequestForm />);
+      renderRequestForm();
 
       // Test that form renders correctly
       expect(screen.getByText('Request for Service Form')).toBeInTheDocument();
@@ -129,7 +156,7 @@ describe('RequestForm', () => {
 
   describe('Form Fields', () => {
     it('renders all required form fields', () => {
-      render(<RequestForm />);
+      renderRequestForm();
 
       // Initial mobile step is services interested.
       expect(
@@ -145,7 +172,7 @@ describe('RequestForm', () => {
 
     it('allows user to fill form fields', async () => {
       const user = userEvent.setup();
-      render(<RequestForm />);
+      renderRequestForm();
 
       const serviceDetails = screen.getByLabelText(
         /Describe the support you are looking for/i
@@ -165,7 +192,7 @@ describe('RequestForm', () => {
         json: async () => mockResponse,
       });
 
-      render(<RequestForm />);
+      renderRequestForm();
 
       // Test that form renders correctly
       expect(screen.getByText('Request for Service Form')).toBeInTheDocument();
