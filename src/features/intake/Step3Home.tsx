@@ -429,13 +429,7 @@ export function Step6PregnancyBaby({
     ],
   });
 
-  const [
-    dueDate,
-    birthLocation,
-    numberOfBabies,
-    providerType,
-    pregnancyNumber,
-  ] = useWatch({
+  useWatch({
     control: form.control,
     name: [
       'due_date',
@@ -444,7 +438,7 @@ export function Step6PregnancyBaby({
       'provider_type',
       'pregnancy_number',
     ] as const,
-  }) ?? ['', '', '', '', 0];
+  });
 
   const [focus, setFocus] = useState({
     due_date: false,
@@ -1220,11 +1214,11 @@ export function Step9Payment({
     control: form.control,
     name: 'self_pay_sliding_tier',
   });
-  const [focus, setFocus] = useState({ payment_method: false });
+  const [, setFocus] = useState({ payment_method: false });
   const [open, setOpen] = useState({ payment_method: false });
-  const handleFocus = (field: keyof typeof focus) =>
+  const handleFocus = (field: 'payment_method') =>
     setFocus((f) => ({ ...f, [field]: true }));
-  const handleBlur = (field: keyof typeof focus) =>
+  const handleBlur = (field: 'payment_method') =>
     setFocus((f) => ({ ...f, [field]: false }));
 
   const insuranceFieldError = (

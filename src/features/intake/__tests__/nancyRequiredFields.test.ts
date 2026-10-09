@@ -69,9 +69,9 @@ describe('Nancy required-field set', () => {
     });
     expect(missing.success).toBe(false);
     if (!missing.success) {
-      expect(missing.error.issues.some((i) => i.path[0] === 'primary_language_other')).toBe(
-        true
-      );
+      expect(
+        missing.error.issues.some((i) => i.path[0] === 'primary_language_other')
+      ).toBe(true);
     }
 
     const specified = fullSchema.safeParse({
@@ -92,7 +92,9 @@ describe('Nancy required-field set', () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(
-        result.error.issues.some((i) => i.path[0] === 'previous_pregnancies_count')
+        result.error.issues.some(
+          (i) => i.path[0] === 'previous_pregnancies_count'
+        )
       ).toBe(true);
     }
   });

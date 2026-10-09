@@ -66,17 +66,21 @@ test.describe('Request form — People in the Home counts (E2E)', () => {
       | undefined;
 
     await page.route(
-      (url) => /\/requestService\/(?:[^/]+\/)?requestSubmission\/?$/.test(new URL(url).pathname),
+      (url) =>
+        /\/requestService\/(?:[^/]+\/)?requestSubmission\/?$/.test(
+          new URL(url).pathname
+        ),
       async (route) => {
-      capturedPayload = route
-        .request()
-        .postDataJSON() as typeof capturedPayload;
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ success: true, clientId: 'e2e-mock-client' }),
-      });
-    });
+        capturedPayload = route
+          .request()
+          .postDataJSON() as typeof capturedPayload;
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ success: true, clientId: 'e2e-mock-client' }),
+        });
+      }
+    );
 
     await page.setViewportSize({ width: 500, height: 900 });
     await stubPublicIntakeBranding(page);

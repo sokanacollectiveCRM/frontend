@@ -84,7 +84,9 @@ function isNetworkFailure(error: unknown, raw: string): boolean {
 export function formatIntakeSubmitError(error: unknown): string {
   if (error instanceof IntakeSubmitError) {
     if (isBareFailedToFetch(error.message) || isBlankMessage(error.message)) {
-      return error.status === 0 ? NETWORK_SUBMIT_MESSAGE : GENERIC_SUBMIT_MESSAGE;
+      return error.status === 0
+        ? NETWORK_SUBMIT_MESSAGE
+        : GENERIC_SUBMIT_MESSAGE;
     }
     return error.message;
   }

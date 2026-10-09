@@ -573,3 +573,42 @@ Use this checklist at the top of every new preflight entry:
 ### Action
 - [x] Context updated before coding
 - [x] Implementation started after preflight
+
+## Preflight 2026-10-09 (CI: lint + intake test alias)
+
+### Preflight Entry Checklist
+- **Gate Result**: `run_preflight`
+- **Reason**: `preflight_required_every_task`
+- **Task Intent**: Fix PR #103 CI — lint/prettier unique to this PR; confirm Vitest/Playwright smoke vs main; fix small intake-related pre-existing failures (`features/` alias, public form load, thank-you branding crash).
+- **Repos Scanned**: both
+- **Files Scanned**:
+  - `/tmp/backend/.cursor/skills/sokana-doula-cloudsql-sync/SKILL.md`
+  - `/tmp/backend/.cursor/skills/sokana-doula-cloudsql-sync/frontend-context.md`
+  - `/tmp/backend/src/features/intake/domain/requestSubmissionDto.ts`
+  - `/tmp/backend/src/features/intake/domain/normalizePublicSubmission.ts`
+  - `.github/workflows/lint.yaml`
+  - `.github/workflows/tests.yaml`
+  - `src/features/intake/RequestForm.tsx`
+  - `src/features/intake/application/useRequestForm.ts`
+  - `src/features/intake/components/IntakeFormHeader.tsx`
+  - `e2e/request-form-pilot-fixes.spec.ts`
+  - `vite.config.ts`
+  - `vitest.config.ts`
+- **Context Updated**: yes
+- **Implementation Started After Gate**: yes
+
+### Contract Expectations
+- Unchanged from 2026-10-09 intake preflights: POST `/requestService/:tenantSlug/requestSubmission` success `{ message: "Form data received, onto processing" }`; no `Idempotency-Key`; Other language stored in `primary_language`; backend still server-requires address/state, age, provider_type, home people counts, birth place, payment_method, referral_source.
+- Public branding GET shape remains `{ slug, name, branding: { displayName, logoPath, pageTitle, ... } }`.
+
+### Drift Risks
+- Thank-you copy uses the inner branding object (`displayName`), not `branding.branding.displayName`.
+- Vitest/Vite without a `features` alias cannot load intake tests or the `/request` page in CI.
+
+### Compatibility Required
+- Keep sending `age` and mapping Other-language text into `primary_language`.
+- Do not POST against the live dev API from this VM.
+
+### Action
+- [x] Context updated before coding
+- [x] Implementation started after preflight

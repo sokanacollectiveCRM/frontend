@@ -13,7 +13,9 @@ import {
 
 async function reachPregnancyStep(page: import('@playwright/test').Page) {
   await openRequestForm(page, { width: 500, height: 900 });
-  await expect(page.getByRole('heading', { name: /Services Interested In/i })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: /Services Interested In/i })
+  ).toBeVisible();
   await completeStep0Services(page);
   await expect(page.getByText('Client Details')).toBeVisible();
   await completeStep1ClientDetails(page);
@@ -25,12 +27,16 @@ async function reachPregnancyStep(page: import('@playwright/test').Page) {
 }
 
 test.describe('Request form — pregnancy step (E2E)', () => {
-  test('Home birth: birth location name is optional; baby name stays optional', async ({ page }) => {
+  test('Home birth: birth location name is optional; baby name stays optional', async ({
+    page,
+  }) => {
     await reachPregnancyStep(page);
 
     await fillRequestFormDueDate(page);
     await page.locator('#birth_location').selectOption({ label: 'Home' });
-    await page.locator('#number_of_babies').selectOption({ label: 'Singleton' });
+    await page
+      .locator('#number_of_babies')
+      .selectOption({ label: 'Singleton' });
     await page.locator('#provider_type').selectOption({ label: 'Midwife' });
     await page.locator('#pregnancy_number').fill('1');
 
@@ -41,7 +47,9 @@ test.describe('Request form — pregnancy step (E2E)', () => {
     await expect(page.locator('#baby_name')).toHaveValue('');
 
     await clickFormNext(page);
-    await expect(page.getByRole('heading', { name: 'Past Pregnancies' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Past Pregnancies' })
+    ).toBeVisible();
   });
 
   test('Hospital & Birth Center: location name stays optional with ticket label', async ({
@@ -55,17 +63,25 @@ test.describe('Request form — pregnancy step (E2E)', () => {
     );
 
     await clickFormNext(page);
-    await expect(page.getByRole('heading', { name: 'Past Pregnancies' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Past Pregnancies' })
+    ).toBeVisible();
 
     await page.getByRole('button', { name: 'Back' }).click();
-    await expect(page.getByText('Pregnancy/Baby', { exact: true })).toBeVisible();
-    await page.locator('#birth_location').selectOption({ label: 'Birth Center' });
+    await expect(
+      page.getByText('Pregnancy/Baby', { exact: true })
+    ).toBeVisible();
+    await page
+      .locator('#birth_location')
+      .selectOption({ label: 'Birth Center' });
     await page.locator('#birth_hospital').clear();
     await expect(page.locator('label[for="birth_hospital"]')).toContainText(
       'Name of hospital or birth center, if home, type home'
     );
 
     await clickFormNext(page);
-    await expect(page.getByRole('heading', { name: 'Past Pregnancies' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Past Pregnancies' })
+    ).toBeVisible();
   });
 });

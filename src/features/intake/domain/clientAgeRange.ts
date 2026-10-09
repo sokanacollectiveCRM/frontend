@@ -12,8 +12,7 @@ export type ClientAgeRangeOption = (typeof CLIENT_AGE_RANGE_OPTIONS)[number];
 export function clientAgeRangeFromYears(
   age: unknown
 ): ClientAgeRangeOption | '' {
-  const years =
-    typeof age === 'number' ? age : parseInt(String(age ?? ''), 10);
+  const years = typeof age === 'number' ? age : parseInt(String(age ?? ''), 10);
   if (!Number.isFinite(years) || years < 1) return '';
   if (years < 20) return 'Under 20';
   if (years <= 25) return '20-25';

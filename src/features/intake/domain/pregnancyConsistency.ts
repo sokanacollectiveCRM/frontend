@@ -11,7 +11,8 @@ export function priorPregnanciesMismatchMessage(
   if (pregnancyNumber <= 1) {
     return 'You said this is your 1st pregnancy, which means there are no prior pregnancies. Choose “No past pregnancies”, or go back and update the pregnancy number.';
   }
-  const priorLabel = minPrior === 1 ? '1 prior pregnancy' : `${minPrior} prior pregnancies`;
+  const priorLabel =
+    minPrior === 1 ? '1 prior pregnancy' : `${minPrior} prior pregnancies`;
   return `You said this is pregnancy #${pregnancyNumber}, so you have had at least ${priorLabel}. Choose “Had past pregnancies” and enter at least ${minPrior}, or go back and update the pregnancy number.`;
 }
 

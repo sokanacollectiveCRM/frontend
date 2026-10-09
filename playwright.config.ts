@@ -6,7 +6,8 @@ import { defineConfig, devices } from '@playwright/test';
  * Default target is the local Vite server at http://localhost:3001.
  * Override with PLAYWRIGHT_BASE_URL to hit a deployed frontend (webServer is skipped).
  */
-const baseURL = process.env.PLAYWRIGHT_BASE_URL?.trim() || 'http://localhost:3001';
+const baseURL =
+  process.env.PLAYWRIGHT_BASE_URL?.trim() || 'http://localhost:3001';
 const isRemoteTarget = Boolean(process.env.PLAYWRIGHT_BASE_URL?.trim());
 
 export default defineConfig({

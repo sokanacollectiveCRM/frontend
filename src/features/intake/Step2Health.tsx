@@ -196,8 +196,6 @@ export function Step2Home({
   form,
   handleBack,
   handleNextStep,
-  step,
-  totalSteps,
   isDesktopOrTablet = false,
 }: any) {
   const errors = form.formState.errors;
@@ -234,25 +232,6 @@ export function Step2Home({
     const currentValue = form.getValues(field);
     setFocus((f) => ({ ...f, [field]: hasFilledValue(currentValue) }));
   };
-
-  const isStepValid = [
-    'address',
-    'city',
-    'state',
-    'zip_code',
-    'home_type',
-    'home_type_other',
-    'pets',
-    'home_adults_count',
-    'home_youth_count',
-    'relationship_status',
-    'first_name',
-    'last_name',
-    'middle_name',
-    'family_email',
-    'mobile_phone',
-    'family_pronouns',
-  ].every((field) => !errors[field]);
 
   const homeTypeFieldProps = {
     form,

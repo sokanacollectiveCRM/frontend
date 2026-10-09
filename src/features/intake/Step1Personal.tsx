@@ -35,12 +35,10 @@ type FocusField =
 
 export function Step1Personal({
   form,
-  control,
   handleBack,
   handleNextStep,
   step,
   totalSteps,
-  isDesktopOrTablet = false,
 }: any) {
   const errors = form.formState.errors;
 
