@@ -10,7 +10,9 @@ export type IntakeClientPreviewPayload = {
   logoUrl: string | null;
 };
 
-export function saveIntakeClientPreview(payload: IntakeClientPreviewPayload): void {
+export function saveIntakeClientPreview(
+  payload: IntakeClientPreviewPayload
+): void {
   localStorage.setItem(PREVIEW_KEY, JSON.stringify(payload));
 }
 

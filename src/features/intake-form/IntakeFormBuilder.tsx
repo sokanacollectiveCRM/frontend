@@ -46,7 +46,9 @@ export function IntakeFormBuilder({
   onAddStandard: (key: string) => void;
   onAddCustom: (type: CustomFieldType) => void;
 }) {
-  const [selectedKey, setSelectedKey] = useState<string | null>(step.questions[0]?.key ?? null);
+  const [selectedKey, setSelectedKey] = useState<string | null>(
+    step.questions[0]?.key ?? null
+  );
   const [addKey, setAddKey] = useState('');
   const [customType, setCustomType] = useState<CustomFieldType>('short_text');
   const [selectLast, setSelectLast] = useState(false);
@@ -58,7 +60,11 @@ export function IntakeFormBuilder({
       return;
     }
     setSelectedKey((current) => {
-      if (current && step.questions.some((question) => question.key === current)) return current;
+      if (
+        current &&
+        step.questions.some((question) => question.key === current)
+      )
+        return current;
       return step.questions[0]?.key ?? null;
     });
   }, [step.id, step.questions, selectLast]);
@@ -92,7 +98,9 @@ export function IntakeFormBuilder({
       >
         <h2 style={{ margin: '0 0 16px', fontSize: 22 }}>{step.title}</h2>
         {step.questions.length === 0 ? (
-          <p>This step has no questions yet. Add one from the panel on the right.</p>
+          <p>
+            This step has no questions yet. Add one from the panel on the right.
+          </p>
         ) : (
           <div className={formStyles['form-grid']} style={{ marginBottom: 0 }}>
             {step.questions.map((question) => (
@@ -137,9 +145,20 @@ export function IntakeFormBuilder({
         ) : (
           <p style={{ margin: 0 }}>Select a field in the preview.</p>
         )}
-        <div style={{ display: 'grid', gap: 8, borderTop: '1px solid #e5e7eb', paddingTop: 12 }}>
+        <div
+          style={{
+            display: 'grid',
+            gap: 8,
+            borderTop: '1px solid #e5e7eb',
+            paddingTop: 12,
+          }}
+        >
           <span style={{ fontWeight: 600 }}>Add a field</span>
-          <select value={addKey} onChange={(event) => setAddKey(event.target.value)} aria-label='Standard question'>
+          <select
+            value={addKey}
+            onChange={(event) => setAddKey(event.target.value)}
+            aria-label='Standard question'
+          >
             <option value=''>Standard question</option>
             {remainingStandard.map((field) => (
               <option key={field.key} value={field.key}>
@@ -162,7 +181,9 @@ export function IntakeFormBuilder({
           <select
             aria-label='Custom question type'
             value={customType}
-            onChange={(event) => setCustomType(event.target.value as CustomFieldType)}
+            onChange={(event) =>
+              setCustomType(event.target.value as CustomFieldType)
+            }
           >
             {SIMPLE_CUSTOM_FIELD_TYPES.map((type) => (
               <option key={type} value={type}>
@@ -173,7 +194,9 @@ export function IntakeFormBuilder({
           <Button
             type='button'
             variant='outline'
-            disabled={customType === 'image' && imageCount >= MAX_INTAKE_IMAGE_QUESTIONS}
+            disabled={
+              customType === 'image' && imageCount >= MAX_INTAKE_IMAGE_QUESTIONS
+            }
             onClick={() => {
               onAddCustom(customType);
               setSelectLast(true);
@@ -233,9 +256,15 @@ function FieldPreview({
         {question.hidden ? ' (hidden)' : ''}
       </label>
       {question.helpText ? (
-        <span style={{ color: '#757575', fontSize: 14 }}>{question.helpText}</span>
+        <span style={{ color: '#757575', fontSize: 14 }}>
+          {question.helpText}
+        </span>
       ) : null}
-      <PreviewControl widget={widget} placeholder={placeholder} options={options} />
+      <PreviewControl
+        widget={widget}
+        placeholder={placeholder}
+        options={options}
+      />
     </div>
   );
 }
@@ -273,9 +302,19 @@ function PreviewControl({
       </div>
     );
   }
-  if (widget === 'yes_no' || widget === 'boolean' || widget === 'single_select' || widget === 'multi_select') {
+  if (
+    widget === 'yes_no' ||
+    widget === 'boolean' ||
+    widget === 'single_select' ||
+    widget === 'multi_select'
+  ) {
     return (
-      <select className={formStyles['form-select']} disabled style={shared} defaultValue=''>
+      <select
+        className={formStyles['form-select']}
+        disabled
+        style={shared}
+        defaultValue=''
+      >
         <option value=''>{placeholder || 'Select'}</option>
         {widget === 'yes_no' || widget === 'boolean' ? (
           <>
@@ -292,7 +331,15 @@ function PreviewControl({
     return <input type='file' disabled style={shared} />;
   }
   const inputType =
-    widget === 'email' ? 'email' : widget === 'phone' ? 'tel' : widget === 'number' ? 'number' : widget === 'date' ? 'date' : 'text';
+    widget === 'email'
+      ? 'email'
+      : widget === 'phone'
+        ? 'tel'
+        : widget === 'number'
+          ? 'number'
+          : widget === 'date'
+            ? 'date'
+            : 'text';
   return (
     <input
       className={formStyles['form-input']}
@@ -327,11 +374,12 @@ function FieldInspector({
 }) {
   const widget = questionWidget(question, catalog);
   const catalogField = catalog.find((field) => field.key === question.key);
-  const columnValue = question.columns === 1 || question.columns === 2
-    ? String(question.columns)
-    : questionFillsRow(question, widget)
-      ? '1'
-      : '2';
+  const columnValue =
+    question.columns === 1 || question.columns === 2
+      ? String(question.columns)
+      : questionFillsRow(question, widget)
+        ? '1'
+        : '2';
   return (
     <div style={{ display: 'grid', gap: 12 }}>
       {question.showWhen ? (
@@ -344,7 +392,9 @@ function FieldInspector({
         <Input
           value={question.label}
           aria-label='Question label'
-          onChange={(event) => onChange({ ...question, label: event.target.value })}
+          onChange={(event) =>
+            onChange({ ...question, label: event.target.value })
+          }
         />
       </label>
       <label style={{ display: 'grid', gap: 6 }}>
@@ -361,7 +411,9 @@ function FieldInspector({
             onChange={(event) => {
               const type = event.target.value as CustomFieldType;
               const needsChoices =
-                type === 'single_select' || type === 'radio' || type === 'multi_select';
+                type === 'single_select' ||
+                type === 'radio' ||
+                type === 'multi_select';
               onChange({
                 ...question,
                 type,
@@ -375,7 +427,9 @@ function FieldInspector({
           >
             {[
               ...SIMPLE_CUSTOM_FIELD_TYPES,
-              ...((SIMPLE_CUSTOM_FIELD_TYPES as readonly string[]).includes(question.type)
+              ...((SIMPLE_CUSTOM_FIELD_TYPES as readonly string[]).includes(
+                question.type
+              )
                 ? []
                 : [question.type]),
             ].map((type) => (
@@ -386,11 +440,14 @@ function FieldInspector({
           </select>
         )}
         {question.kind === 'standard' ? (
-          <span style={{ color: '#667085', fontSize: 13 }}>This answer type stays fixed.</span>
+          <span style={{ color: '#667085', fontSize: 13 }}>
+            This answer type stays fixed.
+          </span>
         ) : null}
         {locked ? (
           <span style={{ color: '#667085', fontSize: 13 }}>
-            The answer type is locked because this organization already has answers.
+            The answer type is locked because this organization already has
+            answers.
           </span>
         ) : null}
       </label>
@@ -425,7 +482,9 @@ function FieldInspector({
         value={question.helpText ?? ''}
         aria-label='Help text'
         placeholder='Help text'
-        onChange={(event) => onChange({ ...question, helpText: event.target.value || null })}
+        onChange={(event) =>
+          onChange({ ...question, helpText: event.target.value || null })
+        }
       />
       <div style={{ display: 'flex', gap: 16 }}>
         <label style={{ display: 'flex', gap: 8 }}>
@@ -434,7 +493,10 @@ function FieldInspector({
             checked={question.hidden !== true}
             disabled={!canHide && question.hidden !== true}
             onChange={(event) =>
-              onChange({ ...question, hidden: event.target.checked ? undefined : true })
+              onChange({
+                ...question,
+                hidden: event.target.checked ? undefined : true,
+              })
             }
           />
           Shown
@@ -443,12 +505,16 @@ function FieldInspector({
           <input
             type='checkbox'
             checked={question.required}
-            onChange={(event) => onChange({ ...question, required: event.target.checked })}
+            onChange={(event) =>
+              onChange({ ...question, required: event.target.checked })
+            }
           />
           Required
         </label>
       </div>
-      {question.kind === 'standard' && catalogField?.options && catalogField.options.length > 0 ? (
+      {question.kind === 'standard' &&
+      catalogField?.options &&
+      catalogField.options.length > 0 ? (
         <ChoicesEditor
           choices={question.options ?? [...catalogField.options]}
           onChange={(options) => onChange({ ...question, options })}
@@ -457,7 +523,9 @@ function FieldInspector({
       {question.kind === 'custom' ? (
         <ShowWhenEditor
           question={question}
-          otherQuestions={stepQuestions.filter((item) => item.key !== question.key)}
+          otherQuestions={stepQuestions.filter(
+            (item) => item.key !== question.key
+          )}
           catalog={catalog}
           onChange={onChange}
         />
@@ -473,7 +541,8 @@ function FieldInspector({
       ) : null}
       {question.kind === 'custom' && question.type === 'image' ? (
         <p style={{ margin: 0, color: '#667085', fontSize: 13 }}>
-          PNG, JPEG, or WebP. 5 MB or smaller. A form can show 3 image questions.
+          PNG, JPEG, or WebP. 5 MB or smaller. A form can show 3 image
+          questions.
         </p>
       ) : null}
       <div style={{ display: 'flex', gap: 8 }}>
@@ -517,22 +586,33 @@ function ChoicesEditor({
           <Button
             type='button'
             variant='outline'
-            onClick={() => onChange(choices.filter((_, itemIndex) => itemIndex !== index))}
+            onClick={() =>
+              onChange(choices.filter((_, itemIndex) => itemIndex !== index))
+            }
           >
             Remove
           </Button>
         </div>
       ))}
-      <Button type='button' variant='outline' onClick={() => onChange([...choices, ''])}>
+      <Button
+        type='button'
+        variant='outline'
+        onClick={() => onChange([...choices, ''])}
+      >
         Add choice
       </Button>
     </div>
   );
 }
 
-function isYesNoQuestion(question: IntakeQuestion, catalog: IntakeCatalogField[]): boolean {
+function isYesNoQuestion(
+  question: IntakeQuestion,
+  catalog: IntakeCatalogField[]
+): boolean {
   if (question.kind === 'custom') return question.type === 'yes_no';
-  const storage = catalog.find((field) => field.key === question.key)?.storageType;
+  const storage = catalog.find(
+    (field) => field.key === question.key
+  )?.storageType;
   return storage === 'boolean' || storage === 'yes_no';
 }
 
@@ -551,7 +631,10 @@ function ShowWhenEditor({
   const parentKey = question.showWhen?.questionKey ?? '';
   const parent = otherQuestions.find((item) => item.key === parentKey);
   const parentIsYesNo = parent ? isYesNoQuestion(parent, catalog) : false;
-  const equals = question.showWhen?.equals === undefined ? '' : String(question.showWhen.equals);
+  const equals =
+    question.showWhen?.equals === undefined
+      ? ''
+      : String(question.showWhen.equals);
   return (
     <div style={{ display: 'grid', gap: 8 }}>
       <label>
@@ -566,13 +649,21 @@ function ShowWhenEditor({
               onChange(rest);
               return;
             }
-            const nextParent = otherQuestions.find((item) => item.key === questionKey);
-            const yesNo = nextParent ? isYesNoQuestion(nextParent, catalog) : false;
+            const nextParent = otherQuestions.find(
+              (item) => item.key === questionKey
+            );
+            const yesNo = nextParent
+              ? isYesNoQuestion(nextParent, catalog)
+              : false;
             onChange({
               ...question,
               showWhen: {
                 questionKey,
-                equals: yesNo ? true : equals && equals !== 'true' && equals !== 'false' ? equals : 'Yes',
+                equals: yesNo
+                  ? true
+                  : equals && equals !== 'true' && equals !== 'false'
+                    ? equals
+                    : 'Yes',
               },
             });
           }}
@@ -592,7 +683,10 @@ function ShowWhenEditor({
           onChange={(event) =>
             onChange({
               ...question,
-              showWhen: { questionKey: parentKey, equals: event.target.value === 'yes' },
+              showWhen: {
+                questionKey: parentKey,
+                equals: event.target.value === 'yes',
+              },
             })
           }
         >

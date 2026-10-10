@@ -35,7 +35,10 @@ function visibleSteps(definition: IntakeDefinition): IntakeDefinition['steps'] {
     .filter((step) => step.questions.length > 0);
 }
 
-function buildSchema(definition: IntakeDefinition, catalog: IntakeCatalogField[]) {
+function buildSchema(
+  definition: IntakeDefinition,
+  catalog: IntakeCatalogField[]
+) {
   const shape: Record<string, z.ZodTypeAny> = {};
   for (const step of visibleSteps(definition)) {
     for (const question of step.questions) {
@@ -44,7 +47,10 @@ function buildSchema(definition: IntakeDefinition, catalog: IntakeCatalogField[]
       if (widget === 'multi_select') {
         field = z.array(z.string());
         if (question.required) {
-          field = (field as z.ZodArray<z.ZodString>).min(1, `${question.label} is required.`);
+          field = (field as z.ZodArray<z.ZodString>).min(
+            1,
+            `${question.label} is required.`
+          );
         }
       } else if (widget === 'yes_no' || widget === 'boolean') {
         field = question.required
@@ -53,12 +59,22 @@ function buildSchema(definition: IntakeDefinition, catalog: IntakeCatalogField[]
       } else if (widget === 'number') {
         field = z.string();
         if (question.required) {
-          field = (field as z.ZodString).min(1, `${question.label} is required.`);
+          field = (field as z.ZodString).min(
+            1,
+            `${question.label} is required.`
+          );
         }
       } else {
         field = z.string();
-        if (question.required || question.key === 'firstname' || question.key === 'lastname') {
-          field = (field as z.ZodString).min(1, `${question.label} is required.`);
+        if (
+          question.required ||
+          question.key === 'firstname' ||
+          question.key === 'lastname'
+        ) {
+          field = (field as z.ZodString).min(
+            1,
+            `${question.label} is required.`
+          );
         }
       }
       shape[question.key] = field;
@@ -118,7 +134,9 @@ export function DynamicIntakeForm({
     [definition]
   );
   const shownQuestions = step
-    ? step.questions.filter((question) => isQuestionShown(question, allQuestions, answers))
+    ? step.questions.filter((question) =>
+        isQuestionShown(question, allQuestions, answers)
+      )
     : [];
 
   async function next() {
@@ -144,7 +162,9 @@ export function DynamicIntakeForm({
       form.reset(defaults);
       setStepIndex(0);
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'Submission failed.');
+      setFormError(
+        error instanceof Error ? error.message : 'Submission failed.'
+      );
     }
   }
 
@@ -164,7 +184,8 @@ export function DynamicIntakeForm({
             marginBottom: 16,
           }}
         >
-          This is a preview of the form a client would fill out. Submitting does not send a request.
+          This is a preview of the form a client would fill out. Submitting does
+          not send a request.
         </p>
       ) : null}
       {mode === 'test' ? (
@@ -223,7 +244,9 @@ export function DynamicIntakeForm({
             options={questionOptions(question, catalog)}
             uploadImage={uploadImage}
             value={form.watch(question.key)}
-            error={form.formState.errors[question.key]?.message as string | undefined}
+            error={
+              form.formState.errors[question.key]?.message as string | undefined
+            }
             onChange={(value) =>
               form.setValue(question.key, value, { shouldValidate: true })
             }
@@ -235,11 +258,19 @@ export function DynamicIntakeForm({
       ) : null}
       <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
         {stepIndex > 0 ? (
-          <Button type='button' variant='outline' onClick={() => setStepIndex((n) => n - 1)}>
+          <Button
+            type='button'
+            variant='outline'
+            onClick={() => setStepIndex((n) => n - 1)}
+          >
             Back
           </Button>
         ) : null}
-        <Button type='button' onClick={() => void next()} disabled={form.formState.isSubmitting || submitDisabled}>
+        <Button
+          type='button'
+          onClick={() => void next()}
+          disabled={form.formState.isSubmitting || submitDisabled}
+        >
           {last ? submitLabel : 'Next'}
         </Button>
       </div>
@@ -249,7 +280,8 @@ export function DynamicIntakeForm({
 
 function stepRailLabel(title: string, compact: boolean): string {
   const known = STEP_CONFIG.find((step) => step.title === title);
-  if (known) return compact ? known.shortTitle : known.navTitle ?? known.title;
+  if (known)
+    return compact ? known.shortTitle : (known.navTitle ?? known.title);
   const first = title.split('/')[0]?.trim() || title;
   return first.length > 22 ? `${first.slice(0, 20)}…` : first;
 }
@@ -268,7 +300,8 @@ function PublishedStepNav({
   );
   useEffect(() => {
     const mql = window.matchMedia('(min-width: 600px)');
-    const onChange = (event: MediaQueryListEvent) => setIsDesktop(event.matches);
+    const onChange = (event: MediaQueryListEvent) =>
+      setIsDesktop(event.matches);
     mql.addEventListener('change', onChange);
     setIsDesktop(mql.matches);
     return () => mql.removeEventListener('change', onChange);
@@ -279,10 +312,15 @@ function PublishedStepNav({
 
   if (isDesktop) {
     return (
-      <nav className={navStyles.desktopNavigation} aria-label='Form step navigation'>
+      <nav
+        className={navStyles.desktopNavigation}
+        aria-label='Form step navigation'
+      >
         <div
           className={navStyles.stepsContainer}
-          style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}
+          style={{
+            gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))`,
+          }}
         >
           {steps.map((step, index) => {
             const status = statusOf(index);
@@ -297,7 +335,9 @@ function PublishedStepNav({
                   aria-current={status === 'current' ? 'step' : undefined}
                 >
                   <span className={navStyles.stepNumber}>{index + 1}</span>
-                  <span className={navStyles.stepTitle}>{stepRailLabel(step.title, false)}</span>
+                  <span className={navStyles.stepTitle}>
+                    {stepRailLabel(step.title, false)}
+                  </span>
                 </button>
               </div>
             );
@@ -308,7 +348,10 @@ function PublishedStepNav({
   }
 
   return (
-    <nav className={navStyles.mobileNavigation} aria-label='Form step navigation'>
+    <nav
+      className={navStyles.mobileNavigation}
+      aria-label='Form step navigation'
+    >
       <div className={navStyles.mobileStepsContainer}>
         {steps.map((step, index) => {
           const status = statusOf(index);
@@ -323,7 +366,9 @@ function PublishedStepNav({
               aria-current={status === 'current' ? 'step' : undefined}
             >
               <span className={navStyles.mobileStepNumber}>{index + 1}</span>
-              <span className={navStyles.mobileStepTitle}>{stepRailLabel(step.title, true)}</span>
+              <span className={navStyles.mobileStepTitle}>
+                {stepRailLabel(step.title, true)}
+              </span>
             </button>
           );
         })}
@@ -359,7 +404,9 @@ function QuestionField({
     >
       <label className={formStyles['form-floating-label']}>{label}</label>
       {question.helpText ? (
-        <span style={{ color: '#757575', fontSize: 14 }}>{question.helpText}</span>
+        <span style={{ color: '#757575', fontSize: 14 }}>
+          {question.helpText}
+        </span>
       ) : null}
       <Control
         widget={widget}
@@ -370,7 +417,9 @@ function QuestionField({
         value={value}
         onChange={onChange}
       />
-      {error ? <span style={{ color: '#d32f2f', fontSize: 14 }}>{error}</span> : null}
+      {error ? (
+        <span style={{ color: '#d32f2f', fontSize: 14 }}>{error}</span>
+      ) : null}
     </div>
   );
 }
@@ -399,7 +448,12 @@ function MultiSelectControl({
         <button
           type='button'
           className={`${formStyles['form-input']} ${formStyles['form-option-trigger-text']}`}
-          style={{ textAlign: 'left', minHeight: 40, cursor: 'pointer', background: '#fff' }}
+          style={{
+            textAlign: 'left',
+            minHeight: 40,
+            cursor: 'pointer',
+            background: '#fff',
+          }}
         >
           <span>{selected.length > 0 ? selected.join(', ') : 'Select'}</span>
           <span style={{ float: 'right', marginLeft: 8 }}>▼</span>
@@ -420,7 +474,9 @@ function MultiSelectControl({
           zIndex: 10,
         }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+        <div
+          style={{ display: 'flex', flexDirection: 'column', width: '100%' }}
+        >
           {options.map((option) => (
             <label
               key={option}
@@ -498,7 +554,9 @@ function Control({
         className={formStyles['form-select']}
         value={value === true ? 'yes' : value === false ? 'no' : ''}
         onChange={(event) =>
-          onChange(event.target.value === '' ? undefined : event.target.value === 'yes')
+          onChange(
+            event.target.value === '' ? undefined : event.target.value === 'yes'
+          )
         }
       >
         <option value=''>{placeholder || 'Select'}</option>

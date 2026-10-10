@@ -8,7 +8,11 @@ import {
   SidebarFooter,
   SidebarHeader,
 } from '@/common/components/ui/sidebar';
-import { isAdminRole, isBillingOnlyRole, isDoulaRole } from '@/common/auth/roles';
+import {
+  isAdminRole,
+  isBillingOnlyRole,
+  isDoulaRole,
+} from '@/common/auth/roles';
 import { UserContext } from '@/common/contexts/UserContext';
 import { getVisibleSidebarSections } from '@/common/data/sidebar-data';
 import { useIsClientPortalUser } from '@/common/hooks/auth/useIsClientPortalUser';
@@ -16,7 +20,8 @@ import { useContext } from 'react';
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { user, isLoading } = useContext(UserContext);
-  const { isClientPortalUser, isLoading: isPortalLoading } = useIsClientPortalUser();
+  const { isClientPortalUser, isLoading: isPortalLoading } =
+    useIsClientPortalUser();
 
   // while we're still loading auth, render nothing or a spinner
   if (isLoading || isPortalLoading) {

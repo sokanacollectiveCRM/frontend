@@ -65,12 +65,19 @@ export function IntakeFormSettingsPage() {
 
   useEffect(() => {
     void load(tenantId).catch((loadError: unknown) => {
-      setError(loadError instanceof Error ? loadError.message : 'Unable to load the form.');
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : 'Unable to load the form.'
+      );
     });
   }, [tenantId]);
 
   const usedKeys = useMemo(
-    () => new Set(draft?.steps.flatMap((step) => step.questions.map((q) => q.key)) ?? []),
+    () =>
+      new Set(
+        draft?.steps.flatMap((step) => step.questions.map((q) => q.key)) ?? []
+      ),
     [draft]
   );
   const remainingStandard =
@@ -99,7 +106,11 @@ export function IntakeFormSettingsPage() {
 
   async function onPublish() {
     if (!state || !draft) return;
-    if (!window.confirm('Publish this draft? The public form updates only after publish.')) {
+    if (
+      !window.confirm(
+        'Publish this draft? The public form updates only after publish.'
+      )
+    ) {
       return;
     }
     setBusy(true);
@@ -112,7 +123,9 @@ export function IntakeFormSettingsPage() {
       setVersions(await listIntakeVersions(state.tenant.id));
       setNotice(`Published version ${published.publishedVersion}.`);
     } catch (publishError) {
-      setError(publishError instanceof Error ? publishError.message : 'Publish failed.');
+      setError(
+        publishError instanceof Error ? publishError.message : 'Publish failed.'
+      );
     } finally {
       setBusy(false);
     }
@@ -135,7 +148,9 @@ export function IntakeFormSettingsPage() {
       setDraft(next.draft);
       setNotice('Unpublished edits were discarded.');
     } catch (discardError) {
-      setError(discardError instanceof Error ? discardError.message : 'Discard failed.');
+      setError(
+        discardError instanceof Error ? discardError.message : 'Discard failed.'
+      );
     } finally {
       setBusy(false);
     }
@@ -153,14 +168,21 @@ export function IntakeFormSettingsPage() {
         `Version ${version} was copied into the draft. The public form stays on the live version until you publish.`
       );
     } catch (restoreError) {
-      setError(restoreError instanceof Error ? restoreError.message : 'Restore failed.');
+      setError(
+        restoreError instanceof Error ? restoreError.message : 'Restore failed.'
+      );
     } finally {
       setBusy(false);
     }
   }
 
   if (error && !state && orgs.length === 0) {
-    return <main style={{ padding: 24 }}><h1>Intake form</h1><p>{error}</p></main>;
+    return (
+      <main style={{ padding: 24 }}>
+        <h1>Intake form</h1>
+        <p>{error}</p>
+      </main>
+    );
   }
   if (orgs.length > 0 && !state) {
     return (
@@ -185,7 +207,8 @@ export function IntakeFormSettingsPage() {
     );
   }
 
-  if (!state || !draft) return <main style={{ padding: 24 }}>Loading intake form…</main>;
+  if (!state || !draft)
+    return <main style={{ padding: 24 }}>Loading intake form…</main>;
 
   const activeIndex = Math.max(
     0,
@@ -201,12 +224,17 @@ export function IntakeFormSettingsPage() {
           {state.liveVersion == null
             ? 'Draft. Nothing is published yet.'
             : `Live is version ${state.liveVersion}.`}
-          {state.draftDiffersFromLive ? ' This draft differs from the live form.' : ''}
+          {state.draftDiffersFromLive
+            ? ' This draft differs from the live form.'
+            : ''}
         </p>
         {state.platformSupport ? (
           <label style={{ display: 'grid', gap: 6, maxWidth: 360 }}>
             Organization
-            <select value={state.tenant.id} onChange={(event) => setTenantId(event.target.value)}>
+            <select
+              value={state.tenant.id}
+              onChange={(event) => setTenantId(event.target.value)}
+            >
               {(orgs.length ? orgs : [state.tenant]).map((tenant) => (
                 <option key={tenant.id} value={tenant.id}>
                   {tenant.name}
@@ -219,81 +247,108 @@ export function IntakeFormSettingsPage() {
       {notice ? <p>{notice}</p> : null}
       {error ? <p style={{ color: '#b91c1c' }}>{error}</p> : null}
 
-      <form onSubmit={(event) => void onSave(event)} style={{ display: 'grid', gap: 20 }}>
-      <DraftActions busy={busy} testing={testing} onPublish={onPublish} onDiscard={onDiscard} onPreview={openClientPreview} onTest={() => setTesting((open) => !open)} />
-
-      <IntakeShareCard
-        orgName={state.tenant.name}
-        slug={state.tenant.slug}
-        intakeEnabled={state.tenant.intakeEnabled}
-        liveVersion={state.liveVersion}
-        tenantId={state.platformSupport ? state.tenant.id : null}
-      />
-
-      <section style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-        <img
-          src={state.logoUrl || '/sokana360-logo.png'}
-          alt='Sokana360'
-          style={{ height: 56, objectFit: 'contain' }}
+      <form
+        onSubmit={(event) => void onSave(event)}
+        style={{ display: 'grid', gap: 20 }}
+      >
+        <DraftActions
+          busy={busy}
+          testing={testing}
+          onPublish={onPublish}
+          onDiscard={onDiscard}
+          onPreview={openClientPreview}
+          onTest={() => setTesting((open) => !open)}
         />
-        <input
-          ref={logoInputRef}
-          type='file'
-          accept='image/png,image/jpeg,image/webp'
-          style={{ display: 'none' }}
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            event.target.value = '';
-            if (!file) return;
-            setBusy(true);
-            void uploadIntakeLogo(file, state.tenant.id)
-              .then((next) => {
-                setState(next);
-                setDraft((current) =>
-                  current
-                    ? { ...current, logoAssetId: next.draft.logoAssetId }
-                    : next.draft
-                );
-              })
-              .catch((logoError: unknown) =>
-                setError(logoError instanceof Error ? logoError.message : 'Upload failed.')
-              )
-              .finally(() => setBusy(false));
-          }}
+
+        <IntakeShareCard
+          orgName={state.tenant.name}
+          slug={state.tenant.slug}
+          intakeEnabled={state.tenant.intakeEnabled}
+          liveVersion={state.liveVersion}
+          tenantId={state.platformSupport ? state.tenant.id : null}
         />
-        <Button
-          type='button'
-          variant='outline'
-          disabled={busy}
-          onClick={() => logoInputRef.current?.click()}
-        >
-          Replace logo
-        </Button>
-        <Button
-          type='button'
-          variant='outline'
-          disabled={busy || !draft.logoAssetId}
-          onClick={() => {
-            setBusy(true);
-            void removeIntakeLogo(state.tenant.id)
-              .then((next) => {
-                setState(next);
-                setDraft((current) =>
-                  current
-                    ? { ...current, logoAssetId: next.draft.logoAssetId }
-                    : next.draft
-                );
-                setNotice('The draft logo was removed. The live form keeps its logo until you publish.');
-              })
-              .catch((logoError: unknown) =>
-                setError(logoError instanceof Error ? logoError.message : 'Remove failed.')
-              )
-              .finally(() => setBusy(false));
+
+        <section
+          style={{
+            display: 'flex',
+            gap: 12,
+            alignItems: 'center',
+            flexWrap: 'wrap',
           }}
         >
-          Remove logo
-        </Button>
-      </section>
+          <img
+            src={state.logoUrl || '/sokana360-logo.png'}
+            alt='Sokana360'
+            style={{ height: 56, objectFit: 'contain' }}
+          />
+          <input
+            ref={logoInputRef}
+            type='file'
+            accept='image/png,image/jpeg,image/webp'
+            style={{ display: 'none' }}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = '';
+              if (!file) return;
+              setBusy(true);
+              void uploadIntakeLogo(file, state.tenant.id)
+                .then((next) => {
+                  setState(next);
+                  setDraft((current) =>
+                    current
+                      ? { ...current, logoAssetId: next.draft.logoAssetId }
+                      : next.draft
+                  );
+                })
+                .catch((logoError: unknown) =>
+                  setError(
+                    logoError instanceof Error
+                      ? logoError.message
+                      : 'Upload failed.'
+                  )
+                )
+                .finally(() => setBusy(false));
+            }}
+          />
+          <Button
+            type='button'
+            variant='outline'
+            disabled={busy}
+            onClick={() => logoInputRef.current?.click()}
+          >
+            Replace logo
+          </Button>
+          <Button
+            type='button'
+            variant='outline'
+            disabled={busy || !draft.logoAssetId}
+            onClick={() => {
+              setBusy(true);
+              void removeIntakeLogo(state.tenant.id)
+                .then((next) => {
+                  setState(next);
+                  setDraft((current) =>
+                    current
+                      ? { ...current, logoAssetId: next.draft.logoAssetId }
+                      : next.draft
+                  );
+                  setNotice(
+                    'The draft logo was removed. The live form keeps its logo until you publish.'
+                  );
+                })
+                .catch((logoError: unknown) =>
+                  setError(
+                    logoError instanceof Error
+                      ? logoError.message
+                      : 'Remove failed.'
+                  )
+                )
+                .finally(() => setBusy(false));
+            }}
+          >
+            Remove logo
+          </Button>
+        </section>
 
         <style>{`
           .intake-step-grid,
@@ -311,7 +366,9 @@ export function IntakeFormSettingsPage() {
         `}</style>
         <div className='intake-step-grid'>
           {draft.steps.map((step, stepIndex) => {
-            const shownCount = step.questions.filter((question) => question.hidden !== true).length;
+            const shownCount = step.questions.filter(
+              (question) => question.hidden !== true
+            ).length;
             const selected = step.id === activeStep?.id;
             return (
               <button
@@ -328,11 +385,24 @@ export function IntakeFormSettingsPage() {
                   cursor: 'pointer',
                 }}
               >
-                <span style={{ display: 'block', fontSize: 12, color: '#667085' }}>
+                <span
+                  style={{ display: 'block', fontSize: 12, color: '#667085' }}
+                >
                   Step {stepIndex + 1}
                 </span>
-                <span style={{ display: 'block', fontWeight: 600, marginTop: 4 }}>{step.title}</span>
-                <span style={{ display: 'block', fontSize: 13, color: '#667085', marginTop: 8 }}>
+                <span
+                  style={{ display: 'block', fontWeight: 600, marginTop: 4 }}
+                >
+                  {step.title}
+                </span>
+                <span
+                  style={{
+                    display: 'block',
+                    fontSize: 13,
+                    color: '#667085',
+                    marginTop: 8,
+                  }}
+                >
                   {shownCount} shown
                 </span>
               </button>
@@ -344,7 +414,10 @@ export function IntakeFormSettingsPage() {
               const id = newStepId();
               updateDraft({
                 ...draft,
-                steps: [...draft.steps, { id, title: 'New step', questions: [] }],
+                steps: [
+                  ...draft.steps,
+                  { id, title: 'New step', questions: [] },
+                ],
               });
               setSelectedStepId(id);
             }}
@@ -376,15 +449,26 @@ export function IntakeFormSettingsPage() {
               aria-label='Step title'
               onChange={(event) => {
                 const steps = draft.steps.slice();
-                steps[activeIndex] = { ...activeStep, title: event.target.value };
+                steps[activeIndex] = {
+                  ...activeStep,
+                  title: event.target.value,
+                };
                 updateDraft({ ...draft, steps });
               }}
             />
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <Button type='button' variant='outline' onClick={() => moveStep(activeIndex, -1)}>
+              <Button
+                type='button'
+                variant='outline'
+                onClick={() => moveStep(activeIndex, -1)}
+              >
                 Move earlier
               </Button>
-              <Button type='button' variant='outline' onClick={() => moveStep(activeIndex, 1)}>
+              <Button
+                type='button'
+                variant='outline'
+                onClick={() => moveStep(activeIndex, 1)}
+              >
                 Move later
               </Button>
               <Button
@@ -392,9 +476,13 @@ export function IntakeFormSettingsPage() {
                 variant='outline'
                 onClick={() => {
                   if (draft.steps.length === 1) return;
-                  const nextSteps = draft.steps.filter((item) => item.id !== activeStep.id);
+                  const nextSteps = draft.steps.filter(
+                    (item) => item.id !== activeStep.id
+                  );
                   updateDraft({ ...draft, steps: nextSteps });
-                  setSelectedStepId(nextSteps[Math.max(0, activeIndex - 1)]?.id ?? null);
+                  setSelectedStepId(
+                    nextSteps[Math.max(0, activeIndex - 1)]?.id ?? null
+                  );
                 }}
               >
                 Remove step
@@ -417,15 +505,23 @@ export function IntakeFormSettingsPage() {
                 updateDraft({ ...draft, steps });
               }}
               onMoveQuestion={(key, direction) => {
-                const index = activeStep.questions.findIndex((question) => question.key === key);
+                const index = activeStep.questions.findIndex(
+                  (question) => question.key === key
+                );
                 if (index < 0) return;
-                const questions = moveItem(activeStep.questions, index, direction);
+                const questions = moveItem(
+                  activeStep.questions,
+                  index,
+                  direction
+                );
                 const steps = draft.steps.slice();
                 steps[activeIndex] = { ...activeStep, questions };
                 updateDraft({ ...draft, steps });
               }}
               onRemoveQuestion={(key) => {
-                const questions = activeStep.questions.filter((question) => question.key !== key);
+                const questions = activeStep.questions.filter(
+                  (question) => question.key !== key
+                );
                 const steps = draft.steps.slice();
                 steps[activeIndex] = { ...activeStep, questions };
                 updateDraft({ ...draft, steps });
@@ -437,7 +533,8 @@ export function IntakeFormSettingsPage() {
                   kind: 'standard',
                   key: field.key,
                   label: field.defaultLabel,
-                  required: field.identity === 'name' || field.identity === 'contact',
+                  required:
+                    field.identity === 'name' || field.identity === 'contact',
                   helpText: null,
                 };
                 const steps = draft.steps.slice();
@@ -456,7 +553,9 @@ export function IntakeFormSettingsPage() {
                   helpText: null,
                   type,
                   options:
-                    type === 'single_select' || type === 'multi_select' || type === 'radio'
+                    type === 'single_select' ||
+                    type === 'multi_select' ||
+                    type === 'radio'
                       ? ['Choice 1', 'Choice 2']
                       : [],
                 };
@@ -470,7 +569,14 @@ export function IntakeFormSettingsPage() {
             />
           </section>
         ) : null}
-        <DraftActions busy={busy} testing={testing} onPublish={onPublish} onDiscard={onDiscard} onPreview={openClientPreview} onTest={() => setTesting((open) => !open)} />
+        <DraftActions
+          busy={busy}
+          testing={testing}
+          onPublish={onPublish}
+          onDiscard={onDiscard}
+          onPreview={openClientPreview}
+          onTest={() => setTesting((open) => !open)}
+        />
       </form>
 
       {testing ? (
@@ -479,7 +585,9 @@ export function IntakeFormSettingsPage() {
             definition={draft}
             catalog={state.catalog}
             mode='test'
-            uploadImage={(file) => uploadIntakeAnswerImage(file, state.tenant.id)}
+            uploadImage={(file) =>
+              uploadIntakeAnswerImage(file, state.tenant.id)
+            }
             submitLabel={testWait ? `Wait ${testWait}s` : 'Submit test'}
             submitDisabled={testWait != null}
             onSubmit={async (answers) => {
@@ -490,7 +598,8 @@ export function IntakeFormSettingsPage() {
                 setNotice('Test submission saved.');
                 setTestWait(null);
               } catch (testError) {
-                const wait = (testError as { retryAfterSec?: number }).retryAfterSec;
+                const wait = (testError as { retryAfterSec?: number })
+                  .retryAfterSec;
                 if (wait) setTestWait(wait);
                 throw testError;
               }
@@ -504,12 +613,19 @@ export function IntakeFormSettingsPage() {
         {versions.length === 0 ? <p>No published versions yet.</p> : null}
         <ul style={{ display: 'grid', gap: 8, padding: 0, listStyle: 'none' }}>
           {versions.map((version) => (
-            <li key={version.version} style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <li
+              key={version.version}
+              style={{ display: 'flex', gap: 12, alignItems: 'center' }}
+            >
               <span>
                 Version {version.version} · {version.publishedBy || 'unknown'} ·{' '}
                 {new Date(version.publishedAt).toLocaleString()}
               </span>
-              <Button type='button' variant='outline' onClick={() => void onRestore(version.version)}>
+              <Button
+                type='button'
+                variant='outline'
+                onClick={() => void onRestore(version.version)}
+              >
                 Restore into draft
               </Button>
             </li>
@@ -531,7 +647,11 @@ export function IntakeFormSettingsPage() {
       slug: state.tenant.slug,
       logoUrl: state.logoUrl,
     });
-    window.open('/settings/intake-form/preview', '_blank', 'noopener,noreferrer');
+    window.open(
+      '/settings/intake-form/preview',
+      '_blank',
+      'noopener,noreferrer'
+    );
   }
 }
 
@@ -558,7 +678,12 @@ function DraftActions({
       <Button type='button' disabled={busy} onClick={onPublish}>
         Publish
       </Button>
-      <Button type='button' variant='outline' disabled={busy} onClick={onDiscard}>
+      <Button
+        type='button'
+        variant='outline'
+        disabled={busy}
+        onClick={onDiscard}
+      >
         Discard unpublished edits
       </Button>
       <Button type='button' variant='outline' onClick={onPreview}>

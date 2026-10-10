@@ -148,8 +148,12 @@ export function canHideQuestion(
   if (CONTACT_KEYS.has(key)) {
     const visible = definition.steps
       .flatMap((step) => step.questions)
-      .filter((question) => CONTACT_KEYS.has(question.key) && question.hidden !== true);
-    return visible.length > 1 || !visible.some((question) => question.key === key);
+      .filter(
+        (question) => CONTACT_KEYS.has(question.key) && question.hidden !== true
+      );
+    return (
+      visible.length > 1 || !visible.some((question) => question.key === key)
+    );
   }
   return true;
 }
@@ -193,12 +197,15 @@ export function answerMatchesShowWhen(
 ): boolean {
   const value = answers[showWhen.questionKey];
   if (showWhen.equals !== undefined) {
-    if (showWhen.equals === true) return value === true || value === 'true' || value === 'yes';
-    if (showWhen.equals === false) return value === false || value === 'false' || value === 'no';
+    if (showWhen.equals === true)
+      return value === true || value === 'true' || value === 'yes';
+    if (showWhen.equals === false)
+      return value === false || value === 'false' || value === 'no';
     return value === showWhen.equals;
   }
   if (showWhen.includes) {
-    if (Array.isArray(value)) return value.map(String).includes(showWhen.includes);
+    if (Array.isArray(value))
+      return value.map(String).includes(showWhen.includes);
     return typeof value === 'string' && value.includes(showWhen.includes);
   }
   if (showWhen.oneOf && showWhen.oneOf.length > 0) {
@@ -232,7 +239,9 @@ export function questionWidget(
   catalog: IntakeCatalogField[]
 ): string {
   if (question.kind === 'custom') return question.type;
-  return catalog.find((field) => field.key === question.key)?.storageType ?? 'text';
+  return (
+    catalog.find((field) => field.key === question.key)?.storageType ?? 'text'
+  );
 }
 
 export function questionOptions(
@@ -244,10 +253,18 @@ export function questionOptions(
   return catalog.find((field) => field.key === question.key)?.options ?? [];
 }
 
-const FULL_ROW_WIDGETS = new Set(['multi_select', 'long_text', 'radio', 'image']);
+const FULL_ROW_WIDGETS = new Set([
+  'multi_select',
+  'long_text',
+  'radio',
+  'image',
+]);
 
 /** One column fills the row. Two columns share the row. */
-export function questionFillsRow(question: IntakeQuestion, widget: string): boolean {
+export function questionFillsRow(
+  question: IntakeQuestion,
+  widget: string
+): boolean {
   if (question.columns === 1) return true;
   if (question.columns === 2) return false;
   return FULL_ROW_WIDGETS.has(widget);
@@ -272,12 +289,16 @@ export function describeShowWhen(
   showWhen: QuestionShowWhen,
   questions: IntakeQuestion[]
 ): string {
-  const parent = questions.find((question) => question.key === showWhen.questionKey);
+  const parent = questions.find(
+    (question) => question.key === showWhen.questionKey
+  );
   const name = parent?.label || 'another answer';
   if (showWhen.equals === true) return `Shown when “${name}” is yes`;
   if (showWhen.equals === false) return `Shown when “${name}” is no`;
-  if (typeof showWhen.equals === 'string') return `Shown when “${name}” is ${showWhen.equals}`;
-  if (showWhen.includes) return `Shown when “${name}” includes ${showWhen.includes}`;
+  if (typeof showWhen.equals === 'string')
+    return `Shown when “${name}” is ${showWhen.equals}`;
+  if (showWhen.includes)
+    return `Shown when “${name}” includes ${showWhen.includes}`;
   if (showWhen.oneOf && showWhen.oneOf.length > 0) {
     return `Shown when “${name}” is ${showWhen.oneOf.join(' or ')}`;
   }

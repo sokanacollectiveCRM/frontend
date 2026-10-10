@@ -1,16 +1,14 @@
 import { apiBaseUrl } from '@/config/env';
 import { fetchWithAuth } from '@/api/http';
 
-import {
-  IntakeDefinition,
-  IntakeEditorState,
-  IntakeOrgPicker,
-} from './types';
+import { IntakeDefinition, IntakeEditorState, IntakeOrgPicker } from './types';
 
 async function throwIfFailed(response: Response): Promise<void> {
   if (response.ok) return;
   const error = await readError(response);
-  const wrapped = new Error(error.message) as Error & { retryAfterSec?: number };
+  const wrapped = new Error(error.message) as Error & {
+    retryAfterSec?: number;
+  };
   wrapped.retryAfterSec = error.retryAfterSec;
   throw wrapped;
 }
@@ -44,7 +42,9 @@ function withTenant(path: string, tenantId?: string | null): string {
 export async function getIntakeDraft(
   tenantId?: string | null
 ): Promise<IntakeEditorState | IntakeOrgPicker> {
-  const response = await fetchWithAuth(withTenant('/api/intake-forms/draft', tenantId));
+  const response = await fetchWithAuth(
+    withTenant('/api/intake-forms/draft', tenantId)
+  );
   await throwIfFailed(response);
   return response.json();
 }
@@ -53,11 +53,14 @@ export async function saveIntakeDraft(
   definition: IntakeDefinition,
   tenantId?: string | null
 ): Promise<IntakeEditorState> {
-  const response = await fetchWithAuth(withTenant('/api/intake-forms/draft', tenantId), {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(definition),
-  });
+  const response = await fetchWithAuth(
+    withTenant('/api/intake-forms/draft', tenantId),
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(definition),
+    }
+  );
   await throwIfFailed(response);
   return response.json();
 }
@@ -100,7 +103,9 @@ export async function restoreIntakeVersion(
   return response.json();
 }
 
-export async function listIntakeVersions(tenantId?: string | null): Promise<
+export async function listIntakeVersions(
+  tenantId?: string | null
+): Promise<
   Array<{ version: number; publishedBy: string | null; publishedAt: string }>
 > {
   const response = await fetchWithAuth(
@@ -157,7 +162,9 @@ export async function submitIntakeTest(
   );
   if (!response.ok) {
     const error = await readError(response);
-    const wrapped = new Error(error.message) as Error & { retryAfterSec?: number };
+    const wrapped = new Error(error.message) as Error & {
+      retryAfterSec?: number;
+    };
     wrapped.retryAfterSec = error.retryAfterSec;
     throw wrapped;
   }
@@ -175,7 +182,8 @@ export async function uploadIntakeAnswerImage(
   );
   await throwIfFailed(response);
   const payload = (await response.json()) as { assetId?: string };
-  if (!payload.assetId) throw new Error('The image upload did not return an id.');
+  if (!payload.assetId)
+    throw new Error('The image upload did not return an id.');
   return payload.assetId;
 }
 

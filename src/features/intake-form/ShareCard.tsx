@@ -86,7 +86,14 @@ export function IntakeShareCard({
       ) : (
         <p style={{ marginBottom: 12 }}>Live is version {liveVersion}.</p>
       )}
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: 8,
+          alignItems: 'center',
+          marginBottom: 12,
+        }}
+      >
         <code style={{ flex: 1, overflow: 'auto' }}>{url}</code>
         <Button
           type='button'
@@ -113,8 +120,16 @@ export function IntakeShareCard({
       ) : (
         <p>Preparing the QR card…</p>
       )}
-      <div className='intake-share-actions' style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-        <Button type='button' variant='outline' onClick={() => window.print()} disabled={!png}>
+      <div
+        className='intake-share-actions'
+        style={{ display: 'flex', gap: 8, marginTop: 12 }}
+      >
+        <Button
+          type='button'
+          variant='outline'
+          onClick={() => window.print()}
+          disabled={!png}
+        >
           Print
         </Button>
         <Button
@@ -151,7 +166,8 @@ async function renderShareCard(input: {
     width: 1024,
     color: { dark: '#000000', light: '#ffffff' },
   });
-  const logo = (await loadLogo(input.logoUrl)) ?? (await loadLogo(input.fallbackLogoUrl));
+  const logo =
+    (await loadLogo(input.logoUrl)) ?? (await loadLogo(input.fallbackLogoUrl));
   const page = document.createElement('canvas');
   page.width = 1275;
   page.height = 1650;
@@ -183,7 +199,10 @@ async function renderShareCard(input: {
   ctx.font = '22px sans-serif';
   wrapText(ctx, input.url, page.width / 2, y, page.width - 120, 30);
   const png = await new Promise<Blob>((resolve, reject) => {
-    page.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('PNG failed'))), 'image/png');
+    page.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error('PNG failed'))),
+      'image/png'
+    );
   });
   const pdf = await PDFDocument.create();
   const pdfPage = pdf.addPage([612, 792]);

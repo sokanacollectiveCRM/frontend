@@ -17,8 +17,8 @@ import {
 } from './previewSession';
 
 export function IntakeFormClientPreview() {
-  const [payload, setPayload] = useState<IntakeClientPreviewPayload | null>(() =>
-    readIntakeClientPreview()
+  const [payload, setPayload] = useState<IntakeClientPreviewPayload | null>(
+    () => readIntakeClientPreview()
   );
 
   useEffect(() => {
@@ -35,7 +35,10 @@ export function IntakeFormClientPreview() {
     return (
       <main style={{ padding: 32, maxWidth: 640 }}>
         <h1>Form preview</h1>
-        <p>Open Preview from the intake form settings to see the form the way a client would.</p>
+        <p>
+          Open Preview from the intake form settings to see the form the way a
+          client would.
+        </p>
       </main>
     );
   }
@@ -43,10 +46,17 @@ export function IntakeFormClientPreview() {
   return <ClientPreviewBody payload={payload} />;
 }
 
-function ClientPreviewBody({ payload }: { payload: IntakeClientPreviewPayload }) {
+function ClientPreviewBody({
+  payload,
+}: {
+  payload: IntakeClientPreviewPayload;
+}) {
   const brandingState = usePublicIntakeBranding(payload.slug);
   const [submitted, setSubmitted] = useState(false);
-  const branding = brandingForPreview(payload, brandingState.status === 'ready' ? brandingState.data : null);
+  const branding = brandingForPreview(
+    payload,
+    brandingState.status === 'ready' ? brandingState.data : null
+  );
 
   useEffect(() => {
     document.title = `${branding.branding.pageTitle} | ${branding.branding.displayName}`;
