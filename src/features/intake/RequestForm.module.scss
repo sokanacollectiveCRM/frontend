@@ -1,6 +1,6 @@
 .requestForm {
   font-family: 'Roboto', Arial, sans-serif;
-  background: #fff;
+  background: transparent;
   max-width: 1140px;
   width: 100%;
   margin: 2rem auto;
@@ -60,7 +60,7 @@
 
     .form-floating-label.form-label--active {
       font-size: 0.875rem;
-      color: #004d40;
+      color: var(--intake-label-active, #0a3147);
     }
 
     .form-input,
@@ -97,7 +97,7 @@
     top: -1.1rem;
     left: 0.05rem;
     font-size: 0.89rem;
-    color: #004d40;
+    color: var(--intake-label-active, #0a3147);
     background: #fff;
     z-index: 2;
     letter-spacing: 0.01em;
@@ -136,7 +136,7 @@
     }
   }
   .form-input:focus {
-    border-bottom: 2px solid #00897b;
+    border-bottom: 2px solid var(--intake-focus, #d6704d);
   }
   .form-input:disabled {
     background: #f5f5f5;
@@ -169,7 +169,7 @@
     box-sizing: border-box;
   }
   .form-select:focus {
-    border-bottom: 2px solid #00897b;
+    border-bottom: 2px solid var(--intake-focus, #d6704d);
   }
   .form-select:disabled {
     background: #f5f5f5;
@@ -204,7 +204,7 @@
     border-top: 3px solid transparent;
   }
   .form-select-menu--open {
-    border-top: 3px solid #00897b;
+    border-top: 3px solid var(--intake-focus, #d6704d);
   }
   .form-select-option {
     padding: 0.7rem 1.2rem;
@@ -300,8 +300,8 @@
     overflow-wrap: normal;
   }
   .form-select-option:hover, .form-select-option:focus {
-    background: #e0f2f1;
-    color: #00897b;
+    background: var(--intake-select-hover-bg, #e0f2f1);
+    color: var(--intake-select-hover-text, #0a3147);
   }
 
   .services-select-field {
@@ -339,15 +339,22 @@
   .step-buttons-row {
     display: flex;
     justify-content: center;
-    gap: 1.5rem;
-    margin-top: 2.5rem;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    margin-top: 1.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .step-buttons-row-top {
+    margin-top: 0;
     margin-bottom: 1.5rem;
   }
 
   /* Scope primary actions — avoid step nav & custom dropdown triggers (plain `button` inside `.requestForm`). */
   .step-buttons-row :is(button, .button),
   .button-row :is(button, .button) {
-    background: #00897b;
+    background: var(--intake-button-bg, #d6704d);
     color: #fff;
     border: none;
     border-radius: 2px;
@@ -356,13 +363,16 @@
     font-weight: 500;
     cursor: pointer;
     transition: background 0.2s;
-    min-width: 120px;
+    flex: 0 0 auto;
+    width: auto;
+    margin: 0 !important;
+    min-width: 7.5rem;
     &:disabled {
       background: #bdbdbd;
       cursor: not-allowed;
     }
     &:hover:not(:disabled) {
-      background: #26a69a;
+      background: var(--intake-button-hover, #e08362);
     }
   }
 
@@ -481,7 +491,7 @@
   }
   @media (min-width: 1024px) {
     .form-grid {
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 2rem 2rem;
     }
   }
@@ -576,6 +586,9 @@
 
   // Desktop-specific label positioning (floating with different starting position)
   @media (min-width: 900px) {
+    .form-grid {
+      padding-top: 0.85rem;
+    }
     .form-field {
       flex-direction: column;
       align-items: stretch;
@@ -586,7 +599,7 @@
       display: block;
       position: absolute;
       left: 0.1rem;
-      top: 0.4rem;
+      top: 0.55rem;
       background: none;
       font-size: 1.08rem;
       color: #757575;
@@ -595,13 +608,14 @@
       white-space: normal;
       pointer-events: auto;
       z-index: 2;
+      line-height: 1.2;
       transition: color 0.22s cubic-bezier(0.4,0,0.2,1), font-size 0.22s cubic-bezier(0.4,0,0.2,1), top 0.22s cubic-bezier(0.4,0,0.2,1);
     }
     .form-label--active {
       color: #00897b;
-      font-size: 0.95rem;
+      font-size: 0.875rem;
       background: none;
-      top: -1.1rem;
+      top: -1.85rem;
       margin-bottom: 0;
     }
     .form-input, .form-select {
@@ -610,6 +624,51 @@
       position: relative;
       z-index: 1;
       box-sizing: border-box;
+    }
+
+    /* Services dropdown: prompt rests inside the control, then rises clear of the value */
+    .services-select-field {
+      margin-top: 0.35rem;
+
+      .form-floating-label {
+        top: 0.5rem;
+        max-width: calc(100% - 1.75rem);
+        pointer-events: none;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .form-label--active {
+        top: -2rem;
+        max-width: 100%;
+        white-space: normal;
+        overflow: visible;
+        text-overflow: unset;
+      }
+
+      .form-option-trigger-text {
+        padding-top: 0.35rem;
+        padding-bottom: 0.35rem;
+      }
+
+      .services-trigger-value {
+        color: transparent;
+      }
+
+      &:has(.form-label--active) .services-trigger-value {
+        color: rgba(0, 0, 0, 0.87);
+      }
+    }
+
+    .form-field-label-above {
+      gap: 0.75rem;
+      margin-top: 1.35rem;
+
+      .form-floating-label,
+      .form-floating-label.form-label--active {
+        margin-bottom: 0.15rem;
+      }
     }
   }
 
@@ -860,7 +919,7 @@
   }
   
   .react-datepicker__input-container input:focus {
-    border-bottom: 2px solid #00897b;
+    border-bottom: 2px solid var(--intake-focus, #d6704d);
   }
   
   .react-datepicker__input-container input::placeholder {
@@ -938,5 +997,213 @@
   .form-field-label-above textarea.form-input {
     padding-top: 0;
     margin-top: 0;
+  }
+
+  padding-left: clamp(1rem, 3vw, 1.75rem);
+  padding-right: clamp(1rem, 3vw, 1.75rem);
+  box-sizing: border-box;
+
+  /* Labels sit above the line with a clear gap. Narrow screens stack. */
+  .form-grid {
+    align-items: start;
+  }
+
+  .form-field {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.5rem !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin-bottom: 0.15rem !important;
+    padding-top: 0 !important;
+  }
+
+  .form-field .form-floating-label,
+  .form-field label.form-floating-label,
+  .form-field .form-floating-label.form-label--active,
+  .form-field label.form-floating-label.form-label--active {
+    position: static !important;
+    order: -1;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    white-space: normal !important;
+    font-size: 0.95rem !important;
+    line-height: 1.4 !important;
+    font-weight: 500;
+    color: #4e616b !important;
+    letter-spacing: 0;
+    pointer-events: none;
+  }
+
+  .form-field .form-floating-label.form-label--active,
+  .form-field label.form-floating-label.form-label--active {
+    color: #0a3147 !important;
+    font-size: 0.95rem !important;
+  }
+
+  .form-field .form-input,
+  .form-field .form-select {
+    margin-top: 0 !important;
+    height: 46px;
+    border-bottom-width: 1.5px;
+  }
+
+  .form-field textarea.form-input,
+  .form-field textarea.form-input[data-type='textarea'],
+  .services-select-field button.form-input,
+  .demographics-multi-container .form-input {
+    height: auto !important;
+    min-height: 7.5rem !important;
+    margin-top: 0 !important;
+    padding: 0.85rem 0.9rem !important;
+    border: 1px solid #c5ced4 !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+    box-sizing: border-box;
+  }
+
+  .services-select-field button.form-input,
+  .demographics-multi-container .form-input {
+    min-height: 48px !important;
+    padding: 0.7rem 2rem 0.7rem 0.9rem !important;
+  }
+
+  .form-field textarea.form-input:focus,
+  .services-select-field button.form-input:focus,
+  .demographics-multi-container .form-input:focus {
+    border-color: var(--intake-focus, #0a7c74) !important;
+    outline: none;
+  }
+
+  .form-field button.form-input,
+  .form-field .form-option-trigger-text {
+    position: relative;
+    appearance: none;
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 1.5px solid #bdbdbd !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    color: rgba(0, 0, 0, 0.87) !important;
+    height: 46px;
+    min-height: 46px !important;
+    padding: 0 1.75rem 0.35rem 0 !important;
+    font-size: 16px !important;
+    font-weight: 400;
+    text-align: left;
+  }
+
+  .form-field button.form-input:focus {
+    border-bottom: 2px solid var(--intake-focus, #d6704d) !important;
+    outline: none;
+  }
+
+  .services-select-field .services-trigger-value,
+  .form-field .services-trigger-value {
+    color: rgba(0, 0, 0, 0.87) !important;
+  }
+
+  .form-field > span,
+  .form-field .form-select-arrow {
+    top: auto !important;
+    bottom: 0.85rem !important;
+    transform: none !important;
+  }
+
+  .form-option-list {
+    gap: 0.75rem;
+    margin-top: 0.15rem;
+  }
+
+  @media (max-width: 1099px) {
+    .form-grid {
+      grid-template-columns: 1fr !important;
+      gap: 1.35rem 0 !important;
+    }
+
+    .form-field {
+      grid-column: 1 / -1 !important;
+    }
+  }
+
+  @media (min-width: 1100px) {
+    .form-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: 2rem 1.75rem !important;
+    }
+
+    .form-field.oneColumn {
+      grid-column: 1 / -1 !important;
+    }
+
+    .form-field.twoColumn {
+      grid-column: auto !important;
+    }
+  }
+
+  &.intakeEditorCanvas {
+    .form-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: 1rem 0.9rem !important;
+    }
+
+    .form-field {
+      grid-column: auto !important;
+    }
+
+    .form-field.oneColumn {
+      grid-column: 1 / -1 !important;
+    }
+  }
+
+  .form-field .form-input,
+  .form-field .form-select,
+  .form-field button.form-input,
+  .react-datepicker__input-container input {
+    height: 48px !important;
+    min-height: 48px !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding: 0.65rem 0.9rem !important;
+    border: 1px solid #c5ced4 !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    box-sizing: border-box;
+  }
+
+  .form-field .form-select,
+  .form-field button.form-input {
+    padding-right: 2.1rem !important;
+  }
+
+  .form-field textarea.form-input,
+  .form-field textarea.form-input[data-type='textarea'] {
+    height: auto !important;
+    min-height: 7.5rem !important;
+    padding: 0.85rem 0.9rem !important;
+  }
+
+  .form-field .form-input:focus,
+  .form-field .form-select:focus,
+  .form-field button.form-input:focus,
+  .react-datepicker__input-container input:focus {
+    border-color: var(--intake-focus, #0a7c74) !important;
+    outline: none;
+  }
+
+  .form-field > span,
+  .form-field .form-select-arrow {
+    bottom: 0.95rem !important;
   }
 } 

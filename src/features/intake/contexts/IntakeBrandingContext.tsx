@@ -5,7 +5,9 @@ import {
   type ReactNode,
 } from 'react';
 
-import type { PublicIntakeBrandingResponse } from 'features/intake/application/usePublicIntakeBranding';
+import type { PublicIntakeBrandingResponse } from '@/features/intake/application/usePublicIntakeBranding';
+import { buildIntakeThemeVars } from '@/features/intake/intakeTheme';
+import '@/features/intake/intakeBranded.scss';
 
 const IntakeBrandingContext =
   createContext<PublicIntakeBrandingResponse | null>(null);
@@ -17,14 +19,16 @@ export function IntakeBrandingProvider({
   branding: PublicIntakeBrandingResponse;
   children: ReactNode;
 }) {
-  const themeStyle = {
-    '--intake-primary': branding.branding.primaryColor,
-    '--intake-accent': branding.branding.accentColor,
-  } as CSSProperties;
+  const themeStyle = buildIntakeThemeVars(
+    branding.branding.primaryColor,
+    branding.branding.accentColor
+  );
 
   return (
     <IntakeBrandingContext.Provider value={branding}>
-      <div style={themeStyle}>{children}</div>
+      <div className='intake-branded' style={themeStyle}>
+        {children}
+      </div>
     </IntakeBrandingContext.Provider>
   );
 }

@@ -1,4 +1,5 @@
 import {
+  ClipboardList,
   FileText,
   Home,
   Inbox,
@@ -20,6 +21,7 @@ export interface SidebarItem {
   url: string;
   icon: React.ElementType;
   adminOnly?: boolean;
+  intakeForm?: boolean;
   doulaOnly?: boolean;
   clientOnly?: boolean;
   billingOnly?: boolean;
@@ -90,6 +92,12 @@ export const sidebarSections = [
     label: 'Manage',
     items: [
       { title: 'Team', url: '/team', icon: LucideUsers, adminOnly: true },
+      {
+        title: 'Intake form',
+        url: '/settings/intake-form',
+        icon: ClipboardList,
+        intakeForm: true,
+      },
       { title: 'Doulas', url: '/hours', icon: LucideUsers, adminOnly: true },
       {
         title: 'Payments',
@@ -169,11 +177,13 @@ export function getVisibleSidebarSections({
   isDoula,
   isClient,
   isBillingOnly,
+  showIntakeForm = false,
 }: {
   isAdmin: boolean;
   isDoula: boolean;
   isClient: boolean;
   isBillingOnly: boolean;
+  showIntakeForm?: boolean;
 }): SidebarSection[] {
   return sidebarSections
     .map((section) => {
@@ -186,6 +196,9 @@ export function getVisibleSidebarSections({
         }
         if (isBillingOnly) {
           return false;
+        }
+        if (item.intakeForm === true) {
+          return showIntakeForm && !isClient;
         }
         if (item.clientOnly === true) {
           return isClient;

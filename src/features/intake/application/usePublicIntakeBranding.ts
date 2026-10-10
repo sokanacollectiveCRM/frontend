@@ -1,6 +1,8 @@
 import { apiBaseUrl } from '@/config/env';
 import { useEffect, useState } from 'react';
 
+import type { PublishedIntakeForm } from '@/features/intake-form/types';
+
 export type PublicIntakeBrandingResponse = {
   slug: string;
   name: string;
@@ -12,6 +14,7 @@ export type PublicIntakeBrandingResponse = {
     primaryColor: string;
     accentColor: string;
   };
+  form?: PublishedIntakeForm;
 };
 
 type State =

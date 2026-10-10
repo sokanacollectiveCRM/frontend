@@ -29,6 +29,8 @@ import HoursRoutes from './features/hours/HoursRoute';
 import InboxRoutes from './features/inbox/InboxRoutes';
 import QuickBooksRoutes from './features/integrations/QuickBooksRoutes';
 import InvoiceRoute from './features/InvoicesPage/InvoiceRoute';
+import IntakeFormSettingsPage from './features/intake-form/IntakeFormSettingsPage';
+import IntakeFormClientPreview from './features/intake-form/IntakeFormClientPreview';
 import MyAccountRoutes from './features/my-account/MyAccountRoutes';
 import PaymentsRoute from './features/payments/PaymentsRoute';
 import ProfileRoutes from './features/profiles/ProfileRoutes';
@@ -67,10 +69,21 @@ const AppRoutes = () => (
     {/* Contract Signed Success Page - No Sidebar, No Auth */}
     <Route path='/contract-signed' element={<ContractSignedPage />} />
 
+    <Route element={<PrivateRoute />}>
+      <Route
+        path='/settings/intake-form/preview'
+        element={<IntakeFormClientPreview />}
+      />
+    </Route>
+
     <Route>
       <Route element={<DashboardLayout />}>
         <Route element={<PrivateRoute />}>
           <Route element={<EmailVerifiedRoute />}>
+            <Route
+              path='/settings/intake-form'
+              element={<IntakeFormSettingsPage />}
+            />
             <Route element={<BillingPortalRoute />}>
               {BillingPortalRoutes()}
             </Route>
