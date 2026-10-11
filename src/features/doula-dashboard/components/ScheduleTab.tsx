@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CalendarClock, Loader2, Trash2 } from 'lucide-react';
+import { CalendarClock, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
   createDoulaAvailability,
   deleteDoulaAvailability,
   getDoulaAvailability,
+  updateDoulaAvailability,
   type DoulaAvailabilityRecord,
 } from '@/api/doulas/doulaService';
 import {
@@ -22,21 +23,33 @@ import {
   CardHeader,
   CardTitle,
 } from '@/common/components/ui/card';
-import { Input } from '@/common/components/ui/input';
-import { Label } from '@/common/components/ui/label';
 import {
-  MAX_REPEAT_WEEKS,
-  validateAvailabilityForm,
-  validateBlackoutForm,
-} from '@/features/scheduling/availabilityForm';
+  TimeOffPanel,
+  timeOffFormFromRecord,
+} from '@/features/scheduling/TimeOffPanel';
+import { WeeklyHoursEditor } from '@/features/scheduling/WeeklyHoursEditor';
 import {
-  addLocalDays,
-  endOfLocalDayIso,
   formatTimeRangeWithZone,
   getBrowserTimeZone,
   localDateTimeToUtcIso,
-  startOfLocalDayIso,
 } from '@/features/scheduling/schedulingTime';
+import {
+  emptyTimeOffForm,
+  formatTimeOffReason,
+  timeOffToWindow,
+  upcomingTimeOff,
+  upcomingUsHolidays,
+  validateTimeOffForm,
+  type TimeOffFormValues,
+  type UsHoliday,
+} from '@/features/scheduling/timeOff';
+import {
+  expandWeeklyHours,
+  futureAvailableRecords,
+  inferWeeklyHours,
+  validateWeeklyHours,
+  type WeekdayHours,
+} from '@/features/scheduling/weeklyHours';
 import { logFailure } from '@/utils/safeLog';
 
 const STATUS_LABEL: Record<BookingStatus, string> = {
@@ -46,37 +59,21 @@ const STATUS_LABEL: Record<BookingStatus, string> = {
   cancelled: 'Cancelled',
 };
 
-function upcomingRecords(
-  records: DoulaAvailabilityRecord[],
-  status: 'available' | 'unavailable',
-  now: Date
-): DoulaAvailabilityRecord[] {
-  return records
-    .filter(
-      (record) =>
-        record.availabilityStatus === status &&
-        new Date(record.endAt).getTime() > now.getTime()
-    )
-    .sort(
-      (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
-    );
-}
-
 export default function ScheduleTab() {
   const timeZone = useMemo(() => getBrowserTimeZone(), []);
   const [isLoading, setIsLoading] = useState(true);
   const [records, setRecords] = useState<DoulaAvailabilityRecord[]>([]);
   const [bookings, setBookings] = useState<SchedulingBooking[]>([]);
-  const [availabilityDate, setAvailabilityDate] = useState('');
-  const [availabilityStart, setAvailabilityStart] = useState('10:00');
-  const [availabilityEnd, setAvailabilityEnd] = useState('14:00');
-  const [repeatWeeks, setRepeatWeeks] = useState(1);
-  const [blackoutFrom, setBlackoutFrom] = useState('');
-  const [blackoutTo, setBlackoutTo] = useState('');
-  const [blackoutReason, setBlackoutReason] = useState('');
-  const [isSavingAvailability, setIsSavingAvailability] = useState(false);
-  const [isSavingBlackout, setIsSavingBlackout] = useState(false);
+  const [hours, setHours] = useState<WeekdayHours[]>(inferWeeklyHours([]));
+  const [timeOffForm, setTimeOffForm] =
+    useState<TimeOffFormValues>(emptyTimeOffForm());
+  const [editingTimeOffId, setEditingTimeOffId] = useState<string | null>(null);
+  const [selectedHolidays, setSelectedHolidays] = useState<UsHoliday[]>([]);
+  const [isSavingHours, setIsSavingHours] = useState(false);
+  const [isSavingTimeOff, setIsSavingTimeOff] = useState(false);
   const [pendingActionId, setPendingActionId] = useState<string | null>(null);
+
+  const holidays = useMemo(() => upcomingUsHolidays(), []);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -86,6 +83,7 @@ export default function ScheduleTab() {
         getDoulaBookings(),
       ]);
       setRecords(availability.records);
+      setHours(inferWeeklyHours(availability.records));
       setBookings(visitRequests);
     } catch (error) {
       logFailure('scheduling', 'doula_schedule_load_failed');
@@ -101,9 +99,7 @@ export default function ScheduleTab() {
     void load();
   }, [load]);
 
-  const now = new Date();
-  const availableWindows = upcomingRecords(records, 'available', now);
-  const blackouts = upcomingRecords(records, 'unavailable', now);
+  const timeOffItems = useMemo(() => upcomingTimeOff(records), [records]);
   const sortedBookings = useMemo(() => {
     const rank: Record<BookingStatus, number> = {
       pending: 0,
@@ -118,92 +114,127 @@ export default function ScheduleTab() {
     });
   }, [bookings]);
 
-  const handleAddAvailability = async (event: React.FormEvent) => {
-    event.preventDefault();
-    const weeks = Number(repeatWeeks) || 1;
-    const validation = validateAvailabilityForm({
-      date: availabilityDate,
-      startTime: availabilityStart,
-      endTime: availabilityEnd,
-      repeatWeeks: weeks,
-    });
+  const handleSaveWeeklyHours = async () => {
+    const validation = validateWeeklyHours(hours);
     if (validation) {
       toast.error(validation);
       return;
     }
-
-    setIsSavingAvailability(true);
+    setIsSavingHours(true);
     try {
-      for (let index = 0; index < weeks; index += 1) {
-        const date = addLocalDays(availabilityDate, index * 7);
+      const now = new Date();
+      const windows = expandWeeklyHours(hours, now);
+      const toReplace = futureAvailableRecords(records, now);
+      for (const record of toReplace) {
+        await deleteDoulaAvailability(record.id);
+      }
+      for (const window of windows) {
         await createDoulaAvailability({
-          startAt: localDateTimeToUtcIso(date, availabilityStart),
-          endAt: localDateTimeToUtcIso(date, availabilityEnd),
+          startAt: localDateTimeToUtcIso(window.date, window.startTime),
+          endAt: localDateTimeToUtcIso(window.date, window.endTime),
           availabilityStatus: 'available',
         });
       }
-      toast.success(
-        weeks > 1
-          ? `Added availability for ${weeks} weeks.`
-          : 'Availability added.'
-      );
+      toast.success('Weekly hours saved for the next 8 weeks.');
       await load();
     } catch (error) {
-      logFailure('scheduling', 'doula_availability_create_failed');
+      logFailure('scheduling', 'doula_weekly_hours_save_failed');
       toast.error(
-        error instanceof Error ? error.message : 'Unable to add availability.'
+        error instanceof Error ? error.message : 'Unable to save weekly hours.'
       );
     } finally {
-      setIsSavingAvailability(false);
+      setIsSavingHours(false);
     }
   };
 
-  const handleAddBlackout = async (event: React.FormEvent) => {
-    event.preventDefault();
-    const validation = validateBlackoutForm({
-      fromDate: blackoutFrom,
-      toDate: blackoutTo,
-      reason: blackoutReason,
-    });
+  const handleSaveTimeOff = async () => {
+    const validation = validateTimeOffForm(timeOffForm);
     if (validation) {
       toast.error(validation);
       return;
     }
-
-    setIsSavingBlackout(true);
+    setIsSavingTimeOff(true);
     try {
-      await createDoulaAvailability({
-        startAt: startOfLocalDayIso(blackoutFrom),
-        endAt: endOfLocalDayIso(blackoutTo),
-        availabilityStatus: 'unavailable',
-        reason: blackoutReason.trim() || null,
-      });
-      toast.success('Blackout added.');
-      setBlackoutReason('');
+      const window = timeOffToWindow(timeOffForm);
+      if (editingTimeOffId) {
+        await updateDoulaAvailability(editingTimeOffId, {
+          startAt: window.startAt,
+          endAt: window.endAt,
+          availabilityStatus: 'unavailable',
+          reason: window.reason,
+        });
+        toast.success('Time off updated.');
+      } else {
+        await createDoulaAvailability({
+          startAt: window.startAt,
+          endAt: window.endAt,
+          availabilityStatus: 'unavailable',
+          reason: window.reason,
+        });
+        toast.success('Time off added.');
+      }
+      setTimeOffForm(emptyTimeOffForm());
+      setEditingTimeOffId(null);
       await load();
     } catch (error) {
-      logFailure('scheduling', 'doula_blackout_create_failed');
+      logFailure('scheduling', 'doula_time_off_save_failed');
       toast.error(
-        error instanceof Error ? error.message : 'Unable to add blackout.'
+        error instanceof Error ? error.message : 'Unable to save time off.'
       );
     } finally {
-      setIsSavingBlackout(false);
+      setIsSavingTimeOff(false);
     }
   };
 
-  const handleDeleteRecord = async (record: DoulaAvailabilityRecord) => {
+  const handleAddHolidays = async () => {
+    if (selectedHolidays.length === 0) return;
+    setIsSavingTimeOff(true);
     try {
-      await deleteDoulaAvailability(record.id);
-      toast.success(
-        record.availabilityStatus === 'unavailable'
-          ? 'Blackout removed.'
-          : 'Availability removed.'
+      const existingReasons = new Set(
+        records
+          .filter((record) => record.availabilityStatus === 'unavailable')
+          .map((record) => record.reason)
       );
+      for (const holiday of selectedHolidays) {
+        const reason = formatTimeOffReason('Holiday', holiday.name);
+        if (existingReasons.has(reason)) continue;
+        const window = timeOffToWindow({
+          ...emptyTimeOffForm(),
+          type: 'Holiday',
+          coverage: 'single_day',
+          fromDate: holiday.date,
+          toDate: holiday.date,
+          reason: holiday.name,
+        });
+        await createDoulaAvailability({
+          startAt: window.startAt,
+          endAt: window.endAt,
+          availabilityStatus: 'unavailable',
+          reason,
+        });
+      }
+      toast.success('Selected holidays added.');
+      setSelectedHolidays([]);
       await load();
     } catch (error) {
-      logFailure('scheduling', 'doula_availability_delete_failed');
+      logFailure('scheduling', 'doula_holiday_add_failed');
       toast.error(
-        error instanceof Error ? error.message : 'Unable to delete that window.'
+        error instanceof Error ? error.message : 'Unable to add holidays.'
+      );
+    } finally {
+      setIsSavingTimeOff(false);
+    }
+  };
+
+  const handleDeleteTimeOff = async (record: DoulaAvailabilityRecord) => {
+    try {
+      await deleteDoulaAvailability(record.id);
+      toast.success('Time off removed.');
+      await load();
+    } catch (error) {
+      logFailure('scheduling', 'doula_time_off_delete_failed');
+      toast.error(
+        error instanceof Error ? error.message : 'Unable to delete time off.'
       );
     }
   };
@@ -241,8 +272,8 @@ export default function ScheduleTab() {
       <div>
         <h2 className='text-2xl font-semibold text-slate-900'>Schedule</h2>
         <p className='mt-1 text-sm text-slate-600'>
-          Post open windows, add blackout dates, and review visit requests.
-          Times are shown in {timeZone}.
+          Set weekly hours, add time off, and review visit requests. Times are
+          shown in {timeZone}.
         </p>
       </div>
 
@@ -251,207 +282,57 @@ export default function ScheduleTab() {
           <CardHeader>
             <CardTitle className='flex items-center gap-2 text-lg'>
               <CalendarClock className='h-5 w-5' />
-              Add availability
+              Weekly hours
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <form
-              className='space-y-4'
-              onSubmit={handleAddAvailability}
-              data-testid='schedule-availability-form'
-            >
-              <div className='space-y-2'>
-                <Label htmlFor='availability-date'>Date</Label>
-                <Input
-                  id='availability-date'
-                  type='date'
-                  value={availabilityDate}
-                  onChange={(event) => setAvailabilityDate(event.target.value)}
-                  required
-                />
-              </div>
-              <div className='grid grid-cols-2 gap-3'>
-                <div className='space-y-2'>
-                  <Label htmlFor='availability-start'>Start time</Label>
-                  <Input
-                    id='availability-start'
-                    type='time'
-                    value={availabilityStart}
-                    onChange={(event) =>
-                      setAvailabilityStart(event.target.value)
-                    }
-                    required
-                  />
-                </div>
-                <div className='space-y-2'>
-                  <Label htmlFor='availability-end'>End time</Label>
-                  <Input
-                    id='availability-end'
-                    type='time'
-                    value={availabilityEnd}
-                    onChange={(event) => setAvailabilityEnd(event.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-              <div className='space-y-2'>
-                <Label htmlFor='availability-repeat'>
-                  Repeat weekly for N weeks
-                </Label>
-                <Input
-                  id='availability-repeat'
-                  type='number'
-                  min={1}
-                  max={MAX_REPEAT_WEEKS}
-                  value={repeatWeeks}
-                  onChange={(event) =>
-                    setRepeatWeeks(Number(event.target.value) || 1)
-                  }
-                />
-              </div>
-              <Button type='submit' disabled={isSavingAvailability}>
-                {isSavingAvailability ? 'Saving...' : 'Add availability'}
-              </Button>
-            </form>
+            <WeeklyHoursEditor
+              hours={hours}
+              onChange={setHours}
+              onSave={() => void handleSaveWeeklyHours()}
+              isSaving={isSavingHours}
+            />
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className='text-lg'>Add blackout</CardTitle>
+            <CardTitle className='text-lg'>Time off</CardTitle>
           </CardHeader>
           <CardContent>
-            <form
-              className='space-y-4'
-              onSubmit={handleAddBlackout}
-              data-testid='schedule-blackout-form'
-            >
-              <div className='grid grid-cols-2 gap-3'>
-                <div className='space-y-2'>
-                  <Label htmlFor='blackout-from'>From date</Label>
-                  <Input
-                    id='blackout-from'
-                    type='date'
-                    value={blackoutFrom}
-                    onChange={(event) => setBlackoutFrom(event.target.value)}
-                    required
-                  />
-                </div>
-                <div className='space-y-2'>
-                  <Label htmlFor='blackout-to'>To date</Label>
-                  <Input
-                    id='blackout-to'
-                    type='date'
-                    value={blackoutTo}
-                    onChange={(event) => setBlackoutTo(event.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-              <div className='space-y-2'>
-                <Label htmlFor='blackout-reason'>Reason</Label>
-                <Input
-                  id='blackout-reason'
-                  value={blackoutReason}
-                  onChange={(event) => setBlackoutReason(event.target.value)}
-                  placeholder='Training'
-                />
-              </div>
-              <Button
-                type='submit'
-                variant='secondary'
-                disabled={isSavingBlackout}
-              >
-                {isSavingBlackout ? 'Saving...' : 'Add blackout'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className='grid gap-6 xl:grid-cols-2'>
-        <Card>
-          <CardHeader>
-            <CardTitle className='text-lg'>Upcoming availability</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {availableWindows.length === 0 ? (
-              <p className='text-sm text-muted-foreground'>
-                No upcoming open windows. Add a date and time above.
-              </p>
-            ) : (
-              <ul className='space-y-3'>
-                {availableWindows.map((record) => (
-                  <li
-                    key={record.id}
-                    className='flex items-start justify-between gap-3 rounded-lg border p-3'
-                  >
-                    <p className='text-sm'>
-                      {formatTimeRangeWithZone(
-                        record.startAt,
-                        record.endAt,
-                        timeZone
-                      )}
-                    </p>
-                    <Button
-                      type='button'
-                      variant='ghost'
-                      size='sm'
-                      aria-label={`Delete availability ${record.id}`}
-                      onClick={() => void handleDeleteRecord(record)}
-                    >
-                      <Trash2 className='h-4 w-4' />
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className='text-lg'>Upcoming blackouts</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {blackouts.length === 0 ? (
-              <p className='text-sm text-muted-foreground'>
-                No upcoming blackouts.
-              </p>
-            ) : (
-              <ul className='space-y-3'>
-                {blackouts.map((record) => (
-                  <li
-                    key={record.id}
-                    className='flex items-start justify-between gap-3 rounded-lg border p-3'
-                  >
-                    <div>
-                      <p className='text-sm'>
-                        {formatTimeRangeWithZone(
-                          record.startAt,
-                          record.endAt,
-                          timeZone
-                        )}
-                      </p>
-                      {record.reason ? (
-                        <p className='mt-1 text-xs text-muted-foreground'>
-                          {record.reason}
-                        </p>
-                      ) : null}
-                    </div>
-                    <Button
-                      type='button'
-                      variant='ghost'
-                      size='sm'
-                      aria-label={`Delete blackout ${record.id}`}
-                      onClick={() => void handleDeleteRecord(record)}
-                    >
-                      <Trash2 className='h-4 w-4' />
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <TimeOffPanel
+              form={timeOffForm}
+              onChange={setTimeOffForm}
+              onSave={() => void handleSaveTimeOff()}
+              isSaving={isSavingTimeOff}
+              editingId={editingTimeOffId}
+              onCancelEdit={() => {
+                setEditingTimeOffId(null);
+                setTimeOffForm(emptyTimeOffForm());
+              }}
+              items={timeOffItems}
+              holidays={holidays}
+              selectedHolidayDates={selectedHolidays.map(
+                (holiday) => holiday.date
+              )}
+              onToggleHoliday={(holiday, selected) =>
+                setSelectedHolidays((current) =>
+                  selected
+                    ? [
+                        ...current.filter((row) => row.date !== holiday.date),
+                        holiday,
+                      ]
+                    : current.filter((row) => row.date !== holiday.date)
+                )
+              }
+              onAddHolidays={() => void handleAddHolidays()}
+              onEdit={(item) => {
+                setEditingTimeOffId(item.id);
+                setTimeOffForm(timeOffFormFromRecord(item));
+              }}
+              onDelete={(item) => void handleDeleteTimeOff(item)}
+              timeZone={timeZone}
+            />
           </CardContent>
         </Card>
       </div>

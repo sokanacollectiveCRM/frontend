@@ -689,3 +689,42 @@ Use this checklist at the top of every new preflight entry:
 ### Action
 - [x] Context updated before coding
 - [x] Implementation started after preflight
+
+## Preflight 2026-10-11 (Weekly hours + time off editor)
+
+### Preflight Entry Checklist
+- **Gate Result**: `run_preflight`
+- **Reason**: `preflight_required_every_task`
+- **Task Intent**: Replace one-off availability/blackout forms with a Calendly-style weekly hours editor and typed time off, still on `/api/doulas/availability`.
+- **Repos Scanned**: frontend (local); backend skill paths unavailable
+- **Files Scanned**:
+  - `src/api/doulas/doulaService.ts` (`GET/POST/PATCH/DELETE /api/doulas/availability`)
+  - `src/features/doula-dashboard/components/ScheduleTab.tsx`
+  - `src/features/scheduling/availabilityForm.ts`
+  - `src/features/scheduling/schedulingTime.ts`
+  - `e2e/helpers/schedulingE2eStubs.ts`
+- **Context Updated**: yes
+- **Implementation Started After Gate**: yes
+
+### Backend Context Reviewed
+- Availability CRUD is already sufficient: each weekly window and each time-off range is a `doula_availability` row (`available` vs `unavailable` + `reason`).
+- Bookings live in `doula_booking_requests` and are not deleted when availability rows change.
+- Slot math (`available` − `unavailable` − pending/approved) already treats time off as blockers.
+
+### Contract Expectations
+- No new backend routes required for the pilot.
+- Weekly save = delete the doula's future `available` rows, then POST expanded windows for `WEEKLY_HOURS_HORIZON_WEEKS` (8).
+- Time off = `unavailable` rows with a typed reason (`Holiday: …`, `Vacation`, `Other: …`).
+- Existing `/api/scheduling/*` slot and booking contract is unchanged.
+
+### Drift Risks
+- Sequential delete+create is not atomic; a mid-save failure can leave a partial week. Optional later: one replace endpoint (described in the report, not required to run the UI).
+- Inferring the weekly template from existing rows can look sparse if the doula only posted a few dates.
+
+### Compatibility Required
+- Keep using `get/create/update/deleteDoulaAvailability`. Do not invent a weekly-hours table.
+- Do not delete `unavailable` rows when saving weekly hours. Do not PATCH bookings.
+
+### Action
+- [x] Context updated before coding
+- [x] Implementation started after preflight

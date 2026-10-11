@@ -324,6 +324,24 @@ export async function installSchedulingStubs(
       }
 
       const id = path.split('/').pop() || '';
+      if (method === 'PATCH') {
+        const body = route.request().postDataJSON() as {
+          startAt?: string;
+          endAt?: string;
+          availabilityStatus?: AvailabilityStatus;
+          reason?: string | null;
+        };
+        const record = store.availability.find((row) => row.id === id);
+        if (!record) return json(route, { error: 'Not found' }, 404);
+        if (body.startAt) record.startAt = body.startAt;
+        if (body.endAt) record.endAt = body.endAt;
+        if (body.availabilityStatus) {
+          record.availabilityStatus = body.availabilityStatus;
+        }
+        if (body.reason !== undefined) record.reason = body.reason;
+        record.updatedAt = new Date().toISOString();
+        return json(route, { record });
+      }
       if (method === 'DELETE') {
         store.availability = store.availability.filter((row) => row.id !== id);
         return json(route, { success: true });
