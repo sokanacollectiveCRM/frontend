@@ -12,7 +12,7 @@ test.use({
   timezoneId: 'America/Chicago',
   video: 'on',
   viewport: { width: 1400, height: 900 },
-  launchOptions: { slowMo: 700 },
+  launchOptions: { slowMo: 750 },
 });
 
 async function showCaption(page: Page, text: string) {
@@ -41,7 +41,7 @@ async function showCaption(page: Page, text: string) {
     }
     banner.textContent = label;
   }, text);
-  await page.waitForTimeout(1800);
+  await page.waitForTimeout(2500);
 }
 
 async function vacationWeek(page: Page) {
@@ -71,6 +71,7 @@ test.describe('Pilot scheduling MVP', () => {
   test('doula sets weekly hours and time off, client books, admin sees the visit', async ({
     page,
   }, testInfo) => {
+    test.setTimeout(180_000);
     const store = createSchedulingStore();
 
     await openAsUser(
@@ -102,6 +103,7 @@ test.describe('Pilot scheduling MVP', () => {
     expect(friday).toBeTruthy();
 
     await showCaption(page, 'Adds Thanksgiving holiday and a vacation week');
+    await page.getByTestId('holiday-thanksgiving').scrollIntoViewIfNeeded();
     await page.getByTestId('holiday-thanksgiving').click();
     await page.getByTestId('add-selected-holidays').click();
     await expect(page.getByText('Selected holidays added.')).toBeVisible();
@@ -120,6 +122,7 @@ test.describe('Pilot scheduling MVP', () => {
       path: 'e2e/artifacts/01-doula-availability-and-blackout.png',
       fullPage: true,
     });
+    await page.waitForTimeout(2000);
 
     await openAsUser(page, store, SCHEDULING_FIXTURE.client, '/profile');
     await expect(
@@ -160,6 +163,7 @@ test.describe('Pilot scheduling MVP', () => {
       path: 'e2e/artifacts/02-client-pending-and-conflict.png',
       fullPage: true,
     });
+    await page.waitForTimeout(2000);
 
     await openAsUser(
       page,
@@ -177,6 +181,7 @@ test.describe('Pilot scheduling MVP', () => {
       path: 'e2e/artifacts/03-doula-approved.png',
       fullPage: true,
     });
+    await page.waitForTimeout(2000);
 
     await openAsUser(page, store, SCHEDULING_FIXTURE.client, '/profile');
     await expect(page.getByTestId('my-visits')).toContainText('Approved');
@@ -191,6 +196,7 @@ test.describe('Pilot scheduling MVP', () => {
       path: 'e2e/artifacts/04-admin-visits.png',
       fullPage: true,
     });
+    await page.waitForTimeout(2000);
 
     const video = testInfo.attachments.find((item) => item.name === 'video');
     if (video?.path) {
