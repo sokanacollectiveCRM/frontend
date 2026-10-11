@@ -1,14 +1,22 @@
-import { Navigate, Route, useNavigate, useOutletContext, useParams } from 'react-router-dom';
+import {
+  Navigate,
+  Route,
+  useNavigate,
+  useOutletContext,
+  useParams,
+} from 'react-router-dom';
 import DoulaDashboard from './DoulaDashboard';
 import ProfileTab from './components/ProfileTab';
 import DocumentsTab from './components/DocumentsTab';
 import ClientsTab from './components/ClientsTab';
 import HoursTab from './components/HoursTab';
 import ActivitiesTab from './components/ActivitiesTab';
+import ScheduleTab from './components/ScheduleTab';
 import type { DoulaDashboardOutletContext } from './doulaDashboardTypes';
 
 function DoulaProfilePage() {
-  const { onProfileStatusChange } = useOutletContext<DoulaDashboardOutletContext>();
+  const { onProfileStatusChange } =
+    useOutletContext<DoulaDashboardOutletContext>();
   return <ProfileTab onProfileStatusChange={onProfileStatusChange} />;
 }
 
@@ -29,6 +37,10 @@ function DoulaClientsPage() {
 
 function DoulaHoursPage() {
   return <HoursTab />;
+}
+
+function DoulaSchedulePage() {
+  return <ScheduleTab />;
 }
 
 function DoulaActivitiesPage() {
@@ -52,6 +64,7 @@ const DoulaDashboardRoutes = () => (
     <Route path='documents' element={<DoulaDocumentsPage />} />
     <Route path='clients' element={<DoulaClientsPage />} />
     <Route path='hours' element={<DoulaHoursPage />} />
+    <Route path='schedule' element={<DoulaSchedulePage />} />
     <Route path='activities' element={<DoulaActivitiesPage />} />
     <Route path='activities/:clientId' element={<DoulaActivitiesPage />} />
   </Route>

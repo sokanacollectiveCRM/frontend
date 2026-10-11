@@ -640,6 +640,7 @@ export function IntakeFormSettingsPage() {
   }
 
   function openClientPreview() {
+    if (!draft || !state) return;
     saveIntakeClientPreview({
       definition: draft,
       catalog: state.catalog,

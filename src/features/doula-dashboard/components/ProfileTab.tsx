@@ -25,9 +25,14 @@ import {
   type UpdateProfileData,
 } from '@/api/doulas/doulaService';
 import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
 import { preloadProfileImage } from '@/common/components/user/UserAvatar';
 import { ProfileImageInput } from '@/common/components/form/ProfileImageInput';
 import { X } from 'lucide-react';
+import {
+  findCoveringUnavailableRecord,
+  planMarkAvailableMutations,
+} from '@/features/scheduling/availabilityStatusPlan';
 import {
   ANOTHER_RACE_ETHNICITY,
   DOULA_RACE_ETHNICITY_OPTIONS,
@@ -386,17 +391,26 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
           reason: availability_note || null,
         };
 
-        if (unavailableRecords.length > 0) {
-          await updateDoulaAvailability(
-            unavailableRecords[0].id,
-            availabilityPayload
-          );
+        const coveringToday = findCoveringUnavailableRecord(unavailableRecords);
+        if (coveringToday) {
+          await updateDoulaAvailability(coveringToday.id, availabilityPayload);
         } else {
           await createDoulaAvailability(availabilityPayload);
         }
       } else if (unavailableRecords.length > 0) {
+        const mutations = planMarkAvailableMutations(unavailableRecords);
         await Promise.all(
-          unavailableRecords.map((record) => deleteDoulaAvailability(record.id))
+          mutations.map((mutation) => {
+            if (mutation.type === 'delete') {
+              return deleteDoulaAvailability(mutation.id);
+            }
+            return updateDoulaAvailability(mutation.id, {
+              startAt: mutation.startAt,
+              endAt: mutation.endAt,
+              availabilityStatus: 'unavailable',
+              reason: mutation.reason,
+            });
+          })
         );
       }
 
@@ -533,14 +547,22 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
             </div>
 
             <div className='rounded-lg border border-border bg-muted/30 p-4 space-y-4'>
-              <div>
-                <h3 className='text-sm font-semibold text-foreground'>
-                  Scheduling
-                </h3>
-                <p className='text-xs text-muted-foreground mt-1'>
-                  Families in the contract stage will use this information to
-                  book time with you.
-                </p>
+              <div className='flex flex-wrap items-start justify-between gap-3'>
+                <div>
+                  <h3 className='text-sm font-semibold text-foreground'>
+                    Scheduling
+                  </h3>
+                  <p className='text-xs text-muted-foreground mt-1'>
+                    Families in the contract stage will use this information to
+                    book time with you.
+                  </p>
+                </div>
+                <Link
+                  to='/doula-dashboard/schedule'
+                  className='text-sm font-medium text-primary underline-offset-4 hover:underline'
+                >
+                  Manage schedule
+                </Link>
               </div>
 
               <div className='space-y-2'>

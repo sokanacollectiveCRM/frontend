@@ -39,6 +39,7 @@ describe('getVisibleSidebarSections', () => {
     expect(titles).toContain('Customers');
     expect(titles).toContain('Team');
     expect(titles).toContain('Doulas');
+    expect(titles).toContain('Visits');
     expect(titles).toContain('Payments');
     expect(titles).toContain('Invoices');
     expect(titles).toContain('Demographics');
@@ -55,5 +56,19 @@ describe('getVisibleSidebarSections', () => {
       .flatMap((s) => s.items)
       .find((i) => i.title === 'Contract Templates');
     expect(templatesItem?.url).toBe('/contracts');
+  });
+
+  it('shows Schedule for doulas and hides Visits', () => {
+    const titles = flattenTitles(
+      getVisibleSidebarSections({
+        isAdmin: false,
+        isDoula: true,
+        isClient: false,
+        isBillingOnly: false,
+      })
+    );
+
+    expect(titles).toContain('Schedule');
+    expect(titles).not.toContain('Visits');
   });
 });
