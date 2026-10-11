@@ -36,6 +36,7 @@ import PaymentsRoute from './features/payments/PaymentsRoute';
 import ProfileRoutes from './features/profiles/ProfileRoutes';
 import TeamRoutes from './features/teams/teamRoutes';
 import DoulaDashboardRoutes from './features/doula-dashboard/DoulaDashboardRoutes';
+import SchedulingRoutes from './features/scheduling/SchedulingRoutes';
 import ContractSignedPage from './pages/ContractSignedPage';
 import BillingPortalRoutes from './features/billing-portal/BillingPortalRoutes';
 import {
@@ -114,6 +115,7 @@ const AppRoutes = () => (
                 {InvoiceRoute()}
                 {FinancialRoute()}
                 {DemographicsRoute()}
+                {SchedulingRoutes()}
                 {DoulaDashboardRoutes()}
               </Route>
             </Route>
