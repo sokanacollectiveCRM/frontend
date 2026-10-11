@@ -8,6 +8,12 @@ import {
 } from 'features/intake/useRequestForm';
 import { DUMMY_TEST_LEAD } from 'features/intake/dummyTestLead';
 import { logFailure } from '@/utils/safeLog';
+import {
+  IntakeSubmitError,
+  formatIntakeSubmitError,
+  isBareFailedToFetch,
+  stepIndexForField,
+} from 'features/intake/domain/intakeSubmitErrors';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ReactNode,
@@ -149,6 +155,7 @@ export function RequestFormProvider({
       self_pay_sliding_tier: '',
       race_ethnicity: '',
       primary_language: '',
+      primary_language_other: '',
       client_age_range: '',
       insurance: '',
       demographics_multi: [],
@@ -292,8 +299,31 @@ export function RequestFormProvider({
       return true;
     } catch (error) {
       logFailure('request-form', 'submission_failed');
+      const submitError =
+        error instanceof IntakeSubmitError
+          ? error
+          : new IntakeSubmitError(formatIntakeSubmitError(error));
+      const message = formatIntakeSubmitError(submitError);
+      if (submitError.fields.length > 0) {
+        applyZodIssuesToForm(
+          submitError.fields.map((field) => ({
+            path: [field.name],
+            message: field.message,
+          }))
+        );
+        const firstField = submitError.fields[0]?.name;
+        const fieldStep = firstField
+          ? stepIndexForField(firstField, stepFields)
+          : -1;
+        if (fieldStep >= 0 && fieldStep !== step) {
+          setStep(fieldStep);
+        }
+        setTimeout(() => scrollFirstErroredFieldIntoView(), 0);
+      }
       setStepGateMessage(
-        'We could not submit your request. Please try again in a moment. If the problem continues, contact Sokana Collective for help.'
+        isBareFailedToFetch(message)
+          ? formatIntakeSubmitError(new TypeError('Failed to fetch'))
+          : message
       );
       return false;
     } finally {

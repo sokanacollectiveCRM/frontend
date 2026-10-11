@@ -1,6 +1,6 @@
 import { Form } from '@/common/components/ui/form';
 import { logFailure } from '@/utils/safeLog';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import {
   RequestFormProvider,
@@ -32,11 +32,16 @@ import {
 } from './contexts/IntakeBrandingContext';
 import { IntakeHoneypotFields } from './IntakeHoneypotFields';
 import {
-  createIntakeIdempotencyKey,
   formatIntakeRateLimitError,
-  intakeHoneypotValues,
   resetIntakeHoneypotValues,
 } from './intakeAbuse';
+import { buildIntakeSubmitPayload } from './domain/intakePayload';
+import {
+  IntakeSubmitError,
+  formatIntakeSubmitError,
+  mapServerErrorToFields,
+  missingBackendUrlError,
+} from './domain/intakeSubmitErrors';
 
 function RefreshWarningModal({
   isOpen,
@@ -224,7 +229,7 @@ function RequestFormContent() {
               marginBottom: 16,
             }}
           >
-            Thank you for contacting {orgBranding.branding.displayName}!
+            Thank you for contacting {orgBranding.displayName}!
           </h2>
           <p style={{ color: '#333', fontSize: 17, marginBottom: 16 }}>
             We are excited to get to know you and find out how we can support
@@ -376,38 +381,24 @@ function RequestFormContent() {
 }
 
 function RequestFormInner({ tenantSlug }: { tenantSlug: string }) {
-  const idempotencyKeyRef = useRef(createIntakeIdempotencyKey());
-
   const onSubmit = async (
     formData: RequestFormValues,
     options?: { isUsingTestData: boolean }
   ) => {
-    const babyCountMap: Record<string, number> = {
-      Singleton: 1,
-      Twins: 2,
-      Triplets: 3,
-      Quadruplets: 4,
-    };
-    const servicesSummary =
-      Array.isArray(formData.services_interested) &&
-      formData.services_interested.length > 0
-        ? formData.services_interested.join(', ')
-        : '';
+    const payload = buildIntakeSubmitPayload(formData, options);
+    const backendUrl = apiBaseUrl.replace(/\/+$/, '');
 
-    const payload = {
-      ...formData,
-      number_of_babies:
-        typeof formData.number_of_babies === 'string'
-          ? babyCountMap[formData.number_of_babies] || 1
-          : formData.number_of_babies,
-      service_needed:
-        servicesSummary || (formData.service_support_details || '').trim(),
-      submission_source: options?.isUsingTestData ? 'test_data' : 'manual',
-      ...intakeHoneypotValues,
-    };
-    const backendUrl = apiBaseUrl;
+    if (!backendUrl) {
+      const configError = missingBackendUrlError();
+      toast.error(configError.message);
+      throw configError;
+    }
 
     try {
+      // Do not send Idempotency-Key until backend CORS allowlists it.
+      // Requesting that header currently makes the browser fail preflight
+      // with TypeError "Failed to fetch" (no fields flagged). See
+      // `.cursor/handoffs/open/2026-10-09-backend-intake-cors-language.md`.
       const response = await fetch(
         `${backendUrl}/requestService/${encodeURIComponent(tenantSlug)}/requestSubmission`,
         {
@@ -415,7 +406,6 @@ function RequestFormInner({ tenantSlug }: { tenantSlug: string }) {
           credentials: 'omit',
           headers: {
             'Content-Type': 'application/json',
-            'Idempotency-Key': idempotencyKeyRef.current,
           },
           body: JSON.stringify(payload),
         }
@@ -424,6 +414,7 @@ function RequestFormInner({ tenantSlug }: { tenantSlug: string }) {
       const responseData = (await response.json().catch(() => ({}))) as {
         error?: string;
         code?: string;
+        message?: string;
       };
 
       const rateLimitMessage = formatIntakeRateLimitError(
@@ -432,19 +423,32 @@ function RequestFormInner({ tenantSlug }: { tenantSlug: string }) {
         response.headers.get('Retry-After')
       );
       if (rateLimitMessage) {
-        throw new Error(rateLimitMessage);
+        throw new IntakeSubmitError(rateLimitMessage, {
+          status: response.status,
+        });
       }
 
       if (!response.ok || responseData.error) {
-        throw new Error(responseData.error || 'Server returned an error.');
+        const serverMessage =
+          responseData.error ||
+          responseData.message ||
+          `We could not submit your request (server error ${response.status}).`;
+        throw new IntakeSubmitError(serverMessage, {
+          status: response.status,
+          fields: mapServerErrorToFields(serverMessage),
+        });
       }
-      idempotencyKeyRef.current = createIntakeIdempotencyKey();
       resetIntakeHoneypotValues();
       toast.success('Request Form Submitted Successfully!');
     } catch (error) {
       logFailure('request-form', 'request_submission_error');
-      toast.error(error instanceof Error ? error.message : 'Submission failed');
-      throw error;
+      const submitError =
+        error instanceof IntakeSubmitError
+          ? error
+          : new IntakeSubmitError(formatIntakeSubmitError(error));
+      const message = formatIntakeSubmitError(submitError);
+      toast.error(message);
+      throw submitError;
     }
   };
 

@@ -29,17 +29,16 @@ type FocusField =
   | 'phone_number'
   | 'preferred_contact_method'
   | 'pronouns'
+  | 'pronouns_other'
   | 'preferred_name'
   | 'age';
 
 export function Step1Personal({
   form,
-  control,
   handleBack,
   handleNextStep,
   step,
   totalSteps,
-  isDesktopOrTablet = false,
 }: any) {
   const errors = form.formState.errors;
 
@@ -50,6 +49,7 @@ export function Step1Personal({
     wPhone,
     wPreferredContact,
     wPronouns,
+    wPronounsOther,
     wPreferredName,
     wAge,
   ] = useWatch({
@@ -61,10 +61,11 @@ export function Step1Personal({
       'phone_number',
       'preferred_contact_method',
       'pronouns',
+      'pronouns_other',
       'preferred_name',
       'age',
     ] as const,
-  }) ?? ['', '', '', '', '', '', '', ''];
+  }) ?? ['', '', '', '', '', '', '', '', ''];
 
   // Floating label focus state (blur uses live getValues; "filled" uses useWatch so labels stay up after reset/fill)
   const [focus, setFocus] = useState<Record<FocusField, boolean>>({
@@ -74,6 +75,7 @@ export function Step1Personal({
     phone_number: false,
     preferred_contact_method: false,
     pronouns: false,
+    pronouns_other: false,
     preferred_name: false,
     age: false,
   });
@@ -357,6 +359,36 @@ export function Step1Personal({
             </div>
           )}
         </div>
+        {wPronouns === 'Other' ? (
+          <div
+            className={`${styles['form-field']} ${styles['form-field-label-above']}`}
+          >
+            <label
+              htmlFor='pronouns_other'
+              className={
+                styles['form-floating-label'] +
+                (focus.pronouns_other || hasFilledValue(wPronounsOther)
+                  ? ' ' + styles['form-label--active']
+                  : '')
+              }
+            >
+              Please specify your pronouns *
+            </label>
+            <input
+              className={styles['form-input']}
+              {...form.register('pronouns_other')}
+              id='pronouns_other'
+              autoComplete='off'
+              onFocus={() => handleFocus('pronouns_other')}
+              onBlur={() => handleBlur('pronouns_other')}
+            />
+            {errors.pronouns_other && (
+              <div className={styles['form-error']}>
+                {errors.pronouns_other.message as string}
+              </div>
+            )}
+          </div>
+        ) : null}
         <div className={styles['form-field']}>
           <input
             className={styles['form-input']}
