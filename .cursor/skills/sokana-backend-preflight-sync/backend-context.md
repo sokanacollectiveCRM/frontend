@@ -486,3 +486,245 @@ Use this checklist at the top of every new preflight entry:
 ### Action
 - [x] Context updated before coding
 - [x] Implementation started after preflight
+
+## Preflight 2026-10-09 (Public intake / request form pilot bugs)
+
+### Preflight Entry Checklist
+- **Gate Result**: `run_preflight`
+- **Reason**: `preflight_required_every_task`
+- **Task Intent**: Fix Nancy Cowans (Oct 9) public intake bugs: duplicate pet/pronouns/age questions, pregnancy-number vs prior-pregnancies consistency, Other language specify, Failed to fetch on submit.
+- **Repos Scanned**: both
+- **Files Scanned**:
+  - `/tmp/backend/src/features/intake/http/requestRoute.ts`
+  - `/tmp/backend/src/features/intake/http/requestFormController.ts`
+  - `/tmp/backend/src/features/intake/domain/normalizePublicSubmission.ts`
+  - `/tmp/backend/src/features/intake/infrastructure/intakeAbuseProtection.ts`
+  - `/tmp/backend/src/server.ts` (CORS `allowedHeaders`)
+  - `/tmp/backend/src/config/env.ts` (`getAllowedOrigins` / `FRONTEND_ORIGIN`)
+  - `src/features/intake/RequestForm.tsx`
+  - `src/features/intake/application/useRequestForm.ts`
+  - `src/features/intake/Step1Personal.tsx`
+  - `src/features/intake/Step2Health.tsx`
+  - `src/features/intake/Step3Home.tsx`
+  - `src/features/intake/components/SupportPersonFields.tsx`
+  - `src/config/env.ts`
+  - `cloudbuild.yaml`
+  - `Dockerfile`
+- **Context Updated**: yes
+- **Implementation Started After Gate**: yes
+
+### Contract Expectations
+- **POST** `/requestService/:tenantSlug/requestSubmission` (legacy also `/requestService/requestSubmission`).
+- Success: HTTP 200 `{ message: "Form data received, onto processing" }`.
+- Required body includes `firstname`, `lastname`, `email`, `phone_number`, address fields, **`age`** (persisted as `intake_age_years`), `service_needed`, `provider_type`, home people counts, birth place, `payment_method`, `referral_source`.
+- Extra JSON keys are ignored (do not 400). `pronouns`, `pets`, `pregnancy_number`, `had_previous_pregnancies`, `previous_pregnancies_count`, `primary_language`, `client_age_range` passthrough.
+- **`primary_language_other` is not in the backend schema** — persist Other-language text in `primary_language` until backend adds the column.
+- Idempotency is optional: `readIdempotencyKey` returns null when `Idempotency-Key` is absent.
+
+### Drift Risks
+- Live dev CORS (`https://sokana-private-api-dev-46lcr3n2qa-uc.a.run.app`) allows origin `https://sokana-front-end-dev-46lcr3n2qa-uc.a.run.app` but `allowedHeaders` is only `Content-Type, Authorization, X-Session-Token, X-Signing-Session`. Browser preflight for `Idempotency-Key` fails → TypeError `Failed to fetch`. Confirmed with OPTIONS on 2026-10-09 (204 returned without `idempotency-key` in Allow-Headers). curl POST still reaches validation.
+- Frontend Cloud Build correctly inlines `VITE_APP_BACKEND_URL=https://sokana-private-api-dev-46lcr3n2qa-uc.a.run.app` (not a wrong/empty API URL).
+
+### Compatibility Required
+- Keep sending `age` (not only `intake_age_years`).
+- Derive `client_age_range` from exact age on submit so CRM still receives it once after removing the demographics duplicate.
+- When primary language is Other, send the specified language in `primary_language` (existing column) and also `primary_language_other` for a future backend column.
+- Do not send `Idempotency-Key` until backend CORS allowlists it; continue rate-limit/honeypot as today.
+
+### Action
+- [x] Context updated before coding
+- [x] Implementation started after preflight
+
+## Preflight 2026-10-09 (Jerry: Playwright + video proof for intake pilot)
+
+### Preflight Entry Checklist
+- **Gate Result**: `run_preflight`
+- **Reason**: `preflight_required_every_task`
+- **Task Intent**: Prove the public intake fixes with Playwright e2e + video (`video: 'on'`), mock submit locally, honor `PLAYWRIGHT_BASE_URL` for post-deploy reruns, never POST against the live dev API from this VM.
+- **Repos Scanned**: both
+- **Files Scanned**:
+  - `/tmp/backend/src/features/intake/domain/normalizePublicSubmission.ts`
+  - `/tmp/backend/src/features/intake/domain/requestSubmissionDto.ts`
+  - `/tmp/backend/src/constants/referralSource.ts`
+  - `/tmp/backend/src/server.ts` (CORS `allowedHeaders`)
+  - `playwright.config.ts`
+  - `e2e/helpers/requestForm.ts`
+  - `src/features/intake/RequestForm.tsx`
+  - `src/features/intake/application/useRequestForm.ts`
+  - `src/features/intake/domain/intakeSubmitErrors.ts`
+- **Context Updated**: yes
+- **Implementation Started After Gate**: yes
+
+### Contract Expectations
+- Local/dev e2e intercepts `POST /requestService/:tenantSlug/requestSubmission` (and legacy `/requestService/requestSubmission`) so no real lead is created.
+- Success JSON `{ message: "Form data received, onto processing" }` (or `{ success: true }`) shows the thank-you screen.
+- Browser abort / TypeError `Failed to fetch` must surface `NETWORK_SUBMIT_MESSAGE`, never a bare "Failed to fetch".
+- Backend still requires address/state, age, provider_type, home people counts, birth place, payment_method, referral_source (and insurance when commercial) — frontend Nancy-required-only submits will 400 until backend relaxes those checks.
+
+### Drift Risks
+- Running Playwright against the deployed SPA without route stubs would POST real PHI to the live API. Specs always mock submit.
+- `PLAYWRIGHT_BASE_URL` against the live site exercises the **deployed** bundle, not local uncommitted code.
+
+### Compatibility Required
+- Same spec runs locally (`npm run test:intake-pilot:e2e`) or after deploy:
+  `PLAYWRIGHT_BASE_URL=https://sokana-front-end-dev-46lcr3n2qa-uc.a.run.app npm run test:intake-pilot:e2e`
+- Do not execute that remote command from this VM.
+
+### Action
+- [x] Context updated before coding
+- [x] Implementation started after preflight
+
+## Preflight 2026-10-09 (CI: lint + intake test alias)
+
+### Preflight Entry Checklist
+- **Gate Result**: `run_preflight`
+- **Reason**: `preflight_required_every_task`
+- **Task Intent**: Fix PR #103 CI — lint/prettier unique to this PR; confirm Vitest/Playwright smoke vs main; fix small intake-related pre-existing failures (`features/` alias, public form load, thank-you branding crash).
+- **Repos Scanned**: both
+- **Files Scanned**:
+  - `/tmp/backend/.cursor/skills/sokana-doula-cloudsql-sync/SKILL.md`
+  - `/tmp/backend/.cursor/skills/sokana-doula-cloudsql-sync/frontend-context.md`
+  - `/tmp/backend/src/features/intake/domain/requestSubmissionDto.ts`
+  - `/tmp/backend/src/features/intake/domain/normalizePublicSubmission.ts`
+  - `.github/workflows/lint.yaml`
+  - `.github/workflows/tests.yaml`
+  - `src/features/intake/RequestForm.tsx`
+  - `src/features/intake/application/useRequestForm.ts`
+  - `src/features/intake/components/IntakeFormHeader.tsx`
+  - `e2e/request-form-pilot-fixes.spec.ts`
+  - `vite.config.ts`
+  - `vitest.config.ts`
+- **Context Updated**: yes
+- **Implementation Started After Gate**: yes
+
+### Contract Expectations
+- Unchanged from 2026-10-09 intake preflights: POST `/requestService/:tenantSlug/requestSubmission` success `{ message: "Form data received, onto processing" }`; no `Idempotency-Key`; Other language stored in `primary_language`; backend still server-requires address/state, age, provider_type, home people counts, birth place, payment_method, referral_source.
+- Public branding GET shape remains `{ slug, name, branding: { displayName, logoPath, pageTitle, ... } }`.
+
+### Drift Risks
+- Thank-you copy uses the inner branding object (`displayName`), not `branding.branding.displayName`.
+- Vitest/Vite without a `features` alias cannot load intake tests or the `/request` page in CI.
+
+### Compatibility Required
+- Keep sending `age` and mapping Other-language text into `primary_language`.
+- Do not POST against the live dev API from this VM.
+
+### Action
+- [x] Context updated before coding
+- [x] Implementation started after preflight
+
+## Preflight 2026-10-11 (Pilot scheduling MVP frontend)
+
+### Preflight Entry Checklist
+- **Gate Result**: `run_preflight`
+- **Reason**: `preflight_required_every_task`
+- **Task Intent**: Build frontend half of Sokana360 pilot scheduling MVP against `/api/scheduling/*` contract.
+- **Repos Scanned**: frontend (local); backend skill paths unavailable in this workspace; GitHub backend PRs reviewed
+- **Files Scanned**:
+  - `.cursor/skills/sokana-backend-preflight-sync/SKILL.md`
+  - `.cursor/skills/sokana-backend-preflight-sync/backend-context.md`
+  - `src/api/doulas/doulaService.ts`
+  - `src/api/http.ts`
+  - `src/api/errors.ts`
+  - `src/api/clients/doulaAssignments.ts`
+  - `src/common/utils/doulaScheduling.ts`
+  - `src/common/data/sidebar-data.ts`
+  - `src/common/components/routes/ProtectedRoutes.tsx`
+  - `src/common/contexts/UserContext.tsx`
+  - `src/Routes.tsx`
+  - `src/features/doula-dashboard/DoulaDashboardRoutes.tsx`
+  - `src/features/doula-dashboard/DoulaDashboardSidebar.tsx`
+  - `src/features/doula-dashboard/DoulaDashboard.tsx`
+  - `src/features/doula-dashboard/components/ProfileTab.tsx`
+  - `src/features/doula-dashboard/components/HoursTab.tsx`
+  - `src/features/doula-dashboard/components/ClientsTab.tsx`
+  - `src/features/doula-dashboard/components/ActivitiesTab.tsx`
+  - `src/features/doula-dashboard/components/DocumentsTab.tsx`
+  - `src/features/client-dashboard/ClientDashboard.tsx`
+  - `src/features/client-dashboard/components/ClientProfileTab.tsx`
+  - `src/features/clients/components/DoulaAssignment.tsx`
+  - `e2e/helpers/doulaE2eStubs.ts`
+  - `e2e/helpers/e2eApiStubs.ts`
+  - `e2e/fixtures/httpStubs.ts`
+  - GitHub `sokanacollectiveCRM/backend` open PRs (#96/#97/#98 present; no scheduling PR yet)
+- **Context Updated**: yes
+- **Implementation Started After Gate**: yes
+
+### Backend Context Reviewed
+- Local backend skill/context paths (`/Users/jerrybony/Documents/GitHub/backend/.cursor/skills/sokana-doula-cloudsql-sync/*`) are not mounted in this cloud workspace.
+- Used the scheduling-scope API contract (section 5) plus existing frontend availability helpers as the source of truth.
+- Backend scheduling package is being built by a separate agent; frontend codes to the published contract and Playwright stubs.
+
+### Contract Expectations
+- New package mounted at `/api/scheduling` (do not call the legacy `POST /clients/:id/assigned-doulas/:doulaId/booking-requests` from the new UI).
+- Keep existing `GET/POST/PATCH/DELETE /api/doulas/availability` for doula window/blackout CRUD.
+- Slot query: `GET /api/scheduling/client/doulas/:doulaId/slots?from&to&durationMinutes=60`
+  - client (own) + ACTIVE assignment; future-only 60-minute slots; max 14-day range.
+- Book: `POST /api/scheduling/client/bookings` `{ doulaId, startAt, endAt, notes? }` (admin may pass `clientId`).
+  - 201 on create; 409 on blackout / overlap / outside available window.
+  - Contract-stage gate is env `BOOKING_REQUIRE_CONTRACT_STAGE` (may be off on dev). When the API reports the client is not in contract stage, show a friendly empty state.
+- Lists: `GET /api/scheduling/client/bookings`, `GET /api/scheduling/doula/bookings?from&to`, `GET /api/scheduling/admin/bookings?doulaId&clientId&status&from&to` (admin includes doula name + client number/first name only).
+- Status: `PATCH /api/scheduling/bookings/:id` `{ status }`
+  - doula (own): `approved` | `rejected` | `cancelled`
+  - client (own): `cancelled`
+  - admin: any
+- Admin read-only availability: `GET /api/scheduling/admin/doulas/:doulaId/availability`
+- Times: ISO UTC on the wire; display in the browser zone with a zone label.
+- Visit length is fixed at 60 minutes (no duration picker).
+- Booking notes may contain PHI: never log or email them from the frontend.
+
+### Drift Risks
+- Response wrappers may mix `{ success, data }`, `{ slots }`, `{ bookings }`, `{ records }`, raw arrays, and snake_case/camelCase fields during rollout.
+- 409 bodies may use `error`/`message` plus `code` (`OVERLAP`, `BLACKOUT`, `OUTSIDE_WINDOW`, `CONFLICT`).
+- Contract-stage denial may be 400/403 with a `CONTRACT*` code or a "contract stage" message — treat both as the empty state, not a hard crash.
+- ProfileTab currently deletes every `unavailable` row when saving status "Available"; that must stop wiping future blackouts created on Schedule.
+- Intake editor on `main` already owns `src/Routes.tsx`; scheduling must add only additive lines. Public intake must keep the original form + PR #103 fixes on the integration branch.
+
+### Compatibility Required
+- Normalize all scheduling payloads in `src/api/scheduling/schedulingService.ts` (mixed wrappers + snake/camel). Do not parse in multiple components.
+- Preserve existing `/api/doulas/availability*` helpers and the Calendly `scheduling_url` fallback.
+- Tolerate missing optional admin join fields (`doulaName`, `clientNumber`, `clientFirstName`).
+- Empty list on 404 (table not migrated yet) so the UI shows a friendly empty state instead of a hard error.
+
+### Action
+- [x] Context updated before coding
+- [x] Implementation started after preflight
+
+## Preflight 2026-10-11 (Weekly hours + time off editor)
+
+### Preflight Entry Checklist
+- **Gate Result**: `run_preflight`
+- **Reason**: `preflight_required_every_task`
+- **Task Intent**: Replace one-off availability/blackout forms with a Calendly-style weekly hours editor and typed time off, still on `/api/doulas/availability`.
+- **Repos Scanned**: frontend (local); backend skill paths unavailable
+- **Files Scanned**:
+  - `src/api/doulas/doulaService.ts` (`GET/POST/PATCH/DELETE /api/doulas/availability`)
+  - `src/features/doula-dashboard/components/ScheduleTab.tsx`
+  - `src/features/scheduling/availabilityForm.ts`
+  - `src/features/scheduling/schedulingTime.ts`
+  - `e2e/helpers/schedulingE2eStubs.ts`
+- **Context Updated**: yes
+- **Implementation Started After Gate**: yes
+
+### Backend Context Reviewed
+- Availability CRUD is already sufficient: each weekly window and each time-off range is a `doula_availability` row (`available` vs `unavailable` + `reason`).
+- Bookings live in `doula_booking_requests` and are not deleted when availability rows change.
+- Slot math (`available` − `unavailable` − pending/approved) already treats time off as blockers.
+
+### Contract Expectations
+- No new backend routes required for the pilot.
+- Weekly save = delete the doula's future `available` rows, then POST expanded windows for `WEEKLY_HOURS_HORIZON_WEEKS` (8).
+- Time off = `unavailable` rows with a typed reason (`Holiday: …`, `Vacation`, `Other: …`).
+- Existing `/api/scheduling/*` slot and booking contract is unchanged.
+
+### Drift Risks
+- Sequential delete+create is not atomic; a mid-save failure can leave a partial week. Optional later: one replace endpoint (described in the report, not required to run the UI).
+- Inferring the weekly template from existing rows can look sparse if the doula only posted a few dates.
+
+### Compatibility Required
+- Keep using `get/create/update/deleteDoulaAvailability`. Do not invent a weekly-hours table.
+- Do not delete `unavailable` rows when saving weekly hours. Do not PATCH bookings.
+
+### Action
+- [x] Context updated before coding
+- [x] Implementation started after preflight

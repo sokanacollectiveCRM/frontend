@@ -55,6 +55,7 @@ test.describe('Ticket 6 — Birth Outcomes mandatory reminder (E2E)', () => {
           lastname: 'Bony',
           email: 'jbony@example.com',
           role: 'doula',
+          emailVerified: true,
         }),
       });
     });

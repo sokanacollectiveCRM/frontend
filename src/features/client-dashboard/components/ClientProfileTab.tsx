@@ -74,6 +74,7 @@ import {
   type AllKnownPaymentMethod,
 } from '@/lib/paymentRules';
 import { getPaymentAuthorizationFormHref } from '@/lib/paymentAuthorizationForm';
+import BookVisitCard from '@/features/client-dashboard/components/BookVisitCard';
 
 type ClientDashboardView = 'all' | 'profile' | 'billing';
 
@@ -1649,6 +1650,10 @@ export default function ClientProfileTab({
                               contract stage.
                             </p>
                           )}
+                          <BookVisitCard
+                            doulaId={String(assignment.doulaId || doula.id)}
+                            doulaName={fullName}
+                          />
                         </div>
                       </div>
                     );

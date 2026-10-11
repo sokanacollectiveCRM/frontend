@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useEffect } from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
 import {
   RequestFormProvider,
@@ -21,6 +22,24 @@ vi.mock('import.meta.env', () => ({
   VITE_APP_BACKEND_URL: 'http://localhost:5050',
 }));
 
+vi.mock('features/intake/application/usePublicIntakeBranding', () => ({
+  usePublicIntakeBranding: () => ({
+    status: 'ready',
+    data: {
+      slug: 'sokana360',
+      name: 'Sokana360',
+      branding: {
+        displayName: 'Sokana360',
+        logoPath: '/sokana360-logo.png',
+        markPath: null,
+        pageTitle: 'Request for Service Form',
+        primaryColor: '#0A3147',
+        accentColor: '#D6704D',
+      },
+    },
+  }),
+}));
+
 global.fetch = vi.fn();
 
 const BANNER_PATTERN = /Some required information is missing or invalid/i;
@@ -31,7 +50,7 @@ function FinalStepInvalidSubmitHarness() {
 
   useEffect(() => {
     form.reset(DUMMY_TEST_LEAD as Partial<RequestFormInput>);
-    form.setValue('payment_method', '', { shouldValidate: false });
+    form.setValue('service_support_details', '', { shouldValidate: false });
     setStep(8);
   }, [form, setStep]);
 
@@ -53,7 +72,11 @@ describe('Request form validation banner', () => {
 
   it('shows the banner when Next is clicked on step 0 without required fields', async () => {
     const user = userEvent.setup();
-    render(<RequestForm />);
+    render(
+      <MemoryRouter initialEntries={['/request/sokana360']}>
+        <RequestForm />
+      </MemoryRouter>
+    );
 
     await user.click(screen.getByRole('button', { name: /next/i }));
 
@@ -62,7 +85,7 @@ describe('Request form validation banner', () => {
     });
   });
 
-  it('shows the banner when final submit fails full-form validation (e.g. missing payment)', async () => {
+  it('shows the banner when final submit fails full-form validation (e.g. missing why-doula)', async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn().mockResolvedValue(undefined);
 

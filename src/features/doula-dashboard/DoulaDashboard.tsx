@@ -64,8 +64,16 @@ export default function DoulaDashboard() {
       const incompleteFields = REQUIRED_PROFILE_FIELDS.filter(
         (field) => !String(profile?.[field] ?? '').trim()
       ).map((field) => FIELD_LABELS[field]);
-      if (!isDoulaRaceEthnicityComplete(profile?.race_ethnicity, profile?.race_ethnicity_other)) {
-        if (!Array.isArray(profile?.race_ethnicity) || profile.race_ethnicity.length === 0) {
+      if (
+        !isDoulaRaceEthnicityComplete(
+          profile?.race_ethnicity,
+          profile?.race_ethnicity_other
+        )
+      ) {
+        if (
+          !Array.isArray(profile?.race_ethnicity) ||
+          profile.race_ethnicity.length === 0
+        ) {
           incompleteFields.push(RACE_ETHNICITY_FIELD_LABEL);
         } else {
           incompleteFields.push('Another race or ethnicity (please specify)');
@@ -81,7 +89,10 @@ export default function DoulaDashboard() {
   };
 
   const outletContext: DoulaDashboardOutletContext = {
-    onProfileStatusChange: ({ isComplete, missingFields: updatedMissingFields }) => {
+    onProfileStatusChange: ({
+      isComplete,
+      missingFields: updatedMissingFields,
+    }) => {
       setIsProfileComplete(isComplete);
       setMissingFields(updatedMissingFields);
     },
@@ -92,9 +103,12 @@ export default function DoulaDashboard() {
       <Header fixed>
         <div className='flex w-full items-center gap-4'>
           <div className='min-w-0'>
-            <h1 className='text-lg font-semibold text-slate-900'>Doula Dashboard</h1>
+            <h1 className='text-lg font-semibold text-slate-900'>
+              Doula Dashboard
+            </h1>
             <p className='text-sm text-slate-500'>
-              Manage your profile, documents, clients, hours, and activities
+              Manage your profile, documents, clients, hours, schedule, and
+              activities
             </p>
           </div>
           <div className='ml-auto flex items-center gap-4'>

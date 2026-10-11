@@ -1,4 +1,5 @@
 import {
+  CalendarClock,
   ClipboardList,
   FileText,
   Home,
@@ -100,6 +101,12 @@ export const sidebarSections = [
       },
       { title: 'Doulas', url: '/hours', icon: LucideUsers, adminOnly: true },
       {
+        title: 'Visits',
+        url: '/scheduling',
+        icon: CalendarClock,
+        adminOnly: true,
+      },
+      {
         title: 'Payments',
         url: '/payments',
         icon: LucideCreditCard,
@@ -139,6 +146,12 @@ export const sidebarSections = [
         title: 'Hours',
         url: '/doula-dashboard/hours',
         icon: Clock3,
+        doulaOnly: true,
+      },
+      {
+        title: 'Schedule',
+        url: '/doula-dashboard/schedule',
+        icon: CalendarClock,
         doulaOnly: true,
       },
       {
