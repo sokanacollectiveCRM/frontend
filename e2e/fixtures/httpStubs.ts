@@ -6,6 +6,7 @@ export type StubbedUser = {
   lastname: string;
   email: string;
   role: string;
+  emailVerified?: boolean;
 };
 
 export function defaultCorsHeaders() {
@@ -19,7 +20,10 @@ export function defaultCorsHeaders() {
 }
 
 /** Handle CORS preflight requests the app triggers in dev. */
-export async function installCorsPreflightStub(page: Page, headers = defaultCorsHeaders()) {
+export async function installCorsPreflightStub(
+  page: Page,
+  headers = defaultCorsHeaders()
+) {
   await page.route('**/*', (route) => {
     if (route.request().method() !== 'OPTIONS') return route.continue();
     route.fulfill({
@@ -31,7 +35,11 @@ export async function installCorsPreflightStub(page: Page, headers = defaultCors
 }
 
 /** Stub the backend cookie-mode `GET /auth/me` check used by `UserContext`. */
-export async function stubAuthMe(page: Page, user: StubbedUser, headers = defaultCorsHeaders()) {
+export async function stubAuthMe(
+  page: Page,
+  user: StubbedUser,
+  headers = defaultCorsHeaders()
+) {
   await page.route('**/auth/me', (route) => {
     route.fulfill({
       status: 200,
@@ -41,4 +49,3 @@ export async function stubAuthMe(page: Page, user: StubbedUser, headers = defaul
     });
   });
 }
-

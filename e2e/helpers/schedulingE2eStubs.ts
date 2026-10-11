@@ -15,6 +15,7 @@ export const SCHEDULING_FIXTURE = {
     lastname: 'Rivers',
     email: 'maya.rivers@example.com',
     role: 'doula',
+    emailVerified: true,
   },
   client: {
     id: 'client-jordan-lake',
@@ -23,6 +24,7 @@ export const SCHEDULING_FIXTURE = {
     email: 'jordan.lake@example.com',
     role: 'client',
     clientNumber: 'C-1042',
+    emailVerified: true,
   },
   admin: {
     id: 'admin-sokana',
@@ -30,6 +32,7 @@ export const SCHEDULING_FIXTURE = {
     lastname: 'Admin',
     email: 'admin@example.com',
     role: 'admin',
+    emailVerified: true,
   },
 } as const;
 

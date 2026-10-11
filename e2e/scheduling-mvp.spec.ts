@@ -79,6 +79,10 @@ test.describe('Pilot scheduling MVP', () => {
     await page.getByRole('button', { name: 'Add blackout' }).click();
     await expect(page.getByText('Blackout added.')).toBeVisible();
     await expect(page.getByText('Training')).toBeVisible();
+    await page.screenshot({
+      path: 'e2e/artifacts/01-doula-availability-and-blackout.png',
+      fullPage: true,
+    });
 
     await openAsUser(page, store, SCHEDULING_FIXTURE.client, '/profile');
     await expect(
@@ -114,6 +118,10 @@ test.describe('Pilot scheduling MVP', () => {
     await expect(page.getByTestId('booking-conflict')).toContainText(
       /no longer available|overlap/i
     );
+    await page.screenshot({
+      path: 'e2e/artifacts/02-client-pending-and-conflict.png',
+      fullPage: true,
+    });
 
     await openAsUser(
       page,
@@ -126,6 +134,10 @@ test.describe('Pilot scheduling MVP', () => {
     await page.getByRole('button', { name: 'Approve' }).click();
     await expect(page.getByText('Visit approved.')).toBeVisible();
     await expect(page.getByTestId('visit-requests')).toContainText('Approved');
+    await page.screenshot({
+      path: 'e2e/artifacts/03-doula-approved.png',
+      fullPage: true,
+    });
 
     await openAsUser(page, store, SCHEDULING_FIXTURE.client, '/profile');
     await expect(page.getByTestId('my-visits')).toContainText('Approved');
@@ -135,5 +147,9 @@ test.describe('Pilot scheduling MVP', () => {
     await expect(page.getByTestId('visits-table')).toContainText('Approved');
     await expect(page.getByTestId('visits-table')).toContainText('Maya Rivers');
     await expect(page.getByTestId('visits-table')).toContainText('Jordan');
+    await page.screenshot({
+      path: 'e2e/artifacts/04-admin-visits.png',
+      fullPage: true,
+    });
   });
 });
