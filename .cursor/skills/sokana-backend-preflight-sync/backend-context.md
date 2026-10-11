@@ -486,3 +486,80 @@ Use this checklist at the top of every new preflight entry:
 ### Action
 - [x] Context updated before coding
 - [x] Implementation started after preflight
+
+## Preflight 2026-10-11 (Pilot scheduling MVP frontend)
+
+### Preflight Entry Checklist
+- **Gate Result**: `run_preflight`
+- **Reason**: `preflight_required_every_task`
+- **Task Intent**: Build frontend half of Sokana360 pilot scheduling MVP against `/api/scheduling/*` contract.
+- **Repos Scanned**: frontend (local); backend skill paths unavailable in this workspace; GitHub backend PRs reviewed
+- **Files Scanned**:
+  - `.cursor/skills/sokana-backend-preflight-sync/SKILL.md`
+  - `.cursor/skills/sokana-backend-preflight-sync/backend-context.md`
+  - `src/api/doulas/doulaService.ts`
+  - `src/api/http.ts`
+  - `src/api/errors.ts`
+  - `src/api/clients/doulaAssignments.ts`
+  - `src/common/utils/doulaScheduling.ts`
+  - `src/common/data/sidebar-data.ts`
+  - `src/common/components/routes/ProtectedRoutes.tsx`
+  - `src/common/contexts/UserContext.tsx`
+  - `src/Routes.tsx`
+  - `src/features/doula-dashboard/DoulaDashboardRoutes.tsx`
+  - `src/features/doula-dashboard/DoulaDashboardSidebar.tsx`
+  - `src/features/doula-dashboard/DoulaDashboard.tsx`
+  - `src/features/doula-dashboard/components/ProfileTab.tsx`
+  - `src/features/doula-dashboard/components/HoursTab.tsx`
+  - `src/features/doula-dashboard/components/ClientsTab.tsx`
+  - `src/features/doula-dashboard/components/ActivitiesTab.tsx`
+  - `src/features/doula-dashboard/components/DocumentsTab.tsx`
+  - `src/features/client-dashboard/ClientDashboard.tsx`
+  - `src/features/client-dashboard/components/ClientProfileTab.tsx`
+  - `src/features/clients/components/DoulaAssignment.tsx`
+  - `e2e/helpers/doulaE2eStubs.ts`
+  - `e2e/helpers/e2eApiStubs.ts`
+  - `e2e/fixtures/httpStubs.ts`
+  - GitHub `sokanacollectiveCRM/backend` open PRs (#96/#97/#98 present; no scheduling PR yet)
+- **Context Updated**: yes
+- **Implementation Started After Gate**: yes
+
+### Backend Context Reviewed
+- Local backend skill/context paths (`/Users/jerrybony/Documents/GitHub/backend/.cursor/skills/sokana-doula-cloudsql-sync/*`) are not mounted in this cloud workspace.
+- Used the scheduling-scope API contract (section 5) plus existing frontend availability helpers as the source of truth.
+- Backend scheduling package is being built by a separate agent; frontend codes to the published contract and Playwright stubs.
+
+### Contract Expectations
+- New package mounted at `/api/scheduling` (do not call the legacy `POST /clients/:id/assigned-doulas/:doulaId/booking-requests` from the new UI).
+- Keep existing `GET/POST/PATCH/DELETE /api/doulas/availability` for doula window/blackout CRUD.
+- Slot query: `GET /api/scheduling/client/doulas/:doulaId/slots?from&to&durationMinutes=60`
+  - client (own) + ACTIVE assignment; future-only 60-minute slots; max 14-day range.
+- Book: `POST /api/scheduling/client/bookings` `{ doulaId, startAt, endAt, notes? }` (admin may pass `clientId`).
+  - 201 on create; 409 on blackout / overlap / outside available window.
+  - Contract-stage gate is env `BOOKING_REQUIRE_CONTRACT_STAGE` (may be off on dev). When the API reports the client is not in contract stage, show a friendly empty state.
+- Lists: `GET /api/scheduling/client/bookings`, `GET /api/scheduling/doula/bookings?from&to`, `GET /api/scheduling/admin/bookings?doulaId&clientId&status&from&to` (admin includes doula name + client number/first name only).
+- Status: `PATCH /api/scheduling/bookings/:id` `{ status }`
+  - doula (own): `approved` | `rejected` | `cancelled`
+  - client (own): `cancelled`
+  - admin: any
+- Admin read-only availability: `GET /api/scheduling/admin/doulas/:doulaId/availability`
+- Times: ISO UTC on the wire; display in the browser zone with a zone label.
+- Visit length is fixed at 60 minutes (no duration picker).
+- Booking notes may contain PHI: never log or email them from the frontend.
+
+### Drift Risks
+- Response wrappers may mix `{ success, data }`, `{ slots }`, `{ bookings }`, `{ records }`, raw arrays, and snake_case/camelCase fields during rollout.
+- 409 bodies may use `error`/`message` plus `code` (`OVERLAP`, `BLACKOUT`, `OUTSIDE_WINDOW`, `CONFLICT`).
+- Contract-stage denial may be 400/403 with a `CONTRACT*` code or a "contract stage" message — treat both as the empty state, not a hard crash.
+- ProfileTab currently deletes every `unavailable` row when saving status "Available"; that must stop wiping future blackouts created on Schedule.
+- Intake editor on `main` already owns `src/Routes.tsx`; scheduling must add only additive lines. Public intake must keep the original form + PR #103 fixes on the integration branch.
+
+### Compatibility Required
+- Normalize all scheduling payloads in `src/api/scheduling/schedulingService.ts` (mixed wrappers + snake/camel). Do not parse in multiple components.
+- Preserve existing `/api/doulas/availability*` helpers and the Calendly `scheduling_url` fallback.
+- Tolerate missing optional admin join fields (`doulaName`, `clientNumber`, `clientFirstName`).
+- Empty list on 404 (table not migrated yet) so the UI shows a friendly empty state instead of a hard error.
+
+### Action
+- [x] Context updated before coding
+- [x] Implementation started after preflight

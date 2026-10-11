@@ -26,6 +26,8 @@
     "test:request-form:e2e": "playwright test e2e/request-form-*.spec.ts",
     "test:portal-eligibility:e2e": "playwright test e2e/portal-eligibility-actions.spec.ts",
     "test:email-verification:e2e": "playwright test --config=playwright.email-verification.config.ts",
+    "test:scheduling:e2e": "playwright test e2e/scheduling-mvp.spec.ts --project=chromium",
+    "test:scheduling:dev": "playwright test --config=playwright.scheduling-dev.config.ts",
     "test:request-form": "npm run test:request-form:unit && npm run test:request-form:e2e",
     "check:sensitive-logging": "node scripts/check-sensitive-logging.mjs",
     "check:prod": "node scripts/check-production-readiness.mjs",

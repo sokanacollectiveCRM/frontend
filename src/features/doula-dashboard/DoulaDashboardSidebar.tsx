@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import {
+  CalendarClock,
   FileText,
   LayoutDashboard,
   MessagesSquare,
@@ -32,6 +33,12 @@ const items = [
     description: 'Log and track your work hours',
     to: '/doula-dashboard/hours',
     icon: Clock3,
+  },
+  {
+    label: 'Schedule',
+    description: 'Post availability and review visits',
+    to: '/doula-dashboard/schedule',
+    icon: CalendarClock,
   },
   {
     label: 'Activities',
@@ -70,7 +77,8 @@ export function DoulaDashboardSidebar() {
           <div className='rounded-2xl bg-teal-950 px-4 py-4 text-white shadow-sm'>
             <p className='text-lg font-semibold'>Doula Dashboard</p>
             <p className='mt-1 text-sm text-teal-100'>
-              Keep your profile, files, clients, and hours in one place.
+              Keep your profile, files, clients, hours, and schedule in one
+              place.
             </p>
           </div>
 
