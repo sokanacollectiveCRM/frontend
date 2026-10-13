@@ -1,3 +1,20 @@
+vi.mock('features/intake/application/usePublicIntakeBranding', () => ({
+  usePublicIntakeBranding: () => ({
+    status: 'ready',
+    data: {
+      slug: 'sokana360',
+      name: 'Sokana360',
+      branding: {
+        displayName: 'Sokana360',
+        logoPath: '/sokana360-logo.png',
+        markPath: null,
+        pageTitle: 'Request for Service Form',
+        primaryColor: '#0A3147',
+        accentColor: '#D6704D',
+      },
+    },
+  }),
+}));
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
@@ -33,7 +50,7 @@ describe('RequestForm', () => {
       expect(
         screen.getByText(/Please complete this form as thoroughly as possible/)
       ).toBeInTheDocument();
-      expect(screen.getByAltText('Sokana360 Logo')).toBeInTheDocument();
+      expect(screen.getByAltText('Sokana360 logo')).toBeInTheDocument();
     });
 
     it('shows Next button on first step', () => {
