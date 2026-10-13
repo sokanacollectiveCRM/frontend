@@ -10,6 +10,7 @@ export default defineConfig({
     ...devices['Desktop Chrome'],
     baseURL: 'https://sokana-front-end-dev-46lcr3n2qa-uc.a.run.app',
     viewport: { width: 1440, height: 1000 },
+    actionTimeout: 15000,
     video: 'off',
     trace: 'off',
     screenshot: 'only-on-failure',

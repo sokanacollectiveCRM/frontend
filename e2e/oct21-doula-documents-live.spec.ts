@@ -48,7 +48,7 @@ async function upload(page: Page, type: string, name: string) {
     .getByRole('button', { name: 'Upload', exact: true })
     .click();
   expect((await response).status()).toBe(201);
-  await expect(card.getByText(name, { exact: true })).toBeVisible();
+  await expect(card.getByText(`File: ${name}`, { exact: true })).toBeVisible();
 }
 
 test('dev document uploads, archived files, and training-only approval', async ({
@@ -112,10 +112,10 @@ test('dev document uploads, archived files, and training-only approval', async (
     await upload(page, 'miscellaneous', 'fictional-misc-two.pdf');
     await page.reload();
     await expect(
-      page.getByText('fictional-misc-one.pdf', { exact: true })
+      page.getByText('File: fictional-misc-one.pdf', { exact: true })
     ).toBeVisible();
     await expect(
-      page.getByText('fictional-misc-two.pdf', { exact: true })
+      page.getByText('File: fictional-misc-two.pdf', { exact: true })
     ).toBeVisible();
     const uploaded = await (
       await page.request.get(`${api}/api/doulas/documents`, { headers })
@@ -149,6 +149,7 @@ test('dev document uploads, archived files, and training-only approval', async (
     }
     const row = adminPage
       .getByText('Doula training certificate', { exact: true })
+      .locator('..')
       .locator('..')
       .locator('..');
     await row.getByRole('button', { name: 'Review', exact: true }).click();
