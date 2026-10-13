@@ -65,6 +65,17 @@ test.describe('Clients — Leads vs Customers tabs (E2E)', () => {
 
     await page.goto('/clients', { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { name: 'Clients' })).toBeVisible();
+    await expect(page.getByText('Sokana360', { exact: true })).toBeVisible();
+    const brandMark = page.locator('img[src="/sokana360-mark.png"]');
+    await expect(brandMark).toBeVisible();
+    await expect
+      .poll(() =>
+        brandMark.evaluate((img: HTMLImageElement) => img.naturalWidth)
+      )
+      .toBeGreaterThan(0);
+    await expect(
+      page.getByText('Personal Platform', { exact: true })
+    ).toHaveCount(0);
 
     // Default tab is Leads; should contain Lead One but not Matched Client
     await expect(page.getByText('Lead One')).toBeVisible();
