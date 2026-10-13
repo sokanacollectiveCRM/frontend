@@ -63,6 +63,7 @@ jobs:
       - name: Playwright (smoke subset)
         run: |
           npx playwright test \
+            e2e/login-entry.spec.ts \
             e2e/ticket6-birth-outcomes-required.spec.ts \
             e2e/ticket2-insurance-card-upload.spec.ts \
             e2e/request-form-payment-method-required.spec.ts \
