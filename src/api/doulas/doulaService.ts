@@ -339,28 +339,102 @@ export async function deleteDoulaAvailability(
 // 2. Document Management (Mandatory Doula Documents)
 // ============================================
 
-export const REQUIRED_DOULA_DOCUMENT_TYPES = [
-  'background_check',
-  'liability_insurance_certificate',
-  'training_certificate',
-  'w9',
-  'direct_deposit_form',
-] as const;
+export const REQUIRED_DOULA_DOCUMENT_TYPES = ['training_certificate'] as const;
 
 export type RequiredDocumentType =
   (typeof REQUIRED_DOULA_DOCUMENT_TYPES)[number];
 
-export type DocumentType = RequiredDocumentType | 'license' | 'other';
+export const OPTIONAL_DOULA_DOCUMENT_TYPES = [
+  'liability_insurance_certificate',
+  'illinois_medicaid_certification',
+  'miscellaneous',
+  'license',
+  'other',
+] as const;
 
-export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
-  background_check: 'Background Check',
-  liability_insurance_certificate: 'Liability Insurance Certificate',
-  training_certificate: 'Training Certificate',
-  w9: 'W9',
-  direct_deposit_form: 'Direct Deposit Form',
-  license: 'License',
-  other: 'Other',
+export const RETIRED_DOULA_DOCUMENT_TYPES = [
+  'background_check',
+  'w9',
+  'direct_deposit_form',
+] as const;
+
+export const PORTAL_DOULA_DOCUMENT_TYPES = [
+  'training_certificate',
+  'liability_insurance_certificate',
+  'illinois_medicaid_certification',
+  'miscellaneous',
+] as const;
+
+export type PortalDocumentType = (typeof PORTAL_DOULA_DOCUMENT_TYPES)[number];
+
+export type DocumentType =
+  | RequiredDocumentType
+  | (typeof OPTIONAL_DOULA_DOCUMENT_TYPES)[number]
+  | (typeof RETIRED_DOULA_DOCUMENT_TYPES)[number];
+
+export interface DoulaDocumentMeta {
+  label: string;
+  required: boolean;
+  helperText?: string;
+  multiple?: boolean;
+  retired?: boolean;
+}
+
+export const DOULA_DOCUMENT_META: Record<DocumentType, DoulaDocumentMeta> = {
+  training_certificate: {
+    label: 'Doula training certificate',
+    required: true,
+  },
+  liability_insurance_certificate: {
+    label: 'Liability insurance',
+    required: false,
+    helperText: 'Required for Medicaid clients',
+  },
+  illinois_medicaid_certification: {
+    label: 'Illinois Medicaid certification',
+    required: false,
+  },
+  miscellaneous: {
+    label: 'Miscellaneous documents',
+    required: false,
+    multiple: true,
+  },
+  license: {
+    label: 'License',
+    required: false,
+  },
+  other: {
+    label: 'Other',
+    required: false,
+  },
+  background_check: {
+    label: 'Background check',
+    required: false,
+    retired: true,
+  },
+  w9: {
+    label: 'W9',
+    required: false,
+    retired: true,
+  },
+  direct_deposit_form: {
+    label: 'Direct deposit form',
+    required: false,
+    retired: true,
+  },
 };
+
+export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> =
+  Object.fromEntries(
+    Object.entries(DOULA_DOCUMENT_META).map(([type, meta]) => [
+      type,
+      meta.label,
+    ])
+  ) as Record<DocumentType, string>;
+
+export function isRetiredDoulaDocumentType(type: string): boolean {
+  return (RETIRED_DOULA_DOCUMENT_TYPES as readonly string[]).includes(type);
+}
 
 export const DOCUMENT_STATUS_LABELS: Record<string, string> = {
   missing: 'Missing',
@@ -409,6 +483,99 @@ export interface DocumentCompleteness {
   items: DocumentCompletenessItem[];
 }
 
+function readDocumentField(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value : undefined;
+}
+
+function parseDoulaDocumentRow(raw: unknown): DocumentCompletenessItem | null {
+  const doc = (raw ?? {}) as Record<string, unknown>;
+  const documentType = readDocumentField(doc.document_type ?? doc.documentType);
+  if (!documentType) return null;
+  const documentId = doc.id ?? doc.document_id ?? doc.documentId;
+  const fileName = doc.file_name ?? doc.fileName;
+  const uploadedAt = doc.uploaded_at ?? doc.uploadedAt ?? doc.created_at;
+  const rejectionReason = doc.rejection_reason ?? doc.rejectionReason;
+  return {
+    document_type: documentType,
+    status: typeof doc.status === 'string' ? doc.status : 'uploaded',
+    document_id: typeof documentId === 'string' ? documentId : undefined,
+    file_name: typeof fileName === 'string' ? fileName : undefined,
+    uploaded_at: typeof uploadedAt === 'string' ? uploadedAt : undefined,
+    rejection_reason:
+      typeof rejectionReason === 'string' ? rejectionReason : undefined,
+  };
+}
+
+export function partitionDoulaDocuments(data: {
+  documents?: unknown[] | null;
+  completeness?: Partial<DocumentCompleteness> | null;
+}): {
+  active: DocumentCompletenessItem[];
+  archived: DocumentCompletenessItem[];
+  canBeActive: boolean;
+  totalComplete: number;
+  totalRequired: number;
+} {
+  const documents = (data.documents ?? [])
+    .map(parseDoulaDocumentRow)
+    .filter((row): row is DocumentCompletenessItem => row !== null);
+  const completenessItems = (data.completeness?.items ?? [])
+    .map(parseDoulaDocumentRow)
+    .filter((row): row is DocumentCompletenessItem => row !== null);
+  const completenessByType = new Map(
+    completenessItems.map((item) => [item.document_type, item])
+  );
+  const portalTypes = new Set<string>(PORTAL_DOULA_DOCUMENT_TYPES);
+  const active: DocumentCompletenessItem[] = [];
+
+  for (const type of PORTAL_DOULA_DOCUMENT_TYPES) {
+    const matches = documents.filter((doc) => doc.document_type === type);
+    const meta = DOULA_DOCUMENT_META[type];
+    if (meta.multiple) {
+      active.push(
+        ...(matches.length > 0
+          ? matches
+          : [{ document_type: type, status: 'missing' }])
+      );
+      continue;
+    }
+    const document = matches[0];
+    const completeness = completenessByType.get(type);
+    if (document) {
+      active.push({
+        ...completeness,
+        ...document,
+        document_type: type,
+        status: document.status || completeness?.status || 'uploaded',
+      });
+    } else {
+      active.push(
+        completeness ?? {
+          document_type: type,
+          status: 'missing',
+        }
+      );
+    }
+  }
+
+  for (const document of documents) {
+    if (portalTypes.has(document.document_type)) continue;
+    if (isRetiredDoulaDocumentType(document.document_type)) continue;
+    active.push(document);
+  }
+
+  return {
+    active,
+    archived: documents.filter((doc) =>
+      isRetiredDoulaDocumentType(doc.document_type)
+    ),
+    canBeActive: data.completeness?.can_be_active ?? false,
+    totalComplete: data.completeness?.total_complete ?? 0,
+    totalRequired:
+      data.completeness?.total_required ?? REQUIRED_DOULA_DOCUMENT_TYPES.length,
+  };
+}
+
 export interface DocumentsResponse {
   documents: DoulaDocument[];
   completeness?: DocumentCompleteness;
@@ -435,6 +602,11 @@ export async function uploadDocument(
   if (!ALLOWED_DOCUMENT_MIME_TYPES.includes(file.type)) {
     throw new Error('Invalid file type. Allowed: PDF, PNG, JPG, JPEG');
   }
+  if (isRetiredDoulaDocumentType(documentType)) {
+    throw new Error(
+      `${DOULA_DOCUMENT_META[documentType].label} uploads are no longer accepted.`
+    );
+  }
 
   const formData = new FormData();
   // Backend expects: 'file' for the file, 'document_type' (snake_case) for the type
@@ -443,9 +615,6 @@ export async function uploadDocument(
   if (notes && notes.trim()) {
     formData.append('notes', notes);
   }
-
-  // Debug: Log FormData contents
-  formData.forEach((value, key) => {});
 
   const response = await fetchWithAuth(`${API_BASE}/doulas/documents`, {
     method: 'POST',
@@ -534,6 +703,11 @@ export async function updateDoulaDocumentMetadata(
     payload.file_name = trimmedName;
   }
   if (typeof data.documentType === 'string') {
+    if (isRetiredDoulaDocumentType(data.documentType)) {
+      throw new Error(
+        `${DOULA_DOCUMENT_META[data.documentType].label} uploads are no longer accepted.`
+      );
+    }
     payload.document_type = data.documentType;
   }
   if (Object.keys(payload).length === 0) {
