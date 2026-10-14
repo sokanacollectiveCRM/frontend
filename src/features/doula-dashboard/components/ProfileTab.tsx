@@ -1,4 +1,4 @@
-import CertificationsFields from './CertificationsFields';
+import CertificationsFields from '@/features/doula-dashboard/components/CertificationsFields';
 import { useState, useEffect } from 'react';
 import { logFailure } from '@/utils/safeLog';
 import {

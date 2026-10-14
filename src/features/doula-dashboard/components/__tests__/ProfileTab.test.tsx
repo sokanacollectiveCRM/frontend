@@ -6,7 +6,7 @@ import {
   cleanup,
 } from '@testing-library/react';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
-import ProfileTab from '../ProfileTab';
+import ProfileTab from '@/features/doula-dashboard/components/ProfileTab';
 import * as api from '@/api/doulas/doulaService';
 vi.mock('@/api/doulas/doulaService', () => ({
   getDoulaProfile: vi.fn(),
