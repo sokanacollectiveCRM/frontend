@@ -14,7 +14,27 @@ const API_BASE = `${apiBaseUrl}/api`;
 // 1. Doula Profile Management
 // ============================================
 
+export interface Certification {
+  name: string;
+  issuingOrganization: string;
+  year: string;
+}
+export async function submitDoulaProfile(): Promise<{
+  profile_submitted_at: string;
+}> {
+  const response = await fetchWithAuth(`${API_BASE}/doulas/profile/submit`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+  const result = await response.json();
+  if (!response.ok)
+    throw new Error(result.error || 'Could not submit profile.');
+  return result;
+}
+
 export interface DoulaProfile {
+  certifications?: Certification[];
+  profile_submitted_at?: string | null;
   id: string;
   email: string;
   firstname: string;
@@ -70,6 +90,7 @@ export async function getDoulaProfile(): Promise<DoulaProfile> {
 }
 
 export interface UpdateProfileData {
+  certifications?: Certification[];
   firstname?: string;
   lastname?: string;
   address?: string;
