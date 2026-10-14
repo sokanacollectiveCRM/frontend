@@ -7,6 +7,7 @@ export type User = {
   bio?: string;
   role: string;
   emailVerified?: boolean;
+  platformSupport?: boolean;
   state?: string;
   address?: string;
   city?: string;

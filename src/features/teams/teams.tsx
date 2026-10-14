@@ -31,9 +31,9 @@ import {
 import { UserContext } from '@/common/contexts/UserContext';
 import {
   DOCUMENT_TYPE_LABELS,
-  REQUIRED_DOULA_DOCUMENT_TYPES,
   getAdminDoulaDocuments,
   getDoulaDocumentUrl,
+  partitionDoulaDocuments,
   type DocumentCompletenessItem,
 } from '@/api/doulas/doulaService';
 import { buildUrl, fetchWithAuth } from '@/api/http';
@@ -118,6 +118,9 @@ export default function Teams() {
     null
   );
   const [documentsItems, setDocumentsItems] = useState<
+    DocumentCompletenessItem[]
+  >([]);
+  const [archivedDocuments, setArchivedDocuments] = useState<
     DocumentCompletenessItem[]
   >([]);
   const [documentsLoading, setDocumentsLoading] = useState(false);
@@ -244,94 +247,12 @@ export default function Teams() {
     setDocumentsDialogOpen(true);
     setDocumentsLoading(true);
     setDocumentsItems([]);
+    setArchivedDocuments([]);
     try {
       const data = await getAdminDoulaDocuments(member.id);
-      const rawItems = (data.completeness?.items ?? []) as unknown[];
-      const completenessItems: DocumentCompletenessItem[] = rawItems.map(
-        (raw) => {
-          const item = (raw ?? {}) as Record<string, unknown>;
-          const documentId = item.document_id ?? item.documentId;
-          const fileName = item.file_name ?? item.fileName;
-          const uploadedAt = item.uploaded_at ?? item.uploadedAt;
-          const rejectionReason = item.rejection_reason ?? item.rejectionReason;
-          return {
-            document_type: String(
-              item.document_type ?? item.documentType ?? ''
-            ),
-            status: String(item.status ?? 'missing'),
-            document_id:
-              typeof documentId === 'string' ? documentId : undefined,
-            file_name: typeof fileName === 'string' ? fileName : undefined,
-            uploaded_at:
-              typeof uploadedAt === 'string' ? uploadedAt : undefined,
-            rejection_reason:
-              typeof rejectionReason === 'string' ? rejectionReason : undefined,
-          };
-        }
-      );
-      const completenessByType = new Map<string, DocumentCompletenessItem>(
-        completenessItems.map((item) => [item.document_type, item])
-      );
-      const documentsByType = new Map<
-        string,
-        {
-          id?: string;
-          fileName?: string;
-          uploadedAt?: string;
-          status?: string;
-          rejectionReason?: string;
-        }
-      >();
-
-      for (const raw of (data.documents ?? []) as unknown[]) {
-        const doc = (raw ?? {}) as Record<string, unknown>;
-        const type = doc.document_type ?? doc.documentType;
-        if (typeof type !== 'string' || !type) continue;
-        documentsByType.set(type, {
-          id:
-            typeof (doc.id ?? doc.document_id ?? doc.documentId) === 'string'
-              ? String(doc.id ?? doc.document_id ?? doc.documentId)
-              : undefined,
-          fileName:
-            typeof (doc.file_name ?? doc.fileName) === 'string'
-              ? String(doc.file_name ?? doc.fileName)
-              : undefined,
-          uploadedAt:
-            typeof (doc.uploaded_at ?? doc.uploadedAt ?? doc.created_at) ===
-            'string'
-              ? String(doc.uploaded_at ?? doc.uploadedAt ?? doc.created_at)
-              : undefined,
-          status: typeof doc.status === 'string' ? doc.status : undefined,
-          rejectionReason:
-            typeof (doc.rejection_reason ?? doc.rejectionReason) === 'string'
-              ? String(doc.rejection_reason ?? doc.rejectionReason)
-              : undefined,
-        });
-      }
-
-      const mergedItems: DocumentCompletenessItem[] =
-        REQUIRED_DOULA_DOCUMENT_TYPES.map((type) => {
-          const completeness = completenessByType.get(type);
-          const document = documentsByType.get(type);
-          if (document) {
-            return {
-              document_type: type,
-              status: document.status ?? completeness?.status ?? 'uploaded',
-              document_id: document.id ?? completeness?.document_id,
-              file_name: document.fileName ?? completeness?.file_name,
-              uploaded_at: document.uploadedAt ?? completeness?.uploaded_at,
-              rejection_reason:
-                document.rejectionReason ?? completeness?.rejection_reason,
-            };
-          }
-          return (
-            completeness ?? {
-              document_type: type,
-              status: 'missing',
-            }
-          );
-        });
-      setDocumentsItems(mergedItems);
+      const view = partitionDoulaDocuments(data);
+      setDocumentsItems(view.active);
+      setArchivedDocuments(view.archived);
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -1369,6 +1290,32 @@ export default function Teams() {
                 );
               })
             )}
+            {archivedDocuments.length > 0 && (
+              <details className='rounded-md border border-gray-200 p-3'>
+                <summary className='cursor-pointer text-sm font-medium text-gray-700'>
+                  Archived documents
+                </summary>
+                <div className='mt-3 space-y-2'>
+                  {archivedDocuments.map((item) => (
+                    <div
+                      key={`${item.document_type}-${item.document_id ?? 'archived'}`}
+                      className='text-sm text-gray-700'
+                    >
+                      <p className='font-medium'>
+                        {(DOCUMENT_TYPE_LABELS as Record<string, string>)[
+                          item.document_type
+                        ] ?? item.document_type}
+                      </p>
+                      {item.file_name && (
+                        <p className='text-xs text-gray-500'>
+                          {item.file_name}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
           </div>
           <DialogFooter>
             <Button
@@ -1377,6 +1324,7 @@ export default function Teams() {
                 setDocumentsDialogOpen(false);
                 setDocumentsMember(null);
                 setDocumentsItems([]);
+                setArchivedDocuments([]);
               }}
             >
               Close

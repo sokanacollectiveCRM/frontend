@@ -43,6 +43,9 @@ jobs:
       VITE_APP_BACKEND_URL: http://localhost:5050
       VITE_SUPABASE_URL: https://example.supabase.co
       VITE_SUPABASE_ANON_KEY: test-anon-key
+      VITE_FIREBASE_API_KEY: test-api-key
+      VITE_FIREBASE_AUTH_DOMAIN: example.firebaseapp.com
+      VITE_FIREBASE_PROJECT_ID: example
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -63,6 +66,9 @@ jobs:
       - name: Playwright (smoke subset)
         run: |
           npx playwright test \
+            e2e/login-entry.spec.ts \
+            e2e/invite-password.spec.ts \
+            e2e/oct21-doula-profile.spec.ts \
             e2e/ticket6-birth-outcomes-required.spec.ts \
             e2e/ticket2-insurance-card-upload.spec.ts \
             e2e/request-form-payment-method-required.spec.ts \
@@ -76,7 +82,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-smoke
-          path: playwright-report
+          path: |
+            playwright-report
+            test-results
 
   playwright-full:
     name: Playwright full (nightly)
@@ -88,6 +96,9 @@ jobs:
       VITE_APP_BACKEND_URL: http://localhost:5050
       VITE_SUPABASE_URL: https://example.supabase.co
       VITE_SUPABASE_ANON_KEY: test-anon-key
+      VITE_FIREBASE_API_KEY: test-api-key
+      VITE_FIREBASE_AUTH_DOMAIN: example.firebaseapp.com
+      VITE_FIREBASE_PROJECT_ID: example
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -113,4 +124,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-full
-          path: playwright-report
+          path: |
+            playwright-report
+            test-results
