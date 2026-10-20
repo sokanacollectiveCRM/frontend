@@ -399,7 +399,7 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
 
       toast.success(
         submittingForReview
-          ? 'Profile submitted. The Sokana team has been emailed for review.'
+          ? 'Profile submitted. Confirmation and admin review emails have been queued.'
           : 'Profile updated successfully'
       );
     } catch (error: any) {
@@ -433,6 +433,23 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
             <CardTitle>Complete your profile</CardTitle>
           </CardHeader>
           <CardContent className='space-y-4'>
+            {profile.profile_review_status === 'changes_requested' && (
+              <div
+                role='alert'
+                className='rounded-md border border-amber-300 bg-amber-50 p-4 space-y-2'
+              >
+                <h3 className='font-semibold'>Changes requested</h3>
+                <p className='whitespace-pre-wrap'>
+                  {profile.profile_review_reason}
+                </p>
+                <p>
+                  Correct the items above, replace or remove any rejected
+                  documents in Documents, then select Resubmit for review. Your
+                  account remains pending.
+                </p>
+              </div>
+            )}
+
             <ol className='list-decimal pl-5 space-y-2 text-sm'>
               <li>
                 Enter your first and last name, full address (including city,
@@ -452,7 +469,8 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
                 and documents and approves it.
               </li>
             </ol>
-            {!profile.profile_submitted_at && (
+            {(!profile.profile_submitted_at ||
+              profile.profile_review_status === 'changes_requested') && (
               <p className='text-sm' role='status'>
                 {getMissingRequiredFields(formData).length > 0
                   ? `Still needed: ${getMissingRequiredFields(formData)
@@ -464,7 +482,8 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
                   : 'Training certificate still needed in Documents.'}
               </p>
             )}
-            {profile.profile_submitted_at ? (
+            {profile.profile_submitted_at &&
+            profile.profile_review_status !== 'changes_requested' ? (
               <Badge>
                 {profile.account_status === 'approved'
                   ? 'Account approved'
@@ -478,12 +497,17 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
                   value='submit-profile'
                   disabled={
                     isSaving ||
-                    !!profile.profile_submitted_at ||
+                    !(
+                      !profile.profile_submitted_at ||
+                      profile.profile_review_status === 'changes_requested'
+                    ) ||
                     !hasTrainingCertificate ||
                     getMissingRequiredFields(formData).length > 0
                   }
                 >
-                  Mark profile complete
+                  {profile.profile_review_status === 'changes_requested'
+                    ? 'Resubmit for review'
+                    : 'Mark profile complete'}
                 </Button>
               </>
             )}
@@ -519,9 +543,10 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
                 setFormData((prev) => ({ ...prev, certifications }))
               }
             />
-            {profile.profile_submitted_at && (
-              <Badge className='w-fit'>Submitted for review</Badge>
-            )}
+            {profile.profile_submitted_at &&
+              profile.profile_review_status !== 'changes_requested' && (
+                <Badge className='w-fit'>Submitted for review</Badge>
+              )}
           </CardHeader>
           <CardContent>
             <div className='space-y-6'>
@@ -869,12 +894,14 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
                 />
               </div>
 
-              {!profile.profile_submitted_at && !hasTrainingCertificate && (
-                <p className='text-sm text-muted-foreground'>
-                  Upload your Doula training certificate in Documents before
-                  marking your profile complete.
-                </p>
-              )}
+              {(!profile.profile_submitted_at ||
+                profile.profile_review_status === 'changes_requested') &&
+                !hasTrainingCertificate && (
+                  <p className='text-sm text-muted-foreground'>
+                    Upload your Doula training certificate in Documents before
+                    marking your profile complete.
+                  </p>
+                )}
               <div className='flex flex-wrap justify-end gap-2'>
                 <Button
                   type='button'

@@ -95,7 +95,10 @@ it('lets an admin review the profile and certificate before approving the accoun
       '/clients/team/doula',
       expect.objectContaining({
         method: 'PUT',
-        body: JSON.stringify({ account_status: 'approved' }),
+        body: JSON.stringify({
+          account_status: 'approved',
+          profile_review_version: 0,
+        }),
       })
     )
   );

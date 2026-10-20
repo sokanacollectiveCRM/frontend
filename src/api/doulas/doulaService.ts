@@ -35,6 +35,13 @@ export async function submitDoulaProfile(): Promise<{
 export interface DoulaProfile {
   certifications?: Certification[];
   profile_submitted_at?: string | null;
+  profile_review_status?:
+    | 'draft'
+    | 'submitted'
+    | 'changes_requested'
+    | 'approved';
+  profile_review_reason?: string | null;
+  profile_review_version?: number;
   id: string;
   email: string;
   firstname: string;

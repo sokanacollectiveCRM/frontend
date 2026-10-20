@@ -1,3 +1,4 @@
+import { Textarea } from '@/common/components/ui/textarea';
 import { Badge } from '@/common/components/ui/badge';
 import { logFailure } from '@/utils/safeLog';
 import { Button } from '@/common/components/ui/button';
@@ -62,6 +63,9 @@ interface TeamMember {
   profile_picture?: string | null;
   account_status: string;
   profile_submitted_at: string | null;
+  profile_review_status: string;
+  profile_review_reason: string | null;
+  profile_review_version: number;
   city: string;
   state: string;
   zip_code: string;
@@ -90,6 +94,15 @@ const toTeamMember = (member: any): TeamMember => ({
   profile_picture: member?.profile_picture ?? null,
   account_status: member?.account_status ?? 'pending',
   profile_submitted_at: member?.profile_submitted_at ?? null,
+  profile_review_status:
+    member?.profile_review_status ??
+    (member?.account_status === 'approved'
+      ? 'approved'
+      : member?.profile_submitted_at
+        ? 'submitted'
+        : 'draft'),
+  profile_review_reason: member?.profile_review_reason ?? null,
+  profile_review_version: member?.profile_review_version ?? 0,
   city: member?.city ?? '',
   state: member?.state ?? '',
   zip_code: member?.zip_code ?? '',
@@ -141,6 +154,7 @@ export default function Teams() {
   const [archivedDocuments, setArchivedDocuments] = useState<
     DocumentCompletenessItem[]
   >([]);
+  const [reviewReason, setReviewReason] = useState('');
   const [reviewBusy, setReviewBusy] = useState(false);
   const [reviewLinkOpened, setReviewLinkOpened] = useState(false);
   const [documentsLoaded, setDocumentsLoaded] = useState(false);
@@ -265,6 +279,7 @@ export default function Teams() {
   const handleOpenDocuments = async (member: TeamMember) => {
     if (member.role !== 'doula') return;
     setDocumentsMember(member);
+    setReviewReason(member.profile_review_reason ?? '');
     setDocumentsDialogOpen(true);
     setDocumentsLoading(true);
     setDocumentsLoaded(false);
@@ -298,8 +313,15 @@ export default function Teams() {
     if (member) void handleOpenDocuments(member);
   }, [teamMembers, isLoading, user?.role, reviewLinkOpened]);
 
-  const handleReviewAction = async (documentId?: string) => {
+  const handleReviewAction = async (
+    documentId?: string,
+    requestChanges = false
+  ) => {
     if (!documentsMember || reviewBusy) return;
+    if (requestChanges && !reviewReason.trim()) {
+      toast.error('Enter a reason for the requested changes.');
+      return;
+    }
     setReviewBusy(true);
     try {
       const response = await fetchWithAuth(
@@ -312,7 +334,25 @@ export default function Teams() {
           method: documentId ? 'PATCH' : 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(
-            documentId ? { status: 'approved' } : { account_status: 'approved' }
+            documentId
+              ? {
+                  status: requestChanges ? 'rejected' : 'approved',
+                  rejection_reason: requestChanges
+                    ? reviewReason.trim()
+                    : undefined,
+                }
+              : requestChanges
+                ? {
+                    review_action: 'changes_requested',
+                    review_reason: reviewReason.trim(),
+                    profile_review_version:
+                      documentsMember.profile_review_version,
+                  }
+                : {
+                    account_status: 'approved',
+                    profile_review_version:
+                      documentsMember.profile_review_version,
+                  }
           ),
         }
       );
@@ -321,11 +361,20 @@ export default function Teams() {
         throw new Error(data.error || 'Could not approve. Please try again.');
       if (documentId) {
         await handleOpenDocuments(documentsMember);
-        toast.success('Document approved');
+        setReviewReason(reviewReason);
+        toast.success(
+          requestChanges
+            ? 'Document rejected. Select Send requested changes to notify the doula.'
+            : 'Document approved'
+        );
       } else {
-        setDocumentsMember({ ...documentsMember, account_status: 'approved' });
+        setDocumentsMember(toTeamMember(data));
         await fetchTeam();
-        toast.success('Doula account approved');
+        toast.success(
+          requestChanges
+            ? 'Changes requested. Notifications queued.'
+            : 'Account approved. Notifications queued for the doula and admin.'
+        );
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Approval failed');
@@ -884,9 +933,12 @@ export default function Teams() {
                             <p className='text-sm mt-2'>
                               {member.account_status === 'approved'
                                 ? 'Approved'
-                                : member.profile_submitted_at
-                                  ? 'Ready for review'
-                                  : 'Pending — profile incomplete'}
+                                : member.profile_review_status ===
+                                    'changes_requested'
+                                  ? 'Changes requested'
+                                  : member.profile_submitted_at
+                                    ? 'Ready for review'
+                                    : 'Pending — profile incomplete'}
                             </p>
                           )}
                           {user?.role === 'admin' &&
@@ -1354,12 +1406,43 @@ export default function Teams() {
                   Review the profile and download the documents below. Approve
                   the required training certificate, then approve the account.
                 </p>
+
+                {documentsMember.profile_review_status ===
+                  'changes_requested' && (
+                  <div className='rounded border border-amber-300 bg-amber-50 p-3'>
+                    <strong>Waiting for the doula to resolve:</strong>
+                    <p className='whitespace-pre-wrap'>
+                      {documentsMember.profile_review_reason}
+                    </p>
+                  </div>
+                )}
+                {documentsMember.profile_review_status === 'submitted' && (
+                  <div className='space-y-2'>
+                    <Label htmlFor='review-reason'>
+                      Requested changes / rejection reason
+                    </Label>
+                    <Textarea
+                      id='review-reason'
+                      value={reviewReason}
+                      onChange={(e) => setReviewReason(e.target.value)}
+                      maxLength={2000}
+                      placeholder='Explain exactly what the doula needs to correct.'
+                    />
+                    <Button
+                      variant='outline'
+                      disabled={reviewBusy || !reviewReason.trim()}
+                      onClick={() => void handleReviewAction(undefined, true)}
+                    >
+                      Send requested changes
+                    </Button>
+                  </div>
+                )}
                 <Button
                   disabled={
                     reviewBusy ||
                     documentsLoading ||
                     !documentsLoaded ||
-                    !documentsMember.profile_submitted_at ||
+                    documentsMember.profile_review_status !== 'submitted' ||
                     documentsMember.account_status === 'approved' ||
                     !documentsItems.some(
                       (item) =>
@@ -1427,6 +1510,21 @@ export default function Teams() {
                           </p>
                         )}
                       </div>
+                      {item.document_id &&
+                        item.status !== 'rejected' &&
+                        documentsMember?.profile_review_status ===
+                          'submitted' && (
+                          <Button
+                            size='sm'
+                            variant='outline'
+                            disabled={reviewBusy || !reviewReason.trim()}
+                            onClick={() =>
+                              void handleReviewAction(item.document_id!, true)
+                            }
+                          >
+                            Reject document
+                          </Button>
+                        )}
                       {item.document_id && item.status !== 'approved' && (
                         <Button
                           size='sm'
