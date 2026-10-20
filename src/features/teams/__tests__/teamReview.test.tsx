@@ -6,7 +6,7 @@ import {
   cleanup,
 } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import Teams from '../teams';
+import Teams from '@/features/teams/teams';
 import { fetchWithAuth } from '@/api/http';
 import {
   getAdminDoulaDocuments,
