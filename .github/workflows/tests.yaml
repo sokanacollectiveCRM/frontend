@@ -69,6 +69,7 @@ jobs:
             e2e/login-entry.spec.ts \
             e2e/invite-password.spec.ts \
             e2e/oct21-doula-profile.spec.ts \
+            e2e/doula-review-cycle.spec.ts \
             e2e/ticket6-birth-outcomes-required.spec.ts \
             e2e/ticket2-insurance-card-upload.spec.ts \
             e2e/request-form-payment-method-required.spec.ts \
