@@ -60,6 +60,14 @@ interface TeamMember {
   bio: string;
   address: string;
   profile_picture?: string | null;
+  account_status: string;
+  profile_submitted_at: string | null;
+  city: string;
+  state: string;
+  zip_code: string;
+  country: string;
+  phone_number: string;
+  certifications: { name: string; issuingOrganization: string; year: string }[];
 }
 
 const ALLOWED_TEAM_ROLES = new Set(['admin', 'doula']);
@@ -80,6 +88,16 @@ const toTeamMember = (member: any): TeamMember => ({
   bio: String(member?.bio ?? ''),
   address: String(member?.address ?? '').trim(),
   profile_picture: member?.profile_picture ?? null,
+  account_status: member?.account_status ?? 'pending',
+  profile_submitted_at: member?.profile_submitted_at ?? null,
+  city: member?.city ?? '',
+  state: member?.state ?? '',
+  zip_code: member?.zip_code ?? '',
+  country: member?.country ?? '',
+  phone_number: member?.phone_number ?? '',
+  certifications: Array.isArray(member?.certifications)
+    ? member.certifications
+    : [],
 });
 
 export default function Teams() {
@@ -123,6 +141,9 @@ export default function Teams() {
   const [archivedDocuments, setArchivedDocuments] = useState<
     DocumentCompletenessItem[]
   >([]);
+  const [reviewBusy, setReviewBusy] = useState(false);
+  const [reviewLinkOpened, setReviewLinkOpened] = useState(false);
+  const [documentsLoaded, setDocumentsLoaded] = useState(false);
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [downloadingDocumentId, setDownloadingDocumentId] = useState<
     string | null
@@ -246,6 +267,7 @@ export default function Teams() {
     setDocumentsMember(member);
     setDocumentsDialogOpen(true);
     setDocumentsLoading(true);
+    setDocumentsLoaded(false);
     setDocumentsItems([]);
     setArchivedDocuments([]);
     try {
@@ -253,6 +275,7 @@ export default function Teams() {
       const view = partitionDoulaDocuments(data);
       setDocumentsItems(view.active);
       setArchivedDocuments(view.archived);
+      setDocumentsLoaded(true);
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -261,6 +284,53 @@ export default function Teams() {
       );
     } finally {
       setDocumentsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const reviewId = new URLSearchParams(window.location.search).get('review');
+    if (user?.role !== 'admin' || reviewLinkOpened || !reviewId || isLoading)
+      return;
+    const member = teamMembers.find(
+      (item) => item.id === reviewId && item.role === 'doula'
+    );
+    setReviewLinkOpened(true);
+    if (member) void handleOpenDocuments(member);
+  }, [teamMembers, isLoading, user?.role, reviewLinkOpened]);
+
+  const handleReviewAction = async (documentId?: string) => {
+    if (!documentsMember || reviewBusy) return;
+    setReviewBusy(true);
+    try {
+      const response = await fetchWithAuth(
+        buildUrl(
+          documentId
+            ? `/api/admin/doulas/${documentsMember.id}/documents/${documentId}/review`
+            : `/clients/team/${documentsMember.id}`
+        ),
+        {
+          method: documentId ? 'PATCH' : 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(
+            documentId ? { status: 'approved' } : { account_status: 'approved' }
+          ),
+        }
+      );
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(data.error || 'Could not approve. Please try again.');
+      if (documentId) {
+        await handleOpenDocuments(documentsMember);
+        toast.success('Document approved');
+      } else {
+        setDocumentsMember({ ...documentsMember, account_status: 'approved' });
+        await fetchTeam();
+        toast.success('Doula account approved');
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Approval failed');
+    } finally {
+      setReviewBusy(false);
     }
   };
 
@@ -810,6 +880,26 @@ export default function Teams() {
                             {member.role.charAt(0).toUpperCase() +
                               member.role.slice(1)}
                           </Badge>
+                          {member.role === 'doula' && (
+                            <p className='text-sm mt-2'>
+                              {member.account_status === 'approved'
+                                ? 'Approved'
+                                : member.profile_submitted_at
+                                  ? 'Ready for review'
+                                  : 'Pending — profile incomplete'}
+                            </p>
+                          )}
+                          {user?.role === 'admin' &&
+                            member.role === 'doula' && (
+                              <Button
+                                variant='outline'
+                                size='sm'
+                                className='mt-3'
+                                onClick={() => void handleOpenDocuments(member)}
+                              >
+                                Review profile &amp; documents
+                              </Button>
+                            )}
                         </div>
                       </div>
 
@@ -824,7 +914,7 @@ export default function Teams() {
                             <MoreHorizontal className='h-4 w-4 text-gray-600' />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align='end' className='w-40'>
+                        <DropdownMenuContent align='end' className='w-64'>
                           {user?.role === 'admin' &&
                             member.role === 'doula' && (
                               <DropdownMenuItem
@@ -832,7 +922,7 @@ export default function Teams() {
                                 className='cursor-pointer'
                               >
                                 <FileText className='h-4 w-4 mr-2' />
-                                <span>Documents</span>
+                                <span>Review profile &amp; documents</span>
                               </DropdownMenuItem>
                             )}
                           {user?.role === 'admin' && member.profile_picture && (
@@ -1209,7 +1299,7 @@ export default function Teams() {
       <Dialog open={documentsDialogOpen} onOpenChange={setDocumentsDialogOpen}>
         <DialogContent className='max-w-2xl'>
           <DialogHeader>
-            <DialogTitle>Doula Documents</DialogTitle>
+            <DialogTitle>Review profile &amp; documents</DialogTitle>
             <DialogDescription>
               {documentsMember
                 ? `${documentsMember.firstname} ${documentsMember.lastname}`
@@ -1217,6 +1307,77 @@ export default function Teams() {
             </DialogDescription>
           </DialogHeader>
           <div className='space-y-3 py-2 max-h-[60vh] overflow-auto'>
+            {documentsMember && (
+              <section className='rounded-md border p-4 space-y-3'>
+                <h3 className='font-semibold'>Profile</h3>
+                <UserAvatar
+                  fullName={`${documentsMember.firstname} ${documentsMember.lastname}`}
+                  profile_picture={documentsMember.profile_picture ?? undefined}
+                />
+                <p>
+                  {documentsMember.email}
+                  {documentsMember.phone_number &&
+                    ` · ${documentsMember.phone_number}`}
+                </p>
+                <p>
+                  {[
+                    documentsMember.address,
+                    documentsMember.city,
+                    documentsMember.state,
+                    documentsMember.zip_code,
+                    documentsMember.country,
+                  ]
+                    .filter(Boolean)
+                    .join(', ') || 'Address not provided'}
+                </p>
+                <p className='whitespace-pre-wrap'>
+                  {documentsMember.bio || 'Bio not provided'}
+                </p>
+                <h4 className='font-medium'>Certifications</h4>
+                {documentsMember.certifications.length ? (
+                  documentsMember.certifications.map((cert, index) => (
+                    <p key={index}>
+                      {[cert.name, cert.issuingOrganization, cert.year]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </p>
+                  ))
+                ) : (
+                  <p>No certifications listed</p>
+                )}
+                <p className='text-sm'>
+                  {documentsMember.profile_submitted_at
+                    ? `Submitted ${new Date(documentsMember.profile_submitted_at).toLocaleDateString()}`
+                    : 'The doula has not marked their profile complete.'}
+                </p>
+                <p className='text-sm'>
+                  Review the profile and download the documents below. Approve
+                  the required training certificate, then approve the account.
+                </p>
+                <Button
+                  disabled={
+                    reviewBusy ||
+                    documentsLoading ||
+                    !documentsLoaded ||
+                    !documentsMember.profile_submitted_at ||
+                    documentsMember.account_status === 'approved' ||
+                    !documentsItems.some(
+                      (item) =>
+                        item.document_type === 'training_certificate' &&
+                        item.status === 'approved'
+                    )
+                  }
+                  onClick={() => void handleReviewAction()}
+                >
+                  {documentsMember.account_status === 'approved'
+                    ? 'Account approved'
+                    : reviewBusy
+                      ? 'Saving...'
+                      : 'Approve account'}
+                </Button>
+              </section>
+            )}
+
             {documentsLoading ? (
               <p className='text-sm text-gray-500'>Loading documents...</p>
             ) : documentsItems.length === 0 ? (
@@ -1266,6 +1427,17 @@ export default function Teams() {
                           </p>
                         )}
                       </div>
+                      {item.document_id && item.status !== 'approved' && (
+                        <Button
+                          size='sm'
+                          disabled={reviewBusy}
+                          onClick={() =>
+                            void handleReviewAction(item.document_id!)
+                          }
+                        >
+                          Approve document
+                        </Button>
+                      )}
                       {documentsMember?.id && item.document_id && (
                         <Button
                           size='sm'

@@ -397,7 +397,11 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
       if (submittingForReview) await submitDoulaProfile();
       await fetchProfile(false);
 
-      toast.success('Profile updated successfully');
+      toast.success(
+        submittingForReview
+          ? 'Profile submitted. The Sokana team has been emailed for review.'
+          : 'Profile updated successfully'
+      );
     } catch (error: any) {
       logFailure('doula-dashboard', 'profiletab_failed_to_update_profile');
       toast.error(error.message || 'Failed to update profile');
@@ -424,6 +428,68 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
   return (
     <div className='space-y-6'>
       <form id='doula-profile-form' onSubmit={handleSubmit}>
+        <Card className='mb-6'>
+          <CardHeader>
+            <CardTitle>Complete your profile</CardTitle>
+          </CardHeader>
+          <CardContent className='space-y-4'>
+            <ol className='list-decimal pl-5 space-y-2 text-sm'>
+              <li>
+                Enter your first and last name, full address (including city,
+                state, ZIP code and country), and bio below.
+              </li>
+              <li>
+                Open the Documents tab and upload your Doula training
+                certificate. Liability insurance and Illinois Medicaid documents
+                are optional for general approval.
+              </li>
+              <li>
+                Return here and select Mark profile complete. This saves your
+                changes and emails the Sokana team for review.
+              </li>
+              <li>
+                Your account remains pending until an admin reviews your profile
+                and documents and approves it.
+              </li>
+            </ol>
+            {!profile.profile_submitted_at && (
+              <p className='text-sm' role='status'>
+                {getMissingRequiredFields(formData).length > 0
+                  ? `Still needed: ${getMissingRequiredFields(formData)
+                      .map((field) => field.replace(/_/g, ' '))
+                      .join(', ')}.`
+                  : 'Required profile fields are complete.'}{' '}
+                {hasTrainingCertificate
+                  ? 'Training certificate uploaded.'
+                  : 'Training certificate still needed in Documents.'}
+              </p>
+            )}
+            {profile.profile_submitted_at ? (
+              <Badge>
+                {profile.account_status === 'approved'
+                  ? 'Account approved'
+                  : 'Submitted — waiting for admin review'}
+              </Badge>
+            ) : (
+              <>
+                <Button
+                  type='submit'
+                  name='action'
+                  value='submit-profile'
+                  disabled={
+                    isSaving ||
+                    !!profile.profile_submitted_at ||
+                    !hasTrainingCertificate ||
+                    getMissingRequiredFields(formData).length > 0
+                  }
+                >
+                  Mark profile complete
+                </Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <div className='flex items-center gap-4'>
@@ -810,19 +876,6 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
                 </p>
               )}
               <div className='flex flex-wrap justify-end gap-2'>
-                <Button
-                  type='submit'
-                  name='action'
-                  value='submit-profile'
-                  disabled={
-                    isSaving ||
-                    !!profile.profile_submitted_at ||
-                    !hasTrainingCertificate ||
-                    getMissingRequiredFields(formData).length > 0
-                  }
-                >
-                  Mark profile complete
-                </Button>
                 <Button
                   type='button'
                   variant='outline'
