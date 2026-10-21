@@ -303,7 +303,9 @@ export default function DocumentsTab() {
           <h2 className='text-xl font-semibold text-gray-900'>Documents</h2>
           <p className='text-sm text-gray-600 mt-1'>
             The doula training certificate is required. An admin must approve it
-            before you can be active. Max 10MB per file (PDF, PNG, JPG).
+            for full profile completion. Your dashboard tools remain available
+            while documents are incomplete or pending review. Max 10MB per file
+            (PDF, PNG, JPG).
           </p>
         </div>
       </div>
@@ -331,7 +333,7 @@ export default function DocumentsTab() {
                 </p>
                 <p className='text-sm text-muted-foreground'>
                   {canBeActive
-                    ? 'You are eligible to be active.'
+                    ? 'Required documents are approved for profile completion.'
                     : completeness.missing_types?.length
                       ? `Missing: ${completeness.missing_types
                           .map(

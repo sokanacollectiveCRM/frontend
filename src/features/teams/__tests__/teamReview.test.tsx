@@ -70,7 +70,7 @@ beforeEach(() => {
 afterEach(cleanup);
 it('lets an admin review the profile and certificate before approving the account', async () => {
   render(<Teams />);
-  await screen.findByText('Ready for review');
+  await screen.findByText(/Ready for review/);
   fireEvent.click(
     screen.getByRole('button', { name: 'Review profile & documents' })
   );
@@ -78,7 +78,7 @@ it('lets an admin review the profile and certificate before approving the accoun
     selector: 'p.whitespace-pre-wrap',
   });
   expect(
-    screen.getByRole('button', { name: 'Approve account' })
+    screen.getByRole('button', { name: 'Approve profile' })
   ).toBeDisabled();
   approved = true;
   fireEvent.click(
@@ -86,10 +86,10 @@ it('lets an admin review the profile and certificate before approving the accoun
   );
   await waitFor(() =>
     expect(
-      screen.getByRole('button', { name: 'Approve account' })
+      screen.getByRole('button', { name: 'Approve profile' })
     ).toBeEnabled()
   );
-  fireEvent.click(screen.getByRole('button', { name: 'Approve account' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Approve profile' }));
   await waitFor(() =>
     expect(fetchWithAuth).toHaveBeenCalledWith(
       '/clients/team/doula',

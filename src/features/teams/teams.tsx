@@ -373,7 +373,7 @@ export default function Teams() {
         toast.success(
           requestChanges
             ? 'Changes requested. Notifications queued.'
-            : 'Account approved. Notifications queued for the doula and admin.'
+            : 'Profile approved. Notifications queued for the doula and admin.'
         );
       }
     } catch (error) {
@@ -931,14 +931,15 @@ export default function Teams() {
                           </Badge>
                           {member.role === 'doula' && (
                             <p className='text-sm mt-2'>
-                              {member.account_status === 'approved'
+                              Account: {member.account_status}. Profile:{' '}
+                              {member.profile_review_status === 'approved'
                                 ? 'Approved'
                                 : member.profile_review_status ===
                                     'changes_requested'
                                   ? 'Changes requested'
                                   : member.profile_submitted_at
                                     ? 'Ready for review'
-                                    : 'Pending — profile incomplete'}
+                                    : 'Profile incomplete'}
                             </p>
                           )}
                           {user?.role === 'admin' &&
@@ -1443,7 +1444,6 @@ export default function Teams() {
                     documentsLoading ||
                     !documentsLoaded ||
                     documentsMember.profile_review_status !== 'submitted' ||
-                    documentsMember.account_status === 'approved' ||
                     !documentsItems.some(
                       (item) =>
                         item.document_type === 'training_certificate' &&
@@ -1452,11 +1452,11 @@ export default function Teams() {
                   }
                   onClick={() => void handleReviewAction()}
                 >
-                  {documentsMember.account_status === 'approved'
-                    ? 'Account approved'
+                  {documentsMember.profile_review_status === 'approved'
+                    ? 'Profile approved'
                     : reviewBusy
                       ? 'Saving...'
-                      : 'Approve account'}
+                      : 'Approve profile'}
                 </Button>
               </section>
             )}

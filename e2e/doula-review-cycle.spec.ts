@@ -17,7 +17,7 @@ test('doula corrects requested changes, resubmits, and admin approves', async ({
     zip_code: '60601',
     bio: 'Fictional doula bio',
     certifications: [],
-    account_status: 'pending',
+    account_status: 'active',
     profile_review_status: 'draft',
     profile_review_reason: null as string | null,
     profile_review_version: 0,
@@ -70,7 +70,7 @@ test('doula corrects requested changes, resubmits, and admin approves', async ({
       } else {
         expect(certificate).toBe('approved');
         profile.profile_review_status = 'approved';
-        profile.account_status = 'approved';
+        expect(profile.account_status).toBe('active');
       }
       data = { ...profile, role: 'doula' };
     } else if (path.endsWith('/documents'))
@@ -109,7 +109,7 @@ test('doula corrects requested changes, resubmits, and admin approves', async ({
     page.getByText('Waiting for the doula to resolve:', { exact: true })
   ).toBeVisible();
   await expect(
-    page.getByRole('button', { name: 'Approve account', exact: true })
+    page.getByRole('button', { name: 'Approve profile', exact: true })
   ).toBeDisabled();
   role = 'doula';
   await page.goto('/doula-dashboard/profile');
@@ -135,23 +135,23 @@ test('doula corrects requested changes, resubmits, and admin approves', async ({
       })
   ).toBeVisible();
   await expect(
-    page.getByRole('button', { name: 'Approve account', exact: true })
+    page.getByRole('button', { name: 'Approve profile', exact: true })
   ).toBeDisabled();
   await page
     .getByRole('button', { name: 'Approve document', exact: true })
     .click();
   await expect(
-    page.getByRole('button', { name: 'Approve account', exact: true })
+    page.getByRole('button', { name: 'Approve profile', exact: true })
   ).toBeEnabled();
   await page
-    .getByRole('button', { name: 'Approve account', exact: true })
+    .getByRole('button', { name: 'Approve profile', exact: true })
     .click();
   await expect(
-    page.getByRole('button', { name: 'Account approved', exact: true })
+    page.getByRole('button', { name: 'Profile approved', exact: true })
   ).toBeVisible();
   role = 'doula';
   await page.goto('/doula-dashboard/profile');
   await expect(
-    page.getByText('Account approved', { exact: true })
+    page.getByText('Profile approved', { exact: true })
   ).toBeVisible();
 });

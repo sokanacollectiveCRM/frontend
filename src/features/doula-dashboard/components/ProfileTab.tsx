@@ -445,7 +445,8 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
                 <p>
                   Correct the items above, replace or remove any rejected
                   documents in Documents, then select Resubmit for review. Your
-                  account remains pending.
+                  profile approval remains pending. Your dashboard tools remain
+                  available.
                 </p>
               </div>
             )}
@@ -465,8 +466,9 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
                 changes and emails the Sokana team for review.
               </li>
               <li>
-                Your account remains pending until an admin reviews your profile
-                and documents and approves it.
+                Your account is active. You can log hours, record birth
+                outcomes, and use your assigned-work tools while your profile
+                and documents are pending review.
               </li>
             </ol>
             {(!profile.profile_submitted_at ||
@@ -485,8 +487,8 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
             {profile.profile_submitted_at &&
             profile.profile_review_status !== 'changes_requested' ? (
               <Badge>
-                {profile.account_status === 'approved'
-                  ? 'Account approved'
+                {profile.profile_review_status === 'approved'
+                  ? 'Profile approved'
                   : 'Submitted — waiting for admin review'}
               </Badge>
             ) : (
