@@ -1590,7 +1590,10 @@ export default function ClientProfileTab({
                       >
                         <div className='flex items-start justify-between gap-3'>
                           <div className='flex items-center gap-3'>
-                            <UserAvatar fullName={fullName} />
+                            <UserAvatar
+                              fullName={fullName}
+                              profile_picture={doula.profile_picture}
+                            />
                             <div>
                               <p className='font-medium'>{fullName}</p>
                               <p className='text-sm text-muted-foreground'>
@@ -1619,6 +1622,11 @@ export default function ClientProfileTab({
                             </Badge>
                           </div>
                         </div>
+                        {doula.bio && (
+                          <p className='mt-3 whitespace-pre-line'>
+                            {doula.bio}
+                          </p>
+                        )}
                         <div className='mt-3 border-t pt-3'>
                           {canViewDoulaScheduling ? (
                             schedulingInfo.availabilityStatus ===
@@ -1650,6 +1658,23 @@ export default function ClientProfileTab({
                             </p>
                           )}
                         </div>
+                        {doula.pronouns && (
+                          <p className='mt-3 text-sm'>
+                            Pronouns: {doula.pronouns}
+                          </p>
+                        )}
+                        {!!doula.certifications?.length && (
+                          <div className='mt-3'>
+                            <h4 className='text-sm font-semibold'>
+                              Certifications &amp; training
+                            </h4>
+                            <ul className='list-inside list-disc text-sm'>
+                              {doula.certifications.map((name, index) => (
+                                <li key={index}>{name}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
                     );
                   })}

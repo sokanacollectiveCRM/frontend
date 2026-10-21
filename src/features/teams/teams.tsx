@@ -1,3 +1,4 @@
+import { Textarea } from '@/common/components/ui/textarea';
 import { Badge } from '@/common/components/ui/badge';
 import { logFailure } from '@/utils/safeLog';
 import { Button } from '@/common/components/ui/button';
@@ -31,9 +32,9 @@ import {
 import { UserContext } from '@/common/contexts/UserContext';
 import {
   DOCUMENT_TYPE_LABELS,
-  REQUIRED_DOULA_DOCUMENT_TYPES,
   getAdminDoulaDocuments,
   getDoulaDocumentUrl,
+  partitionDoulaDocuments,
   type DocumentCompletenessItem,
 } from '@/api/doulas/doulaService';
 import { buildUrl, fetchWithAuth } from '@/api/http';
@@ -60,6 +61,17 @@ interface TeamMember {
   bio: string;
   address: string;
   profile_picture?: string | null;
+  account_status: string;
+  profile_submitted_at: string | null;
+  profile_review_status: string;
+  profile_review_reason: string | null;
+  profile_review_version: number;
+  city: string;
+  state: string;
+  zip_code: string;
+  country: string;
+  phone_number: string;
+  certifications: { name: string; issuingOrganization: string; year: string }[];
 }
 
 const ALLOWED_TEAM_ROLES = new Set(['admin', 'doula']);
@@ -80,6 +92,25 @@ const toTeamMember = (member: any): TeamMember => ({
   bio: String(member?.bio ?? ''),
   address: String(member?.address ?? '').trim(),
   profile_picture: member?.profile_picture ?? null,
+  account_status: member?.account_status ?? 'pending',
+  profile_submitted_at: member?.profile_submitted_at ?? null,
+  profile_review_status:
+    member?.profile_review_status ??
+    (member?.account_status === 'approved'
+      ? 'approved'
+      : member?.profile_submitted_at
+        ? 'submitted'
+        : 'draft'),
+  profile_review_reason: member?.profile_review_reason ?? null,
+  profile_review_version: member?.profile_review_version ?? 0,
+  city: member?.city ?? '',
+  state: member?.state ?? '',
+  zip_code: member?.zip_code ?? '',
+  country: member?.country ?? '',
+  phone_number: member?.phone_number ?? '',
+  certifications: Array.isArray(member?.certifications)
+    ? member.certifications
+    : [],
 });
 
 export default function Teams() {
@@ -120,6 +151,13 @@ export default function Teams() {
   const [documentsItems, setDocumentsItems] = useState<
     DocumentCompletenessItem[]
   >([]);
+  const [archivedDocuments, setArchivedDocuments] = useState<
+    DocumentCompletenessItem[]
+  >([]);
+  const [reviewReason, setReviewReason] = useState('');
+  const [reviewBusy, setReviewBusy] = useState(false);
+  const [reviewLinkOpened, setReviewLinkOpened] = useState(false);
+  const [documentsLoaded, setDocumentsLoaded] = useState(false);
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [downloadingDocumentId, setDownloadingDocumentId] = useState<
     string | null
@@ -241,97 +279,18 @@ export default function Teams() {
   const handleOpenDocuments = async (member: TeamMember) => {
     if (member.role !== 'doula') return;
     setDocumentsMember(member);
+    setReviewReason(member.profile_review_reason ?? '');
     setDocumentsDialogOpen(true);
     setDocumentsLoading(true);
+    setDocumentsLoaded(false);
     setDocumentsItems([]);
+    setArchivedDocuments([]);
     try {
       const data = await getAdminDoulaDocuments(member.id);
-      const rawItems = (data.completeness?.items ?? []) as unknown[];
-      const completenessItems: DocumentCompletenessItem[] = rawItems.map(
-        (raw) => {
-          const item = (raw ?? {}) as Record<string, unknown>;
-          const documentId = item.document_id ?? item.documentId;
-          const fileName = item.file_name ?? item.fileName;
-          const uploadedAt = item.uploaded_at ?? item.uploadedAt;
-          const rejectionReason = item.rejection_reason ?? item.rejectionReason;
-          return {
-            document_type: String(
-              item.document_type ?? item.documentType ?? ''
-            ),
-            status: String(item.status ?? 'missing'),
-            document_id:
-              typeof documentId === 'string' ? documentId : undefined,
-            file_name: typeof fileName === 'string' ? fileName : undefined,
-            uploaded_at:
-              typeof uploadedAt === 'string' ? uploadedAt : undefined,
-            rejection_reason:
-              typeof rejectionReason === 'string' ? rejectionReason : undefined,
-          };
-        }
-      );
-      const completenessByType = new Map<string, DocumentCompletenessItem>(
-        completenessItems.map((item) => [item.document_type, item])
-      );
-      const documentsByType = new Map<
-        string,
-        {
-          id?: string;
-          fileName?: string;
-          uploadedAt?: string;
-          status?: string;
-          rejectionReason?: string;
-        }
-      >();
-
-      for (const raw of (data.documents ?? []) as unknown[]) {
-        const doc = (raw ?? {}) as Record<string, unknown>;
-        const type = doc.document_type ?? doc.documentType;
-        if (typeof type !== 'string' || !type) continue;
-        documentsByType.set(type, {
-          id:
-            typeof (doc.id ?? doc.document_id ?? doc.documentId) === 'string'
-              ? String(doc.id ?? doc.document_id ?? doc.documentId)
-              : undefined,
-          fileName:
-            typeof (doc.file_name ?? doc.fileName) === 'string'
-              ? String(doc.file_name ?? doc.fileName)
-              : undefined,
-          uploadedAt:
-            typeof (doc.uploaded_at ?? doc.uploadedAt ?? doc.created_at) ===
-            'string'
-              ? String(doc.uploaded_at ?? doc.uploadedAt ?? doc.created_at)
-              : undefined,
-          status: typeof doc.status === 'string' ? doc.status : undefined,
-          rejectionReason:
-            typeof (doc.rejection_reason ?? doc.rejectionReason) === 'string'
-              ? String(doc.rejection_reason ?? doc.rejectionReason)
-              : undefined,
-        });
-      }
-
-      const mergedItems: DocumentCompletenessItem[] =
-        REQUIRED_DOULA_DOCUMENT_TYPES.map((type) => {
-          const completeness = completenessByType.get(type);
-          const document = documentsByType.get(type);
-          if (document) {
-            return {
-              document_type: type,
-              status: document.status ?? completeness?.status ?? 'uploaded',
-              document_id: document.id ?? completeness?.document_id,
-              file_name: document.fileName ?? completeness?.file_name,
-              uploaded_at: document.uploadedAt ?? completeness?.uploaded_at,
-              rejection_reason:
-                document.rejectionReason ?? completeness?.rejection_reason,
-            };
-          }
-          return (
-            completeness ?? {
-              document_type: type,
-              status: 'missing',
-            }
-          );
-        });
-      setDocumentsItems(mergedItems);
+      const view = partitionDoulaDocuments(data);
+      setDocumentsItems(view.active);
+      setArchivedDocuments(view.archived);
+      setDocumentsLoaded(true);
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -340,6 +299,87 @@ export default function Teams() {
       );
     } finally {
       setDocumentsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const reviewId = new URLSearchParams(window.location.search).get('review');
+    if (user?.role !== 'admin' || reviewLinkOpened || !reviewId || isLoading)
+      return;
+    const member = teamMembers.find(
+      (item) => item.id === reviewId && item.role === 'doula'
+    );
+    setReviewLinkOpened(true);
+    if (member) void handleOpenDocuments(member);
+  }, [teamMembers, isLoading, user?.role, reviewLinkOpened]);
+
+  const handleReviewAction = async (
+    documentId?: string,
+    requestChanges = false
+  ) => {
+    if (!documentsMember || reviewBusy) return;
+    if (requestChanges && !reviewReason.trim()) {
+      toast.error('Enter a reason for the requested changes.');
+      return;
+    }
+    setReviewBusy(true);
+    try {
+      const response = await fetchWithAuth(
+        buildUrl(
+          documentId
+            ? `/api/admin/doulas/${documentsMember.id}/documents/${documentId}/review`
+            : `/clients/team/${documentsMember.id}`
+        ),
+        {
+          method: documentId ? 'PATCH' : 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(
+            documentId
+              ? {
+                  status: requestChanges ? 'rejected' : 'approved',
+                  rejection_reason: requestChanges
+                    ? reviewReason.trim()
+                    : undefined,
+                }
+              : requestChanges
+                ? {
+                    review_action: 'changes_requested',
+                    review_reason: reviewReason.trim(),
+                    profile_review_version:
+                      documentsMember.profile_review_version,
+                  }
+                : {
+                    account_status: 'approved',
+                    profile_review_version:
+                      documentsMember.profile_review_version,
+                  }
+          ),
+        }
+      );
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(data.error || 'Could not approve. Please try again.');
+      if (documentId) {
+        await handleOpenDocuments(documentsMember);
+        setReviewReason(reviewReason);
+        toast.success(
+          requestChanges
+            ? 'Document rejected. Select Send requested changes to notify the doula.'
+            : 'Document approved'
+        );
+      } else {
+        setDocumentsMember(toTeamMember(data));
+        await fetchTeam();
+        toast.success(
+          requestChanges
+            ? 'Changes requested. Notifications queued.'
+            : 'Profile approved. Notifications queued for the doula and admin.'
+        );
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Approval failed');
+    } finally {
+      setReviewBusy(false);
     }
   };
 
@@ -889,6 +929,30 @@ export default function Teams() {
                             {member.role.charAt(0).toUpperCase() +
                               member.role.slice(1)}
                           </Badge>
+                          {member.role === 'doula' && (
+                            <p className='text-sm mt-2'>
+                              Account: {member.account_status}. Profile:{' '}
+                              {member.profile_review_status === 'approved'
+                                ? 'Approved'
+                                : member.profile_review_status ===
+                                    'changes_requested'
+                                  ? 'Changes requested'
+                                  : member.profile_submitted_at
+                                    ? 'Ready for review'
+                                    : 'Profile incomplete'}
+                            </p>
+                          )}
+                          {user?.role === 'admin' &&
+                            member.role === 'doula' && (
+                              <Button
+                                variant='default'
+                                size='sm'
+                                className='mt-3 bg-teal-800 text-white hover:bg-teal-900 shadow-sm'
+                                onClick={() => void handleOpenDocuments(member)}
+                              >
+                                Review profile &amp; documents
+                              </Button>
+                            )}
                         </div>
                       </div>
 
@@ -903,7 +967,7 @@ export default function Teams() {
                             <MoreHorizontal className='h-4 w-4 text-gray-600' />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align='end' className='w-40'>
+                        <DropdownMenuContent align='end' className='w-64'>
                           {user?.role === 'admin' &&
                             member.role === 'doula' && (
                               <DropdownMenuItem
@@ -911,7 +975,7 @@ export default function Teams() {
                                 className='cursor-pointer'
                               >
                                 <FileText className='h-4 w-4 mr-2' />
-                                <span>Documents</span>
+                                <span>Review profile &amp; documents</span>
                               </DropdownMenuItem>
                             )}
                           {user?.role === 'admin' && member.profile_picture && (
@@ -1288,7 +1352,7 @@ export default function Teams() {
       <Dialog open={documentsDialogOpen} onOpenChange={setDocumentsDialogOpen}>
         <DialogContent className='max-w-2xl'>
           <DialogHeader>
-            <DialogTitle>Doula Documents</DialogTitle>
+            <DialogTitle>Review profile &amp; documents</DialogTitle>
             <DialogDescription>
               {documentsMember
                 ? `${documentsMember.firstname} ${documentsMember.lastname}`
@@ -1296,6 +1360,132 @@ export default function Teams() {
             </DialogDescription>
           </DialogHeader>
           <div className='space-y-3 py-2 max-h-[60vh] overflow-auto'>
+            {documentsMember && (
+              <section className='rounded-md border p-4 space-y-3'>
+                <h3 className='font-semibold'>Profile</h3>
+                <UserAvatar
+                  fullName={`${documentsMember.firstname} ${documentsMember.lastname}`}
+                  profile_picture={documentsMember.profile_picture ?? undefined}
+                />
+                <dl className='grid grid-cols-[7rem_minmax(0,1fr)] sm:grid-cols-[9rem_minmax(0,1fr)] gap-x-4 gap-y-3 text-sm [&>dt]:font-semibold [&>dt]:text-gray-600 [&>dd]:min-w-0 [&>dd]:break-words'>
+                  <dt>Name</dt>
+                  <dd>
+                    {documentsMember.firstname} {documentsMember.lastname}
+                  </dd>
+                  <dt>Email</dt>
+                  <dd>{documentsMember.email || 'Not provided'}</dd>
+                  <dt>Phone</dt>
+                  <dd>{documentsMember.phone_number || 'Not provided'}</dd>
+                  <dt>Address</dt>
+                  <dd>
+                    {[
+                      documentsMember.address,
+                      documentsMember.city,
+                      documentsMember.state,
+                      documentsMember.zip_code,
+                      documentsMember.country,
+                    ]
+                      .filter(Boolean)
+                      .join(', ') || 'Not provided'}
+                  </dd>
+                  <dt>Bio</dt>
+                  <dd className='whitespace-pre-wrap'>
+                    {documentsMember.bio || 'Not provided'}
+                  </dd>
+                  <dt>Certifications</dt>
+                  <dd>
+                    {documentsMember.certifications.length
+                      ? documentsMember.certifications.map((cert, index) => (
+                          <p key={index}>
+                            {[cert.name, cert.issuingOrganization, cert.year]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </p>
+                        ))
+                      : 'None listed'}
+                  </dd>
+                  <dt>Account status</dt>
+                  <dd className='capitalize'>
+                    {documentsMember.account_status}
+                  </dd>
+                  <dt>Profile review</dt>
+                  <dd>
+                    {
+                      {
+                        draft: 'Profile incomplete',
+                        submitted: 'Pending review',
+                        changes_requested: 'Changes requested',
+                        approved: 'Approved',
+                      }[documentsMember.profile_review_status]
+                    }
+                  </dd>
+                  <dt>Submitted</dt>
+                  <dd>
+                    {documentsMember.profile_submitted_at
+                      ? new Date(
+                          documentsMember.profile_submitted_at
+                        ).toLocaleDateString()
+                      : 'Not submitted yet'}
+                  </dd>
+                </dl>
+                <p className='text-sm'>
+                  Review the profile and download the documents below. Approve
+                  the required training certificate, then approve the profile.
+                </p>
+
+                {documentsMember.profile_review_status ===
+                  'changes_requested' && (
+                  <div className='rounded border border-amber-300 bg-amber-50 p-3'>
+                    <strong>Waiting for the doula to resolve:</strong>
+                    <p className='whitespace-pre-wrap'>
+                      {documentsMember.profile_review_reason}
+                    </p>
+                  </div>
+                )}
+                {documentsMember.profile_review_status === 'submitted' && (
+                  <div className='space-y-2'>
+                    <Label htmlFor='review-reason'>
+                      Requested changes / rejection reason
+                    </Label>
+                    <Textarea
+                      id='review-reason'
+                      value={reviewReason}
+                      onChange={(e) => setReviewReason(e.target.value)}
+                      maxLength={2000}
+                      placeholder='Explain exactly what the doula needs to correct.'
+                    />
+                    <Button
+                      variant='outline'
+                      disabled={reviewBusy || !reviewReason.trim()}
+                      onClick={() => void handleReviewAction(undefined, true)}
+                    >
+                      Send requested changes
+                    </Button>
+                  </div>
+                )}
+                <Button
+                  disabled={
+                    reviewBusy ||
+                    documentsLoading ||
+                    !documentsLoaded ||
+                    documentsMember.profile_review_status !== 'submitted' ||
+                    !documentsItems.some(
+                      (item) =>
+                        item.document_type === 'training_certificate' &&
+                        item.status === 'approved'
+                    )
+                  }
+                  onClick={() => void handleReviewAction()}
+                >
+                  {documentsMember.profile_review_status === 'approved'
+                    ? 'Profile approved'
+                    : reviewBusy
+                      ? 'Saving...'
+                      : 'Approve profile'}
+                </Button>
+              </section>
+            )}
+
             {documentsLoading ? (
               <p className='text-sm text-gray-500'>Loading documents...</p>
             ) : documentsItems.length === 0 ? (
@@ -1345,6 +1535,32 @@ export default function Teams() {
                           </p>
                         )}
                       </div>
+                      {item.document_id &&
+                        item.status !== 'rejected' &&
+                        documentsMember?.profile_review_status ===
+                          'submitted' && (
+                          <Button
+                            size='sm'
+                            variant='outline'
+                            disabled={reviewBusy || !reviewReason.trim()}
+                            onClick={() =>
+                              void handleReviewAction(item.document_id!, true)
+                            }
+                          >
+                            Reject document
+                          </Button>
+                        )}
+                      {item.document_id && item.status !== 'approved' && (
+                        <Button
+                          size='sm'
+                          disabled={reviewBusy}
+                          onClick={() =>
+                            void handleReviewAction(item.document_id!)
+                          }
+                        >
+                          Approve document
+                        </Button>
+                      )}
                       {documentsMember?.id && item.document_id && (
                         <Button
                           size='sm'
@@ -1369,6 +1585,32 @@ export default function Teams() {
                 );
               })
             )}
+            {archivedDocuments.length > 0 && (
+              <details className='rounded-md border border-gray-200 p-3'>
+                <summary className='cursor-pointer text-sm font-medium text-gray-700'>
+                  Archived documents
+                </summary>
+                <div className='mt-3 space-y-2'>
+                  {archivedDocuments.map((item) => (
+                    <div
+                      key={`${item.document_type}-${item.document_id ?? 'archived'}`}
+                      className='text-sm text-gray-700'
+                    >
+                      <p className='font-medium'>
+                        {(DOCUMENT_TYPE_LABELS as Record<string, string>)[
+                          item.document_type
+                        ] ?? item.document_type}
+                      </p>
+                      {item.file_name && (
+                        <p className='text-xs text-gray-500'>
+                          {item.file_name}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
           </div>
           <DialogFooter>
             <Button
@@ -1377,6 +1619,7 @@ export default function Teams() {
                 setDocumentsDialogOpen(false);
                 setDocumentsMember(null);
                 setDocumentsItems([]);
+                setArchivedDocuments([]);
               }}
             >
               Close

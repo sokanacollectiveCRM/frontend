@@ -15,7 +15,7 @@
  * - downloadDocument fetch uses correct URL and triggers file download
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   getAdminDoulaDocuments,
   getDoulaDocumentUrl,
@@ -37,28 +37,14 @@ const mockFetchWithAuth = vi.mocked(fetchWithAuth);
 // 4A. Required document types
 // ─────────────────────────────────────────────
 describe('Ticket 4 — REQUIRED_DOULA_DOCUMENT_TYPES', () => {
-  it('has exactly 5 required document types', () => {
-    expect(REQUIRED_DOULA_DOCUMENT_TYPES.length).toBe(5);
+  it('has exactly one required document type', () => {
+    expect(REQUIRED_DOULA_DOCUMENT_TYPES).toEqual(['training_certificate']);
   });
 
-  it('includes background_check', () => {
-    expect(REQUIRED_DOULA_DOCUMENT_TYPES).toContain('background_check');
-  });
-
-  it('includes liability_insurance_certificate', () => {
-    expect(REQUIRED_DOULA_DOCUMENT_TYPES).toContain('liability_insurance_certificate');
-  });
-
-  it('includes training_certificate', () => {
-    expect(REQUIRED_DOULA_DOCUMENT_TYPES).toContain('training_certificate');
-  });
-
-  it('includes w9', () => {
-    expect(REQUIRED_DOULA_DOCUMENT_TYPES).toContain('w9');
-  });
-
-  it('includes direct_deposit_form', () => {
-    expect(REQUIRED_DOULA_DOCUMENT_TYPES).toContain('direct_deposit_form');
+  it('does not require background_check, w9, or direct_deposit_form', () => {
+    expect(REQUIRED_DOULA_DOCUMENT_TYPES).not.toContain('background_check');
+    expect(REQUIRED_DOULA_DOCUMENT_TYPES).not.toContain('w9');
+    expect(REQUIRED_DOULA_DOCUMENT_TYPES).not.toContain('direct_deposit_form');
   });
 });
 
@@ -66,26 +52,34 @@ describe('Ticket 4 — REQUIRED_DOULA_DOCUMENT_TYPES', () => {
 // 4B. Document type labels (human-readable names)
 // ─────────────────────────────────────────────
 describe('Ticket 4 — DOCUMENT_TYPE_LABELS', () => {
-  it('background_check label is "Background Check"', () => {
-    expect(DOCUMENT_TYPE_LABELS.background_check).toBe('Background Check');
-  });
-
-  it('liability_insurance_certificate label is "Liability Insurance Certificate"', () => {
-    expect(DOCUMENT_TYPE_LABELS.liability_insurance_certificate).toBe(
-      'Liability Insurance Certificate'
+  it('training_certificate label is "Doula training certificate"', () => {
+    expect(DOCUMENT_TYPE_LABELS.training_certificate).toBe(
+      'Doula training certificate'
     );
   });
 
-  it('training_certificate label is "Training Certificate"', () => {
-    expect(DOCUMENT_TYPE_LABELS.training_certificate).toBe('Training Certificate');
+  it('liability_insurance_certificate label is "Liability insurance"', () => {
+    expect(DOCUMENT_TYPE_LABELS.liability_insurance_certificate).toBe(
+      'Liability insurance'
+    );
   });
 
-  it('w9 label is "W9"', () => {
+  it('illinois_medicaid_certification label is "Illinois Medicaid certification"', () => {
+    expect(DOCUMENT_TYPE_LABELS.illinois_medicaid_certification).toBe(
+      'Illinois Medicaid certification'
+    );
+  });
+
+  it('miscellaneous label is "Miscellaneous documents"', () => {
+    expect(DOCUMENT_TYPE_LABELS.miscellaneous).toBe('Miscellaneous documents');
+  });
+
+  it('keeps readable labels for archived types', () => {
+    expect(DOCUMENT_TYPE_LABELS.background_check).toBe('Background check');
     expect(DOCUMENT_TYPE_LABELS.w9).toBe('W9');
-  });
-
-  it('direct_deposit_form label is "Direct Deposit Form"', () => {
-    expect(DOCUMENT_TYPE_LABELS.direct_deposit_form).toBe('Direct Deposit Form');
+    expect(DOCUMENT_TYPE_LABELS.direct_deposit_form).toBe(
+      'Direct deposit form'
+    );
   });
 });
 
@@ -183,7 +177,9 @@ describe('Ticket 4 — getAdminDoulaDocuments calls correct URL', () => {
       json: async () => ({ error: 'Forbidden: Admin access required' }),
     } as Response);
 
-    await expect(getAdminDoulaDocuments('doula-1')).rejects.toThrow(/Forbidden|access/i);
+    await expect(getAdminDoulaDocuments('doula-1')).rejects.toThrow(
+      /Forbidden|access/i
+    );
   });
 
   it('throws when server returns 401 (unauthenticated)', async () => {
@@ -220,13 +216,17 @@ describe('Ticket 4 — getDoulaDocumentUrl calls correct URL', () => {
   it('calls /api/admin/doulas/:doulaId/documents/:docId/url', async () => {
     mockFetchWithAuth.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ url: 'https://storage.example.com/signed-url/bg-check.pdf' }),
+      json: async () => ({
+        url: 'https://storage.example.com/signed-url/bg-check.pdf',
+      }),
     } as Response);
 
     await getDoulaDocumentUrl('doula-1', 'doc-abc');
 
     const [calledUrl] = mockFetchWithAuth.mock.calls[0];
-    expect(calledUrl).toContain('/api/admin/doulas/doula-1/documents/doc-abc/url');
+    expect(calledUrl).toContain(
+      '/api/admin/doulas/doula-1/documents/doc-abc/url'
+    );
   });
 
   it('returns the signed download URL string', async () => {
@@ -292,13 +292,21 @@ describe('Ticket 4 — download button visibility logic', () => {
   });
 
   it('Missing status means no download available', () => {
-    const item = { document_type: 'w9', status: 'missing', document_id: undefined };
+    const item = {
+      document_type: 'w9',
+      status: 'missing',
+      document_id: undefined,
+    };
     const showDownload = !!item.document_id;
     expect(showDownload).toBe(false);
   });
 
   it('Uploaded status with document_id means download is available', () => {
-    const item = { document_type: 'w9', status: 'uploaded', document_id: 'doc-456' };
+    const item = {
+      document_type: 'w9',
+      status: 'uploaded',
+      document_id: 'doc-456',
+    };
     const showDownload = !!item.document_id;
     expect(showDownload).toBe(true);
   });

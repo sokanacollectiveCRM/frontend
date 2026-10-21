@@ -21,25 +21,38 @@ if (!supabaseUrl || !supabaseAnonKey) {
     'Use the same Supabase project as your backend (e.g. https://xxxxx.supabase.co).\n' +
     'Get URL and anon key from Supabase Dashboard → Project Settings → API.';
   logFailure('supabase', 'operation_failed');
-  
+
   // Create a placeholder client that will throw helpful errors when used
   // This allows the app to load but will fail gracefully when Supabase is accessed
   supabase = {
     auth: {
+      onAuthStateChange: () => ({
+        data: { subscription: { unsubscribe: () => {} } },
+      }),
       getSession: () => {
-        throw new Error('Supabase not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env file.');
+        throw new Error(
+          'Supabase not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env file.'
+        );
       },
       signInWithPassword: () => {
-        throw new Error('Supabase not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env file.');
+        throw new Error(
+          'Supabase not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env file.'
+        );
       },
       updateUser: () => {
-        throw new Error('Supabase not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env file.');
+        throw new Error(
+          'Supabase not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env file.'
+        );
       },
       verifyOtp: () => {
-        throw new Error('Supabase not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env file.');
+        throw new Error(
+          'Supabase not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env file.'
+        );
       },
       signOut: () => {
-        throw new Error('Supabase not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env file.');
+        throw new Error(
+          'Supabase not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env file.'
+        );
       },
     },
   } as unknown as SupabaseClient;
@@ -56,4 +69,3 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export { supabase };
-

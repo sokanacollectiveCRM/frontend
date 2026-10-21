@@ -20,6 +20,22 @@ export async function openRequestForm(
   page: Page,
   viewport: { width: number; height: number } = VIEWPORT_PRESETS.mobile
 ) {
+  await page.route('**/requestService/public/*', (route) =>
+    route.fulfill({
+      json: {
+        slug: 'sokana360',
+        name: 'Sokana360',
+        branding: {
+          displayName: 'Sokana360',
+          logoPath: '/sokana360-logo.png',
+          markPath: null,
+          pageTitle: 'Request for Service Form',
+          primaryColor: '#0A3147',
+          accentColor: '#D6704D',
+        },
+      },
+    })
+  );
   await page.setViewportSize(viewport);
   await page.goto('/request', { waitUntil: 'load' });
   await page
@@ -30,7 +46,9 @@ export async function openRequestForm(
 /**
  * Returns visible option-label issues: bad CSS or a word split mid-character across lines.
  */
-export async function getOptionLabelWordWrapIssues(page: Page): Promise<string[]> {
+export async function getOptionLabelWordWrapIssues(
+  page: Page
+): Promise<string[]> {
   return page.evaluate(() => {
     const elements = Array.from(
       document.querySelectorAll(
@@ -42,7 +60,10 @@ export async function getOptionLabelWordWrapIssues(page: Page): Promise<string[]
 
     for (const el of elements) {
       const style = window.getComputedStyle(el);
-      if (style.wordBreak === 'break-all' || style.overflowWrap === 'anywhere') {
+      if (
+        style.wordBreak === 'break-all' ||
+        style.overflowWrap === 'anywhere'
+      ) {
         issues.push(
           `Bad CSS on "${el.textContent?.trim()}": word-break=${style.wordBreak}, overflow-wrap=${style.overflowWrap}`
         );
@@ -61,7 +82,11 @@ export async function getOptionLabelWordWrapIssues(page: Page): Promise<string[]
         for (let splitAt = 1; splitAt < word.length; splitAt += 1) {
           const prefix = word.slice(0, splitAt);
           const suffix = word.slice(splitAt);
-          for (let lineIndex = 0; lineIndex < lines.length - 1; lineIndex += 1) {
+          for (
+            let lineIndex = 0;
+            lineIndex < lines.length - 1;
+            lineIndex += 1
+          ) {
             if (
               lines[lineIndex].endsWith(prefix) &&
               lines[lineIndex + 1].startsWith(suffix)
@@ -132,7 +157,9 @@ export async function fillPregnancyStepWithBirthLocation(
 ) {
   await fillRequestFormDueDate(page);
   await page.locator('#birth_location').selectOption({ label: birthLocation });
-  await page.locator('#birth_hospital').fill(BIRTH_LOCATION_NAME_SAMPLES[birthLocation]);
+  await page
+    .locator('#birth_hospital')
+    .fill(BIRTH_LOCATION_NAME_SAMPLES[birthLocation]);
   await page.locator('#number_of_babies').selectOption({ label: 'Singleton' });
   await page.locator('#provider_type').selectOption({ label: 'Midwife' });
   await page.locator('#pregnancy_number').fill('1');
@@ -154,7 +181,9 @@ export const HOME_TYPE_CHECKBOX_LABELS = {
 export async function completeStep0Services(page: Page) {
   await page.getByRole('button', { name: 'Select' }).click();
   await page.getByRole('checkbox', { name: 'Labor Support' }).check();
-  await page.locator('#service_support_details').fill('Support details for testing.');
+  await page
+    .locator('#service_support_details')
+    .fill('Support details for testing.');
   await clickFormNext(page);
 }
 
@@ -167,7 +196,9 @@ export async function completeStep1ClientDetails(
   await page.locator('#lastname').fill('User');
   await page.locator('#email').fill(email);
   await page.locator('#phone_number').fill('555-555-5555');
-  await page.locator('#preferred_contact_method').selectOption({ label: 'Email' });
+  await page
+    .locator('#preferred_contact_method')
+    .selectOption({ label: 'Email' });
   await page.locator('#pronouns').selectOption({ label: 'They/Them' });
   await page.locator('#age').fill('28');
   await clickFormNext(page);
@@ -196,9 +227,13 @@ export async function reachHomeDetailsStep(
 ) {
   await openRequestForm(page, viewport);
   await completeStep0Services(page);
-  await expect(page.getByRole('heading', { name: 'Client Details' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Client Details' })
+  ).toBeVisible();
   await completeStep1ClientDetails(page);
-  await expect(page.getByText('Home type (check all that apply)')).toBeVisible();
+  await expect(
+    page.getByText('Home type (check all that apply)')
+  ).toBeVisible();
 }
 
 /** Home Details → Referral step (How did you hear about us?). */
@@ -206,7 +241,9 @@ export async function reachReferralStep(page: Page) {
   await reachHomeDetailsStep(page);
   await completeStep2HomeDetailsAddress(page);
   await clickFormNext(page);
-  await expect(page.locator('#referral_source')).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('#referral_source')).toBeVisible({
+    timeout: 15000,
+  });
 }
 
 /** Full path to Past Pregnancies step. */
@@ -216,7 +253,9 @@ export async function reachPastPregnanciesStep(page: Page) {
   await completeStep5HealthHistory(page);
   await fillPregnancyStepMinimum(page);
   await clickFormNext(page);
-  await expect(page.getByRole('heading', { name: 'Past Pregnancies' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Past Pregnancies' })
+  ).toBeVisible();
 }
 
 /** Home Details → Payment step (past pregnancies = no history). */
@@ -266,19 +305,39 @@ export async function completeStep6PastPregnanciesWithHistory(page: Page) {
 
 /** Advance from Home Details through demographics and submit (assumes prior steps filled). */
 export async function advanceFromHomeDetailsToSubmit(page: Page) {
-  if (await page.locator('#address').isVisible().catch(() => false)) {
+  if (
+    await page
+      .locator('#address')
+      .isVisible()
+      .catch(() => false)
+  ) {
     await clickFormNext(page);
   }
 
-  if (await page.locator('#referral_source').isVisible().catch(() => false)) {
+  if (
+    await page
+      .locator('#referral_source')
+      .isVisible()
+      .catch(() => false)
+  ) {
     await completeStep4Referral(page);
   }
 
-  if (await page.getByRole('heading', { name: 'Health' }).isVisible().catch(() => false)) {
+  if (
+    await page
+      .getByRole('heading', { name: 'Health' })
+      .isVisible()
+      .catch(() => false)
+  ) {
     await completeStep5HealthHistory(page);
   }
 
-  if (await page.locator('input[name="due_date"]').isVisible().catch(() => false)) {
+  if (
+    await page
+      .locator('input[name="due_date"]')
+      .isVisible()
+      .catch(() => false)
+  ) {
     await fillPregnancyStepMinimum(page);
     await clickFormNext(page);
   }
@@ -294,10 +353,14 @@ export async function advanceFromHomeDetailsToSubmit(page: Page) {
 
   await expect(page.getByRole('heading', { name: 'Payment' })).toBeVisible();
   await page.locator('#payment_method').click();
-  await page.getByText('Not sure / Need help figuring this out', { exact: true }).click();
+  await page
+    .getByText('Not sure / Need help figuring this out', { exact: true })
+    .click();
   await clickFormNext(page);
 
-  await expect(page.getByRole('heading', { name: 'Client Demographics' })).toBeVisible({
+  await expect(
+    page.getByRole('heading', { name: 'Client Demographics' })
+  ).toBeVisible({
     timeout: 15000,
   });
 }

@@ -1,3 +1,20 @@
+vi.mock('features/intake/application/usePublicIntakeBranding', () => ({
+  usePublicIntakeBranding: () => ({
+    status: 'ready',
+    data: {
+      slug: 'sokana360',
+      name: 'Sokana360',
+      branding: {
+        displayName: 'Sokana360',
+        logoPath: '/sokana360-logo.png',
+        markPath: null,
+        pageTitle: 'Request for Service Form',
+        primaryColor: '#0A3147',
+        accentColor: '#D6704D',
+      },
+    },
+  }),
+}));
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useEffect } from 'react';
