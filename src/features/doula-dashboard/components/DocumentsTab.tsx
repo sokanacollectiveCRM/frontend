@@ -180,6 +180,7 @@ export default function DocumentsTab() {
         uploadForm.file,
         uploadForm.documentType as DocumentType
       );
+      window.dispatchEvent(new Event('doula-documents-changed'));
       toast.success('Document uploaded successfully');
       setUploadDialogOpen(false);
       setUploadingForType(null);
@@ -240,6 +241,7 @@ export default function DocumentsTab() {
         documentToEdit.file.documentId,
         updateData
       );
+      window.dispatchEvent(new Event('doula-documents-changed'));
       toast.success('Document updated successfully');
       setEditDialogOpen(false);
       setDocumentToEdit(null);
@@ -261,6 +263,7 @@ export default function DocumentsTab() {
     if (!documentToDelete?.file.documentId) return;
     try {
       await deleteDoulaDocument(documentToDelete.file.documentId);
+      window.dispatchEvent(new Event('doula-documents-changed'));
       toast.success('Document deleted successfully');
       setDeleteDialogOpen(false);
       setDocumentToDelete(null);

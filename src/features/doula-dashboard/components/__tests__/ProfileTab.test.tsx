@@ -174,3 +174,56 @@ describe('doula profile layout', () => {
     ).toBeDisabled();
   });
 });
+
+it('refreshes document readiness without navigating away or losing edits', async () => {
+  vi.mocked(api.getDoulaDocuments).mockResolvedValueOnce({ documents: [] });
+  await open();
+  const complete = await screen.findByRole('button', {
+    name: 'Mark profile complete',
+  });
+  expect(complete).toBeDisabled();
+  fireEvent.change(screen.getByLabelText('About me (bio)'), {
+    target: { value: 'Unsaved updated bio' },
+  });
+  fireEvent(window, new Event('doula-documents-changed'));
+  await waitFor(() =>
+    expect(
+      screen.getByRole('button', { name: 'Mark profile complete' })
+    ).toBeEnabled()
+  );
+  expect(screen.getByLabelText('About me (bio)')).toHaveValue(
+    'Unsaved updated bio'
+  );
+  vi.mocked(api.getDoulaDocuments).mockResolvedValue({ documents: [] });
+  fireEvent(window, new Event('doula-documents-changed'));
+  await waitFor(() =>
+    expect(
+      screen.getByRole('button', { name: 'Mark profile complete' })
+    ).toBeDisabled()
+  );
+});
+
+it('shows submission progress and ignores duplicate form submissions', async () => {
+  let finish!: (value: any) => void;
+  vi.mocked(api.updateDoulaProfile).mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      })
+  );
+  await open();
+  const complete = await screen.findByRole('button', {
+    name: 'Mark profile complete',
+  });
+  await waitFor(() => expect(complete).toBeEnabled());
+  fireEvent.click(complete);
+  expect(
+    screen.getByRole('button', { name: 'Submitting for review...' })
+  ).toBeDisabled();
+  expect(complete).toHaveAttribute('aria-busy', 'true');
+  fireEvent.submit(document.querySelector('form')!);
+  expect(api.updateDoulaProfile).toHaveBeenCalledTimes(1);
+  finish(profile);
+  await waitFor(() => expect(api.submitDoulaProfile).toHaveBeenCalledTimes(1));
+  await screen.findByText('Submitted — waiting for admin review');
+});

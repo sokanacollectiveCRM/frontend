@@ -945,9 +945,9 @@ export default function Teams() {
                           {user?.role === 'admin' &&
                             member.role === 'doula' && (
                               <Button
-                                variant='outline'
+                                variant='default'
                                 size='sm'
-                                className='mt-3'
+                                className='mt-3 bg-teal-800 text-white hover:bg-teal-900 shadow-sm'
                                 onClick={() => void handleOpenDocuments(member)}
                               >
                                 Review profile &amp; documents

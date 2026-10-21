@@ -1,5 +1,5 @@
 import CertificationsFields from '@/features/doula-dashboard/components/CertificationsFields';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { logFailure } from '@/utils/safeLog';
 import {
   Card,
@@ -30,7 +30,7 @@ import {
 import { toast } from 'sonner';
 import { preloadProfileImage } from '@/common/components/user/UserAvatar';
 import { ProfileImageInput } from '@/common/components/form/ProfileImageInput';
-import { X } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 import {
   ANOTHER_RACE_ETHNICITY,
   DOULA_RACE_ETHNICITY_OPTIONS,
@@ -144,6 +144,41 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
   const [profile, setProfile] = useState<DoulaProfile | null>(cachedProfile);
   const [isLoading, setIsLoading] = useState(!cachedProfile);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const savingRef = useRef(false);
+  const [checkingDocuments, setCheckingDocuments] = useState(true);
+
+  useEffect(() => {
+    let generation = 0;
+    let mounted = true;
+    const refreshDocuments = async () => {
+      const request = ++generation;
+      setCheckingDocuments(true);
+      try {
+        const data = await getDoulaDocuments();
+        if (mounted && request === generation)
+          setHasTrainingCertificate(
+            data.documents.some(
+              (doc) =>
+                doc.documentType === 'training_certificate' &&
+                ['uploaded', 'approved'].includes(doc.status)
+            )
+          );
+      } catch {
+        if (mounted && request === generation) setHasTrainingCertificate(false);
+      } finally {
+        if (mounted && request === generation) setCheckingDocuments(false);
+      }
+    };
+    void refreshDocuments();
+    window.addEventListener('doula-documents-changed', refreshDocuments);
+    window.addEventListener('focus', refreshDocuments);
+    return () => {
+      mounted = false;
+      window.removeEventListener('doula-documents-changed', refreshDocuments);
+      window.removeEventListener('focus', refreshDocuments);
+    };
+  }, []);
   const [hasTrainingCertificate, setHasTrainingCertificate] = useState(false);
   const [isUploadingPicture, setIsUploadingPicture] = useState(false);
   const [languageDraft, setLanguageDraft] = useState('');
@@ -176,7 +211,7 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
   // Sync form data when profile changes (but only if formData hasn't been manually updated)
   // This prevents resetting form data immediately after a successful update
   useEffect(() => {
-    if (profile && !isSaving) {
+    if (profile) {
       const newFormData = profileToFormData(profile);
       setFormData((prev) => {
         const keys = Object.keys(newFormData) as (keyof UpdateProfileData)[];
@@ -193,7 +228,7 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
         return hasChanges ? newFormData : prev;
       });
     }
-  }, [profile, isSaving]);
+  }, [profile]);
 
   const fetchProfile = async (showLoading = true) => {
     if (showLoading) {
@@ -201,18 +236,6 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
     }
     try {
       const data = await getDoulaProfile();
-      try {
-        const documents = await getDoulaDocuments();
-        setHasTrainingCertificate(
-          documents.documents.some(
-            (doc) =>
-              doc.documentType === 'training_certificate' &&
-              ['uploaded', 'approved'].includes(doc.status)
-          )
-        );
-      } catch {
-        setHasTrainingCertificate(false);
-      }
 
       if (!data) {
         toast.error('No profile data found');
@@ -305,6 +328,7 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (savingRef.current) return;
     const submittingForReview =
       (e.nativeEvent as SubmitEvent).submitter?.getAttribute('value') ===
       'submit-profile';
@@ -337,6 +361,8 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
       return;
     }
 
+    savingRef.current = true;
+    setIsSubmittingReview(submittingForReview);
     setIsSaving(true);
 
     // Log the form data being submitted
@@ -406,6 +432,8 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
       logFailure('doula-dashboard', 'profiletab_failed_to_update_profile');
       toast.error(error.message || 'Failed to update profile');
     } finally {
+      savingRef.current = false;
+      setIsSubmittingReview(false);
       setIsSaving(false);
     }
   };
@@ -497,19 +525,33 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
                   type='submit'
                   name='action'
                   value='submit-profile'
+                  aria-busy={isSaving}
                   disabled={
                     isSaving ||
                     !(
                       !profile.profile_submitted_at ||
                       profile.profile_review_status === 'changes_requested'
                     ) ||
+                    checkingDocuments ||
                     !hasTrainingCertificate ||
                     getMissingRequiredFields(formData).length > 0
                   }
                 >
-                  {profile.profile_review_status === 'changes_requested'
-                    ? 'Resubmit for review'
-                    : 'Mark profile complete'}
+                  {isSaving && (
+                    <Loader2
+                      className='mr-2 h-4 w-4 animate-spin'
+                      aria-hidden='true'
+                    />
+                  )}
+                  {isSaving
+                    ? isSubmittingReview
+                      ? 'Submitting for review...'
+                      : 'Saving...'
+                    : checkingDocuments
+                      ? 'Checking documents...'
+                      : profile.profile_review_status === 'changes_requested'
+                        ? 'Resubmit for review'
+                        : 'Mark profile complete'}
                 </Button>
               </>
             )}
