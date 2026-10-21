@@ -75,7 +75,7 @@ it('lets an admin review the profile and certificate before approving the accoun
     screen.getByRole('button', { name: 'Review profile & documents' })
   );
   await screen.findByText('Fictional doula bio', {
-    selector: 'p.whitespace-pre-wrap',
+    selector: 'dd.whitespace-pre-wrap',
   });
   expect(
     screen.getByRole('button', { name: 'Approve profile' })

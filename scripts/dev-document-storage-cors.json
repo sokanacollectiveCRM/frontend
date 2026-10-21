@@ -1,0 +1,11 @@
+[
+  {
+    "origin": [
+      "https://sokana-front-end-dev-46lcr3n2qa-uc.a.run.app",
+      "https://sokana-front-end-dev-634744984887.us-central1.run.app"
+    ],
+    "method": ["GET", "HEAD"],
+    "responseHeader": ["Content-Type", "Content-Disposition"],
+    "maxAgeSeconds": 3600
+  }
+]

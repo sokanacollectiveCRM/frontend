@@ -1367,45 +1367,70 @@ export default function Teams() {
                   fullName={`${documentsMember.firstname} ${documentsMember.lastname}`}
                   profile_picture={documentsMember.profile_picture ?? undefined}
                 />
-                <p>
-                  {documentsMember.email}
-                  {documentsMember.phone_number &&
-                    ` · ${documentsMember.phone_number}`}
-                </p>
-                <p>
-                  {[
-                    documentsMember.address,
-                    documentsMember.city,
-                    documentsMember.state,
-                    documentsMember.zip_code,
-                    documentsMember.country,
-                  ]
-                    .filter(Boolean)
-                    .join(', ') || 'Address not provided'}
-                </p>
-                <p className='whitespace-pre-wrap'>
-                  {documentsMember.bio || 'Bio not provided'}
-                </p>
-                <h4 className='font-medium'>Certifications</h4>
-                {documentsMember.certifications.length ? (
-                  documentsMember.certifications.map((cert, index) => (
-                    <p key={index}>
-                      {[cert.name, cert.issuingOrganization, cert.year]
-                        .filter(Boolean)
-                        .join(' · ')}
-                    </p>
-                  ))
-                ) : (
-                  <p>No certifications listed</p>
-                )}
-                <p className='text-sm'>
-                  {documentsMember.profile_submitted_at
-                    ? `Submitted ${new Date(documentsMember.profile_submitted_at).toLocaleDateString()}`
-                    : 'The doula has not marked their profile complete.'}
-                </p>
+                <dl className='grid grid-cols-[7rem_minmax(0,1fr)] sm:grid-cols-[9rem_minmax(0,1fr)] gap-x-4 gap-y-3 text-sm [&>dt]:font-semibold [&>dt]:text-gray-600 [&>dd]:min-w-0 [&>dd]:break-words'>
+                  <dt>Name</dt>
+                  <dd>
+                    {documentsMember.firstname} {documentsMember.lastname}
+                  </dd>
+                  <dt>Email</dt>
+                  <dd>{documentsMember.email || 'Not provided'}</dd>
+                  <dt>Phone</dt>
+                  <dd>{documentsMember.phone_number || 'Not provided'}</dd>
+                  <dt>Address</dt>
+                  <dd>
+                    {[
+                      documentsMember.address,
+                      documentsMember.city,
+                      documentsMember.state,
+                      documentsMember.zip_code,
+                      documentsMember.country,
+                    ]
+                      .filter(Boolean)
+                      .join(', ') || 'Not provided'}
+                  </dd>
+                  <dt>Bio</dt>
+                  <dd className='whitespace-pre-wrap'>
+                    {documentsMember.bio || 'Not provided'}
+                  </dd>
+                  <dt>Certifications</dt>
+                  <dd>
+                    {documentsMember.certifications.length
+                      ? documentsMember.certifications.map((cert, index) => (
+                          <p key={index}>
+                            {[cert.name, cert.issuingOrganization, cert.year]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </p>
+                        ))
+                      : 'None listed'}
+                  </dd>
+                  <dt>Account status</dt>
+                  <dd className='capitalize'>
+                    {documentsMember.account_status}
+                  </dd>
+                  <dt>Profile review</dt>
+                  <dd>
+                    {
+                      {
+                        draft: 'Profile incomplete',
+                        submitted: 'Pending review',
+                        changes_requested: 'Changes requested',
+                        approved: 'Approved',
+                      }[documentsMember.profile_review_status]
+                    }
+                  </dd>
+                  <dt>Submitted</dt>
+                  <dd>
+                    {documentsMember.profile_submitted_at
+                      ? new Date(
+                          documentsMember.profile_submitted_at
+                        ).toLocaleDateString()
+                      : 'Not submitted yet'}
+                  </dd>
+                </dl>
                 <p className='text-sm'>
                   Review the profile and download the documents below. Approve
-                  the required training certificate, then approve the account.
+                  the required training certificate, then approve the profile.
                 </p>
 
                 {documentsMember.profile_review_status ===
