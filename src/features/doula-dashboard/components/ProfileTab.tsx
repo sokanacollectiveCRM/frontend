@@ -593,9 +593,21 @@ export default function ProfileTab({
               {profile.firstname} {profile.lastname} · {profile.email}
             </p>
           </div>
-          <span className='text-sm font-medium text-muted-foreground'>
-            Step {activeStep + 1} of {PROFILE_STEPS.length}
-          </span>
+          <div className='flex flex-wrap items-center gap-3'>
+            <span className='text-sm font-medium text-muted-foreground'>
+              Step {activeStep + 1} of {PROFILE_STEPS.length}
+            </span>
+            {isEditing && (
+              <Button
+                type='submit'
+                aria-label='Save changes at top'
+                aria-busy={isSaving}
+                disabled={isSaving}
+              >
+                {isSaving ? 'Saving...' : 'Save Changes'}
+              </Button>
+            )}
+          </div>
         </div>
         {profile.profile_submitted_at &&
           profile.profile_review_status !== 'changes_requested' && (

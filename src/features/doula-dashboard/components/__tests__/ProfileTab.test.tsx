@@ -734,3 +734,23 @@ it('opens Documents inside the profile without losing an unsaved bio', async () 
     'Keep this fictional draft'
   );
 });
+
+it('the top Save Changes uses the same validation and returns to read-only slider after saving', async () => {
+  await open();
+  fireEvent.change(screen.getByLabelText('Phone number'), {
+    target: { value: '5555550101' },
+  });
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Save changes at top', exact: true })
+  );
+  await waitFor(() =>
+    expect(api.updateDoulaProfile).toHaveBeenCalledWith(
+      expect.objectContaining({ phone_number: '5555550101' })
+    )
+  );
+  await screen.findByRole('button', { name: 'Edit profile', exact: true });
+  expect(screen.getByRole('progressbar')).toBeVisible();
+  expect(
+    screen.getByRole('button', { name: 'Documents step', exact: true })
+  ).toBeVisible();
+});
