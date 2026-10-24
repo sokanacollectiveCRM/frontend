@@ -1,10 +1,11 @@
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from '@/common/components/ui/alert';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { confirmPasswordReset, verifyPasswordResetCode } from 'firebase/auth';
+import { toast } from 'sonner';
+import { getFirebaseAuth } from '@/lib/firebase';
+import { AuthFormLogo } from '@/common/components/brand/Sokana360Logo';
+import { PasswordInput } from '@/common/components/form/PasswordInput';
 import { Button } from '@/common/components/ui/button';
-import { logFailure } from '@/utils/safeLog';
 import {
   Card,
   CardContent,
@@ -12,170 +13,123 @@ import {
   CardHeader,
   CardTitle,
 } from '@/common/components/ui/card';
-import { Input } from '@/common/components/ui/input';
 import { Label } from '@/common/components/ui/label';
-import { useUser } from '@/common/hooks/user/useUser';
-import GoogleButton from '@/features/auth/GoogleButton';
-import { Loader2 } from 'lucide-react';
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { toast } from 'sonner';
-import { fetchWithAuth, buildUrl } from '@/api/http';
 
 export default function SignUp() {
-  const [error, setError] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
-  const { googleAuth } = useUser();
+  const [params] = useSearchParams();
+  const code = params.get('oobCode') || '';
+  const navigate = useNavigate();
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmation, setConfirmation] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const [formState, setFormState] = useState({
-    firstname: '',
-    lastname: '',
-    email: '',
-    password: '',
-    username: '',
-  });
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormState({ ...formState, [e.target.name]: e.target.value });
-  };
-
-  const handleGoogleSignup = async () => {
-    try {
-      await googleAuth();
-    } catch (googleError) {
-      const message =
-        googleError instanceof Error
-          ? googleError.message
-          : 'Failed to login. Please try again.';
-
-      setError(message);
-      toast.error(message);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsLoading(true);
+  useEffect(() => {
+    let active = true;
+    setReady(false);
     setError('');
-
-    try {
-      const response = await fetchWithAuth(buildUrl('/auth/signup'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formState.email,
-          password: formState.password,
-          firstname: formState.firstname || undefined,
-          lastname: formState.lastname || undefined,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create account');
-      }
-      toast.success(
-        'Account created successfully! Please check your email to verify your account'
+    if (!code) {
+      setError(
+        'Please ask your admin to resend your invitation for a secure password setup link.'
       );
-    } catch (submitError) {
-      const message =
-        submitError instanceof Error
-          ? submitError.message
-          : 'Failed to sign up. Please try again.';
-
-      setError(message);
-      logFailure('auth', 'signup_error');
-      toast.error(message);
-    } finally {
-      setIsLoading(false);
+      return;
     }
-  };
+    void verifyPasswordResetCode(getFirebaseAuth(), code)
+      .then(() => {
+        if (active) setReady(true);
+      })
+      .catch(() => {
+        if (active)
+          setError(
+            'This invitation link has expired or was already used. Please ask your admin for a new invitation.'
+          );
+      });
+    return () => {
+      active = false;
+    };
+  }, [code]);
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!ready || submitting) return;
+    if (password !== confirmation) {
+      setError('Passwords do not match.');
+      return;
+    }
+    setError('');
+    setSubmitting(true);
+    try {
+      await confirmPasswordReset(getFirebaseAuth(), code, password);
+      toast.success(
+        'Password created. Log in with your invited email address.'
+      );
+      navigate('/login', { replace: true });
+    } catch {
+      setError(
+        'Could not create your password. Use at least 8 characters and try again, or ask your admin for a new invitation.'
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div className='mx-auto flex w-full min-w-0 max-w-md flex-col gap-6 px-4 py-6'>
       <Card>
         <CardHeader>
-          <CardTitle className='text-2xl'>Sign Up</CardTitle>
+          <AuthFormLogo />
+          <CardTitle role='heading' aria-level={1} className='text-2xl'>
+            Create your password
+          </CardTitle>
           <CardDescription>
-            Enter your details below to create your account
+            Your account details are already saved. Create a password, then log
+            in with your invited email address.
           </CardDescription>
-          <Alert className='mt-5' variant={'destructive'}>
-            <AlertTitle>Heads up!</AlertTitle>
-            <AlertDescription>
-              You must be invited by an admin before you can create an account.
-            </AlertDescription>
-          </Alert>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className='flex flex-col gap-6'>
-            <div className='grid gap-2'>
-              <Label htmlFor='firstname'>First Name</Label>
-              <Input
-                id='firstname'
-                name='firstname'
-                placeholder='First Name'
-                value={formState.firstname}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className='grid gap-2'>
-              <Label htmlFor='lastname'>Last Name</Label>
-              <Input
-                id='lastname'
-                name='lastname'
-                placeholder='Last Name'
-                value={formState.lastname}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className='grid gap-2'>
-              <Label htmlFor='email'>Email</Label>
-              <Input
-                id='email'
-                type='email'
-                name='email'
-                placeholder='j@example.com'
-                value={formState.email}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className='grid gap-2'>
-              <Label htmlFor='password'>Password</Label>
-              <Input
-                id='password'
-                type='password'
-                name='password'
-                placeholder='Password'
-                value={formState.password}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <Button type='submit' className='w-full' disabled={isLoading}>
-              {isLoading ? (
-                <Loader2 className='h-4 w-4 animate-spin mx-auto' />
-              ) : (
-                'Sign Up'
-              )}
-            </Button>
-            <GoogleButton
-              onClick={handleGoogleSignup}
-              isLoading={isLoading}
-              text='Sign up with Google'
-            />
-          </form>
+          {error && (
+            <p role='alert' className='mb-4 text-sm text-red-600'>
+              {error}
+            </p>
+          )}
+          {ready ? (
+            <form onSubmit={handleSubmit} className='flex flex-col gap-6'>
+              <div className='grid gap-2'>
+                <Label htmlFor='password'>Create password</Label>
+                <PasswordInput
+                  id='password'
+                  autoComplete='new-password'
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  minLength={8}
+                  required
+                />
+                <p className='text-sm text-muted-foreground'>
+                  Use at least 8 characters.
+                </p>
+              </div>
+              <div className='grid gap-2'>
+                <Label htmlFor='confirmation'>Confirm password</Label>
+                <PasswordInput
+                  id='confirmation'
+                  autoComplete='new-password'
+                  value={confirmation}
+                  onChange={(event) => setConfirmation(event.target.value)}
+                  minLength={8}
+                  required
+                />
+              </div>
+              <Button type='submit' disabled={submitting}>
+                {submitting ? 'Creating password…' : 'Create password'}
+              </Button>
+            </form>
+          ) : (
+            !error && <p role='status'>Checking your invitation…</p>
+          )}
           <div className='mt-4 text-center text-sm'>
-            Already have an account?{' '}
             <Link to='/login' className='underline underline-offset-4'>
-              Login
+              Log in
             </Link>
           </div>
         </CardContent>

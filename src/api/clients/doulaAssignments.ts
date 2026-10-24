@@ -5,6 +5,8 @@ export interface Doula {
   email: string;
   profile_picture?: string;
   bio?: string;
+  pronouns?: string;
+  certifications?: string[];
   phone_number?: string;
   scheduling_url?: string;
   availability_status?: string;
@@ -65,7 +67,6 @@ export const fetchAvailableDoulas = async (): Promise<Doula[]> => {
     },
   });
 
-
   if (!response.ok) {
     const errorText = await response.text();
     logHttpFailure('client-api', 'fetch_available_doulas', response.status);
@@ -93,7 +94,6 @@ export const fetchAssignedDoulas = async (
       'Content-Type': 'application/json',
     },
   });
-
 
   if (!response.ok) {
     const errorText = await response.text();

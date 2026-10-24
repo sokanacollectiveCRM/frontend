@@ -11,46 +11,39 @@
 
 import { test, expect, type Page } from '@playwright/test';
 
-const REQUIRED_DOC_TYPES = [
-  'background_check',
-  'liability_insurance_certificate',
-  'training_certificate',
-  'w9',
-  'direct_deposit_form',
-];
+const REQUIRED_DOC_TYPES = ['training_certificate'];
 
 test.describe('Ticket 3 — Mandatory doula documents (E2E)', () => {
-
   test('app is accessible', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
     expect(await page.title()).toBeTruthy();
   });
 
-  test('/doula-dashboard redirects to /login for unauthenticated users', async ({ page }) => {
+  test('/doula-dashboard redirects to /login for unauthenticated users', async ({
+    page,
+  }) => {
     await page.goto('/doula-dashboard');
     await page.waitForLoadState('networkidle');
     expect(page.url()).toMatch(/login/);
   });
 
-  test('/hours redirects to /login for unauthenticated users', async ({ page }) => {
+  test('/hours redirects to /login for unauthenticated users', async ({
+    page,
+  }) => {
     await page.goto('/hours');
     await page.waitForLoadState('networkidle');
     expect(page.url()).toMatch(/login/);
   });
 
-  test('REQUIRED_DOULA_DOCUMENT_TYPES has exactly 5 types', async ({ page }) => {
+  test('REQUIRED_DOULA_DOCUMENT_TYPES is the training certificate only', async ({
+    page,
+  }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
     const result = await page.evaluate(() => {
-      const REQUIRED_DOULA_DOCUMENT_TYPES = [
-        'background_check',
-        'liability_insurance_certificate',
-        'training_certificate',
-        'w9',
-        'direct_deposit_form',
-      ] as const;
+      const REQUIRED_DOULA_DOCUMENT_TYPES = ['training_certificate'] as const;
 
       return {
         count: REQUIRED_DOULA_DOCUMENT_TYPES.length,
@@ -58,30 +51,41 @@ test.describe('Ticket 3 — Mandatory doula documents (E2E)', () => {
       };
     });
 
-    expect(result.count).toBe(5);
-    expect(result.types).toContain('background_check');
-    expect(result.types).toContain('liability_insurance_certificate');
-    expect(result.types).toContain('training_certificate');
-    expect(result.types).toContain('w9');
-    expect(result.types).toContain('direct_deposit_form');
+    expect(result.count).toBe(1);
+    expect(result.types).toEqual(['training_certificate']);
   });
 
-  test('document upload validation rejects oversized files (> 10MB)', async ({ page }) => {
+  test('document upload validation rejects oversized files (> 10MB)', async ({
+    page,
+  }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
     const result = await page.evaluate(() => {
       const MAX_DOCUMENT_SIZE = 10 * 1024 * 1024;
 
-      function validateDocumentFile(file: { size: number; type: string }): string | null {
-        if (file.size > MAX_DOCUMENT_SIZE) return 'File size exceeds 10MB limit';
-        const ALLOWED = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
-        if (!ALLOWED.includes(file.type)) return 'Invalid file type. Allowed: PDF, PNG, JPG, JPEG';
+      function validateDocumentFile(file: {
+        size: number;
+        type: string;
+      }): string | null {
+        if (file.size > MAX_DOCUMENT_SIZE)
+          return 'File size exceeds 10MB limit';
+        const ALLOWED = [
+          'application/pdf',
+          'image/png',
+          'image/jpeg',
+          'image/jpg',
+        ];
+        if (!ALLOWED.includes(file.type))
+          return 'Invalid file type. Allowed: PDF, PNG, JPG, JPEG';
         return null;
       }
 
       return {
-        oversized: validateDocumentFile({ size: MAX_DOCUMENT_SIZE + 1, type: 'application/pdf' }),
+        oversized: validateDocumentFile({
+          size: MAX_DOCUMENT_SIZE + 1,
+          type: 'application/pdf',
+        }),
         validPdf: validateDocumentFile({ size: 1024, type: 'application/pdf' }),
         invalidType: validateDocumentFile({ size: 1024, type: 'text/plain' }),
         videoType: validateDocumentFile({ size: 1024, type: 'video/mp4' }),
@@ -96,18 +100,14 @@ test.describe('Ticket 3 — Mandatory doula documents (E2E)', () => {
     expect(result.validPng).toBeNull();
   });
 
-  test('can_be_active is true only when all 5 required docs are approved', async ({ page }) => {
+  test('can_be_active is true only when the training certificate is approved', async ({
+    page,
+  }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
     const result = await page.evaluate(() => {
-      const REQUIRED = [
-        'background_check',
-        'liability_insurance_certificate',
-        'training_certificate',
-        'w9',
-        'direct_deposit_form',
-      ];
+      const REQUIRED = ['training_certificate'];
 
       function checkCompleteness(approvedTypes: string[]) {
         const missingTypes = REQUIRED.filter((t) => !approvedTypes.includes(t));
@@ -122,7 +122,7 @@ test.describe('Ticket 3 — Mandatory doula documents (E2E)', () => {
       }
 
       const allApproved = checkCompleteness(REQUIRED);
-      const missing2 = checkCompleteness(['background_check', 'training_certificate', 'w9']);
+      const missing2 = checkCompleteness([]);
       const none = checkCompleteness([]);
 
       return { allApproved, missing2, none };
@@ -133,11 +133,10 @@ test.describe('Ticket 3 — Mandatory doula documents (E2E)', () => {
     expect(result.allApproved.missing_types).toHaveLength(0);
 
     expect(result.missing2.can_be_active).toBe(false);
-    expect(result.missing2.missing_types).toContain('liability_insurance_certificate');
-    expect(result.missing2.missing_types).toContain('direct_deposit_form');
+    expect(result.missing2.missing_types).toContain('training_certificate');
 
     expect(result.none.can_be_active).toBe(false);
-    expect(result.none.missing_types).toHaveLength(5);
+    expect(result.none.missing_types).toHaveLength(1);
   });
 
   test('document upload API endpoint is interceptable', async ({ page }) => {
@@ -154,7 +153,7 @@ test.describe('Ticket 3 — Mandatory doula documents (E2E)', () => {
             success: true,
             document: {
               id: 'doc-1',
-              documentType: 'background_check',
+              documentType: 'training_certificate',
               fileName: 'bg-check.pdf',
               fileUrl: null,
               fileSize: 1024,
@@ -173,9 +172,11 @@ test.describe('Ticket 3 — Mandatory doula documents (E2E)', () => {
 
     const response = await page.evaluate(async () => {
       const formData = new FormData();
-      const file = new File(['content'], 'bg-check.pdf', { type: 'application/pdf' });
+      const file = new File(['content'], 'bg-check.pdf', {
+        type: 'application/pdf',
+      });
       formData.append('file', file);
-      formData.append('document_type', 'background_check');
+      formData.append('document_type', 'training_certificate');
 
       const res = await fetch('/api/doulas/documents', {
         method: 'POST',
@@ -184,15 +185,21 @@ test.describe('Ticket 3 — Mandatory doula documents (E2E)', () => {
       });
 
       const data = await res.json();
-      return { ok: res.ok, status: res.status, docType: data.document?.documentType };
+      return {
+        ok: res.ok,
+        status: res.status,
+        docType: data.document?.documentType,
+      };
     });
 
     expect(uploadCalled).toBe(true);
     expect(response.ok).toBe(true);
-    expect(response.docType).toBe('background_check');
+    expect(response.docType).toBe('training_certificate');
   });
 
-  test('all 5 required document types can be uploaded via API', async ({ page }) => {
+  test('the required training certificate can be uploaded via API', async ({
+    page,
+  }) => {
     const uploadedTypes: string[] = [];
 
     await page.route('**/api/doulas/documents', (route) => {
@@ -201,7 +208,10 @@ test.describe('Ticket 3 — Mandatory doula documents (E2E)', () => {
         route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify({ success: true, document: { id: 'doc-x', status: 'uploaded' } }),
+          body: JSON.stringify({
+            success: true,
+            document: { id: 'doc-x', status: 'uploaded' },
+          }),
         });
       } else {
         route.continue();
@@ -215,10 +225,15 @@ test.describe('Ticket 3 — Mandatory doula documents (E2E)', () => {
     for (const docType of REQUIRED_DOC_TYPES) {
       const result = await page.evaluate(async (type) => {
         const formData = new FormData();
-        const file = new File(['content'], `${type}.pdf`, { type: 'application/pdf' });
+        const file = new File(['content'], `${type}.pdf`, {
+          type: 'application/pdf',
+        });
         formData.append('file', file);
         formData.append('document_type', type);
-        const res = await fetch('/api/doulas/documents', { method: 'POST', body: formData });
+        const res = await fetch('/api/doulas/documents', {
+          method: 'POST',
+          body: formData,
+        });
         return { ok: res.ok };
       }, docType);
 
