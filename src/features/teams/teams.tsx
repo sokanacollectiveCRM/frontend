@@ -1,3 +1,5 @@
+import CertificationsList from '@/features/doula-dashboard/components/CertificationsList';
+import type { Certification } from '@/api/doulas/doulaService';
 import { Textarea } from '@/common/components/ui/textarea';
 import { Badge } from '@/common/components/ui/badge';
 import { logFailure } from '@/utils/safeLog';
@@ -71,7 +73,7 @@ interface TeamMember {
   zip_code: string;
   country: string;
   phone_number: string;
-  certifications: { name: string; issuingOrganization: string; year: string }[];
+  certifications: Certification[];
 }
 
 const ALLOWED_TEAM_ROLES = new Set(['admin', 'doula']);
@@ -1394,15 +1396,9 @@ export default function Teams() {
                   </dd>
                   <dt>Certifications</dt>
                   <dd>
-                    {documentsMember.certifications.length
-                      ? documentsMember.certifications.map((cert, index) => (
-                          <p key={index}>
-                            {[cert.name, cert.issuingOrganization, cert.year]
-                              .filter(Boolean)
-                              .join(' · ')}
-                          </p>
-                        ))
-                      : 'None listed'}
+                    <CertificationsList
+                      certifications={documentsMember.certifications}
+                    />
                   </dd>
                   <dt>Account status</dt>
                   <dd className='capitalize'>

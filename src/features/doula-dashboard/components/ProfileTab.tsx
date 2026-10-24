@@ -1,3 +1,7 @@
+import {
+  hasCertificationDetails,
+  isValidExpirationDate,
+} from '@/features/doula-dashboard/certifications';
 import CertificationsFields from '@/features/doula-dashboard/components/CertificationsFields';
 import { useState, useEffect, useRef } from 'react';
 import { logFailure } from '@/utils/safeLog';
@@ -95,8 +99,8 @@ function profileToFormData(profile: DoulaProfile): UpdateProfileData {
           : String(profile.zip_code)
         : '',
     bio: profile.bio || '',
-    certifications: (profile.certifications ?? []).filter((entry) =>
-      Object.values(entry).some((value) => value.trim())
+    certifications: (profile.certifications ?? []).filter(
+      hasCertificationDetails
     ),
     scheduling_url: schedulingInfo.schedulingUrl || '',
     availability_status:
@@ -360,13 +364,29 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
     // need a name. Normalize here for both saving and submitting for review.
     nextFormData.certifications = (nextFormData.certifications ?? [])
       .map((entry) => ({
+        ...entry,
         name: entry.name.trim(),
         issuingOrganization: entry.issuingOrganization.trim(),
-        year: entry.year.trim(),
+        expiration_date: entry.expiration_date || null,
+        no_expiration: entry.no_expiration === true,
       }))
-      .filter((entry) => Object.values(entry).some(Boolean));
+      .filter(hasCertificationDetails);
     if (nextFormData.certifications.some((entry) => !entry.name)) {
       toast.error('Enter a name for each certification or remove the entry.');
+      return;
+    }
+
+    if (
+      nextFormData.certifications.some(
+        (entry) =>
+          (entry.expiration_date &&
+            !isValidExpirationDate(entry.expiration_date)) ||
+          (entry.no_expiration && entry.expiration_date)
+      )
+    ) {
+      toast.error(
+        'Enter a valid certification expiration date or select No expiration.'
+      );
       return;
     }
 

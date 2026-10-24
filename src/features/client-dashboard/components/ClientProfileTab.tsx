@@ -1,3 +1,4 @@
+import CertificationsList from '@/features/doula-dashboard/components/CertificationsList';
 import { useState, useEffect, useCallback } from 'react';
 import { logFailure } from '@/utils/safeLog';
 import {
@@ -1668,11 +1669,17 @@ export default function ClientProfileTab({
                             <h4 className='text-sm font-semibold'>
                               Certifications &amp; training
                             </h4>
-                            <ul className='list-inside list-disc text-sm'>
-                              {doula.certifications.map((name, index) => (
-                                <li key={index}>{name}</li>
-                              ))}
-                            </ul>
+                            <CertificationsList
+                              certifications={
+                                doula.structuredCertifications ??
+                                (doula.certifications ?? []).map((name) => ({
+                                  name,
+                                  issuingOrganization: '',
+                                  expiration_date: null,
+                                  no_expiration: false,
+                                }))
+                              }
+                            />
                           </div>
                         )}
                       </div>

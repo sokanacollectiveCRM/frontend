@@ -17,7 +17,10 @@ const API_BASE = `${apiBaseUrl}/api`;
 export interface Certification {
   name: string;
   issuingOrganization: string;
-  year: string;
+  expiration_date: string | null;
+  no_expiration: boolean;
+  /** Historical data retained without an editable field. */
+  year?: string;
 }
 export async function submitDoulaProfile(): Promise<{
   profile_submitted_at: string;

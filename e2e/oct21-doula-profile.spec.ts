@@ -145,7 +145,7 @@ test('doula profile layout, optional demographics, submission and client view', 
   ).toBeDisabled();
   await page.getByLabel('Certification name').fill('Birth doula');
   await page.getByLabel('Issuing organization').fill('Example Training');
-  await page.getByLabel('Year', { exact: true }).fill('2026');
+  await page.getByLabel('Expiration date', { exact: true }).fill('2028-03-31');
   await caption(page, 'Add a certification beside the photo and name');
   await page.getByRole('button', { name: 'Add certification' }).click();
   await expect(page.getByLabel('Certification name')).toHaveCount(2);
@@ -159,7 +159,8 @@ test('doula profile layout, optional demographics, submission and client view', 
       {
         name: 'Birth doula',
         issuingOrganization: 'Example Training',
-        year: '2026',
+        expiration_date: '2028-03-31',
+        no_expiration: false,
       },
     ]);
   await expect(page.getByLabel('Certification name')).toHaveCount(0);
