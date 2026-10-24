@@ -1,3 +1,4 @@
+import { validateDocumentFile } from '@/common/utils/documentUpload';
 import { useState, useEffect } from 'react';
 import { logFailure } from '@/utils/safeLog';
 import {
@@ -44,8 +45,11 @@ export function EditDoulaDialog({
     contract_status: 'not_sent' as 'pending' | 'signed' | 'not_sent',
   });
   const [newSpecialty, setNewSpecialty] = useState('');
+  const [certificationError, setCertificationError] = useState('');
   const [certificationFiles, setCertificationFiles] = useState<File[]>([]); // New files to upload
-  const [existingCertifications, setExistingCertifications] = useState<string[]>([]); // Existing file URLs/names
+  const [existingCertifications, setExistingCertifications] = useState<
+    string[]
+  >([]); // Existing file URLs/names
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -64,19 +68,25 @@ export function EditDoulaDialog({
         contract_status: doula.contract_status || 'not_sent',
       });
       setExistingCertifications(existingCerts);
+      setCertificationError('');
       setCertificationFiles([]); // Reset new files when dialog opens
     }
   }, [doula, open]);
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const addSpecialty = () => {
-    if (newSpecialty.trim() && !formData.specialties.includes(newSpecialty.trim())) {
+    if (
+      newSpecialty.trim() &&
+      !formData.specialties.includes(newSpecialty.trim())
+    ) {
       setFormData((prev) => ({
         ...prev,
         specialties: [...prev.specialties, newSpecialty.trim()],
@@ -92,11 +102,21 @@ export function EditDoulaDialog({
     }));
   };
 
-  const handleCertificationFileUpload = (
+  const handleCertificationFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const files = Array.from(e.target.files || []);
-    setCertificationFiles((prev) => [...prev, ...files]);
+    e.target.value = '';
+    setCertificationError('');
+    setCertificationFiles([]);
+    try {
+      await Promise.all(files.map(validateDocumentFile));
+      setCertificationFiles(files.slice(0, 1));
+    } catch (error) {
+      setCertificationError(
+        error instanceof Error ? error.message : 'Could not read that file.'
+      );
+    }
   };
 
   const removeCertificationFile = (index: number) => {
@@ -104,9 +124,7 @@ export function EditDoulaDialog({
   };
 
   const removeExistingCertification = (certUrl: string) => {
-    setExistingCertifications((prev) =>
-      prev.filter((url) => url !== certUrl)
-    );
+    setExistingCertifications((prev) => prev.filter((url) => url !== certUrl));
     setFormData((prev) => ({
       ...prev,
       certifications: prev.certifications.filter((url) => url !== certUrl),
@@ -119,35 +137,19 @@ export function EditDoulaDialog({
 
     setIsLoading(true);
     try {
-      // Use FormData to handle file uploads
-      const formDataToSend = new FormData();
-      formDataToSend.append('firstname', formData.first_name);
-      formDataToSend.append('lastname', formData.last_name);
-      formDataToSend.append('email', formData.email);
-      formDataToSend.append('phone', formData.phone || '');
-      formDataToSend.append('address', formData.address || '');
-      formDataToSend.append('bio', formData.bio || '');
-      formDataToSend.append('years_experience', formData.years_experience || '');
-      formDataToSend.append('contract_status', formData.contract_status);
-      formDataToSend.append('specialties', JSON.stringify(formData.specialties));
-      
-      // Append existing certifications (URLs/names that should be kept)
-      formDataToSend.append('existing_certifications', JSON.stringify(existingCertifications));
-      
-      // Append new certification files
-      certificationFiles.forEach((file, index) => {
-        formDataToSend.append(`certification_files`, file);
-      });
-
-      // Update via team member endpoint (will be replaced with doula-specific endpoint)
       const response = await fetchWithAuth(
         buildUrl(`/clients/team/${doula.id}`),
         {
           method: 'PUT',
-          headers: {
-            // Don't set Content-Type header - browser will set it with boundary for FormData
-          },
-          body: formDataToSend,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            firstname: formData.first_name,
+            lastname: formData.last_name,
+            email: formData.email,
+            phone: formData.phone || '',
+            address: formData.address || '',
+            bio: formData.bio || '',
+          }),
         }
       );
 
@@ -161,6 +163,27 @@ export function EditDoulaDialog({
           errorMessage = errorText || errorMessage;
         }
         throw new Error(errorMessage);
+      }
+
+      const certificate = certificationFiles[0];
+      if (certificate) {
+        await validateDocumentFile(certificate);
+        const upload = new FormData();
+        upload.append('certification_files', certificate);
+        const uploaded = await fetchWithAuth(
+          buildUrl(`/clients/team/${doula.id}`),
+          {
+            method: 'PUT',
+            body: upload,
+          }
+        );
+        if (!uploaded.ok) {
+          const error = await uploaded.json().catch(() => ({}));
+          const message =
+            error.error || 'Failed to upload certification document';
+          setCertificationError(message);
+          throw new Error(message);
+        }
       }
 
       toast.success('Doula profile updated successfully');
@@ -330,7 +353,8 @@ export function EditDoulaDialog({
                       >
                         <FileText className='h-4 w-4 text-blue-600 flex-shrink-0' />
                         <span className='text-sm text-gray-700 truncate flex-1'>
-                          {certUrl.split('/').pop() || `Certification ${idx + 1}`}
+                          {certUrl.split('/').pop() ||
+                            `Certification ${idx + 1}`}
                         </span>
                         <button
                           type='button'
@@ -381,6 +405,19 @@ export function EditDoulaDialog({
                 </div>
               )}
 
+              {certificationError && (
+                <p
+                  id='certification-upload-error'
+                  role='alert'
+                  className='text-sm text-red-600'
+                >
+                  {certificationError}
+                </p>
+              )}
+              <p className='text-sm text-muted-foreground'>
+                JPEG, PNG or PDF, max 10MB. Uploading replaces the current
+                training certificate and requires a new review.
+              </p>
               {/* Upload Button */}
               <div className='flex justify-center'>
                 <label
@@ -388,14 +425,15 @@ export function EditDoulaDialog({
                   className='cursor-pointer inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors'
                 >
                   <Upload className='h-4 w-4' />
-                  Upload Certification File
+                  Upload Training Certificate
                 </label>
                 <input
                   id='certification-upload'
                   type='file'
                   className='hidden'
-                  accept='.pdf,.doc,.docx,.jpg,.jpeg,.png,.gif'
-                  multiple
+                  accept='.jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf'
+                  aria-describedby='certification-upload-error'
+                  aria-invalid={Boolean(certificationError)}
                   onChange={handleCertificationFileUpload}
                 />
               </div>

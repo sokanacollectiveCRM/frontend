@@ -1,3 +1,4 @@
+import { validateDocumentFile } from '@/common/utils/documentUpload';
 import CertificationsList from '@/features/doula-dashboard/components/CertificationsList';
 import { useState, useEffect, useCallback } from 'react';
 import { logFailure } from '@/utils/safeLog';
@@ -172,6 +173,9 @@ export default function ClientProfileTab({
   const [sharedNotesLoading, setSharedNotesLoading] = useState(false);
   const [clientDocuments, setClientDocuments] = useState<ClientDocument[]>([]);
   const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [insuranceUploadErrors, setInsuranceUploadErrors] = useState<
+    Partial<Record<InsuranceCardSide, string>>
+  >({});
   const [uploadingInsuranceCardSide, setUploadingInsuranceCardSide] =
     useState<InsuranceCardSide | null>(null);
   const [deletingInsuranceCardId, setDeletingInsuranceCardId] = useState<
@@ -1334,26 +1338,10 @@ export default function ClientProfileTab({
 
     if (!file) return;
 
-    const acceptedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
-    const lowerName = file.name.toLowerCase();
-    const hasAcceptedExtension =
-      lowerName.endsWith('.jpg') ||
-      lowerName.endsWith('.jpeg') ||
-      lowerName.endsWith('.png') ||
-      lowerName.endsWith('.pdf');
-
-    if (!acceptedTypes.includes(file.type) && !hasAcceptedExtension) {
-      toast.error('Please upload a JPG, PNG, or PDF file.');
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('File is too large. Max size is 10MB.');
-      return;
-    }
-
+    setInsuranceUploadErrors((prev) => ({ ...prev, [side]: '' }));
     setUploadingInsuranceCardSide(side);
     try {
+      await validateDocumentFile(file);
       await uploadInsuranceCard(file, side);
       toast.success(`Insurance card ${side} uploaded successfully`);
       await fetchClientDocuments();
@@ -1362,6 +1350,7 @@ export default function ClientProfileTab({
         error instanceof Error
           ? formatClientDocumentErrorMessage(error.message)
           : `Failed to upload insurance card ${side}`;
+      setInsuranceUploadErrors((prev) => ({ ...prev, [side]: message }));
       toast.error(message);
     } finally {
       setUploadingInsuranceCardSide((current) =>
@@ -2076,7 +2065,20 @@ export default function ClientProfileTab({
                                 </p>
                               </div>
                               <div>
+                                {insuranceUploadErrors[slot.side] && (
+                                  <p
+                                    id={`insurance-card-${slot.side}-error`}
+                                    role='alert'
+                                    className='text-sm text-red-600'
+                                  >
+                                    {insuranceUploadErrors[slot.side]}
+                                  </p>
+                                )}
                                 <input
+                                  aria-describedby={`insurance-card-${slot.side}-error`}
+                                  aria-invalid={Boolean(
+                                    insuranceUploadErrors[slot.side]
+                                  )}
                                   id={`insurance-card-${slot.side}-upload`}
                                   type='file'
                                   accept='.jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf'

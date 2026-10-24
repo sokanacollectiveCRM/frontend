@@ -11,6 +11,7 @@ import { fetchWithAuth } from '@/api/http';
 import {
   getAdminDoulaDocuments,
   partitionDoulaDocuments,
+  getDoulaDocumentUrl,
 } from '@/api/doulas/doulaService';
 vi.mock('@/common/contexts/UserContext', async () => {
   const { createContext } = await import('react');
@@ -26,10 +27,12 @@ vi.mock('@/api/doulas/doulaService', () => ({
   partitionDoulaDocuments: vi.fn(),
   getDoulaDocumentUrl: vi.fn(),
 }));
+let documentFileName = 'training.pdf';
 let approved = false;
 beforeEach(() => {
   vi.clearAllMocks();
   approved = false;
+  documentFileName = 'training.pdf';
   vi.mocked(fetchWithAuth).mockImplementation(
     async () =>
       ({
@@ -68,7 +71,7 @@ beforeEach(() => {
             document_type: 'training_certificate',
             document_id: 'cert',
             status: approved ? 'approved' : 'uploaded',
-            file_name: 'training.pdf',
+            file_name: documentFileName,
           },
         ],
         archived: [],
@@ -116,3 +119,31 @@ it('lets an admin review the profile and certificate before approving the accoun
     )
   );
 });
+
+it.each(['JPG', 'PNG', 'PDF'])(
+  'previews %s inside Review profile & documents',
+  async (extension) => {
+    documentFileName = `fictional.${extension}`;
+    vi.mocked(getDoulaDocumentUrl).mockResolvedValue(
+      'https://example.test/signed-document'
+    );
+    render(<Teams />);
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Review profile & documents' })
+    );
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'View', exact: true })
+    );
+    if (extension === 'PDF') {
+      expect(await screen.findByTitle('PDF document preview')).toHaveAttribute(
+        'src',
+        'https://example.test/signed-document'
+      );
+    } else {
+      expect(await screen.findByAltText(documentFileName)).toHaveAttribute(
+        'src',
+        'https://example.test/signed-document'
+      );
+    }
+  }
+);
