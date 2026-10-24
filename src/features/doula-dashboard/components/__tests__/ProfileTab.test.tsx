@@ -20,6 +20,9 @@ vi.mock('@/api/doulas/doulaService', () => ({
   updateDoulaAvailability: vi.fn(),
   uploadDoulaProfilePicture: vi.fn(),
 }));
+vi.mock('@/features/doula-dashboard/components/DocumentsTab', () => ({
+  default: () => <div>Profile document grid</div>,
+}));
 vi.mock('@/common/components/form/ProfileImageInput', () => ({
   ProfileImageInput: () => <div>Profile photo</div>,
 }));
@@ -77,6 +80,14 @@ beforeEach(() => {
 afterEach(cleanup);
 async function open(step = 'About you') {
   render(<ProfileTab />);
+  await waitFor(() =>
+    expect(
+      screen.queryByRole('button', { name: 'Edit profile' }) ||
+        screen.queryByLabelText('About me (bio)')
+    ).not.toBeNull()
+  );
+  const edit = screen.queryByRole('button', { name: 'Edit profile' });
+  if (edit) fireEvent.click(edit);
   await waitFor(() =>
     expect(screen.getByLabelText('About me (bio)')).toHaveValue(profile.bio)
   );
@@ -413,10 +424,11 @@ describe('doula profile layout', () => {
         })
       )
     );
-    await waitFor(() =>
-      expect(
-        screen.getByRole('button', { name: 'Save Changes' })
-      ).not.toBeDisabled()
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Edit profile' })
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Certifications step', exact: true })
     );
     fireEvent.click(
       screen.getByRole('button', { name: 'Remove certification 1' })
@@ -684,4 +696,41 @@ describe('profile slider steps', () => {
     );
     expect(screen.getByLabelText('Expiration date')).toHaveValue('2030-03-31');
   });
+});
+
+it('Cancel discards drafts and returns to the saved read-only profile; Edit reopens the slider', async () => {
+  await open();
+  fireEvent.change(screen.getByLabelText('About me (bio)'), {
+    target: { value: 'Discard this fictional draft' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel', exact: true }));
+  expect(screen.getByRole('button', { name: 'Edit profile' })).toBeVisible();
+  expect(screen.queryByLabelText('About me (bio)')).not.toBeInTheDocument();
+  expect(
+    within(document.getElementById('profile-panel-0')!).getByText(initial.bio)
+  ).toBeVisible();
+  expect(
+    screen.queryByText('Discard this fictional draft')
+  ).not.toBeInTheDocument();
+  expect(api.updateDoulaProfile).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Edit profile' }));
+  expect(screen.getByLabelText('About me (bio)')).toHaveValue(initial.bio);
+  expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '1');
+});
+it('opens Documents inside the profile without losing an unsaved bio', async () => {
+  await open();
+  fireEvent.change(screen.getByLabelText('About me (bio)'), {
+    target: { value: 'Keep this fictional draft' },
+  });
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Documents step', exact: true })
+  );
+  expect(screen.getByText('Profile document grid')).toBeVisible();
+  expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '4');
+  fireEvent.click(
+    screen.getByRole('button', { name: 'About you step', exact: true })
+  );
+  expect(screen.getByLabelText('About me (bio)')).toHaveValue(
+    'Keep this fictional draft'
+  );
 });

@@ -1,19 +1,33 @@
-import { Navigate, Route, useNavigate, useOutletContext, useParams } from 'react-router-dom';
+import {
+  Navigate,
+  Route,
+  useNavigate,
+  useOutletContext,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom';
 import DoulaDashboard from './DoulaDashboard';
 import ProfileTab from './components/ProfileTab';
-import DocumentsTab from './components/DocumentsTab';
 import ClientsTab from './components/ClientsTab';
 import HoursTab from './components/HoursTab';
 import ActivitiesTab from './components/ActivitiesTab';
 import type { DoulaDashboardOutletContext } from './doulaDashboardTypes';
 
 function DoulaProfilePage() {
-  const { onProfileStatusChange } = useOutletContext<DoulaDashboardOutletContext>();
-  return <ProfileTab onProfileStatusChange={onProfileStatusChange} />;
+  const { onProfileStatusChange } =
+    useOutletContext<DoulaDashboardOutletContext>();
+  const [params] = useSearchParams();
+  return (
+    <ProfileTab
+      key={params.get('step') ?? 'profile'}
+      initialStep={params.get('step') === 'documents' ? 'documents' : undefined}
+      onProfileStatusChange={onProfileStatusChange}
+    />
+  );
 }
 
 function DoulaDocumentsPage() {
-  return <DocumentsTab />;
+  return <Navigate to='/doula-dashboard/profile?step=documents' replace />;
 }
 
 function DoulaClientsPage() {

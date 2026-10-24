@@ -54,6 +54,17 @@ test('P-16 expiration persists and matches doula, admin detail and review displa
       ]);
     }
     await page.goto('/doula-dashboard/profile');
+    await page
+      .getByRole('heading', { name: 'Your doula profile', exact: true })
+      .waitFor();
+    if (
+      await page
+        .getByRole('button', { name: 'Edit profile', exact: true })
+        .isVisible()
+    )
+      await page
+        .getByRole('button', { name: 'Edit profile', exact: true })
+        .click();
     await page.getByLabel('Phone number', { exact: true }).fill('5555550100');
     await page
       .getByRole('button', { name: 'Certifications step', exact: true })
@@ -104,6 +115,9 @@ test('P-16 expiration persists and matches doula, admin detail and review displa
     await expect(certs.getByLabel('Certification name')).toHaveCount(0);
     await page.reload();
     await page
+      .getByRole('button', { name: 'Edit profile', exact: true })
+      .click();
+    await page
       .getByRole('button', { name: 'Certifications step', exact: true })
       .click();
     await expect(
@@ -142,6 +156,9 @@ test('P-16 expiration persists and matches doula, admin detail and review displa
       .click();
     expect((await savedMore).status()).toBe(200);
     await page.reload();
+    await page
+      .getByRole('button', { name: 'Edit profile', exact: true })
+      .click();
     await page
       .getByRole('button', { name: 'Certifications step', exact: true })
       .click();

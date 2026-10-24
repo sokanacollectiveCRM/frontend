@@ -58,6 +58,15 @@ describe('DocumentsTab Oct 21 document set', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('Miscellaneous documents')).toBeInTheDocument();
 
+    expect(screen.getByTestId('profile-documents-grid')).toHaveClass(
+      'grid',
+      'md:grid-cols-2'
+    );
+    expect(
+      screen
+        .getAllByRole('button', { name: 'Upload', exact: true })
+        .every((button) => button.getAttribute('type') === 'button')
+    ).toBe(true);
     expect(screen.getAllByText('Required')).toHaveLength(1);
     expect(screen.getAllByText('Optional')).toHaveLength(3);
 

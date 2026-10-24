@@ -10,7 +10,9 @@ export default function CertificationsFields({
   value,
   savedValue,
   onChange,
+  onOpenDocuments,
 }: {
+  onOpenDocuments?: () => void;
   value: Certification[];
   savedValue: Certification[] | undefined;
   onChange: (value: Certification[]) => void;
@@ -57,7 +59,18 @@ export default function CertificationsFields({
       </h3>
       <p className='text-sm text-muted-foreground'>
         List your certifications here.{' '}
-        <a className='underline' href='/doula-dashboard/documents'>
+        <a
+          className='underline'
+          href='/doula-dashboard/profile?step=documents'
+          onClick={
+            onOpenDocuments
+              ? (event) => {
+                  event.preventDefault();
+                  onOpenDocuments();
+                }
+              : undefined
+          }
+        >
           Upload your Doula training certificate in Documents.
         </a>
       </p>

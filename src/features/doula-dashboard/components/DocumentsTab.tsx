@@ -77,7 +77,11 @@ function toFileState(doc: DoulaDocument): DocFileState {
   };
 }
 
-export default function DocumentsTab() {
+export default function DocumentsTab({
+  embedded = false,
+}: {
+  embedded?: boolean;
+}) {
   const [items, setItems] = useState<DocItemState[]>([]);
   const [completeness, setCompleteness] = useState<DocumentCompleteness | null>(
     null
@@ -303,7 +307,9 @@ export default function DocumentsTab() {
     <div className='space-y-6'>
       <div className='flex justify-between items-start'>
         <div>
-          <h2 className='text-xl font-semibold text-gray-900'>Documents</h2>
+          {!embedded && (
+            <h2 className='text-xl font-semibold text-gray-900'>Documents</h2>
+          )}
           <p className='text-sm text-gray-600 mt-1'>
             The doula training certificate is required. An admin must approve it
             for full profile completion. Your dashboard tools remain available
@@ -357,7 +363,10 @@ export default function DocumentsTab() {
           <p className='text-gray-500'>Loading documents...</p>
         </div>
       ) : (
-        <div className='space-y-4'>
+        <div
+          data-testid='profile-documents-grid'
+          className='grid grid-cols-1 items-start gap-4 md:grid-cols-2'
+        >
           {items.map((item) => {
             const meta = DOULA_DOCUMENT_META[item.documentType];
             const primary = item.files[0];
@@ -401,6 +410,7 @@ export default function DocumentsTab() {
                       </div>
                     </div>
                     <Button
+                      type='button'
                       size='sm'
                       variant={item.files.length === 0 ? 'default' : 'outline'}
                       onClick={() => openUploadFor(item.documentType)}
@@ -444,6 +454,7 @@ export default function DocumentsTab() {
                       <div className='flex gap-2 pt-2'>
                         {file.fileUrl && (
                           <Button
+                            type='button'
                             variant='outline'
                             size='sm'
                             onClick={() =>
@@ -455,6 +466,7 @@ export default function DocumentsTab() {
                           </Button>
                         )}
                         <Button
+                          type='button'
                           variant='outline'
                           size='sm'
                           onClick={() =>
@@ -465,6 +477,7 @@ export default function DocumentsTab() {
                           Edit
                         </Button>
                         <Button
+                          type='button'
                           variant='outline'
                           size='sm'
                           className='text-red-600 hover:text-red-700'
@@ -538,12 +551,14 @@ export default function DocumentsTab() {
           </div>
           <DialogFooter>
             <Button
+              type='button'
               variant='outline'
               onClick={() => setUploadDialogOpen(false)}
             >
               Cancel
             </Button>
             <Button
+              type='button'
               onClick={handleUpload}
               disabled={isUploading || !uploadForm.file}
             >
@@ -612,6 +627,7 @@ export default function DocumentsTab() {
               Cancel
             </Button>
             <Button
+              type='button'
               onClick={handleEditConfirm}
               disabled={isSavingEdit || !editForm.fileName.trim()}
             >
@@ -642,6 +658,7 @@ export default function DocumentsTab() {
           )}
           <DialogFooter>
             <Button
+              type='button'
               variant='outline'
               onClick={() => setDeleteDialogOpen(false)}
             >

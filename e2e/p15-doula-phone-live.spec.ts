@@ -32,13 +32,29 @@ test('P-15 required phone persists, admins see it, and client UI/API exclude it'
   try {
     const page = await doula.newPage();
     await page.goto('/login');
-    await page.getByLabel('Email', { exact: true }).fill(fixture.doula.email);
-    await page
-      .getByLabel('Password', { exact: true })
-      .fill(fixture.doula.password);
-    await page.getByRole('button', { name: 'Log In', exact: true }).click();
-    await page.waitForURL((url) => !url.pathname.includes('login'));
+    await expect(page.getByLabel('Email', { exact: true })).toBeVisible();
+    // Use an existing authenticated fictional session: never submit login,
+    // request MFA, submit profile review, or send email during this smoke test.
+    await doula.addCookies([
+      {
+        name: 'sokana_session_token',
+        value: fixture.doula.cookie,
+        domain: new URL(api).hostname,
+        path: '/',
+        httpOnly: true,
+        secure: !local,
+        sameSite: local ? 'Lax' : 'None',
+      },
+    ]);
     await page.goto('/doula-dashboard/profile');
+    await page
+      .getByRole('heading', { name: 'Your doula profile', exact: true })
+      .waitFor();
+    const edit = page.getByRole('button', {
+      name: 'Edit profile',
+      exact: true,
+    });
+    if (await edit.isVisible()) await edit.click();
     const phone = page.getByLabel('Phone number', { exact: true });
     await expect(phone).toBeVisible();
     await expect(
@@ -160,8 +176,37 @@ test('P-15 required phone persists, admins see it, and client UI/API exclude it'
     const response = await saved;
     expect(response.status()).toBe(200);
     expect((await response.json()).profile.phone_number).toBe('5555550100');
+    await expect(
+      page.getByRole('button', { name: 'Edit profile', exact: true })
+    ).toBeVisible();
     await page.reload();
+    await expect(
+      page
+        .locator('#profile-panel-0')
+        .getByText('555-555-0100', { exact: true })
+    ).toBeVisible();
+    await page
+      .getByRole('button', { name: 'Edit profile', exact: true })
+      .click();
     await expect(phone).toHaveValue('555-555-0100');
+    await phone.fill('5555550101');
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await expect(
+      page.getByRole('button', { name: 'Edit profile', exact: true })
+    ).toBeVisible();
+    await expect(
+      page
+        .locator('#profile-panel-0')
+        .getByText('555-555-0100', { exact: true })
+    ).toBeVisible();
+    await page
+      .getByRole('button', { name: 'Documents step', exact: true })
+      .click();
+    await expect(page.getByTestId('profile-documents-grid')).toBeVisible();
+    await expect(page.locator('[data-testid^=document-slot-]')).toHaveCount(4);
+    await expect(
+      page.getByRole('link', { name: 'Documents', exact: true })
+    ).toHaveCount(0);
     const after = await page.request.get(`${api}/api/doulas/profile`);
     expect((await after.json()).profile.certifications).toEqual(certifications);
     for (const [context, user] of [

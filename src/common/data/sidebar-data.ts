@@ -124,12 +124,6 @@ export const sidebarSections = [
         doulaOnly: true,
       },
       {
-        title: 'Documents',
-        url: '/doula-dashboard/documents',
-        icon: FileText,
-        doulaOnly: true,
-      },
-      {
         title: 'Clients',
         url: '/doula-dashboard/clients',
         icon: LucideUsers,

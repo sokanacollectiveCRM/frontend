@@ -57,3 +57,16 @@ describe('getVisibleSidebarSections', () => {
     expect(templatesItem?.url).toBe('/contracts');
   });
 });
+
+it('keeps document management inside the doula profile steps', () => {
+  const titles = flattenTitles(
+    getVisibleSidebarSections({
+      isAdmin: false,
+      isDoula: true,
+      isClient: false,
+      isBillingOnly: false,
+    })
+  );
+  expect(titles).toContain('Profile');
+  expect(titles).not.toContain('Documents');
+});
