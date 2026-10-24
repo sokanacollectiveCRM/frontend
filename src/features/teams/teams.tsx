@@ -1,3 +1,4 @@
+import { formatPhone } from '@/features/doula-dashboard/phone';
 import CertificationsList from '@/features/doula-dashboard/components/CertificationsList';
 import type { Certification } from '@/api/doulas/doulaService';
 import { Textarea } from '@/common/components/ui/textarea';
@@ -1377,7 +1378,10 @@ export default function Teams() {
                   <dt>Email</dt>
                   <dd>{documentsMember.email || 'Not provided'}</dd>
                   <dt>Phone</dt>
-                  <dd>{documentsMember.phone_number || 'Not provided'}</dd>
+                  <dd>
+                    {formatPhone(documentsMember.phone_number) ||
+                      'Not provided'}
+                  </dd>
                   <dt>Address</dt>
                   <dd>
                     {[

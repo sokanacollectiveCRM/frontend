@@ -41,6 +41,7 @@ beforeEach(() => {
             lastname: 'Rivers',
             role: 'doula',
             email: 'maya@example.com',
+            phone_number: '5555550100',
             bio: 'Fictional doula bio',
             account_status: 'pending',
             profile_submitted_at: '2026-10-15',
@@ -84,6 +85,7 @@ it('lets an admin review the profile and certificate before approving the accoun
   await screen.findByText('Fictional doula bio', {
     selector: 'dd.whitespace-pre-wrap',
   });
+  expect(screen.getByText('555-555-0100')).toBeInTheDocument();
   expect(screen.getByText('Fictional birth training')).toBeInTheDocument();
   expect(
     screen.getByText('Example Training · Expires Mar 31, 2028')

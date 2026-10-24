@@ -54,6 +54,7 @@ test('P-16 expiration persists and matches doula, admin detail and review displa
       ]);
     }
     await page.goto('/doula-dashboard/profile');
+    await page.getByLabel('Phone number', { exact: true }).fill('5555550100');
     const certs = page.getByRole('region', { name: 'Saved certifications' });
     await expect(
       certs.getByRole('button', { name: 'Add certification' })
@@ -168,6 +169,7 @@ test('P-16 expiration persists and matches doula, admin detail and review displa
         'X-Tenant-Id': fixture.tenant,
       },
       data: {
+        phone_number: '5555550100',
         certifications: [
           {
             name: 'Invalid fictional date',

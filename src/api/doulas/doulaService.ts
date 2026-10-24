@@ -36,6 +36,7 @@ export async function submitDoulaProfile(): Promise<{
 }
 
 export interface DoulaProfile {
+  phone_number?: string | null;
   certifications?: Certification[];
   profile_submitted_at?: string | null;
   profile_review_status?:
@@ -100,6 +101,7 @@ export async function getDoulaProfile(): Promise<DoulaProfile> {
 }
 
 export interface UpdateProfileData {
+  phone_number?: string;
   certifications?: Certification[];
   firstname?: string;
   lastname?: string;

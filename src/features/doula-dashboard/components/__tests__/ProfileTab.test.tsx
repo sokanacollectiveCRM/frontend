@@ -28,6 +28,7 @@ const initial = {
   firstname: 'Maya',
   lastname: 'Rivers',
   email: 'maya@example.com',
+  phone_number: '5555550100',
   address: '1 Fictional Way',
   city: 'Chicago',
   state: 'IL',
@@ -496,4 +497,61 @@ it('shows submission progress and ignores duplicate form submissions', async () 
   finish(profile);
   await waitFor(() => expect(api.submitDoulaProfile).toHaveBeenCalledTimes(1));
   await screen.findByText('Submitted — waiting for admin review');
+});
+
+describe('P-15 required private phone', () => {
+  it('formats digits as the doula types, saves digits, and reloads dashed', async () => {
+    await open();
+    const phone = screen.getByLabelText('Phone number');
+    for (const [value, expected] of [
+      ['5', '5'],
+      ['5555', '555-5'],
+      ['5555550', '555-555-0'],
+      ['5555550100', '555-555-0100'],
+    ]) {
+      fireEvent.change(phone, { target: { value } });
+      expect(phone).toHaveValue(expected);
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+    await waitFor(() =>
+      expect(api.updateDoulaProfile).toHaveBeenCalledWith(
+        expect.objectContaining({ phone_number: '5555550100' })
+      )
+    );
+    expect(phone).toHaveValue('555-555-0100');
+    cleanup();
+    await open();
+    expect(screen.getByLabelText('Phone number')).toHaveValue('555-555-0100');
+  });
+  it.each(['', '555555010', '55555501000', '555555010a', '5555550100abc'])(
+    'blocks saving invalid phone %s with a clear message',
+    async (value) => {
+      profile = { ...initial, phone_number: null };
+      await open();
+      fireEvent.change(screen.getByLabelText('Phone number'), {
+        target: { value },
+      });
+      fireEvent.submit(document.querySelector('form')!);
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Enter a 10-digit phone number'
+      );
+      expect(api.updateDoulaProfile).not.toHaveBeenCalled();
+      expect(api.submitDoulaProfile).not.toHaveBeenCalled();
+    }
+  );
+  it('keeps a legacy profile accessible but incomplete without a phone', async () => {
+    profile = { ...initial, phone_number: null };
+    const onProfileStatusChange = vi.fn();
+    render(<ProfileTab onProfileStatusChange={onProfileStatusChange} />);
+    await screen.findByLabelText('Phone number');
+    await waitFor(() =>
+      expect(onProfileStatusChange).toHaveBeenCalledWith({
+        isComplete: false,
+        missingFields: ['Phone number'],
+      })
+    );
+    expect(
+      screen.getByRole('button', { name: 'Mark profile complete' })
+    ).toBeDisabled();
+  });
 });

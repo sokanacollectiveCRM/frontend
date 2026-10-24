@@ -1,4 +1,9 @@
 import {
+  formatPhone,
+  isValidPhone,
+  PHONE_ERROR,
+} from '@/features/doula-dashboard/phone';
+import {
   hasCertificationDetails,
   isValidExpirationDate,
 } from '@/features/doula-dashboard/certifications';
@@ -84,6 +89,7 @@ function normalizeDateOnly(value: string | null | undefined): string {
 function profileToFormData(profile: DoulaProfile): UpdateProfileData {
   const schedulingInfo = getDoulaSchedulingInfo(profile);
   return {
+    phone_number: formatPhone(profile.phone_number || ''),
     firstname: profile.firstname || '',
     lastname: profile.lastname || '',
     address: profile.address || '',
@@ -135,6 +141,7 @@ const getMissingRequiredFields = (data: UpdateProfileData): string[] => {
   const missing = REQUIRED_TEXT_FIELDS.filter(
     (field) => !String(data[field] ?? '').trim()
   ).map((field) => FIELD_LABELS[field]);
+  if (!isValidPhone(data.phone_number)) missing.push('Phone number');
   return missing;
 };
 
@@ -150,6 +157,7 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
   const [profile, setProfile] = useState<DoulaProfile | null>(cachedProfile);
   const [isLoading, setIsLoading] = useState(!cachedProfile);
   const [isSaving, setIsSaving] = useState(false);
+  const [phoneError, setPhoneError] = useState(false);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const savingRef = useRef(false);
   const [checkingDocuments, setCheckingDocuments] = useState(true);
@@ -189,6 +197,7 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
   const [isUploadingPicture, setIsUploadingPicture] = useState(false);
   const [languageDraft, setLanguageDraft] = useState('');
   const [formData, setFormData] = useState<UpdateProfileData>({
+    phone_number: '',
     firstname: '',
     lastname: '',
     address: '',
@@ -390,6 +399,16 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
       return;
     }
 
+    if (!isValidPhone(nextFormData.phone_number)) {
+      setPhoneError(true);
+      toast.error(PHONE_ERROR);
+      onProfileStatusChange?.({
+        isComplete: false,
+        missingFields: getMissingRequiredFields(nextFormData),
+      });
+      return;
+    }
+    nextFormData.phone_number = nextFormData.phone_number.replace(/-/g, '');
     const missingFields = getMissingRequiredFields(nextFormData);
     if (missingFields.length > 0) {
       toast.error(`Complete all required fields: ${missingFields.join(', ')}`);
@@ -653,6 +672,48 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
                     required
                   />
                 </div>
+              </div>
+
+              <div className='space-y-2'>
+                <Label htmlFor='phone_number'>Phone number</Label>
+                <Input
+                  id='phone_number'
+                  name='phone_number'
+                  type='tel'
+                  inputMode='numeric'
+                  autoComplete='tel-national'
+                  placeholder='555-555-5555'
+                  required
+                  pattern='[0-9]{3}-[0-9]{3}-[0-9]{4}'
+                  value={formData.phone_number || ''}
+                  aria-invalid={phoneError}
+                  aria-describedby={phoneError ? 'phone-error' : 'phone-help'}
+                  onChange={(e) => {
+                    e.target.setCustomValidity('');
+                    const value = formatPhone(e.target.value);
+                    setFormData((prev) => ({ ...prev, phone_number: value }));
+                    if (phoneError) setPhoneError(!isValidPhone(value));
+                  }}
+                  onBlur={() =>
+                    setPhoneError(!isValidPhone(formData.phone_number))
+                  }
+                  onInvalid={(e) => {
+                    e.currentTarget.setCustomValidity(PHONE_ERROR);
+                    setPhoneError(true);
+                  }}
+                />
+                {phoneError && (
+                  <p
+                    id='phone-error'
+                    role='alert'
+                    className='text-sm text-red-600'
+                  >
+                    {PHONE_ERROR}
+                  </p>
+                )}
+                <p id='phone-help' className='text-sm text-muted-foreground'>
+                  Visible to you and Sokana admins only.
+                </p>
               </div>
 
               <div className='space-y-2'>

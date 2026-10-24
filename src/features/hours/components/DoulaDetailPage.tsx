@@ -1,3 +1,4 @@
+import { formatPhone } from '@/features/doula-dashboard/phone';
 import CertificationsList from '@/features/doula-dashboard/components/CertificationsList';
 import { useState, useEffect, useContext } from 'react';
 import { logFailure } from '@/utils/safeLog';
@@ -116,7 +117,7 @@ export default function DoulaDetailPage() {
         first_name: doulaMember.firstname,
         last_name: doulaMember.lastname,
         email: doulaMember.email,
-        phone: doulaMember.phone || 'No phone listed',
+        phone: formatPhone(doulaMember.phone_number || '') || 'No phone listed',
         address: doulaMember.address || '',
         profile_photo_url: doulaMember.profile_picture ?? null,
         years_experience: null,
