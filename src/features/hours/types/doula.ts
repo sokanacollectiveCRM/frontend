@@ -8,6 +8,10 @@ export interface Doula {
   email: string;
   phone: string;
   address: string;
+  city?: string | null;
+  state?: string | null;
+  zip_code?: string | number | null;
+  unit_number?: string | null;
   profile_photo_url: string | null;
   years_experience: number | null;
   specialties: string[] | null;

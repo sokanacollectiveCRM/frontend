@@ -13,7 +13,6 @@ const REQUIRED_PROFILE_FIELDS = [
   'address',
   'city',
   'state',
-  'country',
   'zip_code',
   'bio',
 ] as const;
@@ -24,7 +23,6 @@ const FIELD_LABELS: Record<(typeof REQUIRED_PROFILE_FIELDS)[number], string> = {
   address: 'Address',
   city: 'City',
   state: 'State',
-  country: 'Country',
   zip_code: 'Zip Code',
   bio: 'Bio',
 };

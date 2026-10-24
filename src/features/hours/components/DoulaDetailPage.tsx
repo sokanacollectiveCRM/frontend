@@ -1,3 +1,4 @@
+import { formatAddress } from '@/common/utils/formatAddress';
 import { formatPhone } from '@/features/doula-dashboard/phone';
 import CertificationsList from '@/features/doula-dashboard/components/CertificationsList';
 import { useState, useEffect, useContext } from 'react';
@@ -119,6 +120,10 @@ export default function DoulaDetailPage() {
         email: doulaMember.email,
         phone: formatPhone(doulaMember.phone_number || '') || 'No phone listed',
         address: doulaMember.address || '',
+        unit_number: doulaMember.unit_number ?? null,
+        city: doulaMember.city ?? null,
+        state: doulaMember.state ?? null,
+        zip_code: doulaMember.zip_code ?? null,
         profile_photo_url: doulaMember.profile_picture ?? null,
         years_experience: null,
         specialties: null,
@@ -421,7 +426,7 @@ export default function DoulaDetailPage() {
                     {doula.address && (
                       <div className='flex items-center gap-2'>
                         <MapPin className='h-4 w-4 text-gray-400' />
-                        <span>{doula.address}</span>
+                        <span>{formatAddress(doula)}</span>
                       </div>
                     )}
                     <div className='flex items-center gap-2'>

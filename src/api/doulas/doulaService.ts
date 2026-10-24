@@ -53,6 +53,7 @@ export interface DoulaProfile {
   fullName: string;
   role: string;
   address: string;
+  unit_number?: string | null;
   city: string;
   state: string;
   country: string;
@@ -106,6 +107,7 @@ export interface UpdateProfileData {
   firstname?: string;
   lastname?: string;
   address?: string;
+  unit_number?: string;
   city?: string;
   state?: string;
   country?: string;

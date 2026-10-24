@@ -245,11 +245,9 @@ export default function QuickBooksConnectPage() {
                                   {company.legalName}
                                 </p>
                               )}
-                            {(company?.email || company?.country) && (
+                            {company?.email && (
                               <p className='mt-2 text-sm text-slate-500'>
-                                {[company.email, company.country]
-                                  .filter(Boolean)
-                                  .join(' · ')}
+                                {[company.email].filter(Boolean).join(' · ')}
                               </p>
                             )}
                           </div>

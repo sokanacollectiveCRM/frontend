@@ -9,6 +9,17 @@ import {
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import ProfileTab from '@/features/doula-dashboard/components/ProfileTab';
 import * as api from '@/api/doulas/doulaService';
+const { setUser, preloadImage } = vi.hoisted(() => ({
+  setUser: vi.fn(),
+  preloadImage: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock('@/common/hooks/user/useUser', () => ({
+  useUser: () => ({ setUser }),
+}));
+vi.mock('@/common/components/user/UserAvatar', () => ({
+  default: () => <div>Avatar</div>,
+  preloadProfileImage: preloadImage,
+}));
 vi.mock('@/api/doulas/doulaService', () => ({
   getDoulaProfile: vi.fn(),
   getDoulaDocuments: vi.fn(),
@@ -24,7 +35,17 @@ vi.mock('@/features/doula-dashboard/components/DocumentsTab', () => ({
   default: () => <div>Profile document grid</div>,
 }));
 vi.mock('@/common/components/form/ProfileImageInput', () => ({
-  ProfileImageInput: () => <div>Profile photo</div>,
+  ProfileImageInput: ({
+    onFileChange,
+  }: {
+    onFileChange: (file: File) => void;
+  }) => (
+    <input
+      aria-label='Profile photo'
+      type='file'
+      onChange={(e) => onFileChange(e.target.files![0])}
+    />
+  ),
 }));
 const initial = {
   id: 'fictional',
@@ -640,7 +661,6 @@ describe('profile slider steps', () => {
       'City',
       'State',
       'Zip Code',
-      'Country',
     ]) {
       expect(screen.getByLabelText(label)).toHaveAttribute(
         'aria-invalid',
@@ -753,4 +773,82 @@ it('the top Save Changes uses the same validation and returns to read-only slide
   expect(
     screen.getByRole('button', { name: 'Documents step', exact: true })
   ).toBeVisible();
+});
+
+describe('P-19 optional address unit', () => {
+  it('has no country input, places the optional unit after street, and persists it on save and remount', async () => {
+    await open('Address');
+    expect(screen.queryByLabelText(/country/i)).not.toBeInTheDocument();
+    expect(screen.queryByText('United States')).not.toBeInTheDocument();
+    const street = screen.getByLabelText('Address');
+    const unit = screen.getByLabelText('Unit / Apt #');
+    expect(unit).not.toBeRequired();
+    expect(
+      street.compareDocumentPosition(unit) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    fireEvent.change(unit, { target: { value: 'Apt 4B' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+    await waitFor(() => expect(api.updateDoulaProfile).toHaveBeenCalled());
+    const payload = vi.mocked(api.updateDoulaProfile).mock.calls[0][0];
+    expect(payload.unit_number).toBe('Apt 4B');
+    expect(payload).not.toHaveProperty('country');
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Edit profile' })).toBeVisible()
+    );
+    cleanup();
+    render(<ProfileTab />);
+    await screen.findByRole('button', { name: 'Edit profile' });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Address step', exact: true })
+    );
+    expect(
+      screen
+        .getAllByText('1 Fictional Way, Apt 4B, Chicago, IL 60601')
+        .find((el) => el.closest('[hidden]') === null)!
+    ).toBeVisible();
+  });
+  it('allows an empty unit and displays an older address without an empty segment', async () => {
+    await open('Address');
+    expect(screen.getByLabelText('Unit / Apt #')).toHaveValue('');
+    fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+    await waitFor(() =>
+      expect(api.updateDoulaProfile).toHaveBeenCalledWith(
+        expect.objectContaining({ unit_number: '' })
+      )
+    );
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Edit profile' })).toBeVisible()
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Address step', exact: true })
+    );
+    expect(
+      screen
+        .getAllByText('1 Fictional Way, Chicago, IL 60601')
+        .find((el) => el.closest('[hidden]') === null)!
+    ).toBeVisible();
+    expect(screen.queryByText('Country')).not.toBeInTheDocument();
+  });
+});
+
+it('synchronizes the saved doula photo with Account and header user state', async () => {
+  await open('About you');
+  const url = 'https://images.example.com/fictional-photo.png';
+  vi.mocked(api.uploadDoulaProfilePicture).mockResolvedValue({
+    ...profile,
+    profile_picture: url,
+  });
+  fireEvent.change(screen.getByLabelText('Profile photo'), {
+    target: {
+      files: [new File(['fictional'], 'fictional.png', { type: 'image/png' })],
+    },
+  });
+  await waitFor(() => expect(setUser).toHaveBeenCalled());
+  expect(preloadImage).toHaveBeenCalledWith(url);
+  const current = { id: 'fictional', firstname: 'Maya', profile_picture: null };
+  expect(setUser.mock.calls[0][0](current)).toEqual({
+    ...current,
+    profile_picture: url,
+  });
+  expect(setUser.mock.calls[0][0](null)).toBeNull();
 });

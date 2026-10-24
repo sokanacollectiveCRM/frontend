@@ -37,6 +37,7 @@ export function EditDoulaDialog({
     email: '',
     phone: '',
     address: '',
+    unit_number: '',
     years_experience: '',
     bio: '',
     specialties: [] as string[],
@@ -45,7 +46,9 @@ export function EditDoulaDialog({
   });
   const [newSpecialty, setNewSpecialty] = useState('');
   const [certificationFiles, setCertificationFiles] = useState<File[]>([]); // New files to upload
-  const [existingCertifications, setExistingCertifications] = useState<string[]>([]); // Existing file URLs/names
+  const [existingCertifications, setExistingCertifications] = useState<
+    string[]
+  >([]); // Existing file URLs/names
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -57,6 +60,7 @@ export function EditDoulaDialog({
         email: doula.email || '',
         phone: doula.phone || '',
         address: doula.address || '',
+        unit_number: doula.unit_number || '',
         years_experience: doula.years_experience?.toString() || '',
         bio: doula.bio || '',
         specialties: doula.specialties || [],
@@ -69,14 +73,19 @@ export function EditDoulaDialog({
   }, [doula, open]);
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const addSpecialty = () => {
-    if (newSpecialty.trim() && !formData.specialties.includes(newSpecialty.trim())) {
+    if (
+      newSpecialty.trim() &&
+      !formData.specialties.includes(newSpecialty.trim())
+    ) {
       setFormData((prev) => ({
         ...prev,
         specialties: [...prev.specialties, newSpecialty.trim()],
@@ -104,9 +113,7 @@ export function EditDoulaDialog({
   };
 
   const removeExistingCertification = (certUrl: string) => {
-    setExistingCertifications((prev) =>
-      prev.filter((url) => url !== certUrl)
-    );
+    setExistingCertifications((prev) => prev.filter((url) => url !== certUrl));
     setFormData((prev) => ({
       ...prev,
       certifications: prev.certifications.filter((url) => url !== certUrl),
@@ -126,14 +133,24 @@ export function EditDoulaDialog({
       formDataToSend.append('email', formData.email);
       formDataToSend.append('phone', formData.phone || '');
       formDataToSend.append('address', formData.address || '');
+      formDataToSend.append('unit_number', formData.unit_number || '');
       formDataToSend.append('bio', formData.bio || '');
-      formDataToSend.append('years_experience', formData.years_experience || '');
+      formDataToSend.append(
+        'years_experience',
+        formData.years_experience || ''
+      );
       formDataToSend.append('contract_status', formData.contract_status);
-      formDataToSend.append('specialties', JSON.stringify(formData.specialties));
-      
+      formDataToSend.append(
+        'specialties',
+        JSON.stringify(formData.specialties)
+      );
+
       // Append existing certifications (URLs/names that should be kept)
-      formDataToSend.append('existing_certifications', JSON.stringify(existingCertifications));
-      
+      formDataToSend.append(
+        'existing_certifications',
+        JSON.stringify(existingCertifications)
+      );
+
       // Append new certification files
       certificationFiles.forEach((file, index) => {
         formDataToSend.append(`certification_files`, file);
@@ -245,6 +262,16 @@ export function EditDoulaDialog({
                 onChange={handleInputChange}
               />
             </div>
+            <div className='space-y-2'>
+              <Label htmlFor='unit_number'>Unit / Apt #</Label>
+              <Input
+                id='unit_number'
+                name='unit_number'
+                value={formData.unit_number}
+                onChange={handleInputChange}
+                maxLength={100}
+              />
+            </div>
           </div>
 
           {/* Professional Information */}
@@ -330,7 +357,8 @@ export function EditDoulaDialog({
                       >
                         <FileText className='h-4 w-4 text-blue-600 flex-shrink-0' />
                         <span className='text-sm text-gray-700 truncate flex-1'>
-                          {certUrl.split('/').pop() || `Certification ${idx + 1}`}
+                          {certUrl.split('/').pop() ||
+                            `Certification ${idx + 1}`}
                         </span>
                         <button
                           type='button'
