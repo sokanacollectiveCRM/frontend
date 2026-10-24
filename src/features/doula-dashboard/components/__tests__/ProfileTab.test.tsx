@@ -4,6 +4,7 @@ import {
   fireEvent,
   waitFor,
   cleanup,
+  within,
 } from '@testing-library/react';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import ProfileTab from '@/features/doula-dashboard/components/ProfileTab';
@@ -109,6 +110,132 @@ describe('doula profile layout', () => {
     expect(
       screen.getByRole('button', { name: 'Mark profile complete' })
     ).toBeDisabled();
+  });
+  it('starts collapsed, opens only one blank entry and can cancel it', async () => {
+    await open();
+    expect(
+      screen.queryByLabelText('Certification name')
+    ).not.toBeInTheDocument();
+    const add = screen.getByRole('button', { name: 'Add certification' });
+    fireEvent.click(add);
+    expect(screen.getByLabelText('Certification name')).toHaveFocus();
+    expect(add).toBeDisabled();
+    fireEvent.click(add);
+    expect(screen.getAllByLabelText('Certification name')).toHaveLength(1);
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Cancel certification 1' })
+    );
+    expect(
+      screen.queryByLabelText('Certification name')
+    ).not.toBeInTheDocument();
+    expect(add).toBeEnabled();
+  });
+  it('saves a completed certification even after opening another blank entry', async () => {
+    await open();
+    fireEvent.click(screen.getByRole('button', { name: 'Add certification' }));
+    fireEvent.change(screen.getByLabelText('Certification name'), {
+      target: { value: '  Birth doula  ' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Add certification' }));
+    expect(
+      screen.getAllByLabelText('Certification name')[1]
+    ).not.toBeRequired();
+    fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+    await waitFor(() =>
+      expect(api.updateDoulaProfile).toHaveBeenCalledWith(
+        expect.objectContaining({
+          certifications: [
+            { name: 'Birth doula', issuingOrganization: '', year: '' },
+          ],
+        })
+      )
+    );
+  });
+  it('saves with an untouched entry and rejects partially entered nameless entries', async () => {
+    await open();
+    fireEvent.click(screen.getByRole('button', { name: 'Add certification' }));
+    fireEvent.change(screen.getByLabelText('Issuing organization'), {
+      target: { value: 'Training organization' },
+    });
+    expect(screen.getByLabelText('Certification name')).toBeRequired();
+    fireEvent.submit(document.querySelector('form')!);
+    expect(api.updateDoulaProfile).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText('Issuing organization'), {
+      target: { value: '   ' },
+    });
+    expect(screen.getByLabelText('Certification name')).not.toBeRequired();
+    fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+    await waitFor(() =>
+      expect(api.updateDoulaProfile).toHaveBeenCalledWith(
+        expect.objectContaining({ certifications: [] })
+      )
+    );
+  });
+  it('shows saved certifications after saving and reopening the profile', async () => {
+    await open();
+    fireEvent.click(screen.getByRole('button', { name: 'Add certification' }));
+    fireEvent.change(screen.getByLabelText('Certification name'), {
+      target: { value: 'Birth doula' },
+    });
+    fireEvent.change(screen.getByLabelText('Issuing organization'), {
+      target: { value: 'Example Training' },
+    });
+    fireEvent.change(screen.getByLabelText('Year'), {
+      target: { value: '2026' },
+    });
+    const saved = () =>
+      within(screen.getByRole('region', { name: 'Saved certifications' }));
+    expect(saved().queryByText('Birth doula')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+    await waitFor(() =>
+      expect(saved().getByText('Birth doula')).toBeInTheDocument()
+    );
+    expect(saved().getByText('Example Training · 2026')).toBeInTheDocument();
+    cleanup();
+    await open();
+    expect(saved().getByText('Birth doula')).toBeInTheDocument();
+    expect(saved().getByText('Example Training · 2026')).toBeInTheDocument();
+  });
+  it('shows a saved entry once and opens its fields only when editing', async () => {
+    profile = {
+      ...initial,
+      certifications: [
+        {
+          name: 'Birth doula',
+          issuingOrganization: 'Example Training',
+          year: '2026',
+        },
+      ],
+    };
+    await open();
+    expect(screen.getAllByText('Birth doula')).toHaveLength(1);
+    expect(
+      screen.queryByLabelText('Certification name')
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Add certification' }));
+    expect(screen.getByLabelText('Certification name')).toHaveValue('');
+    expect(screen.getAllByText('Birth doula')).toHaveLength(1);
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Cancel certification 2' })
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Edit certification 1' })
+    );
+    expect(screen.getByLabelText('Certification name')).toHaveValue(
+      'Birth doula'
+    );
+    expect(screen.queryByText('Birth doula')).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Certification name'), {
+      target: { value: 'Postpartum doula' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+    await waitFor(() =>
+      expect(screen.getByText('Postpartum doula')).toBeInTheDocument()
+    );
+    expect(
+      screen.queryByLabelText('Certification name')
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText('Birth doula')).not.toBeInTheDocument();
   });
   it('adds, removes and persists structured certifications in the header area', async () => {
     await open();

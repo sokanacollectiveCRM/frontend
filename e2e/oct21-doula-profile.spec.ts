@@ -137,15 +137,33 @@ test('doula profile layout, optional demographics, submission and client view', 
       )
   ).toBeTruthy();
   await caption(page, 'Bio, in first person, sits above the scheduling link');
+  await expect(page.getByLabel('Certification name')).toHaveCount(0);
   await page.getByRole('button', { name: 'Add certification' }).click();
+  await expect(page.getByLabel('Certification name')).toBeFocused();
+  await expect(
+    page.getByRole('button', { name: 'Add certification' })
+  ).toBeDisabled();
   await page.getByLabel('Certification name').fill('Birth doula');
   await page.getByLabel('Issuing organization').fill('Example Training');
   await page.getByLabel('Year', { exact: true }).fill('2026');
   await caption(page, 'Add a certification beside the photo and name');
+  await page.getByRole('button', { name: 'Add certification' }).click();
+  await expect(page.getByLabel('Certification name')).toHaveCount(2);
   await page.getByRole('button', { name: 'Save Changes' }).click();
   await expect(
     page.getByRole('button', { name: 'Save Changes' })
   ).toBeEnabled();
+  await expect
+    .poll(() => profile.certifications)
+    .toEqual([
+      {
+        name: 'Birth doula',
+        issuingOrganization: 'Example Training',
+        year: '2026',
+      },
+    ]);
+  await expect(page.getByLabel('Certification name')).toHaveCount(0);
+  await expect(page.getByText('Birth doula', { exact: true })).toBeVisible();
   expect(profile.pronouns).toBe('');
   expect(profile.race_ethnicity).toEqual([]);
   await caption(page, 'Pronouns and demographics left blank, still saves');

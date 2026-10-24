@@ -95,7 +95,9 @@ function profileToFormData(profile: DoulaProfile): UpdateProfileData {
           : String(profile.zip_code)
         : '',
     bio: profile.bio || '',
-    certifications: profile.certifications ?? [],
+    certifications: (profile.certifications ?? []).filter((entry) =>
+      Object.values(entry).some((value) => value.trim())
+    ),
     scheduling_url: schedulingInfo.schedulingUrl || '',
     availability_status:
       profile.availability_status ||
@@ -347,11 +349,25 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
               ]),
             ],
           }
-        : formData;
+        : { ...formData };
 
     if (pendingLanguage.length > 0) {
       setLanguageDraft('');
       setFormData(nextFormData);
+    }
+
+    // An untouched add row is optional; partially entered certifications still
+    // need a name. Normalize here for both saving and submitting for review.
+    nextFormData.certifications = (nextFormData.certifications ?? [])
+      .map((entry) => ({
+        name: entry.name.trim(),
+        issuingOrganization: entry.issuingOrganization.trim(),
+        year: entry.year.trim(),
+      }))
+      .filter((entry) => Object.values(entry).some(Boolean));
+    if (nextFormData.certifications.some((entry) => !entry.name)) {
+      toast.error('Enter a name for each certification or remove the entry.');
+      return;
     }
 
     const missingFields = getMissingRequiredFields(nextFormData);
@@ -582,6 +598,7 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
               </div>
             </div>
             <CertificationsFields
+              savedValue={profile.certifications}
               value={formData.certifications ?? []}
               onChange={(certifications) =>
                 setFormData((prev) => ({ ...prev, certifications }))
