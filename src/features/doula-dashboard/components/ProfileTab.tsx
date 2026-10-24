@@ -510,12 +510,16 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
 
   return (
     <div className='space-y-6'>
-      <form id='doula-profile-form' onSubmit={handleSubmit}>
-        <Card className='mb-6'>
-          <CardHeader>
+      <form
+        id='doula-profile-form'
+        onSubmit={handleSubmit}
+        className='space-y-4'
+      >
+        <Card>
+          <CardHeader className='pb-3'>
             <CardTitle>Complete your profile</CardTitle>
           </CardHeader>
-          <CardContent className='space-y-4'>
+          <CardContent className='space-y-3'>
             {profile.profile_review_status === 'changes_requested' && (
               <div
                 role='alert'
@@ -534,26 +538,31 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
               </div>
             )}
 
-            <ol className='list-decimal pl-5 space-y-2 text-sm'>
-              <li>
-                Enter your first and last name, full address (including city,
-                state, ZIP code and country), and bio below.
-              </li>
-              <li>
-                Open the Documents tab and upload your Doula training
-                certificate. Liability insurance and Illinois Medicaid documents
-                are optional for general approval.
-              </li>
-              <li>
-                Return here and select Mark profile complete. This saves your
-                changes and emails the Sokana team for review.
-              </li>
-              <li>
-                Your account is active. You can log hours, record birth
-                outcomes, and use your assigned-work tools while your profile
-                and documents are pending review.
-              </li>
-            </ol>
+            <details>
+              <summary className='cursor-pointer text-sm font-medium'>
+                Profile setup instructions
+              </summary>
+              <ol className='mt-3 list-decimal pl-5 space-y-2 text-sm'>
+                <li>
+                  Enter your first and last name, phone number, full address
+                  (including city, state, ZIP code and country), and bio below.
+                </li>
+                <li>
+                  Open the Documents tab and upload your Doula training
+                  certificate. Liability insurance and Illinois Medicaid
+                  documents are optional for general approval.
+                </li>
+                <li>
+                  Return here and select Mark profile complete. This saves your
+                  changes and emails the Sokana team for review.
+                </li>
+                <li>
+                  Your account is active. You can log hours, record birth
+                  outcomes, and use your assigned-work tools while your profile
+                  and documents are pending review.
+                </li>
+              </ol>
+            </details>
             {(!profile.profile_submitted_at ||
               profile.profile_review_status === 'changes_requested') && (
               <p className='text-sm' role='status'>
@@ -649,393 +658,411 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
               )}
           </CardHeader>
           <CardContent>
-            <div className='space-y-6'>
-              <h3 className='font-semibold'>Basic info</h3>
-              <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                <div className='space-y-2'>
-                  <Label htmlFor='firstname'>First Name</Label>
-                  <Input
-                    id='firstname'
-                    name='firstname'
-                    value={formData.firstname || ''}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                <div className='space-y-2'>
-                  <Label htmlFor='lastname'>Last Name</Label>
-                  <Input
-                    id='lastname'
-                    name='lastname'
-                    value={formData.lastname || ''}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className='space-y-2'>
-                <Label htmlFor='phone_number'>Phone number</Label>
-                <Input
-                  id='phone_number'
-                  name='phone_number'
-                  type='tel'
-                  inputMode='numeric'
-                  autoComplete='tel-national'
-                  placeholder='555-555-5555'
-                  required
-                  pattern='[0-9]{3}-[0-9]{3}-[0-9]{4}'
-                  value={formData.phone_number || ''}
-                  aria-invalid={phoneError}
-                  aria-describedby={phoneError ? 'phone-error' : 'phone-help'}
-                  onChange={(e) => {
-                    e.target.setCustomValidity('');
-                    const value = formatPhone(e.target.value);
-                    setFormData((prev) => ({ ...prev, phone_number: value }));
-                    if (phoneError) setPhoneError(!isValidPhone(value));
-                  }}
-                  onBlur={() =>
-                    setPhoneError(!isValidPhone(formData.phone_number))
-                  }
-                  onInvalid={(e) => {
-                    e.currentTarget.setCustomValidity(PHONE_ERROR);
-                    setPhoneError(true);
-                  }}
-                />
-                {phoneError && (
-                  <p
-                    id='phone-error'
-                    role='alert'
-                    className='text-sm text-red-600'
-                  >
-                    {PHONE_ERROR}
-                  </p>
-                )}
-                <p id='phone-help' className='text-sm text-muted-foreground'>
-                  Visible to you and Sokana admins only.
-                </p>
-              </div>
-
-              <div className='space-y-2'>
-                <h3 className='font-semibold'>About me</h3>
-                <Label htmlFor='bio'>About me (bio)</Label>
-                <p className='text-sm text-muted-foreground'>
-                  Write in first person, for example &quot;I’m a birth and
-                  postpartum doula who…&quot;. Families will see this.
-                </p>
-                <Textarea
-                  id='bio'
-                  name='bio'
-                  value={formData.bio || ''}
-                  onChange={handleInputChange}
-                  rows={6}
-                  placeholder='Tell us about yourself...'
-                  required
-                />
-              </div>
-
-              <div className='rounded-lg border border-border bg-muted/30 p-4 space-y-4'>
-                <div>
-                  <h3 className='text-sm font-semibold text-foreground'>
-                    Scheduling
-                  </h3>
-                  <p className='text-xs text-muted-foreground mt-1'>
-                    Families in the contract stage will use this information to
-                    book time with you.
-                  </p>
-                </div>
-
-                <div className='space-y-2'>
-                  <Label htmlFor='scheduling_url'>Scheduling Link</Label>
-                  <Input
-                    id='scheduling_url'
-                    name='scheduling_url'
-                    type='url'
-                    value={formData.scheduling_url || ''}
-                    onChange={handleInputChange}
-                    placeholder='https://calendly.com/your-link'
-                  />
-                </div>
-
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                  <div className='space-y-2'>
-                    <Label htmlFor='availability_status'>
-                      Availability Status
-                    </Label>
-                    <select
-                      id='availability_status'
-                      name='availability_status'
-                      value={formData.availability_status || 'available'}
-                      onChange={handleInputChange}
-                      className='flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
-                    >
-                      <option value='available'>Available</option>
-                      <option value='unavailable'>Unavailable</option>
-                    </select>
-                  </div>
-                  <div className='space-y-2'>
-                    <Label htmlFor='availability_note'>Availability Note</Label>
-                    <Input
-                      id='availability_note'
-                      name='availability_note'
-                      value={formData.availability_note || ''}
-                      onChange={handleInputChange}
-                      placeholder='Optional note for admins and families'
-                    />
-                  </div>
-                </div>
-
-                {(formData.availability_status || 'available') ===
-                  'unavailable' && (
+            <div className='space-y-4'>
+              <div className='grid grid-cols-1 xl:grid-cols-2 gap-6'>
+                <section className='space-y-4' aria-label='Basic info'>
+                  <h3 className='font-semibold'>Basic info</h3>
                   <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                     <div className='space-y-2'>
-                      <Label htmlFor='unavailable_from'>Unavailable From</Label>
+                      <Label htmlFor='firstname'>First Name</Label>
                       <Input
-                        id='unavailable_from'
-                        name='unavailable_from'
-                        type='date'
-                        value={
-                          formData.unavailable_from
-                            ? String(formData.unavailable_from).slice(0, 10)
-                            : ''
-                        }
+                        id='firstname'
+                        name='firstname'
+                        value={formData.firstname || ''}
                         onChange={handleInputChange}
+                        required
                       />
                     </div>
                     <div className='space-y-2'>
-                      <Label htmlFor='unavailable_until'>
-                        Unavailable Until
-                      </Label>
+                      <Label htmlFor='lastname'>Last Name</Label>
                       <Input
-                        id='unavailable_until'
-                        name='unavailable_until'
-                        type='date'
-                        value={
-                          formData.unavailable_until
-                            ? String(formData.unavailable_until).slice(0, 10)
-                            : ''
-                        }
+                        id='lastname'
+                        name='lastname'
+                        value={formData.lastname || ''}
                         onChange={handleInputChange}
+                        required
                       />
                     </div>
                   </div>
-                )}
-              </div>
 
-              <div className='space-y-4 rounded-lg border border-border bg-muted/30 p-4'>
-                <div>
-                  <h3 className='text-sm font-semibold text-foreground'>
-                    Demographics
-                  </h3>
-                  <p className='text-xs text-muted-foreground mt-1'>
-                    Optional. Share only what you’re comfortable with.
-                  </p>
-                </div>
-
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                   <div className='space-y-2'>
-                    <Label htmlFor='gender'>Gender</Label>
+                    <Label htmlFor='phone_number'>Phone number</Label>
                     <Input
-                      id='gender'
-                      name='gender'
-                      value={formData.gender || ''}
-                      onChange={handleInputChange}
-                      placeholder='e.g. Woman, Man, Non-binary'
-                    />
-                  </div>
-                  <div className='space-y-2'>
-                    <Label htmlFor='pronouns'>Pronouns</Label>
-                    <Input
-                      id='pronouns'
-                      name='pronouns'
-                      value={formData.pronouns || ''}
-                      onChange={handleInputChange}
-                      placeholder='e.g. she/her, he/him, they/them'
-                    />
-                  </div>
-                </div>
-
-                <div className='space-y-3'>
-                  <Label className='text-base'>
-                    Languages spoken (other than English)
-                  </Label>
-                  <p className='text-xs text-muted-foreground'>
-                    Optionally add languages. Press Enter or click Add after
-                    typing.
-                  </p>
-                  <div className='flex flex-col gap-2 sm:flex-row sm:items-center'>
-                    <Input
-                      value={languageDraft}
-                      onChange={(e) => setLanguageDraft(e.target.value)}
-                      placeholder='Type a language (e.g. Spanish)'
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          addLanguage(languageDraft);
-                          setLanguageDraft('');
-                        }
+                      id='phone_number'
+                      name='phone_number'
+                      type='tel'
+                      inputMode='numeric'
+                      autoComplete='tel-national'
+                      placeholder='555-555-5555'
+                      required
+                      pattern='[0-9]{3}-[0-9]{3}-[0-9]{4}'
+                      value={formData.phone_number || ''}
+                      aria-invalid={phoneError}
+                      aria-describedby={
+                        phoneError ? 'phone-error' : 'phone-help'
+                      }
+                      onChange={(e) => {
+                        e.target.setCustomValidity('');
+                        const value = formatPhone(e.target.value);
+                        setFormData((prev) => ({
+                          ...prev,
+                          phone_number: value,
+                        }));
+                        if (phoneError) setPhoneError(!isValidPhone(value));
+                      }}
+                      onBlur={() =>
+                        setPhoneError(!isValidPhone(formData.phone_number))
+                      }
+                      onInvalid={(e) => {
+                        e.currentTarget.setCustomValidity(PHONE_ERROR);
+                        setPhoneError(true);
                       }}
                     />
-                    <Button
-                      type='button'
-                      variant='secondary'
-                      onClick={() => {
-                        addLanguage(languageDraft);
-                        setLanguageDraft('');
-                      }}
+                    {phoneError && (
+                      <p
+                        id='phone-error'
+                        role='alert'
+                        className='text-sm text-red-600'
+                      >
+                        {PHONE_ERROR}
+                      </p>
+                    )}
+                    <p
+                      id='phone-help'
+                      className='text-sm text-muted-foreground'
                     >
-                      Add
-                    </Button>
+                      Visible to you and Sokana admins only.
+                    </p>
                   </div>
-                  <div className='flex flex-wrap gap-2'>
-                    {(formData.languages_other_than_english ?? []).map(
-                      (lang) => (
-                        <Badge
-                          key={lang}
-                          variant='secondary'
-                          className='flex items-center gap-1'
+
+                  <div className='space-y-2'>
+                    <h3 className='font-semibold'>About me</h3>
+                    <Label htmlFor='bio'>About me (bio)</Label>
+                    <p className='text-sm text-muted-foreground'>
+                      Write in first person, for example &quot;I’m a birth and
+                      postpartum doula who…&quot;. Families will see this.
+                    </p>
+                    <Textarea
+                      id='bio'
+                      name='bio'
+                      value={formData.bio || ''}
+                      onChange={handleInputChange}
+                      rows={4}
+                      placeholder='Tell us about yourself...'
+                      required
+                    />
+                  </div>
+                </section>
+                <section className='space-y-4' aria-label='Address'>
+                  <h3 className='font-semibold'>Address</h3>
+                  <div className='space-y-2'>
+                    <Label htmlFor='address'>Address</Label>
+                    <Input
+                      id='address'
+                      name='address'
+                      value={formData.address || ''}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+
+                  <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                    <div className='space-y-2'>
+                      <Label htmlFor='city'>City</Label>
+                      <Input
+                        id='city'
+                        name='city'
+                        value={formData.city || ''}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    <div className='space-y-2'>
+                      <Label htmlFor='state'>State</Label>
+                      <Input
+                        id='state'
+                        name='state'
+                        value={formData.state || ''}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    <div className='space-y-2'>
+                      <Label htmlFor='zip_code'>Zip Code</Label>
+                      <Input
+                        id='zip_code'
+                        name='zip_code'
+                        value={formData.zip_code || ''}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className='space-y-2'>
+                    <Label htmlFor='country'>Country</Label>
+                    <Input
+                      id='country'
+                      name='country'
+                      value={formData.country || ''}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </section>
+              </div>
+              <div className='grid grid-cols-1 xl:grid-cols-2 gap-4'>
+                <details className='self-start rounded-lg border border-border bg-muted/30 p-4'>
+                  <summary className='cursor-pointer font-semibold'>
+                    Scheduling
+                    <span className='ml-2 text-xs font-normal text-muted-foreground'>
+                      Link and availability
+                    </span>
+                  </summary>
+                  <div className='mt-4 space-y-4'>
+                    <div className='space-y-2'>
+                      <Label htmlFor='scheduling_url'>Scheduling Link</Label>
+                      <Input
+                        id='scheduling_url'
+                        name='scheduling_url'
+                        type='url'
+                        value={formData.scheduling_url || ''}
+                        onChange={handleInputChange}
+                        placeholder='https://calendly.com/your-link'
+                      />
+                    </div>
+
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                      <div className='space-y-2'>
+                        <Label htmlFor='availability_status'>
+                          Availability Status
+                        </Label>
+                        <select
+                          id='availability_status'
+                          name='availability_status'
+                          value={formData.availability_status || 'available'}
+                          onChange={handleInputChange}
+                          className='flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
                         >
-                          <span>{lang}</span>
-                          <button
-                            type='button'
-                            className='ml-1 rounded-sm hover:bg-background/40'
-                            onClick={() => removeLanguage(lang)}
-                            aria-label={`Remove ${lang}`}
-                          >
-                            <X className='h-3 w-3' />
-                          </button>
-                        </Badge>
-                      )
+                          <option value='available'>Available</option>
+                          <option value='unavailable'>Unavailable</option>
+                        </select>
+                      </div>
+                      <div className='space-y-2'>
+                        <Label htmlFor='availability_note'>
+                          Availability Note
+                        </Label>
+                        <Input
+                          id='availability_note'
+                          name='availability_note'
+                          value={formData.availability_note || ''}
+                          onChange={handleInputChange}
+                          placeholder='Optional note for admins and families'
+                        />
+                      </div>
+                    </div>
+
+                    {(formData.availability_status || 'available') ===
+                      'unavailable' && (
+                      <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                        <div className='space-y-2'>
+                          <Label htmlFor='unavailable_from'>
+                            Unavailable From
+                          </Label>
+                          <Input
+                            id='unavailable_from'
+                            name='unavailable_from'
+                            type='date'
+                            value={
+                              formData.unavailable_from
+                                ? String(formData.unavailable_from).slice(0, 10)
+                                : ''
+                            }
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        <div className='space-y-2'>
+                          <Label htmlFor='unavailable_until'>
+                            Unavailable Until
+                          </Label>
+                          <Input
+                            id='unavailable_until'
+                            name='unavailable_until'
+                            type='date'
+                            value={
+                              formData.unavailable_until
+                                ? String(formData.unavailable_until).slice(
+                                    0,
+                                    10
+                                  )
+                                : ''
+                            }
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                      </div>
                     )}
                   </div>
-                </div>
+                </details>
 
-                <div className='space-y-3'>
-                  <Label className='text-base'>
-                    {RACE_ETHNICITY_FIELD_LABEL}
-                  </Label>
-                  <p className='text-xs text-muted-foreground'>
-                    Select all that apply.
-                  </p>
-                  <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
-                    {DOULA_RACE_ETHNICITY_OPTIONS.map((opt) => {
-                      const checked = (formData.race_ethnicity ?? []).includes(
-                        opt.value
-                      );
-                      return (
-                        <label
-                          key={opt.value}
-                          className='flex items-start gap-2 rounded-md border border-transparent px-1 py-1 hover:bg-background/80 cursor-pointer'
-                        >
-                          <Checkbox
-                            checked={checked}
-                            onCheckedChange={() => {
-                              setFormData((prev) => ({
-                                ...prev,
-                                race_ethnicity: toggleRaceEthnicitySelection(
-                                  prev.race_ethnicity ?? [],
-                                  opt.value
-                                ),
-                              }));
-                            }}
-                            className='mt-0.5'
-                          />
-                          <span className='text-sm leading-tight'>
-                            {opt.label}
-                          </span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                  {(formData.race_ethnicity ?? []).includes(
-                    ANOTHER_RACE_ETHNICITY
-                  ) && (
-                    <div className='space-y-2 pt-1'>
-                      <Label htmlFor='race_ethnicity_other'>
-                        Please specify
+                <details className='self-start rounded-lg border border-border bg-muted/30 p-4'>
+                  <summary className='cursor-pointer font-semibold'>
+                    Demographics
+                    <span className='ml-2 text-xs font-normal text-muted-foreground'>
+                      Optional
+                    </span>
+                  </summary>
+                  <div className='mt-4 space-y-4'>
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                      <div className='space-y-2'>
+                        <Label htmlFor='gender'>Gender</Label>
+                        <Input
+                          id='gender'
+                          name='gender'
+                          value={formData.gender || ''}
+                          onChange={handleInputChange}
+                          placeholder='e.g. Woman, Man, Non-binary'
+                        />
+                      </div>
+                      <div className='space-y-2'>
+                        <Label htmlFor='pronouns'>Pronouns</Label>
+                        <Input
+                          id='pronouns'
+                          name='pronouns'
+                          value={formData.pronouns || ''}
+                          onChange={handleInputChange}
+                          placeholder='e.g. she/her, he/him, they/them'
+                        />
+                      </div>
+                    </div>
+
+                    <div className='space-y-3'>
+                      <Label className='text-base'>
+                        Languages spoken (other than English)
                       </Label>
-                      <Input
-                        id='race_ethnicity_other'
-                        name='race_ethnicity_other'
-                        value={formData.race_ethnicity_other || ''}
+                      <p className='text-xs text-muted-foreground'>
+                        Optionally add languages. Press Enter or click Add after
+                        typing.
+                      </p>
+                      <div className='flex flex-col gap-2 sm:flex-row sm:items-center'>
+                        <Input
+                          value={languageDraft}
+                          onChange={(e) => setLanguageDraft(e.target.value)}
+                          placeholder='Type a language (e.g. Spanish)'
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              addLanguage(languageDraft);
+                              setLanguageDraft('');
+                            }
+                          }}
+                        />
+                        <Button
+                          type='button'
+                          variant='secondary'
+                          onClick={() => {
+                            addLanguage(languageDraft);
+                            setLanguageDraft('');
+                          }}
+                        >
+                          Add
+                        </Button>
+                      </div>
+                      <div className='flex flex-wrap gap-2'>
+                        {(formData.languages_other_than_english ?? []).map(
+                          (lang) => (
+                            <Badge
+                              key={lang}
+                              variant='secondary'
+                              className='flex items-center gap-1'
+                            >
+                              <span>{lang}</span>
+                              <button
+                                type='button'
+                                className='ml-1 rounded-sm hover:bg-background/40'
+                                onClick={() => removeLanguage(lang)}
+                                aria-label={`Remove ${lang}`}
+                              >
+                                <X className='h-3 w-3' />
+                              </button>
+                            </Badge>
+                          )
+                        )}
+                      </div>
+                    </div>
+
+                    <div className='space-y-3'>
+                      <Label className='text-base'>
+                        {RACE_ETHNICITY_FIELD_LABEL}
+                      </Label>
+                      <p className='text-xs text-muted-foreground'>
+                        Select all that apply.
+                      </p>
+                      <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+                        {DOULA_RACE_ETHNICITY_OPTIONS.map((opt) => {
+                          const checked = (
+                            formData.race_ethnicity ?? []
+                          ).includes(opt.value);
+                          return (
+                            <label
+                              key={opt.value}
+                              className='flex items-start gap-2 rounded-md border border-transparent px-1 py-1 hover:bg-background/80 cursor-pointer'
+                            >
+                              <Checkbox
+                                checked={checked}
+                                onCheckedChange={() => {
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    race_ethnicity:
+                                      toggleRaceEthnicitySelection(
+                                        prev.race_ethnicity ?? [],
+                                        opt.value
+                                      ),
+                                  }));
+                                }}
+                                className='mt-0.5'
+                              />
+                              <span className='text-sm leading-tight'>
+                                {opt.label}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                      {(formData.race_ethnicity ?? []).includes(
+                        ANOTHER_RACE_ETHNICITY
+                      ) && (
+                        <div className='space-y-2 pt-1'>
+                          <Label htmlFor='race_ethnicity_other'>
+                            Please specify
+                          </Label>
+                          <Input
+                            id='race_ethnicity_other'
+                            name='race_ethnicity_other'
+                            value={formData.race_ethnicity_other || ''}
+                            onChange={handleInputChange}
+                            placeholder='Your race or ethnicity'
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className='space-y-2'>
+                      <Label htmlFor='other_demographic_details'>
+                        Other demographic details
+                      </Label>
+                      <Textarea
+                        id='other_demographic_details'
+                        name='other_demographic_details'
+                        value={formData.other_demographic_details || ''}
                         onChange={handleInputChange}
-                        placeholder='Your race or ethnicity'
+                        rows={3}
+                        placeholder='Anything else you would like to share (optional)'
                       />
                     </div>
-                  )}
-                </div>
-
-                <div className='space-y-2'>
-                  <Label htmlFor='other_demographic_details'>
-                    Other demographic details
-                  </Label>
-                  <Textarea
-                    id='other_demographic_details'
-                    name='other_demographic_details'
-                    value={formData.other_demographic_details || ''}
-                    onChange={handleInputChange}
-                    rows={3}
-                    placeholder='Anything else you would like to share (optional)'
-                  />
-                </div>
+                  </div>
+                </details>
               </div>
-
-              <h3 className='font-semibold'>Address</h3>
-              <div className='space-y-2'>
-                <Label htmlFor='address'>Address</Label>
-                <Input
-                  id='address'
-                  name='address'
-                  value={formData.address || ''}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-
-              <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                <div className='space-y-2'>
-                  <Label htmlFor='city'>City</Label>
-                  <Input
-                    id='city'
-                    name='city'
-                    value={formData.city || ''}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                <div className='space-y-2'>
-                  <Label htmlFor='state'>State</Label>
-                  <Input
-                    id='state'
-                    name='state'
-                    value={formData.state || ''}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                <div className='space-y-2'>
-                  <Label htmlFor='zip_code'>Zip Code</Label>
-                  <Input
-                    id='zip_code'
-                    name='zip_code'
-                    value={formData.zip_code || ''}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className='space-y-2'>
-                <Label htmlFor='country'>Country</Label>
-                <Input
-                  id='country'
-                  name='country'
-                  value={formData.country || ''}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-
               {(!profile.profile_submitted_at ||
                 profile.profile_review_status === 'changes_requested') &&
                 !hasTrainingCertificate && (
@@ -1044,21 +1071,21 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
                     marking your profile complete.
                   </p>
                 )}
-              <div className='flex flex-wrap justify-end gap-2'>
-                <Button
-                  type='button'
-                  variant='outline'
-                  onClick={() => void fetchProfile(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type='submit' disabled={isSaving}>
-                  {isSaving ? 'Saving...' : 'Save Changes'}
-                </Button>
-              </div>
             </div>
           </CardContent>
         </Card>
+        <div className='sticky bottom-0 z-10 flex flex-wrap justify-end gap-2 rounded-lg border bg-background/95 p-3 shadow-sm'>
+          <Button
+            type='button'
+            variant='outline'
+            onClick={() => void fetchProfile(false)}
+          >
+            Cancel
+          </Button>
+          <Button type='submit' disabled={isSaving}>
+            {isSaving ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </div>
       </form>
     </div>
   );

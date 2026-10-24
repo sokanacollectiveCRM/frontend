@@ -10,7 +10,10 @@ test('P-15 required phone persists, admins see it, and client UI/API exclude it'
 }) => {
   test.setTimeout(180000);
   const fixture = JSON.parse(readFileSync(fixturePath!, 'utf8'));
-  const doula = await browser.newContext({ baseURL });
+  const doula = await browser.newContext({
+    baseURL,
+    viewport: { width: 1440, height: 1000 },
+  });
   const admin = await browser.newContext({ baseURL });
   const client = await browser.newContext({ baseURL });
   try {
@@ -25,6 +28,44 @@ test('P-15 required phone persists, admins see it, and client UI/API exclude it'
     await page.goto('/doula-dashboard/profile');
     const phone = page.getByLabel('Phone number', { exact: true });
     await expect(phone).toBeVisible();
+    // One primary content scroller; navigation belongs only in the app sidebar.
+    await expect(
+      page.locator('main[aria-label="Doula dashboard content"] nav')
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole('button', { name: 'Save Changes', exact: true })
+    ).toBeInViewport();
+    for (const viewport of [
+      { width: 1440, height: 1000 },
+      { width: 390, height: 844 },
+    ]) {
+      await page.setViewportSize(viewport);
+      const scrolls = await page.evaluate(() => {
+        const main = document.querySelector(
+          'main[aria-label="Doula dashboard content"]'
+        )!;
+        return {
+          documentScrolls:
+            document.documentElement.scrollHeight > window.innerHeight + 2,
+          nested: [...main.querySelectorAll('*')].filter((el) => {
+            const style = getComputedStyle(el);
+            return (
+              /auto|scroll/.test(style.overflowY) &&
+              el.scrollHeight > el.clientHeight + 2 &&
+              style.display !== 'none' &&
+              el.getClientRects().length > 0
+            );
+          }).length,
+          overflows: main.scrollWidth > main.clientWidth + 2,
+        };
+      });
+      expect(scrolls).toEqual({
+        documentScrolls: false,
+        nested: 0,
+        overflows: false,
+      });
+    }
+    await page.setViewportSize({ width: 1440, height: 1000 });
     const before = await page.request.get(`${api}/api/doulas/profile`);
     expect(before.status()).toBe(200);
     const certifications = (await before.json()).profile.certifications;

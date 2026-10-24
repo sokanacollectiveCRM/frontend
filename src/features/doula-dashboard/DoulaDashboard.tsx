@@ -1,11 +1,10 @@
+import { isValidPhone } from '@/features/doula-dashboard/phone';
 import { Header } from '@/common/layouts/Header';
-import { Main } from '@/common/layouts/Main';
 import { ProfileDropdown } from '@/common/components/user/ProfileDropdown';
 import { Button } from '@/common/components/ui/button';
 import { getDoulaProfile } from '@/api/doulas/doulaService';
 import { AlertTriangle } from 'lucide-react';
 import { Link, Outlet } from 'react-router-dom';
-import { DoulaDashboardSidebar } from './DoulaDashboardSidebar';
 import { useEffect, useState } from 'react';
 import { DoulaDashboardOutletContext } from './doulaDashboardTypes';
 
@@ -39,27 +38,14 @@ export default function DoulaDashboard() {
     fetchProfileCompletion();
   }, []);
 
-  useEffect(() => {
-    const html = document.documentElement;
-    const body = document.body;
-    const previousHtmlOverflow = html.style.overflow;
-    const previousBodyOverflow = body.style.overflow;
-
-    html.style.overflow = 'hidden';
-    body.style.overflow = 'hidden';
-
-    return () => {
-      html.style.overflow = previousHtmlOverflow;
-      body.style.overflow = previousBodyOverflow;
-    };
-  }, []);
-
   const fetchProfileCompletion = async () => {
     try {
       const profile = await getDoulaProfile();
       const incompleteFields = REQUIRED_PROFILE_FIELDS.filter(
         (field) => !String(profile?.[field] ?? '').trim()
       ).map((field) => FIELD_LABELS[field]);
+      if (!isValidPhone(profile?.phone_number))
+        incompleteFields.push('Phone number');
       setMissingFields(incompleteFields);
       setIsProfileComplete(incompleteFields.length === 0);
     } catch {
@@ -80,8 +66,8 @@ export default function DoulaDashboard() {
   };
 
   return (
-    <>
-      <Header fixed>
+    <div className='flex h-[calc(100dvh-3rem-env(safe-area-inset-top))] min-w-0 flex-col overflow-hidden lg:h-dvh'>
+      <Header className='shrink-0'>
         <div className='flex w-full items-center gap-4'>
           <div className='min-w-0'>
             <h1 className='text-lg font-semibold text-slate-900'>
@@ -97,40 +83,37 @@ export default function DoulaDashboard() {
         </div>
       </Header>
 
-      <Main fixed>
-        <div className='flex h-full min-h-0 gap-6 p-6'>
-          <DoulaDashboardSidebar />
-
-          <section className='min-h-0 min-w-0 flex-1 overflow-y-auto'>
-            {!isProfileComplete && (
-              <div className='mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-4'>
-                <div className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
-                  <div className='flex items-start gap-3'>
-                    <AlertTriangle className='mt-0.5 h-5 w-5 text-amber-700' />
-                    <div>
-                      <p className='font-medium text-amber-900'>
-                        Complete your profile to finish account setup.
-                      </p>
-                      <p className='text-sm text-amber-800'>
-                        Missing required fields: {missingFields.join(', ')}
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    asChild
-                    size='sm'
-                    className='bg-amber-600 hover:bg-amber-700'
-                  >
-                    <Link to='/doula-dashboard/profile'>Complete Profile</Link>
-                  </Button>
+      <main
+        aria-label='Doula dashboard content'
+        className='min-h-0 flex-1 overflow-y-auto px-4 pb-4 sm:px-6'
+      >
+        {!isProfileComplete && (
+          <div className='mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-4'>
+            <div className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
+              <div className='flex items-start gap-3'>
+                <AlertTriangle className='mt-0.5 h-5 w-5 text-amber-700' />
+                <div>
+                  <p className='font-medium text-amber-900'>
+                    Complete your profile to finish account setup.
+                  </p>
+                  <p className='text-sm text-amber-800'>
+                    Missing required fields: {missingFields.join(', ')}
+                  </p>
                 </div>
               </div>
-            )}
+              <Button
+                asChild
+                size='sm'
+                className='bg-amber-600 hover:bg-amber-700'
+              >
+                <Link to='/doula-dashboard/profile'>Complete Profile</Link>
+              </Button>
+            </div>
+          </div>
+        )}
 
-            <Outlet context={outletContext} />
-          </section>
-        </div>
-      </Main>
-    </>
+        <Outlet context={outletContext} />
+      </main>
+    </div>
   );
 }
