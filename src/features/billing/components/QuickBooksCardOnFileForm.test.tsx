@@ -5,14 +5,18 @@ import { vi } from 'vitest';
 import QuickBooksCardOnFileForm from './QuickBooksCardOnFileForm';
 import { PaymentMethodApiError } from './quickbooksPayments';
 
-const { tokenizeIntuitCard, savePaymentMethod, getPaymentMethod } = vi.hoisted(() => ({
-  tokenizeIntuitCard: vi.fn(),
-  savePaymentMethod: vi.fn(),
-  getPaymentMethod: vi.fn(),
-}));
+const { tokenizeIntuitCard, savePaymentMethod, getPaymentMethod } = vi.hoisted(
+  () => ({
+    tokenizeIntuitCard: vi.fn(),
+    savePaymentMethod: vi.fn(),
+    getPaymentMethod: vi.fn(),
+  })
+);
 
 vi.mock('./quickbooksPayments', async () => {
-  const actual = await vi.importActual<typeof import('./quickbooksPayments')>('./quickbooksPayments');
+  const actual = await vi.importActual<typeof import('./quickbooksPayments')>(
+    './quickbooksPayments'
+  );
   return {
     ...actual,
     tokenizeIntuitCard,
@@ -68,15 +72,21 @@ describe('QuickBooksCardOnFileForm', () => {
     const onSuccess = vi.fn();
     const user = userEvent.setup();
 
-    render(<QuickBooksCardOnFileForm clientId='client_123' onSuccess={onSuccess} />);
+    render(
+      <QuickBooksCardOnFileForm clientId='client_123' onSuccess={onSuccess} />
+    );
 
     await waitFor(() => expect(getPaymentMethod).toHaveBeenCalledTimes(1));
+    expect(screen.queryByLabelText(/country/i)).not.toBeInTheDocument();
     await user.type(screen.getByLabelText(/name on card/i), 'Jane Doe');
     await user.type(screen.getByLabelText(/card number/i), '4111111111111111');
     await user.type(screen.getByLabelText(/expiration/i), '07/25');
     await user.type(screen.getByLabelText(/security code/i), '123');
     await user.type(screen.getByLabelText(/^billing address$/i), '123 Main St');
-    await user.type(screen.getByLabelText(/apartment, suite, or unit/i), 'Apt 4B');
+    await user.type(
+      screen.getByLabelText(/apartment, suite, or unit/i),
+      'Apt 4B'
+    );
     await user.type(screen.getByLabelText(/^city$/i), 'Boston');
     await user.type(screen.getByLabelText(/^state$/i), 'MA');
     await user.type(screen.getByLabelText(/postal code/i), '02118');
@@ -134,27 +144,28 @@ describe('QuickBooksCardOnFileForm', () => {
     savePaymentMethod.mockRejectedValue(
       new PaymentMethodApiError('Duplicate request', 409, 'duplicate_request')
     );
-    getPaymentMethod
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({
-        client_id: 'client_123',
-        quickbooks_customer_id: 'qb_456',
-        provider_payment_method_reference: 'pm_789',
-        card_brand: 'Visa',
-        last4: '1111',
-        exp_month: 7,
-        exp_year: 2028,
-        status: 'saved',
-        created_at: '2026-04-23T10:00:00Z',
-        updated_at: '2026-04-23T10:00:00Z',
-      });
+    getPaymentMethod.mockResolvedValueOnce(null).mockResolvedValueOnce({
+      client_id: 'client_123',
+      quickbooks_customer_id: 'qb_456',
+      provider_payment_method_reference: 'pm_789',
+      card_brand: 'Visa',
+      last4: '1111',
+      exp_month: 7,
+      exp_year: 2028,
+      status: 'saved',
+      created_at: '2026-04-23T10:00:00Z',
+      updated_at: '2026-04-23T10:00:00Z',
+    });
 
     const onSuccess = vi.fn();
     const user = userEvent.setup();
 
-    render(<QuickBooksCardOnFileForm clientId='client_123' onSuccess={onSuccess} />);
+    render(
+      <QuickBooksCardOnFileForm clientId='client_123' onSuccess={onSuccess} />
+    );
 
     await waitFor(() => expect(getPaymentMethod).toHaveBeenCalledTimes(1));
+    expect(screen.queryByLabelText(/country/i)).not.toBeInTheDocument();
     await user.type(screen.getByLabelText(/name on card/i), 'Jane Doe');
     await user.type(screen.getByLabelText(/card number/i), '4111111111111111');
     await user.type(screen.getByLabelText(/expiration/i), '07/28');

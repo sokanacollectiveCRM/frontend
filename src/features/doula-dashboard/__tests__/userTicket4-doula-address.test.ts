@@ -11,14 +11,7 @@
  *    parts and stays null-safe when fields are missing
  */
 
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   type DoulaProfile,
   type UpdateProfileData,
@@ -82,7 +75,6 @@ describe('USER Ticket 4 — address is part of the doula profile contract', () =
       'address',
       'city',
       'state',
-      'country',
       'zip_code',
       'bio',
       'pronouns',
@@ -149,8 +141,10 @@ describe('USER Ticket 4 — updateDoulaProfile sends address in payload', () => 
 
     const [url, init] = fetchMock.mock.calls[0];
     expect(String(url)).toMatch(/\/api\/doulas\/profile$/);
-    expect((init as RequestInit).method).toBe('PUT');
-    const body = JSON.parse((init as RequestInit).body as string);
+    expect((init as Parameters<typeof fetch>[1]).method).toBe('PUT');
+    const body = JSON.parse(
+      (init as Parameters<typeof fetch>[1]).body as string
+    );
     expect(body.address).toBe('999 Elm St');
   });
 
@@ -163,18 +157,16 @@ describe('USER Ticket 4 — updateDoulaProfile sends address in payload', () => 
   });
 
   it('rejects with the server error when address save fails', async () => {
-    global.fetch = vi
-      .fn()
-      .mockResolvedValue(
-        new Response(JSON.stringify({ error: 'address invalid' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        })
-      ) as unknown as typeof fetch;
+    global.fetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ error: 'address invalid' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    ) as unknown as typeof fetch;
 
-    await expect(
-      updateDoulaProfile({ address: '!' })
-    ).rejects.toThrow('address invalid');
+    await expect(updateDoulaProfile({ address: '!' })).rejects.toThrow(
+      'address invalid'
+    );
   });
 });
 
@@ -224,8 +216,6 @@ describe('USER Ticket 4 — admin directory address rendering', () => {
   });
 
   it('does not crash on whitespace-only parts', () => {
-    expect(
-      buildAddress({ address: '   ', city: 'Atlanta' })
-    ).toBe('Atlanta');
+    expect(buildAddress({ address: '   ', city: 'Atlanta' })).toBe('Atlanta');
   });
 });

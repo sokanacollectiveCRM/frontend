@@ -1,3 +1,5 @@
+import { useUser } from '@/common/hooks/user/useUser';
+import { formatAddress } from '@/common/utils/formatAddress';
 import DocumentsTab from '@/features/doula-dashboard/components/DocumentsTab';
 import CertificationsList from '@/features/doula-dashboard/components/CertificationsList';
 import UserAvatar from '@/common/components/user/UserAvatar';
@@ -75,7 +77,6 @@ const REQUIRED_TEXT_FIELDS = [
   'address',
   'city',
   'state',
-  'country',
   'zip_code',
   'bio',
 ] as const satisfies ReadonlyArray<keyof UpdateProfileData>;
@@ -88,7 +89,6 @@ const FIELD_LABELS: Record<RequiredTextField, string> = {
   address: 'Address',
   city: 'City',
   state: 'State',
-  country: 'Country',
   zip_code: 'Zip Code',
   bio: 'Bio',
 };
@@ -108,7 +108,7 @@ function profileToFormData(profile: DoulaProfile): UpdateProfileData {
     address: profile.address || '',
     city: profile.city || '',
     state: profile.state || '',
-    country: profile.country || '',
+    unit_number: profile.unit_number || '',
     zip_code:
       profile.zip_code !== undefined &&
       profile.zip_code !== null &&
@@ -170,6 +170,7 @@ export default function ProfileTab({
   onProfileStatusChange,
   initialStep,
 }: ProfileTabProps) {
+  const { setUser } = useUser();
   const [profile, setProfile] = useState<DoulaProfile | null>(cachedProfile);
   const [isLoading, setIsLoading] = useState(!cachedProfile);
   const [isSaving, setIsSaving] = useState(false);
@@ -225,7 +226,7 @@ export default function ProfileTab({
     address: '',
     city: '',
     state: '',
-    country: '',
+    unit_number: '',
     zip_code: '',
     bio: '',
     scheduling_url: '',
@@ -357,6 +358,14 @@ export default function ProfileTab({
       }
       setProfile(updated);
       cachedProfile = updated;
+      setUser((current) =>
+        current
+          ? {
+              ...current,
+              profile_picture: updated.profile_picture || undefined,
+            }
+          : current
+      );
       toast.success('Profile picture updated');
     } catch (err: unknown) {
       const message =
@@ -464,6 +473,7 @@ export default function ProfileTab({
         unavailable_until,
         ...profilePayload
       } = nextFormData;
+      delete profilePayload.country;
 
       const desiredStatus = availability_status || 'available';
       if (desiredStatus === 'unavailable') {
@@ -544,7 +554,7 @@ export default function ProfileTab({
       activeStep === 0
         ? ['firstname', 'lastname', 'bio']
         : activeStep === 1
-          ? ['address', 'city', 'state', 'zip_code', 'country']
+          ? ['address', 'city', 'state', 'zip_code']
           : [];
     if (activeStep === 0 && !isValidPhone(formData.phone_number)) {
       setPhoneError(true);
@@ -913,6 +923,18 @@ export default function ProfileTab({
                     )}
                   </div>
 
+                  <div className='space-y-2'>
+                    <Label htmlFor='unit_number'>Unit / Apt #</Label>
+                    <Input
+                      id='unit_number'
+                      name='unit_number'
+                      value={formData.unit_number || ''}
+                      onChange={handleInputChange}
+                      maxLength={100}
+                      placeholder='Example: Apt 4B'
+                    />
+                  </div>
+
                   <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
                     <div className='space-y-2'>
                       <Label
@@ -995,51 +1017,12 @@ export default function ProfileTab({
                       )}
                     </div>
                   </div>
-
-                  <div className='space-y-2'>
-                    <Label
-                      htmlFor='country'
-                      className={isMissing('country') ? 'text-red-600' : ''}
-                    >
-                      Country
-                    </Label>
-                    <Input
-                      id='country'
-                      aria-invalid={isMissing('country')}
-                      aria-describedby={
-                        isMissing('country') ? 'country-required' : undefined
-                      }
-                      className={requiredStyle('country')}
-                      name='country'
-                      value={formData.country || ''}
-                      onChange={handleInputChange}
-                      required
-                    />
-                    {isMissing('country') && (
-                      <p id='country-required' className='text-sm text-red-600'>
-                        {FIELD_LABELS.country} is required
-                      </p>
-                    )}
-                  </div>
                 </section>
               </>
             ) : (
-              <dl className='grid grid-cols-1 gap-5 text-sm sm:grid-cols-2'>
-                {[
-                  ['Address', profile.address],
-                  ['City', profile.city],
-                  ['State', profile.state],
-                  ['Zip Code', profile.zip_code],
-                  ['Country', profile.country],
-                ].map(([label, value]) => (
-                  <div key={label}>
-                    <dt className='font-semibold'>{label}</dt>
-                    <dd className={!value ? 'text-red-600' : ''}>
-                      {value || `${label} is required`}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
+              <p className='text-sm'>
+                {formatAddress(profile) || 'Address is required'}
+              </p>
             )}
           </div>
           <div
@@ -1427,17 +1410,7 @@ export default function ProfileTab({
                 </div>
                 <div>
                   <dt className='font-semibold'>Address</dt>
-                  <dd>
-                    {[
-                      formData.address,
-                      formData.city,
-                      formData.state,
-                      formData.zip_code,
-                      formData.country,
-                    ]
-                      .filter(Boolean)
-                      .join(', ') || 'Address is required'}
-                  </dd>
+                  <dd>{formatAddress(formData) || 'Address is required'}</dd>
                 </div>
                 <div>
                   <dt className='font-semibold'>About me</dt>
@@ -1476,8 +1449,8 @@ export default function ProfileTab({
                     <ol className='mt-3 list-decimal pl-5 space-y-2 text-sm'>
                       <li>
                         Enter your first and last name, phone number, full
-                        address (including city, state, ZIP code and country),
-                        and bio below.
+                        address (including city, state and ZIP code), and bio
+                        below.
                       </li>
                       <li>
                         Open the Documents step and upload your Doula training

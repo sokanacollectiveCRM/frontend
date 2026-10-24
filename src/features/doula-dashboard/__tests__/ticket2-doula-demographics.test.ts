@@ -34,26 +34,36 @@ describe('Ticket 2 — DOULA_RACE_ETHNICITY_OPTIONS: all required options presen
   });
 
   it('includes "Black / African American"', () => {
-    expect(DOULA_RACE_ETHNICITY_OPTIONS.some((o) => o.value === 'black_african_american')).toBe(
-      true
-    );
+    expect(
+      DOULA_RACE_ETHNICITY_OPTIONS.some(
+        (o) => o.value === 'black_african_american'
+      )
+    ).toBe(true);
   });
 
   it('includes "African"', () => {
-    expect(DOULA_RACE_ETHNICITY_OPTIONS.some((o) => o.value === 'african')).toBe(true);
+    expect(
+      DOULA_RACE_ETHNICITY_OPTIONS.some((o) => o.value === 'african')
+    ).toBe(true);
   });
 
   it('includes "Afro-Caribbean"', () => {
-    expect(DOULA_RACE_ETHNICITY_OPTIONS.some((o) => o.value === 'afro_caribbean')).toBe(true);
+    expect(
+      DOULA_RACE_ETHNICITY_OPTIONS.some((o) => o.value === 'afro_caribbean')
+    ).toBe(true);
   });
 
   it('includes "Afro-Latinx"', () => {
-    expect(DOULA_RACE_ETHNICITY_OPTIONS.some((o) => o.value === 'afro_latinx')).toBe(true);
+    expect(
+      DOULA_RACE_ETHNICITY_OPTIONS.some((o) => o.value === 'afro_latinx')
+    ).toBe(true);
   });
 
   it('includes "Hispanic / Latino / Latina"', () => {
     expect(
-      DOULA_RACE_ETHNICITY_OPTIONS.some((o) => o.value === 'hispanic_latino_latina')
+      DOULA_RACE_ETHNICITY_OPTIONS.some(
+        (o) => o.value === 'hispanic_latino_latina'
+      )
     ).toBe(true);
   });
 
@@ -66,38 +76,52 @@ describe('Ticket 2 — DOULA_RACE_ETHNICITY_OPTIONS: all required options presen
   });
 
   it('includes "Middle Eastern / North African (MENA)"', () => {
-    expect(DOULA_RACE_ETHNICITY_OPTIONS.some((o) => o.value === 'mena')).toBe(true);
+    expect(DOULA_RACE_ETHNICITY_OPTIONS.some((o) => o.value === 'mena')).toBe(
+      true
+    );
   });
 
   it('includes "Asian / Asian American"', () => {
     expect(
-      DOULA_RACE_ETHNICITY_OPTIONS.some((o) => o.value === 'asian_asian_american')
+      DOULA_RACE_ETHNICITY_OPTIONS.some(
+        (o) => o.value === 'asian_asian_american'
+      )
     ).toBe(true);
   });
 
   it('includes "Native Hawaiian / Pacific Islander"', () => {
     expect(
-      DOULA_RACE_ETHNICITY_OPTIONS.some((o) => o.value === 'native_hawaiian_pacific_islander')
+      DOULA_RACE_ETHNICITY_OPTIONS.some(
+        (o) => o.value === 'native_hawaiian_pacific_islander'
+      )
     ).toBe(true);
   });
 
   it('includes "White"', () => {
-    expect(DOULA_RACE_ETHNICITY_OPTIONS.some((o) => o.value === 'white')).toBe(true);
+    expect(DOULA_RACE_ETHNICITY_OPTIONS.some((o) => o.value === 'white')).toBe(
+      true
+    );
   });
 
   it('includes "Multiracial / Mixed"', () => {
-    expect(DOULA_RACE_ETHNICITY_OPTIONS.some((o) => o.value === 'multiracial_mixed')).toBe(true);
+    expect(
+      DOULA_RACE_ETHNICITY_OPTIONS.some((o) => o.value === 'multiracial_mixed')
+    ).toBe(true);
   });
 
   it('includes "Another race or ethnicity"', () => {
     expect(
-      DOULA_RACE_ETHNICITY_OPTIONS.some((o) => o.value === 'another_race_ethnicity')
+      DOULA_RACE_ETHNICITY_OPTIONS.some(
+        (o) => o.value === 'another_race_ethnicity'
+      )
     ).toBe(true);
   });
 
   it('includes "Prefer not to answer"', () => {
     expect(
-      DOULA_RACE_ETHNICITY_OPTIONS.some((o) => o.value === 'prefer_not_to_answer')
+      DOULA_RACE_ETHNICITY_OPTIONS.some(
+        (o) => o.value === 'prefer_not_to_answer'
+      )
     ).toBe(true);
   });
 
@@ -126,21 +150,22 @@ describe('Ticket 2 — normalizeRaceEthnicityFromApi', () => {
   });
 
   it('returns valid string values unchanged', () => {
-    expect(normalizeRaceEthnicityFromApi(['white', 'black_african_american'])).toEqual([
-      'white',
-      'black_african_american',
-    ]);
+    expect(
+      normalizeRaceEthnicityFromApi(['white', 'black_african_american'])
+    ).toEqual(['white', 'black_african_american']);
   });
 
   it('filters out non-string values from array', () => {
-    expect(normalizeRaceEthnicityFromApi(['white', 42, null, 'african', undefined])).toEqual([
-      'white',
-      'african',
-    ]);
+    expect(
+      normalizeRaceEthnicityFromApi(['white', 42, null, 'african', undefined])
+    ).toEqual(['white', 'african']);
   });
 
   it('filters out empty strings', () => {
-    expect(normalizeRaceEthnicityFromApi(['white', '', 'african'])).toEqual(['white', 'african']);
+    expect(normalizeRaceEthnicityFromApi(['white', '', 'african'])).toEqual([
+      'white',
+      'african',
+    ]);
   });
 
   it('returns empty array for empty array input', () => {
@@ -172,12 +197,18 @@ describe('Ticket 2 — toggleRaceEthnicitySelection', () => {
   });
 
   it('deselecting "prefer not to answer" returns empty array', () => {
-    const result = toggleRaceEthnicitySelection([PREFER_NOT_RACE_ETHNICITY], PREFER_NOT_RACE_ETHNICITY);
+    const result = toggleRaceEthnicitySelection(
+      [PREFER_NOT_RACE_ETHNICITY],
+      PREFER_NOT_RACE_ETHNICITY
+    );
     expect(result).toEqual([]);
   });
 
   it('selecting a regular option removes "prefer not to answer" if present', () => {
-    const result = toggleRaceEthnicitySelection([PREFER_NOT_RACE_ETHNICITY], 'white');
+    const result = toggleRaceEthnicitySelection(
+      [PREFER_NOT_RACE_ETHNICITY],
+      'white'
+    );
     expect(result).not.toContain(PREFER_NOT_RACE_ETHNICITY);
     expect(result).toContain('white');
   });
@@ -186,7 +217,10 @@ describe('Ticket 2 — toggleRaceEthnicitySelection', () => {
     let selections: string[] = [];
     selections = toggleRaceEthnicitySelection(selections, 'white');
     selections = toggleRaceEthnicitySelection(selections, 'african');
-    selections = toggleRaceEthnicitySelection(selections, 'asian_asian_american');
+    selections = toggleRaceEthnicitySelection(
+      selections,
+      'asian_asian_american'
+    );
     expect(selections).toEqual(['white', 'african', 'asian_asian_american']);
   });
 });
@@ -212,16 +246,24 @@ describe('Ticket 2 — isDoulaRaceEthnicityComplete', () => {
   });
 
   it('returns true for "prefer not to answer"', () => {
-    expect(isDoulaRaceEthnicityComplete([PREFER_NOT_RACE_ETHNICITY], null)).toBe(true);
+    expect(
+      isDoulaRaceEthnicityComplete([PREFER_NOT_RACE_ETHNICITY], null)
+    ).toBe(true);
   });
 
   it('returns false for "another race or ethnicity" without specifying', () => {
-    expect(isDoulaRaceEthnicityComplete([ANOTHER_RACE_ETHNICITY], '')).toBe(false);
-    expect(isDoulaRaceEthnicityComplete([ANOTHER_RACE_ETHNICITY], null)).toBe(false);
+    expect(isDoulaRaceEthnicityComplete([ANOTHER_RACE_ETHNICITY], '')).toBe(
+      false
+    );
+    expect(isDoulaRaceEthnicityComplete([ANOTHER_RACE_ETHNICITY], null)).toBe(
+      false
+    );
   });
 
   it('returns true for "another race or ethnicity" when other text is provided', () => {
-    expect(isDoulaRaceEthnicityComplete([ANOTHER_RACE_ETHNICITY], 'Creole')).toBe(true);
+    expect(
+      isDoulaRaceEthnicityComplete([ANOTHER_RACE_ETHNICITY], 'Creole')
+    ).toBe(true);
   });
 
   it('returns true for multiple selections including another_race with text', () => {
@@ -291,11 +333,12 @@ describe('Ticket 2 — required fields enforcement (mirrors ProfileTab required 
       'address',
       'city',
       'state',
-      'country',
       'zip_code',
       'bio',
       'pronouns',
     ] as const;
-    expect((REQUIRED_TEXT_FIELDS as readonly string[]).includes('pronouns')).toBe(true);
+    expect(
+      (REQUIRED_TEXT_FIELDS as readonly string[]).includes('pronouns')
+    ).toBe(true);
   });
 });

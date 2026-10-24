@@ -28,7 +28,6 @@ const REQUIRED_TEXT_FIELDS = [
   'address',
   'city',
   'state',
-  'country',
   'zip_code',
   'bio',
 ] as const;
@@ -41,18 +40,25 @@ const FIELD_LABELS: Record<RequiredTextField, string> = {
   address: 'Address',
   city: 'City',
   state: 'State',
-  country: 'Country',
   zip_code: 'Zip Code',
   bio: 'Bio',
 };
 
 function getMissingRequiredFields(data: UpdateProfileData): string[] {
-  const missing = REQUIRED_TEXT_FIELDS.filter((field) =>
-    !String((data as Record<string, unknown>)[field] ?? '').trim()
+  const missing = REQUIRED_TEXT_FIELDS.filter(
+    (field) => !String((data as Record<string, unknown>)[field] ?? '').trim()
   ).map((field) => FIELD_LABELS[field]);
 
-  if (!isDoulaRaceEthnicityComplete(data.race_ethnicity, data.race_ethnicity_other)) {
-    if (!Array.isArray(data.race_ethnicity) || data.race_ethnicity.length === 0) {
+  if (
+    !isDoulaRaceEthnicityComplete(
+      data.race_ethnicity,
+      data.race_ethnicity_other
+    )
+  ) {
+    if (
+      !Array.isArray(data.race_ethnicity) ||
+      data.race_ethnicity.length === 0
+    ) {
       missing.push(RACE_ETHNICITY_FIELD_LABEL);
     } else {
       missing.push('Another race or ethnicity (please specify)');
@@ -66,15 +72,17 @@ function getMissingRequiredFields(data: UpdateProfileData): string[] {
 // ─────────────────────────────────────────────
 describe('Ticket 3 — bio is in REQUIRED_TEXT_FIELDS', () => {
   it('"bio" is listed as a required text field', () => {
-    expect((REQUIRED_TEXT_FIELDS as readonly string[]).includes('bio')).toBe(true);
+    expect((REQUIRED_TEXT_FIELDS as readonly string[]).includes('bio')).toBe(
+      true
+    );
   });
 
   it('"bio" is assigned the label "Bio"', () => {
     expect(FIELD_LABELS.bio).toBe('Bio');
   });
 
-  it('REQUIRED_TEXT_FIELDS has 8 fields including bio', () => {
-    expect(REQUIRED_TEXT_FIELDS.length).toBe(8);
+  it('REQUIRED_TEXT_FIELDS has 7 fields including bio', () => {
+    expect(REQUIRED_TEXT_FIELDS.length).toBe(7);
   });
 });
 
@@ -100,7 +108,10 @@ describe('Ticket 3 — getMissingRequiredFields flags missing bio', () => {
   });
 
   it('returns "Bio" in missing fields when bio is whitespace-only', () => {
-    const missing = getMissingRequiredFields({ ...completeDataNoBio, bio: '   ' });
+    const missing = getMissingRequiredFields({
+      ...completeDataNoBio,
+      bio: '   ',
+    });
     expect(missing).toContain('Bio');
   });
 
@@ -191,17 +202,16 @@ describe('Ticket 3 — all 8 required text fields are enforced', () => {
   it('missing all 8 required fields returns 9 items (8 text + race/ethnicity)', () => {
     const missing = getMissingRequiredFields({});
     // 8 text fields + race/ethnicity = 9
-    expect(missing.length).toBe(9);
+    expect(missing.length).toBe(8);
   });
 
-  it('required fields include First Name, Last Name, Address, City, State, Country, Zip Code, Bio', () => {
+  it('required fields include First Name, Last Name, Address, City, State, Zip Code, Bio', () => {
     const missing = getMissingRequiredFields({});
     expect(missing).toContain('First Name');
     expect(missing).toContain('Last Name');
     expect(missing).toContain('Address');
     expect(missing).toContain('City');
     expect(missing).toContain('State');
-    expect(missing).toContain('Country');
     expect(missing).toContain('Zip Code');
     expect(missing).toContain('Bio');
   });
@@ -235,19 +245,27 @@ describe('Ticket 3 — bio is included in profile update payload', () => {
   });
 
   it('bio survives round-trip through profileToFormData logic', () => {
-    function profileToFormData(profile: Record<string, unknown>): UpdateProfileData {
+    function profileToFormData(
+      profile: Record<string, unknown>
+    ): UpdateProfileData {
       return {
         bio: String(profile.bio ?? ''),
       };
     }
 
-    const profile = { bio: 'Long bio here describing experience and philosophy.' };
+    const profile = {
+      bio: 'Long bio here describing experience and philosophy.',
+    };
     const formData = profileToFormData(profile);
-    expect(formData.bio).toBe('Long bio here describing experience and philosophy.');
+    expect(formData.bio).toBe(
+      'Long bio here describing experience and philosophy.'
+    );
   });
 
   it('empty bio in profile maps to empty string in form data', () => {
-    function profileToFormData(profile: Record<string, unknown>): UpdateProfileData {
+    function profileToFormData(
+      profile: Record<string, unknown>
+    ): UpdateProfileData {
       return { bio: String(profile.bio ?? '') };
     }
     const formData = profileToFormData({ bio: null });

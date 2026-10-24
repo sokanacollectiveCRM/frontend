@@ -1,3 +1,4 @@
+import { formatAddress } from '@/common/utils/formatAddress';
 import { formatPhone } from '@/features/doula-dashboard/phone';
 import CertificationsList from '@/features/doula-dashboard/components/CertificationsList';
 import type { Certification } from '@/api/doulas/doulaService';
@@ -72,7 +73,7 @@ interface TeamMember {
   city: string;
   state: string;
   zip_code: string;
-  country: string;
+  unit_number: string;
   phone_number: string;
   certifications: Certification[];
 }
@@ -109,7 +110,7 @@ const toTeamMember = (member: any): TeamMember => ({
   city: member?.city ?? '',
   state: member?.state ?? '',
   zip_code: member?.zip_code ?? '',
-  country: member?.country ?? '',
+  unit_number: member?.unit_number ?? '',
   phone_number: member?.phone_number ?? '',
   certifications: Array.isArray(member?.certifications)
     ? member.certifications
@@ -1383,17 +1384,7 @@ export default function Teams() {
                       'Not provided'}
                   </dd>
                   <dt>Address</dt>
-                  <dd>
-                    {[
-                      documentsMember.address,
-                      documentsMember.city,
-                      documentsMember.state,
-                      documentsMember.zip_code,
-                      documentsMember.country,
-                    ]
-                      .filter(Boolean)
-                      .join(', ') || 'Not provided'}
-                  </dd>
+                  <dd>{formatAddress(documentsMember) || 'Not provided'}</dd>
                   <dt>Bio</dt>
                   <dd className='whitespace-pre-wrap'>
                     {documentsMember.bio || 'Not provided'}
