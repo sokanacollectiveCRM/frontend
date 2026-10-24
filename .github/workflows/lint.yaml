@@ -2,9 +2,9 @@ name: Lint and Style Check
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, dev]
   push:
-    branches: [main]
+    branches: [main, dev]
   workflow_dispatch:
 
 jobs:
@@ -37,6 +37,10 @@ jobs:
             base_sha="${{ github.sha }}^"
           else
             base_sha="${{ github.event.before }}"
+          fi
+          # A newly created branch has an all-zero before SHA.
+          if [[ "$base_sha" == "0000000000000000000000000000000000000000" ]] || ! git cat-file -e "$base_sha^{commit}" 2>/dev/null; then
+            base_sha="${{ github.sha }}^"
           fi
           files=$(git diff --name-only --diff-filter=ACMR "$base_sha" "${{ github.sha }}" -- '*.js' '*.jsx' '*.ts' '*.tsx' | tr '\n' ' ')
           echo "files=$files" >> "$GITHUB_OUTPUT"
