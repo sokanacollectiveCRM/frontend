@@ -115,6 +115,7 @@ export default function DocumentsTab({
     file: null,
     documentType: DEFAULT_DOCUMENT_TYPE,
   });
+  const [uploadError, setUploadError] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
@@ -163,10 +164,12 @@ export default function DocumentsTab({
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    setUploadError('');
     if (file) setUploadForm((prev) => ({ ...prev, file }));
   };
 
   const openUploadFor = (type: PortalDocumentType) => {
+    setUploadError('');
     setUploadForm({ file: null, documentType: type });
     setUploadingForType(type);
     setUploadDialogOpen(true);
@@ -178,6 +181,7 @@ export default function DocumentsTab({
       return;
     }
 
+    setUploadError('');
     setIsUploading(true);
     try {
       await uploadDocument(
@@ -191,9 +195,10 @@ export default function DocumentsTab({
       setUploadForm({ file: null, documentType: DEFAULT_DOCUMENT_TYPE });
       fetchDocuments();
     } catch (error: unknown) {
-      toast.error(
-        error instanceof Error ? error.message : 'Failed to upload document'
-      );
+      const message =
+        error instanceof Error ? error.message : 'Failed to upload document';
+      setUploadError(message);
+      toast.error(message);
     } finally {
       setIsUploading(false);
     }
@@ -518,7 +523,9 @@ export default function DocumentsTab({
                 <input
                   id='file'
                   type='file'
-                  accept='.pdf,.jpg,.jpeg,.png'
+                  accept='.jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf'
+                  aria-describedby='document-upload-error'
+                  aria-invalid={Boolean(uploadError)}
                   onChange={handleFileSelect}
                   className='hidden'
                 />
@@ -547,6 +554,15 @@ export default function DocumentsTab({
                   </div>
                 )}
               </label>
+              {uploadError && (
+                <p
+                  id='document-upload-error'
+                  role='alert'
+                  className='text-sm text-red-600'
+                >
+                  {uploadError}
+                </p>
+              )}
             </div>
           </div>
           <DialogFooter>

@@ -1,3 +1,4 @@
+import { validateDocumentFile } from '@/common/utils/documentUpload';
 import { buildUrl, fetchWithAuth } from '@/api/http';
 
 export type ClientDocument = {
@@ -40,13 +41,20 @@ export function getInsuranceCardSide(
   documentType: string,
   fileName?: string
 ): InsuranceCardSide | null {
-  const normalized = documentType.trim().toLowerCase().replace(/[-\s]+/g, '_');
+  const normalized = documentType
+    .trim()
+    .toLowerCase()
+    .replace(/[-\s]+/g, '_');
   if (normalized === 'insurance_card_front') return 'front';
   if (normalized === 'insurance_card_back') return 'back';
-  const normalizedFileName = String(fileName ?? '').trim().toLowerCase();
+  const normalizedFileName = String(fileName ?? '')
+    .trim()
+    .toLowerCase();
   if (normalizedFileName) {
-    if (/(?:^|[-_.\s])front(?:$|[-_.\s])/.test(normalizedFileName)) return 'front';
-    if (/(?:^|[-_.\s])back(?:$|[-_.\s])/.test(normalizedFileName)) return 'back';
+    if (/(?:^|[-_.\s])front(?:$|[-_.\s])/.test(normalizedFileName))
+      return 'front';
+    if (/(?:^|[-_.\s])back(?:$|[-_.\s])/.test(normalizedFileName))
+      return 'back';
   }
   return null;
 }
@@ -118,14 +126,28 @@ function normalizeDocument(raw: unknown): ClientDocument | null {
         ? String(doc.contentType ?? doc.content_type ?? doc.mime_type)
         : undefined,
     url:
-      typeof (doc.url ?? doc.downloadUrl ?? doc.download_url ?? doc.viewUrl ?? doc.signedUrl) ===
-      'string'
-        ? String(doc.url ?? doc.downloadUrl ?? doc.download_url ?? doc.viewUrl ?? doc.signedUrl)
+      typeof (
+        doc.url ??
+        doc.downloadUrl ??
+        doc.download_url ??
+        doc.viewUrl ??
+        doc.signedUrl
+      ) === 'string'
+        ? String(
+            doc.url ??
+              doc.downloadUrl ??
+              doc.download_url ??
+              doc.viewUrl ??
+              doc.signedUrl
+          )
         : undefined,
   };
 }
 
-async function requestClientDocuments(path: string, init?: RequestInit): Promise<Response> {
+async function requestClientDocuments(
+  path: string,
+  init?: NonNullable<Parameters<typeof fetch>[1]>
+): Promise<Response> {
   const response = await fetchWithAuth(buildUrl(path), init);
   if (response.ok) return response;
 
@@ -139,7 +161,10 @@ export function isInsuranceCardDocument(document: ClientDocument): boolean {
   return INSURANCE_CARD_DOCUMENT_TYPES.has(document.documentType);
 }
 
-export function getClientDocumentLabel(documentType: string, fileName?: string): string {
+export function getClientDocumentLabel(
+  documentType: string,
+  fileName?: string
+): string {
   const side = getInsuranceCardSide(documentType, fileName);
   if (side === 'front') return 'Insurance Card Front';
   if (side === 'back') return 'Insurance Card Back';
@@ -182,7 +207,9 @@ export async function listClientDocuments(
         : CLIENT_DOCUMENT_ENDPOINTS.clientList;
     const response = await requestClientDocuments(path);
     const payload = await parseResponseBody(response);
-    return unwrapDocumentCollection(payload).map(normalizeDocument).filter(Boolean) as ClientDocument[];
+    return unwrapDocumentCollection(payload)
+      .map(normalizeDocument)
+      .filter(Boolean) as ClientDocument[];
   } catch (error) {
     if (
       error instanceof Error &&
@@ -199,25 +226,34 @@ export async function uploadInsuranceCard(
   file: File,
   side: InsuranceCardSide = 'front'
 ): Promise<ClientDocument> {
+  await validateDocumentFile(file);
   const formData = new FormData();
   const documentType = 'insurance_card';
   const extensionMatch = file.name.match(/\.[^.]+$/);
   const extension = extensionMatch?.[0] || '';
   const prefixedName =
-    side === 'back' ? `insurance-card-back${extension}` : `insurance-card-front${extension}`;
+    side === 'back'
+      ? `insurance-card-back${extension}`
+      : `insurance-card-front${extension}`;
   const uploadFile =
     typeof File !== 'undefined'
-      ? new File([file], prefixedName, { type: file.type, lastModified: file.lastModified })
+      ? new File([file], prefixedName, {
+          type: file.type,
+          lastModified: file.lastModified,
+        })
       : file;
   formData.append('file', uploadFile);
   formData.append('documentType', documentType);
   formData.append('document_type', documentType);
   formData.append('category', 'billing');
 
-  const response = await requestClientDocuments(CLIENT_DOCUMENT_ENDPOINTS.clientUpload, {
-    method: 'POST',
-    body: formData,
-  });
+  const response = await requestClientDocuments(
+    CLIENT_DOCUMENT_ENDPOINTS.clientUpload,
+    {
+      method: 'POST',
+      body: formData,
+    }
+  );
 
   const payload = await parseResponseBody(response);
   const collection = unwrapDocumentCollection(payload);
@@ -247,9 +283,12 @@ export async function uploadInsuranceCard(
 }
 
 export async function deleteClientDocument(documentId: string): Promise<void> {
-  await requestClientDocuments(CLIENT_DOCUMENT_ENDPOINTS.clientDelete(documentId), {
-    method: 'DELETE',
-  });
+  await requestClientDocuments(
+    CLIENT_DOCUMENT_ENDPOINTS.clientDelete(documentId),
+    {
+      method: 'DELETE',
+    }
+  );
 }
 
 export async function getClientDocumentUrl(
@@ -267,11 +306,13 @@ export async function getClientDocumentUrl(
   if (typeof payload === 'string' && payload.trim()) return payload;
   if (payload && typeof payload === 'object') {
     const obj = payload as Record<string, unknown>;
-    const value = obj.url ?? obj.downloadUrl ?? obj.download_url ?? obj.signedUrl;
+    const value =
+      obj.url ?? obj.downloadUrl ?? obj.download_url ?? obj.signedUrl;
     if (typeof value === 'string' && value.trim()) return value;
     if (obj.data && typeof obj.data === 'object') {
       const inner = obj.data as Record<string, unknown>;
-      const nested = inner.url ?? inner.downloadUrl ?? inner.download_url ?? inner.signedUrl;
+      const nested =
+        inner.url ?? inner.downloadUrl ?? inner.download_url ?? inner.signedUrl;
       if (typeof nested === 'string' && nested.trim()) return nested;
     }
   }

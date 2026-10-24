@@ -1,3 +1,4 @@
+import { validateDocumentFile } from '@/common/utils/documentUpload';
 // API service functions for Doula Dashboard
 // Base URL: http://localhost:5050/api
 import { buildUrl, fetchWithAuth } from '@/api/http';
@@ -631,12 +632,7 @@ export async function uploadDocument(
   documentType: DocumentType,
   notes?: string
 ): Promise<UploadDocumentResponse> {
-  if (file.size > MAX_DOCUMENT_SIZE) {
-    throw new Error('File size exceeds 10MB limit');
-  }
-  if (!ALLOWED_DOCUMENT_MIME_TYPES.includes(file.type)) {
-    throw new Error('Invalid file type. Allowed: PDF, PNG, JPG, JPEG');
-  }
+  await validateDocumentFile(file);
   if (isRetiredDoulaDocumentType(documentType)) {
     throw new Error(
       `${DOULA_DOCUMENT_META[documentType].label} uploads are no longer accepted.`

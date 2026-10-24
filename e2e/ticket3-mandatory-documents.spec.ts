@@ -9,7 +9,8 @@
  * - API route interception confirms endpoint is called with correct body
  */
 
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import { DOCUMENT_FIXTURES } from '@/test/fixtures/documentFiles';
 
 const REQUIRED_DOC_TYPES = ['training_certificate'];
 
@@ -170,11 +171,15 @@ test.describe('Ticket 3 — Mandatory doula documents (E2E)', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    const response = await page.evaluate(async () => {
+    const response = await page.evaluate(async (pdf) => {
       const formData = new FormData();
-      const file = new File(['content'], 'bg-check.pdf', {
-        type: 'application/pdf',
-      });
+      const file = new File(
+        [Uint8Array.from(atob(pdf), (c) => c.charCodeAt(0))],
+        'fictional-certificate.pdf',
+        {
+          type: 'application/pdf',
+        }
+      );
       formData.append('file', file);
       formData.append('document_type', 'training_certificate');
 
@@ -190,7 +195,7 @@ test.describe('Ticket 3 — Mandatory doula documents (E2E)', () => {
         status: res.status,
         docType: data.document?.documentType,
       };
-    });
+    }, DOCUMENT_FIXTURES.pdf);
 
     expect(uploadCalled).toBe(true);
     expect(response.ok).toBe(true);
@@ -223,25 +228,32 @@ test.describe('Ticket 3 — Mandatory doula documents (E2E)', () => {
 
     // Upload each required type
     for (const docType of REQUIRED_DOC_TYPES) {
-      const result = await page.evaluate(async (type) => {
-        const formData = new FormData();
-        const file = new File(['content'], `${type}.pdf`, {
-          type: 'application/pdf',
-        });
-        formData.append('file', file);
-        formData.append('document_type', type);
-        const res = await fetch('/api/doulas/documents', {
-          method: 'POST',
-          body: formData,
-        });
-        return { ok: res.ok };
-      }, docType);
+      const result = await page.evaluate(
+        async ({ type, pdf }) => {
+          const formData = new FormData();
+          const file = new File(
+            [Uint8Array.from(atob(pdf), (c) => c.charCodeAt(0))],
+            `${type}.pdf`,
+            {
+              type: 'application/pdf',
+            }
+          );
+          formData.append('file', file);
+          formData.append('document_type', type);
+          const res = await fetch('/api/doulas/documents', {
+            method: 'POST',
+            body: formData,
+          });
+          return { ok: res.ok };
+        },
+        { type: docType, pdf: DOCUMENT_FIXTURES.pdf }
+      );
 
       expect(result.ok).toBe(true);
       uploadedTypes.push(docType);
     }
 
-    expect(uploadedTypes).toHaveLength(5);
+    expect(uploadedTypes).toHaveLength(REQUIRED_DOC_TYPES.length);
     expect(uploadedTypes).toEqual(REQUIRED_DOC_TYPES);
   });
 

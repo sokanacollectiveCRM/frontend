@@ -1,3 +1,7 @@
+import {
+  DocumentPreview,
+  type DocumentPreviewSource,
+} from '@/common/components/DocumentPreview';
 import { useState, useEffect } from 'react';
 import {
   Card,
@@ -47,6 +51,7 @@ export function AdminDoulaDocumentsSection({
   doulaId,
   doulaEmail,
 }: AdminDoulaDocumentsSectionProps) {
+  const [preview, setPreview] = useState<DocumentPreviewSource | null>(null);
   const [items, setItems] = useState<DocumentCompletenessItem[]>([]);
   const [archivedItems, setArchivedItems] = useState<
     DocumentCompletenessItem[]
@@ -131,10 +136,10 @@ export function AdminDoulaDocumentsSection({
     }
   };
 
-  const handleViewDocument = async (documentId: string) => {
+  const handleViewDocument = async (documentId: string, fileName?: string) => {
     try {
       const url = await getDoulaDocumentUrl(doulaId, documentId);
-      window.open(url, '_blank');
+      setPreview({ url, fileName: fileName || 'Document' });
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Failed to open document'
@@ -201,6 +206,7 @@ export function AdminDoulaDocumentsSection({
 
   return (
     <>
+      <DocumentPreview source={preview} onClose={() => setPreview(null)} />
       <Card
         className={`rounded-xl border shadow-sm ${
           canBeActive
@@ -306,7 +312,9 @@ export function AdminDoulaDocumentsSection({
                       <Button
                         variant='outline'
                         size='sm'
-                        onClick={() => handleViewDocument(item.document_id!)}
+                        onClick={() =>
+                          handleViewDocument(item.document_id!, item.file_name)
+                        }
                       >
                         View
                       </Button>

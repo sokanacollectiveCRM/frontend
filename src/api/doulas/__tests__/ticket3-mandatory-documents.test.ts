@@ -193,17 +193,21 @@ describe('Ticket 3 — uploadDocument validation', () => {
   });
 
   it('throws for disallowed MIME type (text/plain)', async () => {
-    const textFile = new File(['content'], 'doc.txt', { type: 'text/plain' });
+    const textFile = new File(['%PDF-1.4 fictional fixture'], 'doc.txt', {
+      type: 'text/plain',
+    });
     await expect(
       uploadDocument(textFile, 'training_certificate')
-    ).rejects.toThrow(/invalid file type/i);
+    ).rejects.toThrow(/Please upload a JPEG, PNG or PDF/);
   });
 
   it('throws for disallowed MIME type (video/mp4)', async () => {
-    const videoFile = new File(['content'], 'video.mp4', { type: 'video/mp4' });
+    const videoFile = new File(['%PDF-1.4 fictional fixture'], 'video.mp4', {
+      type: 'video/mp4',
+    });
     await expect(
       uploadDocument(videoFile, 'training_certificate')
-    ).rejects.toThrow(/invalid file type/i);
+    ).rejects.toThrow(/Please upload a JPEG, PNG or PDF/);
   });
 
   it('succeeds with a valid PDF file under 10MB', async () => {
@@ -241,7 +245,7 @@ describe('Ticket 3 — uploadDocument validation', () => {
         })
     );
 
-    const pdfFile = new File(['content'], 'medicaid.pdf', {
+    const pdfFile = new File(['%PDF-1.4 fictional fixture'], 'medicaid.pdf', {
       type: 'application/pdf',
     });
     await uploadDocument(pdfFile, 'illinois_medicaid_certification');
@@ -278,7 +282,7 @@ describe('Ticket 3 — uploadDocument validation', () => {
         })
     );
 
-    const pdfFile = new File(['content'], 'notes.pdf', {
+    const pdfFile = new File(['%PDF-1.4 fictional fixture'], 'notes.pdf', {
       type: 'application/pdf',
     });
     await uploadDocument(pdfFile, 'miscellaneous', 'Please review');
@@ -287,7 +291,7 @@ describe('Ticket 3 — uploadDocument validation', () => {
   });
 
   it('rejects retired document types before calling the API', async () => {
-    const pdfFile = new File(['content'], 'w9.pdf', {
+    const pdfFile = new File(['%PDF-1.4 fictional fixture'], 'w9.pdf', {
       type: 'application/pdf',
     });
     await expect(uploadDocument(pdfFile, 'w9')).rejects.toThrow(
@@ -508,7 +512,7 @@ describe('Ticket 3 — each required document type accepted by uploadDocument', 
     'liability_insurance_certificate',
   ] as DocumentType[]) {
     it(`does not throw for required type: ${docType}`, async () => {
-      const file = new File(['content'], `${docType}.pdf`, {
+      const file = new File(['%PDF-1.4 fictional fixture'], `${docType}.pdf`, {
         type: 'application/pdf',
       });
       await expect(uploadDocument(file, docType)).resolves.toBeDefined();

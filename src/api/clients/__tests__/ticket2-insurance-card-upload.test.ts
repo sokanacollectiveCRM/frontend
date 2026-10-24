@@ -28,42 +28,74 @@ import {
 // ─────────────────────────────────────────────
 describe('Ticket 2 — isInsuranceCardDocument', () => {
   it('returns true for "insurance_card" documentType', () => {
-    const doc: ClientDocument = { id: '1', documentType: 'insurance_card', fileName: 'card.jpg' };
+    const doc: ClientDocument = {
+      id: '1',
+      documentType: 'insurance_card',
+      fileName: 'card.jpg',
+    };
     expect(isInsuranceCardDocument(doc)).toBe(true);
   });
 
   it('returns true for "insurance_card_front" documentType', () => {
-    const doc: ClientDocument = { id: '2', documentType: 'insurance_card_front', fileName: 'front.jpg' };
+    const doc: ClientDocument = {
+      id: '2',
+      documentType: 'insurance_card_front',
+      fileName: 'front.jpg',
+    };
     expect(isInsuranceCardDocument(doc)).toBe(true);
   });
 
   it('returns true for "insurance_card_back" documentType', () => {
-    const doc: ClientDocument = { id: '3', documentType: 'insurance_card_back', fileName: 'back.jpg' };
+    const doc: ClientDocument = {
+      id: '3',
+      documentType: 'insurance_card_back',
+      fileName: 'back.jpg',
+    };
     expect(isInsuranceCardDocument(doc)).toBe(true);
   });
 
   it('returns true for camelCase "insuranceCard" documentType', () => {
-    const doc: ClientDocument = { id: '4', documentType: 'insuranceCard', fileName: 'card.png' };
+    const doc: ClientDocument = {
+      id: '4',
+      documentType: 'insuranceCard',
+      fileName: 'card.png',
+    };
     expect(isInsuranceCardDocument(doc)).toBe(true);
   });
 
   it('returns true for camelCase "insuranceCardFront" documentType', () => {
-    const doc: ClientDocument = { id: '5', documentType: 'insuranceCardFront', fileName: 'front.png' };
+    const doc: ClientDocument = {
+      id: '5',
+      documentType: 'insuranceCardFront',
+      fileName: 'front.png',
+    };
     expect(isInsuranceCardDocument(doc)).toBe(true);
   });
 
   it('returns true for camelCase "insuranceCardBack" documentType', () => {
-    const doc: ClientDocument = { id: '6', documentType: 'insuranceCardBack', fileName: 'back.png' };
+    const doc: ClientDocument = {
+      id: '6',
+      documentType: 'insuranceCardBack',
+      fileName: 'back.png',
+    };
     expect(isInsuranceCardDocument(doc)).toBe(true);
   });
 
   it('returns false for unrelated document types', () => {
-    const doc: ClientDocument = { id: '7', documentType: 'w9', fileName: 'w9.pdf' };
+    const doc: ClientDocument = {
+      id: '7',
+      documentType: 'w9',
+      fileName: 'w9.pdf',
+    };
     expect(isInsuranceCardDocument(doc)).toBe(false);
   });
 
   it('returns false for "background_check" documentType', () => {
-    const doc: ClientDocument = { id: '8', documentType: 'background_check', fileName: 'bg.pdf' };
+    const doc: ClientDocument = {
+      id: '8',
+      documentType: 'background_check',
+      fileName: 'bg.pdf',
+    };
     expect(isInsuranceCardDocument(doc)).toBe(false);
   });
 });
@@ -85,11 +117,15 @@ describe('Ticket 2 — getInsuranceCardSide', () => {
   });
 
   it('detects "front" from filename when documentType is generic', () => {
-    expect(getInsuranceCardSide('insurance_card', 'insurance-card-front.jpg')).toBe('front');
+    expect(
+      getInsuranceCardSide('insurance_card', 'insurance-card-front.jpg')
+    ).toBe('front');
   });
 
   it('detects "back" from filename when documentType is generic', () => {
-    expect(getInsuranceCardSide('insurance_card', 'insurance-card-back.jpg')).toBe('back');
+    expect(
+      getInsuranceCardSide('insurance_card', 'insurance-card-back.jpg')
+    ).toBe('back');
   });
 
   it('handles extra whitespace in documentType', () => {
@@ -106,11 +142,15 @@ describe('Ticket 2 — getInsuranceCardSide', () => {
 // ─────────────────────────────────────────────
 describe('Ticket 2 — getClientDocumentLabel', () => {
   it('returns "Insurance Card Front" for insurance_card_front', () => {
-    expect(getClientDocumentLabel('insurance_card_front')).toBe('Insurance Card Front');
+    expect(getClientDocumentLabel('insurance_card_front')).toBe(
+      'Insurance Card Front'
+    );
   });
 
   it('returns "Insurance Card Back" for insurance_card_back', () => {
-    expect(getClientDocumentLabel('insurance_card_back')).toBe('Insurance Card Back');
+    expect(getClientDocumentLabel('insurance_card_back')).toBe(
+      'Insurance Card Back'
+    );
   });
 
   it('returns "Insurance Card" for generic insurance_card without side clue', () => {
@@ -118,7 +158,9 @@ describe('Ticket 2 — getClientDocumentLabel', () => {
   });
 
   it('returns humanized label for other document types', () => {
-    expect(getClientDocumentLabel('background_check')).toMatch(/background check/i);
+    expect(getClientDocumentLabel('background_check')).toMatch(
+      /background check/i
+    );
   });
 
   it('handles dash-separated types', () => {
@@ -137,19 +179,26 @@ describe('Ticket 2 — uploadInsuranceCard FormData construction', () => {
 
   beforeEach(() => {
     capturedFormData = null;
-    mockFetch = vi.fn().mockImplementation(async (_url: string, opts: RequestInit) => {
-      capturedFormData = opts.body as FormData;
-      return {
-        ok: true,
-        text: async () =>
-          JSON.stringify({
-            id: 'doc-1',
-            documentType: 'insurance_card',
-            fileName: 'insurance-card-front.jpg',
-            uploadedAt: new Date().toISOString(),
-          }),
-      };
-    });
+    mockFetch = vi
+      .fn()
+      .mockImplementation(
+        async (
+          _url: string,
+          opts: NonNullable<Parameters<typeof fetch>[1]>
+        ) => {
+          capturedFormData = opts.body as FormData;
+          return {
+            ok: true,
+            text: async () =>
+              JSON.stringify({
+                id: 'doc-1',
+                documentType: 'insurance_card',
+                fileName: 'insurance-card-front.jpg',
+                uploadedAt: new Date().toISOString(),
+              }),
+          };
+        }
+      );
     vi.stubGlobal('fetch', mockFetch);
   });
 
@@ -159,7 +208,9 @@ describe('Ticket 2 — uploadInsuranceCard FormData construction', () => {
   });
 
   it('uploads front side — filename prefixed with "insurance-card-front"', async () => {
-    const file = new File(['data'], 'my-card.jpg', { type: 'image/jpeg' });
+    const file = new File([new Uint8Array([255, 216, 255])], 'my-card.jpg', {
+      type: 'image/jpeg',
+    });
     await uploadInsuranceCard(file, 'front');
 
     expect(capturedFormData).toBeDefined();
@@ -168,7 +219,11 @@ describe('Ticket 2 — uploadInsuranceCard FormData construction', () => {
   });
 
   it('uploads back side — filename prefixed with "insurance-card-back"', async () => {
-    const file = new File(['data'], 'my-card.png', { type: 'image/png' });
+    const file = new File(
+      [new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])],
+      'my-card.png',
+      { type: 'image/png' }
+    );
     await uploadInsuranceCard(file, 'back');
 
     expect(capturedFormData).toBeDefined();
@@ -177,28 +232,38 @@ describe('Ticket 2 — uploadInsuranceCard FormData construction', () => {
   });
 
   it('sets documentType field to "insurance_card"', async () => {
-    const file = new File(['data'], 'front.jpg', { type: 'image/jpeg' });
+    const file = new File([new Uint8Array([255, 216, 255])], 'front.jpg', {
+      type: 'image/jpeg',
+    });
     await uploadInsuranceCard(file, 'front');
 
     expect(capturedFormData!.get('documentType')).toBe('insurance_card');
   });
 
   it('sets document_type (snake_case) field to "insurance_card"', async () => {
-    const file = new File(['data'], 'back.jpg', { type: 'image/jpeg' });
+    const file = new File([new Uint8Array([255, 216, 255])], 'back.jpg', {
+      type: 'image/jpeg',
+    });
     await uploadInsuranceCard(file, 'back');
 
     expect(capturedFormData!.get('document_type')).toBe('insurance_card');
   });
 
   it('sets category field to "billing"', async () => {
-    const file = new File(['data'], 'card.jpg', { type: 'image/jpeg' });
+    const file = new File([new Uint8Array([255, 216, 255])], 'card.jpg', {
+      type: 'image/jpeg',
+    });
     await uploadInsuranceCard(file, 'front');
 
     expect(capturedFormData!.get('category')).toBe('billing');
   });
 
   it('preserves file extension in renamed file', async () => {
-    const file = new File(['data'], 'card.png', { type: 'image/png' });
+    const file = new File(
+      [new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])],
+      'card.png',
+      { type: 'image/png' }
+    );
     await uploadInsuranceCard(file, 'front');
 
     const uploadedFile = capturedFormData!.get('file') as File;
@@ -206,7 +271,9 @@ describe('Ticket 2 — uploadInsuranceCard FormData construction', () => {
   });
 
   it('defaults to front side when no side argument given', async () => {
-    const file = new File(['data'], 'card.jpg', { type: 'image/jpeg' });
+    const file = new File([new Uint8Array([255, 216, 255])], 'card.jpg', {
+      type: 'image/jpeg',
+    });
     await uploadInsuranceCard(file);
 
     const uploadedFile = capturedFormData!.get('file') as File;
@@ -248,7 +315,9 @@ describe('Ticket 2 — compareClientDocumentsByUploadedAtDesc', () => {
       documentType: 'insurance_card',
       fileName: 'undated.jpg',
     };
-    const sorted = [withoutDate, withDate].sort(compareClientDocumentsByUploadedAtDesc);
+    const sorted = [withoutDate, withDate].sort(
+      compareClientDocumentsByUploadedAtDesc
+    );
     expect(sorted[0].id).toBe('1');
   });
 });
@@ -263,6 +332,8 @@ describe('Ticket 2 — formatClientDocumentErrorMessage', () => {
   });
 
   it('passes through unrelated messages', () => {
-    expect(formatClientDocumentErrorMessage('Network error')).toBe('Network error');
+    expect(formatClientDocumentErrorMessage('Network error')).toBe(
+      'Network error'
+    );
   });
 });

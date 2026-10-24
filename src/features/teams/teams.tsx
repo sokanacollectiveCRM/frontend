@@ -1,4 +1,8 @@
 import { formatAddress } from '@/common/utils/formatAddress';
+import {
+  DocumentPreview,
+  type DocumentPreviewSource,
+} from '@/common/components/DocumentPreview';
 import { formatPhone } from '@/features/doula-dashboard/phone';
 import CertificationsList from '@/features/doula-dashboard/components/CertificationsList';
 import type { Certification } from '@/api/doulas/doulaService';
@@ -152,6 +156,8 @@ export default function Teams() {
   const [documentsMember, setDocumentsMember] = useState<TeamMember | null>(
     null
   );
+  const [documentPreview, setDocumentPreview] =
+    useState<DocumentPreviewSource | null>(null);
   const [documentsItems, setDocumentsItems] = useState<
     DocumentCompletenessItem[]
   >([]);
@@ -384,6 +390,21 @@ export default function Teams() {
       toast.error(error instanceof Error ? error.message : 'Approval failed');
     } finally {
       setReviewBusy(false);
+    }
+  };
+
+  const handlePreviewDocument = async (
+    doulaId: string,
+    documentId: string,
+    fileName?: string
+  ) => {
+    try {
+      const url = await getDoulaDocumentUrl(doulaId, documentId);
+      setDocumentPreview({ url, fileName: fileName || 'Document' });
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to open document'
+      );
     }
   };
 
@@ -1353,6 +1374,10 @@ export default function Teams() {
         </DialogContent>
       </Dialog>
 
+      <DocumentPreview
+        source={documentPreview}
+        onClose={() => setDocumentPreview(null)}
+      />
       <Dialog open={documentsDialogOpen} onOpenChange={setDocumentsDialogOpen}>
         <DialogContent className='max-w-2xl'>
           <DialogHeader>
@@ -1550,6 +1575,21 @@ export default function Teams() {
                           }
                         >
                           Approve document
+                        </Button>
+                      )}
+                      {documentsMember?.id && item.document_id && (
+                        <Button
+                          size='sm'
+                          variant='outline'
+                          onClick={() =>
+                            void handlePreviewDocument(
+                              documentsMember.id,
+                              item.document_id!,
+                              item.file_name
+                            )
+                          }
+                        >
+                          View
                         </Button>
                       )}
                       {documentsMember?.id && item.document_id && (
