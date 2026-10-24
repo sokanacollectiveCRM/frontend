@@ -55,6 +55,9 @@ test('P-16 expiration persists and matches doula, admin detail and review displa
     }
     await page.goto('/doula-dashboard/profile');
     await page.getByLabel('Phone number', { exact: true }).fill('5555550100');
+    await page
+      .getByRole('button', { name: 'Certifications step', exact: true })
+      .click();
     const certs = page.getByRole('region', { name: 'Saved certifications' });
     await expect(
       certs.getByRole('button', { name: 'Add certification' })
@@ -100,6 +103,9 @@ test('P-16 expiration persists and matches doula, admin detail and review displa
     ).toBeVisible();
     await expect(certs.getByLabel('Certification name')).toHaveCount(0);
     await page.reload();
+    await page
+      .getByRole('button', { name: 'Certifications step', exact: true })
+      .click();
     await expect(
       certs.getByText('P-16 Fictional Birth Training', { exact: true })
     ).toHaveCount(1);
@@ -136,6 +142,9 @@ test('P-16 expiration persists and matches doula, admin detail and review displa
       .click();
     expect((await savedMore).status()).toBe(200);
     await page.reload();
+    await page
+      .getByRole('button', { name: 'Certifications step', exact: true })
+      .click();
     await expect(
       certs.getByText('No expiration', { exact: true })
     ).toBeVisible();

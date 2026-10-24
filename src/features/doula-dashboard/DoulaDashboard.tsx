@@ -1,5 +1,4 @@
 import { isValidPhone } from '@/features/doula-dashboard/phone';
-import { Header } from '@/common/layouts/Header';
 import { ProfileDropdown } from '@/common/components/user/ProfileDropdown';
 import { Button } from '@/common/components/ui/button';
 import { getDoulaProfile } from '@/api/doulas/doulaService';
@@ -67,7 +66,7 @@ export default function DoulaDashboard() {
 
   return (
     <div className='flex h-[calc(100dvh-3rem-env(safe-area-inset-top))] min-w-0 flex-col overflow-hidden lg:h-dvh'>
-      <Header className='shrink-0'>
+      <header className='shrink-0 border-b bg-background px-4 py-3 sm:px-6'>
         <div className='flex w-full items-center gap-4'>
           <div className='min-w-0'>
             <h1 className='text-lg font-semibold text-slate-900'>
@@ -81,11 +80,11 @@ export default function DoulaDashboard() {
             <ProfileDropdown />
           </div>
         </div>
-      </Header>
+      </header>
 
       <main
         aria-label='Doula dashboard content'
-        className='min-h-0 flex-1 overflow-y-auto px-4 pb-4 sm:px-6'
+        className='min-h-0 flex-1 overflow-y-auto px-4 pt-4 pb-4 sm:px-6 sm:pt-6'
       >
         {!isProfileComplete && (
           <div className='mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-4'>

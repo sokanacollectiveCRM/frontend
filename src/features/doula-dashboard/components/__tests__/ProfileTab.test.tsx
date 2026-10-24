@@ -75,10 +75,13 @@ beforeEach(() => {
   });
 });
 afterEach(cleanup);
-async function open() {
+async function open(step = 'About you') {
   render(<ProfileTab />);
   await waitFor(() =>
     expect(screen.getByLabelText('About me (bio)')).toHaveValue(profile.bio)
+  );
+  fireEvent.click(
+    screen.getByRole('button', { name: `${step} step`, exact: true })
   );
 }
 describe('doula profile layout', () => {
@@ -109,11 +112,14 @@ describe('doula profile layout', () => {
     fireEvent.submit(document.querySelector('form')!);
     expect(api.updateDoulaProfile).not.toHaveBeenCalled();
     expect(
-      screen.getByRole('button', { name: 'Mark profile complete' })
+      screen.getByRole('button', {
+        name: 'Mark profile complete',
+        hidden: true,
+      })
     ).toBeDisabled();
   });
   it('starts collapsed, opens only one blank entry and can cancel it', async () => {
-    await open();
+    await open('Certifications');
     expect(
       screen.queryByLabelText('Certification name')
     ).not.toBeInTheDocument();
@@ -132,7 +138,7 @@ describe('doula profile layout', () => {
     expect(add).toBeEnabled();
   });
   it('saves a completed certification even after opening another blank entry', async () => {
-    await open();
+    await open('Certifications');
     fireEvent.click(screen.getByRole('button', { name: 'Add certification' }));
     fireEvent.change(screen.getByLabelText('Certification name'), {
       target: { value: '  Birth doula  ' },
@@ -158,7 +164,7 @@ describe('doula profile layout', () => {
     );
   });
   it('saves with an untouched entry and rejects partially entered nameless entries', async () => {
-    await open();
+    await open('Certifications');
     fireEvent.click(screen.getByRole('button', { name: 'Add certification' }));
     fireEvent.change(screen.getByLabelText('Issuing organization'), {
       target: { value: 'Training organization' },
@@ -178,7 +184,7 @@ describe('doula profile layout', () => {
     );
   });
   it('shows saved certifications after saving and reopening the profile', async () => {
-    await open();
+    await open('Certifications');
     fireEvent.click(screen.getByRole('button', { name: 'Add certification' }));
     fireEvent.change(screen.getByLabelText('Certification name'), {
       target: { value: 'Birth doula' },
@@ -200,7 +206,7 @@ describe('doula profile layout', () => {
       saved().getByText('Example Training · Expires Mar 31, 2028')
     ).toBeInTheDocument();
     cleanup();
-    await open();
+    await open('Certifications');
     expect(saved().getByText('Birth doula')).toBeInTheDocument();
     expect(
       saved().getByText('Example Training · Expires Mar 31, 2028')
@@ -218,7 +224,7 @@ describe('doula profile layout', () => {
         },
       ],
     };
-    await open();
+    await open('Certifications');
     expect(screen.getAllByText('Birth doula')).toHaveLength(1);
     expect(
       screen.queryByLabelText('Certification name')
@@ -249,7 +255,7 @@ describe('doula profile layout', () => {
     expect(screen.queryByText('Birth doula')).not.toBeInTheDocument();
   });
   it('saves No expiration explicitly and disables its date field', async () => {
-    await open();
+    await open('Certifications');
     fireEvent.click(screen.getByRole('button', { name: 'Add certification' }));
     fireEvent.change(screen.getByLabelText('Certification name'), {
       target: { value: 'Fictional lifetime training' },
@@ -291,7 +297,7 @@ describe('doula profile layout', () => {
         },
       ],
     };
-    await open();
+    await open('Certifications');
     expect(
       screen.getByText('Example · Expiration not provided')
     ).toBeInTheDocument();
@@ -329,7 +335,7 @@ describe('doula profile layout', () => {
         },
       ],
     };
-    await open();
+    await open('Certifications');
     fireEvent.submit(document.querySelector('form')!);
     expect(api.updateDoulaProfile).not.toHaveBeenCalled();
   });
@@ -345,7 +351,7 @@ describe('doula profile layout', () => {
         },
       ],
     };
-    await open();
+    await open('Certifications');
     fireEvent.click(
       screen.getByRole('button', { name: 'Edit certification 1' })
     );
@@ -381,7 +387,7 @@ describe('doula profile layout', () => {
     );
   });
   it('adds, removes and persists structured certifications in the header area', async () => {
-    await open();
+    await open('Certifications');
     fireEvent.click(screen.getByRole('button', { name: 'Add certification' }));
     fireEvent.change(screen.getByLabelText('Certification name'), {
       target: { value: 'Birth doula' },
@@ -423,14 +429,20 @@ describe('doula profile layout', () => {
     );
   });
   it('submits only with a certificate and shows the persistent review badge', async () => {
-    await open();
+    await open('Review');
     await waitFor(() =>
       expect(
-        screen.getByRole('button', { name: 'Mark profile complete' })
+        screen.getByRole('button', {
+          name: 'Mark profile complete',
+          hidden: true,
+        })
       ).not.toBeDisabled()
     );
     fireEvent.click(
-      screen.getByRole('button', { name: 'Mark profile complete' })
+      screen.getByRole('button', {
+        name: 'Mark profile complete',
+        hidden: true,
+      })
     );
     await waitFor(() =>
       expect(api.submitDoulaProfile).toHaveBeenCalledTimes(1)
@@ -439,16 +451,19 @@ describe('doula profile layout', () => {
   });
   it('disables submission without the training certificate', async () => {
     vi.mocked(api.getDoulaDocuments).mockResolvedValue({ documents: [] });
-    await open();
+    await open('Review');
     expect(
-      screen.getByRole('button', { name: 'Mark profile complete' })
+      screen.getByRole('button', {
+        name: 'Mark profile complete',
+        hidden: true,
+      })
     ).toBeDisabled();
   });
 });
 
 it('refreshes document readiness without navigating away or losing edits', async () => {
   vi.mocked(api.getDoulaDocuments).mockResolvedValueOnce({ documents: [] });
-  await open();
+  await open('Review');
   const complete = await screen.findByRole('button', {
     name: 'Mark profile complete',
   });
@@ -459,7 +474,10 @@ it('refreshes document readiness without navigating away or losing edits', async
   fireEvent(window, new Event('doula-documents-changed'));
   await waitFor(() =>
     expect(
-      screen.getByRole('button', { name: 'Mark profile complete' })
+      screen.getByRole('button', {
+        name: 'Mark profile complete',
+        hidden: true,
+      })
     ).toBeEnabled()
   );
   expect(screen.getByLabelText('About me (bio)')).toHaveValue(
@@ -469,7 +487,10 @@ it('refreshes document readiness without navigating away or losing edits', async
   fireEvent(window, new Event('doula-documents-changed'));
   await waitFor(() =>
     expect(
-      screen.getByRole('button', { name: 'Mark profile complete' })
+      screen.getByRole('button', {
+        name: 'Mark profile complete',
+        hidden: true,
+      })
     ).toBeDisabled()
   );
 });
@@ -482,7 +503,7 @@ it('shows submission progress and ignores duplicate form submissions', async () 
         finish = resolve;
       })
   );
-  await open();
+  await open('Review');
   const complete = await screen.findByRole('button', {
     name: 'Mark profile complete',
   });
@@ -551,7 +572,116 @@ describe('P-15 required private phone', () => {
       })
     );
     expect(
-      screen.getByRole('button', { name: 'Mark profile complete' })
+      screen.getByRole('button', {
+        name: 'Mark profile complete',
+        hidden: true,
+      })
     ).toBeDisabled();
+  });
+});
+
+describe('profile slider steps', () => {
+  it('shows one step at a time and keeps edits when moving back and forward', async () => {
+    await open();
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '1'
+    );
+    expect(screen.getByLabelText('Phone number')).toBeVisible();
+    expect(screen.getByLabelText('Address')).not.toBeVisible();
+    fireEvent.change(screen.getByLabelText('About me (bio)'), {
+      target: { value: 'Unsaved fictional bio' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Next', exact: true }));
+    expect(screen.getByLabelText('Address')).toBeVisible();
+    expect(screen.getByLabelText('Phone number')).not.toBeVisible();
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '2'
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Back', exact: true }));
+    expect(screen.getByLabelText('About me (bio)')).toHaveValue(
+      'Unsaved fictional bio'
+    );
+    expect(api.updateDoulaProfile).not.toHaveBeenCalled();
+  });
+  it('marks every missing required field red immediately and clears the error as it is filled', async () => {
+    profile = {
+      ...initial,
+      firstname: '',
+      lastname: '',
+      bio: '',
+      phone_number: null,
+      address: '',
+      city: '',
+      state: '',
+      zip_code: '',
+      country: '',
+    };
+    await open();
+    for (const label of [
+      'First Name',
+      'Last Name',
+      'Phone number',
+      'About me (bio)',
+      'Address',
+      'City',
+      'State',
+      'Zip Code',
+      'Country',
+    ]) {
+      expect(screen.getByLabelText(label)).toHaveAttribute(
+        'aria-invalid',
+        'true'
+      );
+      expect(screen.getByLabelText(label)).toHaveClass('border-red-600');
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Next', exact: true }));
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '1'
+    );
+    fireEvent.change(screen.getByLabelText('First Name'), {
+      target: { value: 'P15' },
+    });
+    expect(screen.getByLabelText('First Name')).toHaveAttribute(
+      'aria-invalid',
+      'false'
+    );
+    expect(screen.getByLabelText('First Name')).not.toHaveClass(
+      'border-red-600'
+    );
+    expect(
+      screen.queryByText('First Name is required')
+    ).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Address step', exact: true })
+    );
+    expect(screen.getByLabelText('Address')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Next', exact: true }));
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '2'
+    );
+  });
+  it('retains an unsaved certification and expiration date when switching slides', async () => {
+    await open('Certifications');
+    fireEvent.click(screen.getByRole('button', { name: 'Add certification' }));
+    fireEvent.change(screen.getByLabelText('Certification name'), {
+      target: { value: 'Fictional training' },
+    });
+    fireEvent.change(screen.getByLabelText('Expiration date'), {
+      target: { value: '2030-03-31' },
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'About you step', exact: true })
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Certifications step', exact: true })
+    );
+    expect(screen.getByLabelText('Certification name')).toHaveValue(
+      'Fictional training'
+    );
+    expect(screen.getByLabelText('Expiration date')).toHaveValue('2030-03-31');
   });
 });

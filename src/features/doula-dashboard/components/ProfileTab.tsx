@@ -55,6 +55,14 @@ interface ProfileTabProps {
 }
 
 let cachedProfile: DoulaProfile | null = null;
+const PROFILE_STEPS = [
+  'About you',
+  'Address',
+  'Certifications',
+  'Scheduling',
+  'Demographics',
+  'Review',
+] as const;
 
 const REQUIRED_TEXT_FIELDS = [
   'firstname',
@@ -158,6 +166,8 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
   const [isLoading, setIsLoading] = useState(!cachedProfile);
   const [isSaving, setIsSaving] = useState(false);
   const [phoneError, setPhoneError] = useState(false);
+  const [activeStep, setActiveStep] = useState(0);
+  const [stepDirection, setStepDirection] = useState(1);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const savingRef = useRef(false);
   const [checkingDocuments, setCheckingDocuments] = useState(true);
@@ -400,6 +410,7 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
     }
 
     if (!isValidPhone(nextFormData.phone_number)) {
+      setActiveStep(0);
       setPhoneError(true);
       toast.error(PHONE_ERROR);
       onProfileStatusChange?.({
@@ -411,6 +422,13 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
     nextFormData.phone_number = nextFormData.phone_number.replace(/-/g, '');
     const missingFields = getMissingRequiredFields(nextFormData);
     if (missingFields.length > 0) {
+      setActiveStep(
+        ['First Name', 'Last Name', 'Bio'].some((field) =>
+          missingFields.includes(field)
+        )
+          ? 0
+          : 1
+      );
       toast.error(`Complete all required fields: ${missingFields.join(', ')}`);
       onProfileStatusChange?.({ isComplete: false, missingFields });
       return;
@@ -440,7 +458,7 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
         }
       }
 
-      const updated = await updateDoulaProfile(profilePayload);
+      await updateDoulaProfile(profilePayload);
 
       const availabilitySnapshot = await getDoulaAvailability();
       const unavailableRecords = availabilitySnapshot.records.filter(
@@ -493,6 +511,41 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
     }
   };
 
+  const isMissing = (field: RequiredTextField) =>
+    !String(formData[field] ?? '').trim();
+  const requiredStyle = (field: RequiredTextField) =>
+    isMissing(field) ? 'border-red-600 focus-visible:ring-red-600' : '';
+  const changeStep = (next: number) => {
+    setStepDirection(next >= activeStep ? 1 : -1);
+    setActiveStep(next);
+    document
+      .querySelector('main[aria-label="Doula dashboard content"]')
+      ?.scrollTo?.({ top: 0 });
+  };
+  const nextStep = () => {
+    const fields: RequiredTextField[] =
+      activeStep === 0
+        ? ['firstname', 'lastname', 'bio']
+        : activeStep === 1
+          ? ['address', 'city', 'state', 'zip_code', 'country']
+          : [];
+    if (activeStep === 0 && !isValidPhone(formData.phone_number)) {
+      setPhoneError(true);
+      toast.error(PHONE_ERROR);
+      document.getElementById('phone_number')?.focus();
+      return;
+    }
+    const missing = fields.filter(isMissing);
+    if (missing.length) {
+      toast.error(
+        `Complete all required fields: ${missing.map((field) => FIELD_LABELS[field]).join(', ')}`
+      );
+      document.getElementById(missing[0])?.focus();
+      return;
+    }
+    changeStep(Math.min(activeStep + 1, PROFILE_STEPS.length - 1));
+  };
+
   if (isLoading) {
     return <LoadingOverlay isLoading={true} />;
   }
@@ -509,575 +562,842 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
   }
 
   return (
-    <div className='space-y-6'>
-      <form
-        id='doula-profile-form'
-        onSubmit={handleSubmit}
-        className='space-y-4'
-      >
-        <Card>
-          <CardHeader className='pb-3'>
-            <CardTitle>Complete your profile</CardTitle>
-          </CardHeader>
-          <CardContent className='space-y-3'>
-            {profile.profile_review_status === 'changes_requested' && (
-              <div
-                role='alert'
-                className='rounded-md border border-amber-300 bg-amber-50 p-4 space-y-2'
+    <form
+      id='doula-profile-form'
+      noValidate
+      onSubmit={handleSubmit}
+      className='mx-auto max-w-5xl space-y-4'
+    >
+      <div className='rounded-xl border bg-card p-4 sm:p-5 space-y-4'>
+        <div className='flex flex-wrap items-center justify-between gap-2'>
+          <div className='min-w-0'>
+            <h2 className='text-lg font-semibold'>Your doula profile</h2>
+            <p className='break-words text-sm text-muted-foreground'>
+              {profile.firstname} {profile.lastname} · {profile.email}
+            </p>
+          </div>
+          <span className='text-sm font-medium text-muted-foreground'>
+            Step {activeStep + 1} of {PROFILE_STEPS.length}
+          </span>
+        </div>
+        {profile.profile_submitted_at &&
+          profile.profile_review_status !== 'changes_requested' && (
+            <Badge className='w-fit'>Submitted for review</Badge>
+          )}
+        <ol
+          aria-label='Profile steps'
+          className='grid grid-cols-6 gap-1 sm:gap-2'
+        >
+          {PROFILE_STEPS.map((label, index) => (
+            <li key={label}>
+              <button
+                type='button'
+                aria-label={`${label} step`}
+                aria-current={activeStep === index ? 'step' : undefined}
+                aria-controls={`profile-panel-${index}`}
+                disabled={isSaving}
+                onClick={() => changeStep(index)}
+                className={`flex w-full flex-col items-center gap-1 rounded-lg px-1 py-2 text-xs sm:text-sm ${activeStep === index ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-accent'}`}
               >
-                <h3 className='font-semibold'>Changes requested</h3>
-                <p className='whitespace-pre-wrap'>
-                  {profile.profile_review_reason}
-                </p>
-                <p>
-                  Correct the items above, replace or remove any rejected
-                  documents in Documents, then select Resubmit for review. Your
-                  profile approval remains pending. Your dashboard tools remain
-                  available.
-                </p>
+                <span className='flex h-6 w-6 items-center justify-center rounded-full border border-current text-xs font-semibold'>
+                  {index + 1}
+                </span>
+                <span className='hidden sm:block'>{label}</span>
+              </button>
+            </li>
+          ))}
+        </ol>
+        <div
+          role='progressbar'
+          aria-label='Profile step progress'
+          aria-valuemin={1}
+          aria-valuemax={PROFILE_STEPS.length}
+          aria-valuenow={activeStep + 1}
+          className='h-1.5 overflow-hidden rounded-full bg-muted'
+        >
+          <div
+            className='h-full bg-primary transition-[width] duration-200 motion-reduce:transition-none'
+            style={{
+              width: `${((activeStep + 1) / PROFILE_STEPS.length) * 100}%`,
+            }}
+          />
+        </div>
+      </div>
+      <Card className='gap-4 py-4 sm:py-5'>
+        <CardHeader>
+          <CardTitle id='profile-step-heading' role='heading' aria-level={3}>
+            {PROFILE_STEPS[activeStep]}
+          </CardTitle>
+          <p className='text-sm text-muted-foreground'>
+            {activeStep < 2
+              ? 'Required fields are marked in red until completed.'
+              : activeStep === 5
+                ? 'Review your details, save your changes, and submit when you are ready.'
+                : 'Optional. Your edits stay in place as you move between steps.'}
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div
+            id='profile-panel-0'
+            hidden={activeStep !== 0}
+            className={
+              activeStep === 0
+                ? `animate-in fade-in duration-200 motion-reduce:animate-none ${stepDirection > 0 ? 'slide-in-from-right-2' : 'slide-in-from-left-2'}`
+                : ''
+            }
+          >
+            <section className='space-y-4' aria-label='Basic info'>
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                <div className='space-y-2'>
+                  <Label
+                    htmlFor='firstname'
+                    className={isMissing('firstname') ? 'text-red-600' : ''}
+                  >
+                    First Name
+                  </Label>
+                  <Input
+                    id='firstname'
+                    aria-invalid={isMissing('firstname')}
+                    aria-describedby={
+                      isMissing('firstname') ? 'firstname-required' : undefined
+                    }
+                    className={requiredStyle('firstname')}
+                    name='firstname'
+                    value={formData.firstname || ''}
+                    onChange={handleInputChange}
+                    required
+                  />
+                  {isMissing('firstname') && (
+                    <p id='firstname-required' className='text-sm text-red-600'>
+                      {FIELD_LABELS.firstname} is required
+                    </p>
+                  )}
+                </div>
+                <div className='space-y-2'>
+                  <Label
+                    htmlFor='lastname'
+                    className={isMissing('lastname') ? 'text-red-600' : ''}
+                  >
+                    Last Name
+                  </Label>
+                  <Input
+                    id='lastname'
+                    aria-invalid={isMissing('lastname')}
+                    aria-describedby={
+                      isMissing('lastname') ? 'lastname-required' : undefined
+                    }
+                    className={requiredStyle('lastname')}
+                    name='lastname'
+                    value={formData.lastname || ''}
+                    onChange={handleInputChange}
+                    required
+                  />
+                  {isMissing('lastname') && (
+                    <p id='lastname-required' className='text-sm text-red-600'>
+                      {FIELD_LABELS.lastname} is required
+                    </p>
+                  )}
+                </div>
               </div>
-            )}
 
-            <details>
-              <summary className='cursor-pointer text-sm font-medium'>
-                Profile setup instructions
-              </summary>
-              <ol className='mt-3 list-decimal pl-5 space-y-2 text-sm'>
-                <li>
-                  Enter your first and last name, phone number, full address
-                  (including city, state, ZIP code and country), and bio below.
-                </li>
-                <li>
-                  Open the Documents tab and upload your Doula training
-                  certificate. Liability insurance and Illinois Medicaid
-                  documents are optional for general approval.
-                </li>
-                <li>
-                  Return here and select Mark profile complete. This saves your
-                  changes and emails the Sokana team for review.
-                </li>
-                <li>
-                  Your account is active. You can log hours, record birth
-                  outcomes, and use your assigned-work tools while your profile
-                  and documents are pending review.
-                </li>
-              </ol>
-            </details>
-            {(!profile.profile_submitted_at ||
-              profile.profile_review_status === 'changes_requested') && (
-              <p className='text-sm' role='status'>
-                {getMissingRequiredFields(formData).length > 0
-                  ? `Still needed: ${getMissingRequiredFields(formData)
-                      .map((field) => field.replace(/_/g, ' '))
-                      .join(', ')}.`
-                  : 'Required profile fields are complete.'}{' '}
-                {hasTrainingCertificate
-                  ? 'Training certificate uploaded.'
-                  : 'Training certificate still needed in Documents.'}
-              </p>
-            )}
-            {profile.profile_submitted_at &&
-            profile.profile_review_status !== 'changes_requested' ? (
-              <Badge>
-                {profile.profile_review_status === 'approved'
-                  ? 'Profile approved'
-                  : 'Submitted — waiting for admin review'}
-              </Badge>
-            ) : (
-              <>
-                <Button
-                  type='submit'
-                  name='action'
-                  value='submit-profile'
-                  aria-busy={isSaving}
-                  disabled={
-                    isSaving ||
-                    !(
-                      !profile.profile_submitted_at ||
-                      profile.profile_review_status === 'changes_requested'
-                    ) ||
-                    checkingDocuments ||
-                    !hasTrainingCertificate ||
-                    getMissingRequiredFields(formData).length > 0
+              <div className='space-y-2'>
+                <Label
+                  htmlFor='phone_number'
+                  className={
+                    !isValidPhone(formData.phone_number) ? 'text-red-600' : ''
                   }
                 >
-                  {isSaving && (
-                    <Loader2
-                      className='mr-2 h-4 w-4 animate-spin'
-                      aria-hidden='true'
-                    />
-                  )}
-                  {isSaving
-                    ? isSubmittingReview
-                      ? 'Submitting for review...'
-                      : 'Saving...'
-                    : checkingDocuments
-                      ? 'Checking documents...'
-                      : profile.profile_review_status === 'changes_requested'
-                        ? 'Resubmit for review'
-                        : 'Mark profile complete'}
-                </Button>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className='flex items-center gap-4'>
-              <ProfileImageInput
-                id='profile-picture-upload'
-                accept='image/jpeg,image/jpg,image/png,image/webp'
-                showAvatar
-                currentImageUrl={profile.profile_picture || undefined}
-                fullName={`${profile.firstname} ${profile.lastname}`}
-                isUploading={isUploadingPicture}
-                onFileChange={handleProfilePictureChange}
-              />
-              <div>
-                <CardTitle className='text-2xl'>
-                  {profile.firstname} {profile.lastname}
-                </CardTitle>
-                <p className='text-sm text-gray-600 mt-1'>{profile.email}</p>
-                <p className='text-xs text-gray-500 mt-1'>
-                  Account Status:{' '}
-                  <span className='font-medium'>{profile.account_status}</span>
-                </p>
-              </div>
-            </div>
-            <CertificationsFields
-              savedValue={profile.certifications}
-              value={formData.certifications ?? []}
-              onChange={(certifications) =>
-                setFormData((prev) => ({ ...prev, certifications }))
-              }
-            />
-            {profile.profile_submitted_at &&
-              profile.profile_review_status !== 'changes_requested' && (
-                <Badge className='w-fit'>Submitted for review</Badge>
-              )}
-          </CardHeader>
-          <CardContent>
-            <div className='space-y-4'>
-              <div className='grid grid-cols-1 xl:grid-cols-2 gap-6'>
-                <section className='space-y-4' aria-label='Basic info'>
-                  <h3 className='font-semibold'>Basic info</h3>
-                  <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                    <div className='space-y-2'>
-                      <Label htmlFor='firstname'>First Name</Label>
-                      <Input
-                        id='firstname'
-                        name='firstname'
-                        value={formData.firstname || ''}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-                    <div className='space-y-2'>
-                      <Label htmlFor='lastname'>Last Name</Label>
-                      <Input
-                        id='lastname'
-                        name='lastname'
-                        value={formData.lastname || ''}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className='space-y-2'>
-                    <Label htmlFor='phone_number'>Phone number</Label>
-                    <Input
-                      id='phone_number'
-                      name='phone_number'
-                      type='tel'
-                      inputMode='numeric'
-                      autoComplete='tel-national'
-                      placeholder='555-555-5555'
-                      required
-                      pattern='[0-9]{3}-[0-9]{3}-[0-9]{4}'
-                      value={formData.phone_number || ''}
-                      aria-invalid={phoneError}
-                      aria-describedby={
-                        phoneError ? 'phone-error' : 'phone-help'
-                      }
-                      onChange={(e) => {
-                        e.target.setCustomValidity('');
-                        const value = formatPhone(e.target.value);
-                        setFormData((prev) => ({
-                          ...prev,
-                          phone_number: value,
-                        }));
-                        if (phoneError) setPhoneError(!isValidPhone(value));
-                      }}
-                      onBlur={() =>
-                        setPhoneError(!isValidPhone(formData.phone_number))
-                      }
-                      onInvalid={(e) => {
-                        e.currentTarget.setCustomValidity(PHONE_ERROR);
-                        setPhoneError(true);
-                      }}
-                    />
-                    {phoneError && (
-                      <p
-                        id='phone-error'
-                        role='alert'
-                        className='text-sm text-red-600'
-                      >
-                        {PHONE_ERROR}
-                      </p>
-                    )}
-                    <p
-                      id='phone-help'
-                      className='text-sm text-muted-foreground'
-                    >
-                      Visible to you and Sokana admins only.
-                    </p>
-                  </div>
-
-                  <div className='space-y-2'>
-                    <h3 className='font-semibold'>About me</h3>
-                    <Label htmlFor='bio'>About me (bio)</Label>
-                    <p className='text-sm text-muted-foreground'>
-                      Write in first person, for example &quot;I’m a birth and
-                      postpartum doula who…&quot;. Families will see this.
-                    </p>
-                    <Textarea
-                      id='bio'
-                      name='bio'
-                      value={formData.bio || ''}
-                      onChange={handleInputChange}
-                      rows={4}
-                      placeholder='Tell us about yourself...'
-                      required
-                    />
-                  </div>
-                </section>
-                <section className='space-y-4' aria-label='Address'>
-                  <h3 className='font-semibold'>Address</h3>
-                  <div className='space-y-2'>
-                    <Label htmlFor='address'>Address</Label>
-                    <Input
-                      id='address'
-                      name='address'
-                      value={formData.address || ''}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-
-                  <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                    <div className='space-y-2'>
-                      <Label htmlFor='city'>City</Label>
-                      <Input
-                        id='city'
-                        name='city'
-                        value={formData.city || ''}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-                    <div className='space-y-2'>
-                      <Label htmlFor='state'>State</Label>
-                      <Input
-                        id='state'
-                        name='state'
-                        value={formData.state || ''}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-                    <div className='space-y-2'>
-                      <Label htmlFor='zip_code'>Zip Code</Label>
-                      <Input
-                        id='zip_code'
-                        name='zip_code'
-                        value={formData.zip_code || ''}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className='space-y-2'>
-                    <Label htmlFor='country'>Country</Label>
-                    <Input
-                      id='country'
-                      name='country'
-                      value={formData.country || ''}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                </section>
-              </div>
-              <div className='grid grid-cols-1 xl:grid-cols-2 gap-4'>
-                <details className='self-start rounded-lg border border-border bg-muted/30 p-4'>
-                  <summary className='cursor-pointer font-semibold'>
-                    Scheduling
-                    <span className='ml-2 text-xs font-normal text-muted-foreground'>
-                      Link and availability
-                    </span>
-                  </summary>
-                  <div className='mt-4 space-y-4'>
-                    <div className='space-y-2'>
-                      <Label htmlFor='scheduling_url'>Scheduling Link</Label>
-                      <Input
-                        id='scheduling_url'
-                        name='scheduling_url'
-                        type='url'
-                        value={formData.scheduling_url || ''}
-                        onChange={handleInputChange}
-                        placeholder='https://calendly.com/your-link'
-                      />
-                    </div>
-
-                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                      <div className='space-y-2'>
-                        <Label htmlFor='availability_status'>
-                          Availability Status
-                        </Label>
-                        <select
-                          id='availability_status'
-                          name='availability_status'
-                          value={formData.availability_status || 'available'}
-                          onChange={handleInputChange}
-                          className='flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
-                        >
-                          <option value='available'>Available</option>
-                          <option value='unavailable'>Unavailable</option>
-                        </select>
-                      </div>
-                      <div className='space-y-2'>
-                        <Label htmlFor='availability_note'>
-                          Availability Note
-                        </Label>
-                        <Input
-                          id='availability_note'
-                          name='availability_note'
-                          value={formData.availability_note || ''}
-                          onChange={handleInputChange}
-                          placeholder='Optional note for admins and families'
-                        />
-                      </div>
-                    </div>
-
-                    {(formData.availability_status || 'available') ===
-                      'unavailable' && (
-                      <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                        <div className='space-y-2'>
-                          <Label htmlFor='unavailable_from'>
-                            Unavailable From
-                          </Label>
-                          <Input
-                            id='unavailable_from'
-                            name='unavailable_from'
-                            type='date'
-                            value={
-                              formData.unavailable_from
-                                ? String(formData.unavailable_from).slice(0, 10)
-                                : ''
-                            }
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                        <div className='space-y-2'>
-                          <Label htmlFor='unavailable_until'>
-                            Unavailable Until
-                          </Label>
-                          <Input
-                            id='unavailable_until'
-                            name='unavailable_until'
-                            type='date'
-                            value={
-                              formData.unavailable_until
-                                ? String(formData.unavailable_until).slice(
-                                    0,
-                                    10
-                                  )
-                                : ''
-                            }
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </details>
-
-                <details className='self-start rounded-lg border border-border bg-muted/30 p-4'>
-                  <summary className='cursor-pointer font-semibold'>
-                    Demographics
-                    <span className='ml-2 text-xs font-normal text-muted-foreground'>
-                      Optional
-                    </span>
-                  </summary>
-                  <div className='mt-4 space-y-4'>
-                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                      <div className='space-y-2'>
-                        <Label htmlFor='gender'>Gender</Label>
-                        <Input
-                          id='gender'
-                          name='gender'
-                          value={formData.gender || ''}
-                          onChange={handleInputChange}
-                          placeholder='e.g. Woman, Man, Non-binary'
-                        />
-                      </div>
-                      <div className='space-y-2'>
-                        <Label htmlFor='pronouns'>Pronouns</Label>
-                        <Input
-                          id='pronouns'
-                          name='pronouns'
-                          value={formData.pronouns || ''}
-                          onChange={handleInputChange}
-                          placeholder='e.g. she/her, he/him, they/them'
-                        />
-                      </div>
-                    </div>
-
-                    <div className='space-y-3'>
-                      <Label className='text-base'>
-                        Languages spoken (other than English)
-                      </Label>
-                      <p className='text-xs text-muted-foreground'>
-                        Optionally add languages. Press Enter or click Add after
-                        typing.
-                      </p>
-                      <div className='flex flex-col gap-2 sm:flex-row sm:items-center'>
-                        <Input
-                          value={languageDraft}
-                          onChange={(e) => setLanguageDraft(e.target.value)}
-                          placeholder='Type a language (e.g. Spanish)'
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              addLanguage(languageDraft);
-                              setLanguageDraft('');
-                            }
-                          }}
-                        />
-                        <Button
-                          type='button'
-                          variant='secondary'
-                          onClick={() => {
-                            addLanguage(languageDraft);
-                            setLanguageDraft('');
-                          }}
-                        >
-                          Add
-                        </Button>
-                      </div>
-                      <div className='flex flex-wrap gap-2'>
-                        {(formData.languages_other_than_english ?? []).map(
-                          (lang) => (
-                            <Badge
-                              key={lang}
-                              variant='secondary'
-                              className='flex items-center gap-1'
-                            >
-                              <span>{lang}</span>
-                              <button
-                                type='button'
-                                className='ml-1 rounded-sm hover:bg-background/40'
-                                onClick={() => removeLanguage(lang)}
-                                aria-label={`Remove ${lang}`}
-                              >
-                                <X className='h-3 w-3' />
-                              </button>
-                            </Badge>
-                          )
-                        )}
-                      </div>
-                    </div>
-
-                    <div className='space-y-3'>
-                      <Label className='text-base'>
-                        {RACE_ETHNICITY_FIELD_LABEL}
-                      </Label>
-                      <p className='text-xs text-muted-foreground'>
-                        Select all that apply.
-                      </p>
-                      <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
-                        {DOULA_RACE_ETHNICITY_OPTIONS.map((opt) => {
-                          const checked = (
-                            formData.race_ethnicity ?? []
-                          ).includes(opt.value);
-                          return (
-                            <label
-                              key={opt.value}
-                              className='flex items-start gap-2 rounded-md border border-transparent px-1 py-1 hover:bg-background/80 cursor-pointer'
-                            >
-                              <Checkbox
-                                checked={checked}
-                                onCheckedChange={() => {
-                                  setFormData((prev) => ({
-                                    ...prev,
-                                    race_ethnicity:
-                                      toggleRaceEthnicitySelection(
-                                        prev.race_ethnicity ?? [],
-                                        opt.value
-                                      ),
-                                  }));
-                                }}
-                                className='mt-0.5'
-                              />
-                              <span className='text-sm leading-tight'>
-                                {opt.label}
-                              </span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                      {(formData.race_ethnicity ?? []).includes(
-                        ANOTHER_RACE_ETHNICITY
-                      ) && (
-                        <div className='space-y-2 pt-1'>
-                          <Label htmlFor='race_ethnicity_other'>
-                            Please specify
-                          </Label>
-                          <Input
-                            id='race_ethnicity_other'
-                            name='race_ethnicity_other'
-                            value={formData.race_ethnicity_other || ''}
-                            onChange={handleInputChange}
-                            placeholder='Your race or ethnicity'
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                    <div className='space-y-2'>
-                      <Label htmlFor='other_demographic_details'>
-                        Other demographic details
-                      </Label>
-                      <Textarea
-                        id='other_demographic_details'
-                        name='other_demographic_details'
-                        value={formData.other_demographic_details || ''}
-                        onChange={handleInputChange}
-                        rows={3}
-                        placeholder='Anything else you would like to share (optional)'
-                      />
-                    </div>
-                  </div>
-                </details>
-              </div>
-              {(!profile.profile_submitted_at ||
-                profile.profile_review_status === 'changes_requested') &&
-                !hasTrainingCertificate && (
-                  <p className='text-sm text-muted-foreground'>
-                    Upload your Doula training certificate in Documents before
-                    marking your profile complete.
+                  Phone number
+                </Label>
+                <Input
+                  id='phone_number'
+                  name='phone_number'
+                  type='tel'
+                  inputMode='numeric'
+                  autoComplete='tel-national'
+                  placeholder='555-555-5555'
+                  required
+                  pattern='[0-9]{3}-[0-9]{3}-[0-9]{4}'
+                  value={formData.phone_number || ''}
+                  aria-invalid={!isValidPhone(formData.phone_number)}
+                  className={
+                    !isValidPhone(formData.phone_number)
+                      ? 'border-red-600 focus-visible:ring-red-600'
+                      : ''
+                  }
+                  aria-describedby={
+                    phoneError || !isValidPhone(formData.phone_number)
+                      ? 'phone-error'
+                      : 'phone-help'
+                  }
+                  onChange={(e) => {
+                    e.target.setCustomValidity('');
+                    const value = formatPhone(e.target.value);
+                    setFormData((prev) => ({
+                      ...prev,
+                      phone_number: value,
+                    }));
+                    if (phoneError) setPhoneError(!isValidPhone(value));
+                  }}
+                  onBlur={() =>
+                    setPhoneError(!isValidPhone(formData.phone_number))
+                  }
+                  onInvalid={(e) => {
+                    e.currentTarget.setCustomValidity(PHONE_ERROR);
+                    setPhoneError(true);
+                  }}
+                />
+                {(phoneError || !isValidPhone(formData.phone_number)) && (
+                  <p
+                    id='phone-error'
+                    role='alert'
+                    className='text-sm text-red-600'
+                  >
+                    {PHONE_ERROR}
                   </p>
                 )}
+                <p id='phone-help' className='text-sm text-muted-foreground'>
+                  Visible to you and Sokana admins only.
+                </p>
+              </div>
+
+              <div className='space-y-2'>
+                <h3 className='font-semibold'>About me</h3>
+                <Label
+                  htmlFor='bio'
+                  className={isMissing('bio') ? 'text-red-600' : ''}
+                >
+                  About me (bio)
+                </Label>
+                <p className='text-sm text-muted-foreground'>
+                  Write in first person, for example &quot;I’m a birth and
+                  postpartum doula who…&quot;. Families will see this.
+                </p>
+                <Textarea
+                  id='bio'
+                  aria-invalid={isMissing('bio')}
+                  aria-describedby={
+                    isMissing('bio') ? 'bio-required' : undefined
+                  }
+                  className={requiredStyle('bio')}
+                  name='bio'
+                  value={formData.bio || ''}
+                  onChange={handleInputChange}
+                  rows={4}
+                  placeholder='Tell us about yourself...'
+                  required
+                />
+                {isMissing('bio') && (
+                  <p id='bio-required' className='text-sm text-red-600'>
+                    {FIELD_LABELS.bio} is required
+                  </p>
+                )}
+              </div>
+            </section>
+          </div>
+          <div
+            id='profile-panel-1'
+            hidden={activeStep !== 1}
+            className={
+              activeStep === 1
+                ? `animate-in fade-in duration-200 motion-reduce:animate-none ${stepDirection > 0 ? 'slide-in-from-right-2' : 'slide-in-from-left-2'}`
+                : ''
+            }
+          >
+            <section className='space-y-4' aria-label='Address fields'>
+              <div className='space-y-2'>
+                <Label
+                  htmlFor='address'
+                  className={isMissing('address') ? 'text-red-600' : ''}
+                >
+                  Address
+                </Label>
+                <Input
+                  id='address'
+                  aria-invalid={isMissing('address')}
+                  aria-describedby={
+                    isMissing('address') ? 'address-required' : undefined
+                  }
+                  className={requiredStyle('address')}
+                  name='address'
+                  value={formData.address || ''}
+                  onChange={handleInputChange}
+                  required
+                />
+                {isMissing('address') && (
+                  <p id='address-required' className='text-sm text-red-600'>
+                    {FIELD_LABELS.address} is required
+                  </p>
+                )}
+              </div>
+
+              <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                <div className='space-y-2'>
+                  <Label
+                    htmlFor='city'
+                    className={isMissing('city') ? 'text-red-600' : ''}
+                  >
+                    City
+                  </Label>
+                  <Input
+                    id='city'
+                    aria-invalid={isMissing('city')}
+                    aria-describedby={
+                      isMissing('city') ? 'city-required' : undefined
+                    }
+                    className={requiredStyle('city')}
+                    name='city'
+                    value={formData.city || ''}
+                    onChange={handleInputChange}
+                    required
+                  />
+                  {isMissing('city') && (
+                    <p id='city-required' className='text-sm text-red-600'>
+                      {FIELD_LABELS.city} is required
+                    </p>
+                  )}
+                </div>
+                <div className='space-y-2'>
+                  <Label
+                    htmlFor='state'
+                    className={isMissing('state') ? 'text-red-600' : ''}
+                  >
+                    State
+                  </Label>
+                  <Input
+                    id='state'
+                    aria-invalid={isMissing('state')}
+                    aria-describedby={
+                      isMissing('state') ? 'state-required' : undefined
+                    }
+                    className={requiredStyle('state')}
+                    name='state'
+                    value={formData.state || ''}
+                    onChange={handleInputChange}
+                    required
+                  />
+                  {isMissing('state') && (
+                    <p id='state-required' className='text-sm text-red-600'>
+                      {FIELD_LABELS.state} is required
+                    </p>
+                  )}
+                </div>
+                <div className='space-y-2'>
+                  <Label
+                    htmlFor='zip_code'
+                    className={isMissing('zip_code') ? 'text-red-600' : ''}
+                  >
+                    Zip Code
+                  </Label>
+                  <Input
+                    id='zip_code'
+                    aria-invalid={isMissing('zip_code')}
+                    aria-describedby={
+                      isMissing('zip_code') ? 'zip_code-required' : undefined
+                    }
+                    className={requiredStyle('zip_code')}
+                    name='zip_code'
+                    value={formData.zip_code || ''}
+                    onChange={handleInputChange}
+                    required
+                  />
+                  {isMissing('zip_code') && (
+                    <p id='zip_code-required' className='text-sm text-red-600'>
+                      {FIELD_LABELS.zip_code} is required
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className='space-y-2'>
+                <Label
+                  htmlFor='country'
+                  className={isMissing('country') ? 'text-red-600' : ''}
+                >
+                  Country
+                </Label>
+                <Input
+                  id='country'
+                  aria-invalid={isMissing('country')}
+                  aria-describedby={
+                    isMissing('country') ? 'country-required' : undefined
+                  }
+                  className={requiredStyle('country')}
+                  name='country'
+                  value={formData.country || ''}
+                  onChange={handleInputChange}
+                  required
+                />
+                {isMissing('country') && (
+                  <p id='country-required' className='text-sm text-red-600'>
+                    {FIELD_LABELS.country} is required
+                  </p>
+                )}
+              </div>
+            </section>
+          </div>
+          <div
+            id='profile-panel-2'
+            hidden={activeStep !== 2}
+            className={
+              activeStep === 2
+                ? `animate-in fade-in duration-200 motion-reduce:animate-none ${stepDirection > 0 ? 'slide-in-from-right-2' : 'slide-in-from-left-2'}`
+                : ''
+            }
+          >
+            <div className='space-y-5'>
+              <div className='space-y-3'>
+                <h3 className='font-semibold'>Profile photo</h3>
+                <ProfileImageInput
+                  id='profile-picture-upload'
+                  accept='image/jpeg,image/jpg,image/png,image/webp'
+                  showAvatar
+                  currentImageUrl={profile.profile_picture || undefined}
+                  fullName={`${profile.firstname} ${profile.lastname}`}
+                  isUploading={isUploadingPicture}
+                  onFileChange={handleProfilePictureChange}
+                />
+              </div>
+              <CertificationsFields
+                savedValue={profile.certifications}
+                value={formData.certifications ?? []}
+                onChange={(certifications) =>
+                  setFormData((prev) => ({ ...prev, certifications }))
+                }
+              />
             </div>
-          </CardContent>
-        </Card>
-        <div className='sticky bottom-0 z-10 flex flex-wrap justify-end gap-2 rounded-lg border bg-background/95 p-3 shadow-sm'>
+          </div>
+          <div
+            id='profile-panel-3'
+            hidden={activeStep !== 3}
+            className={
+              activeStep === 3
+                ? `animate-in fade-in duration-200 motion-reduce:animate-none ${stepDirection > 0 ? 'slide-in-from-right-2' : 'slide-in-from-left-2'}`
+                : ''
+            }
+          >
+            <div className='space-y-4'>
+              <div className='mt-4 space-y-4'>
+                <div className='space-y-2'>
+                  <Label htmlFor='scheduling_url'>Scheduling Link</Label>
+                  <Input
+                    id='scheduling_url'
+                    name='scheduling_url'
+                    type='url'
+                    value={formData.scheduling_url || ''}
+                    onChange={handleInputChange}
+                    placeholder='https://calendly.com/your-link'
+                  />
+                </div>
+
+                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                  <div className='space-y-2'>
+                    <Label htmlFor='availability_status'>
+                      Availability Status
+                    </Label>
+                    <select
+                      id='availability_status'
+                      name='availability_status'
+                      value={formData.availability_status || 'available'}
+                      onChange={handleInputChange}
+                      className='flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
+                    >
+                      <option value='available'>Available</option>
+                      <option value='unavailable'>Unavailable</option>
+                    </select>
+                  </div>
+                  <div className='space-y-2'>
+                    <Label htmlFor='availability_note'>Availability Note</Label>
+                    <Input
+                      id='availability_note'
+                      name='availability_note'
+                      value={formData.availability_note || ''}
+                      onChange={handleInputChange}
+                      placeholder='Optional note for admins and families'
+                    />
+                  </div>
+                </div>
+
+                {(formData.availability_status || 'available') ===
+                  'unavailable' && (
+                  <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                    <div className='space-y-2'>
+                      <Label htmlFor='unavailable_from'>Unavailable From</Label>
+                      <Input
+                        id='unavailable_from'
+                        name='unavailable_from'
+                        type='date'
+                        value={
+                          formData.unavailable_from
+                            ? String(formData.unavailable_from).slice(0, 10)
+                            : ''
+                        }
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div className='space-y-2'>
+                      <Label htmlFor='unavailable_until'>
+                        Unavailable Until
+                      </Label>
+                      <Input
+                        id='unavailable_until'
+                        name='unavailable_until'
+                        type='date'
+                        value={
+                          formData.unavailable_until
+                            ? String(formData.unavailable_until).slice(0, 10)
+                            : ''
+                        }
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          <div
+            id='profile-panel-4'
+            hidden={activeStep !== 4}
+            className={
+              activeStep === 4
+                ? `animate-in fade-in duration-200 motion-reduce:animate-none ${stepDirection > 0 ? 'slide-in-from-right-2' : 'slide-in-from-left-2'}`
+                : ''
+            }
+          >
+            <div className='space-y-4'>
+              <div className='mt-4 space-y-4'>
+                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                  <div className='space-y-2'>
+                    <Label htmlFor='gender'>Gender</Label>
+                    <Input
+                      id='gender'
+                      name='gender'
+                      value={formData.gender || ''}
+                      onChange={handleInputChange}
+                      placeholder='e.g. Woman, Man, Non-binary'
+                    />
+                  </div>
+                  <div className='space-y-2'>
+                    <Label htmlFor='pronouns'>Pronouns</Label>
+                    <Input
+                      id='pronouns'
+                      name='pronouns'
+                      value={formData.pronouns || ''}
+                      onChange={handleInputChange}
+                      placeholder='e.g. she/her, he/him, they/them'
+                    />
+                  </div>
+                </div>
+
+                <div className='space-y-3'>
+                  <Label className='text-base'>
+                    Languages spoken (other than English)
+                  </Label>
+                  <p className='text-xs text-muted-foreground'>
+                    Optionally add languages. Press Enter or click Add after
+                    typing.
+                  </p>
+                  <div className='flex flex-col gap-2 sm:flex-row sm:items-center'>
+                    <Input
+                      value={languageDraft}
+                      onChange={(e) => setLanguageDraft(e.target.value)}
+                      placeholder='Type a language (e.g. Spanish)'
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addLanguage(languageDraft);
+                          setLanguageDraft('');
+                        }
+                      }}
+                    />
+                    <Button
+                      type='button'
+                      variant='secondary'
+                      onClick={() => {
+                        addLanguage(languageDraft);
+                        setLanguageDraft('');
+                      }}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                  <div className='flex flex-wrap gap-2'>
+                    {(formData.languages_other_than_english ?? []).map(
+                      (lang) => (
+                        <Badge
+                          key={lang}
+                          variant='secondary'
+                          className='flex items-center gap-1'
+                        >
+                          <span>{lang}</span>
+                          <button
+                            type='button'
+                            className='ml-1 rounded-sm hover:bg-background/40'
+                            onClick={() => removeLanguage(lang)}
+                            aria-label={`Remove ${lang}`}
+                          >
+                            <X className='h-3 w-3' />
+                          </button>
+                        </Badge>
+                      )
+                    )}
+                  </div>
+                </div>
+
+                <div className='space-y-3'>
+                  <Label className='text-base'>
+                    {RACE_ETHNICITY_FIELD_LABEL}
+                  </Label>
+                  <p className='text-xs text-muted-foreground'>
+                    Select all that apply.
+                  </p>
+                  <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+                    {DOULA_RACE_ETHNICITY_OPTIONS.map((opt) => {
+                      const checked = (formData.race_ethnicity ?? []).includes(
+                        opt.value
+                      );
+                      return (
+                        <label
+                          key={opt.value}
+                          className='flex items-start gap-2 rounded-md border border-transparent px-1 py-1 hover:bg-background/80 cursor-pointer'
+                        >
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={() => {
+                              setFormData((prev) => ({
+                                ...prev,
+                                race_ethnicity: toggleRaceEthnicitySelection(
+                                  prev.race_ethnicity ?? [],
+                                  opt.value
+                                ),
+                              }));
+                            }}
+                            className='mt-0.5'
+                          />
+                          <span className='text-sm leading-tight'>
+                            {opt.label}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  {(formData.race_ethnicity ?? []).includes(
+                    ANOTHER_RACE_ETHNICITY
+                  ) && (
+                    <div className='space-y-2 pt-1'>
+                      <Label htmlFor='race_ethnicity_other'>
+                        Please specify
+                      </Label>
+                      <Input
+                        id='race_ethnicity_other'
+                        name='race_ethnicity_other'
+                        value={formData.race_ethnicity_other || ''}
+                        onChange={handleInputChange}
+                        placeholder='Your race or ethnicity'
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className='space-y-2'>
+                  <Label htmlFor='other_demographic_details'>
+                    Other demographic details
+                  </Label>
+                  <Textarea
+                    id='other_demographic_details'
+                    name='other_demographic_details'
+                    value={formData.other_demographic_details || ''}
+                    onChange={handleInputChange}
+                    rows={3}
+                    placeholder='Anything else you would like to share (optional)'
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            id='profile-panel-5'
+            hidden={activeStep !== 5}
+            className={
+              activeStep === 5
+                ? `animate-in fade-in duration-200 motion-reduce:animate-none ${stepDirection > 0 ? 'slide-in-from-right-2' : 'slide-in-from-left-2'}`
+                : ''
+            }
+          >
+            <div className='space-y-5'>
+              <dl className='grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm'>
+                <div>
+                  <dt className='font-semibold'>Name</dt>
+                  <dd>
+                    {formData.firstname} {formData.lastname}
+                  </dd>
+                </div>
+                <div>
+                  <dt className='font-semibold'>Phone number</dt>
+                  <dd
+                    className={
+                      !isValidPhone(formData.phone_number) ? 'text-red-600' : ''
+                    }
+                  >
+                    {formatPhone(formData.phone_number || '') || PHONE_ERROR}
+                  </dd>
+                </div>
+                <div>
+                  <dt className='font-semibold'>Address</dt>
+                  <dd>
+                    {[
+                      formData.address,
+                      formData.city,
+                      formData.state,
+                      formData.zip_code,
+                      formData.country,
+                    ]
+                      .filter(Boolean)
+                      .join(', ') || 'Address is required'}
+                  </dd>
+                </div>
+                <div>
+                  <dt className='font-semibold'>About me</dt>
+                  <dd className='whitespace-pre-wrap'>
+                    {formData.bio || 'Bio is required'}
+                  </dd>
+                </div>
+              </dl>
+              <Card className='gap-3 py-4'>
+                <CardHeader className='pb-3'>
+                  <CardTitle>Complete your profile</CardTitle>
+                </CardHeader>
+                <CardContent className='space-y-3'>
+                  {profile.profile_review_status === 'changes_requested' && (
+                    <div
+                      role='alert'
+                      className='rounded-md border border-amber-300 bg-amber-50 p-4 space-y-2'
+                    >
+                      <h3 className='font-semibold'>Changes requested</h3>
+                      <p className='whitespace-pre-wrap'>
+                        {profile.profile_review_reason}
+                      </p>
+                      <p>
+                        Correct the items above, replace or remove any rejected
+                        documents in Documents, then select Resubmit for review.
+                        Your profile approval remains pending. Your dashboard
+                        tools remain available.
+                      </p>
+                    </div>
+                  )}
+
+                  <details>
+                    <summary className='cursor-pointer text-sm font-medium'>
+                      Profile setup instructions
+                    </summary>
+                    <ol className='mt-3 list-decimal pl-5 space-y-2 text-sm'>
+                      <li>
+                        Enter your first and last name, phone number, full
+                        address (including city, state, ZIP code and country),
+                        and bio below.
+                      </li>
+                      <li>
+                        Open the Documents tab and upload your Doula training
+                        certificate. Liability insurance and Illinois Medicaid
+                        documents are optional for general approval.
+                      </li>
+                      <li>
+                        Return here and select Mark profile complete. This saves
+                        your changes and emails the Sokana team for review.
+                      </li>
+                      <li>
+                        Your account is active. You can log hours, record birth
+                        outcomes, and use your assigned-work tools while your
+                        profile and documents are pending review.
+                      </li>
+                    </ol>
+                  </details>
+                  {(!profile.profile_submitted_at ||
+                    profile.profile_review_status === 'changes_requested') && (
+                    <p className='text-sm' role='status'>
+                      {getMissingRequiredFields(formData).length > 0
+                        ? `Still needed: ${getMissingRequiredFields(formData)
+                            .map((field) => field.replace(/_/g, ' '))
+                            .join(', ')}.`
+                        : 'Required profile fields are complete.'}{' '}
+                      {hasTrainingCertificate
+                        ? 'Training certificate uploaded.'
+                        : 'Training certificate still needed in Documents.'}
+                    </p>
+                  )}
+                  {profile.profile_submitted_at &&
+                  profile.profile_review_status !== 'changes_requested' ? (
+                    <Badge>
+                      {profile.profile_review_status === 'approved'
+                        ? 'Profile approved'
+                        : 'Submitted — waiting for admin review'}
+                    </Badge>
+                  ) : (
+                    <>
+                      <Button
+                        type='submit'
+                        name='action'
+                        value='submit-profile'
+                        aria-busy={isSaving}
+                        disabled={
+                          isSaving ||
+                          !(
+                            !profile.profile_submitted_at ||
+                            profile.profile_review_status ===
+                              'changes_requested'
+                          ) ||
+                          checkingDocuments ||
+                          !hasTrainingCertificate ||
+                          getMissingRequiredFields(formData).length > 0
+                        }
+                      >
+                        {isSaving && (
+                          <Loader2
+                            className='mr-2 h-4 w-4 animate-spin'
+                            aria-hidden='true'
+                          />
+                        )}
+                        {isSaving
+                          ? isSubmittingReview
+                            ? 'Submitting for review...'
+                            : 'Saving...'
+                          : checkingDocuments
+                            ? 'Checking documents...'
+                            : profile.profile_review_status ===
+                                'changes_requested'
+                              ? 'Resubmit for review'
+                              : 'Mark profile complete'}
+                      </Button>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      <div className='sticky bottom-0 z-10 flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-background p-3 shadow-sm'>
+        <div className='flex gap-2'>
           <Button
             type='button'
             variant='outline'
+            disabled={activeStep === 0 || isSaving}
+            onClick={() => changeStep(activeStep - 1)}
+          >
+            Back
+          </Button>
+          {activeStep < PROFILE_STEPS.length - 1 && (
+            <Button type='button' disabled={isSaving} onClick={nextStep}>
+              Next
+            </Button>
+          )}
+        </div>
+        <div className='flex gap-2'>
+          <Button
+            type='button'
+            variant='outline'
+            disabled={isSaving}
             onClick={() => void fetchProfile(false)}
           >
             Cancel
@@ -1086,7 +1406,7 @@ export default function ProfileTab({ onProfileStatusChange }: ProfileTabProps) {
             {isSaving ? 'Saving...' : 'Save Changes'}
           </Button>
         </div>
-      </form>
-    </div>
+      </div>
+    </form>
   );
 }
