@@ -1,3 +1,4 @@
+import type { Certification } from '@/api/doulas/doulaService';
 // TypeScript interfaces for Doula Management System
 
 export interface Doula {
@@ -11,6 +12,7 @@ export interface Doula {
   years_experience: number | null;
   specialties: string[] | null;
   certifications: string[] | null;
+  structuredCertifications?: Certification[];
   bio: string | null;
   scheduling_url?: string | null;
   availability_status?: string | null;

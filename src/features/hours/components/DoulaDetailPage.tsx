@@ -1,3 +1,4 @@
+import CertificationsList from '@/features/doula-dashboard/components/CertificationsList';
 import { useState, useEffect, useContext } from 'react';
 import { logFailure } from '@/utils/safeLog';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -121,6 +122,7 @@ export default function DoulaDetailPage() {
         years_experience: null,
         specialties: null,
         certifications: null,
+        structuredCertifications: doulaMember.certifications ?? [],
         bio: doulaMember.bio || null,
         scheduling_url:
           doulaMember.scheduling_url ??
@@ -541,6 +543,17 @@ export default function DoulaDetailPage() {
                         </div>
                       </div>
                     )}
+                  <section
+                    aria-label='Saved certifications'
+                    className='space-y-2'
+                  >
+                    <h3 className='text-sm text-gray-500'>
+                      Certifications &amp; training
+                    </h3>
+                    <CertificationsList
+                      certifications={doula.structuredCertifications ?? []}
+                    />
+                  </section>
                   {/* Legacy text certifications (if any) */}
                   {doula.certifications &&
                     doula.certifications.length > 0 &&
@@ -589,6 +602,7 @@ export default function DoulaDetailPage() {
                   )}
                   {!doula.years_experience &&
                     !doula.certifications?.length &&
+                    !doula.structuredCertifications?.length &&
                     !doula.specialties?.length &&
                     !doula.bio && (
                       <p className='text-gray-500 text-sm'>

@@ -1,3 +1,4 @@
+import type { Certification } from '@/api/doulas/doulaService';
 export interface Doula {
   id: string;
   firstname: string;
@@ -7,6 +8,7 @@ export interface Doula {
   bio?: string;
   pronouns?: string;
   certifications?: string[];
+  structuredCertifications?: Certification[];
   phone_number?: string;
   scheduling_url?: string;
   availability_status?: string;

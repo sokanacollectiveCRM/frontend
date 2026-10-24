@@ -1,3 +1,4 @@
+import { certificationExpiration } from '@/features/doula-dashboard/certifications';
 import type { Certification } from '@/api/doulas/doulaService';
 
 export default function CertificationsList({
@@ -11,18 +12,26 @@ export default function CertificationsList({
 
   return (
     <ul aria-label='Certifications' className='space-y-2 text-sm'>
-      {certifications.map((certification, index) => (
-        <li key={index} className='min-w-0 break-words'>
-          <span className='font-medium'>{certification.name}</span>
-          {(certification.issuingOrganization || certification.year) && (
-            <p className='text-muted-foreground'>
-              {[certification.issuingOrganization, certification.year]
-                .filter(Boolean)
-                .join(' · ')}
-            </p>
-          )}
-        </li>
-      ))}
+      {certifications
+        .filter((entry) => entry.name.trim())
+        .map((certification, index) => {
+          const expiration = certificationExpiration(certification);
+          return (
+            <li key={index} className='min-w-0 break-words'>
+              <span className='font-medium'>{certification.name}</span>
+              <p className='text-muted-foreground'>
+                {[certification.issuingOrganization, expiration.text]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </p>
+              {expiration.expired && (
+                <span className='inline-flex rounded bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800'>
+                  Expired
+                </span>
+              )}
+            </li>
+          );
+        })}
     </ul>
   );
 }

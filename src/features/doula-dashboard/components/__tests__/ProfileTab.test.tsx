@@ -145,7 +145,12 @@ describe('doula profile layout', () => {
       expect(api.updateDoulaProfile).toHaveBeenCalledWith(
         expect.objectContaining({
           certifications: [
-            { name: 'Birth doula', issuingOrganization: '', year: '' },
+            {
+              name: 'Birth doula',
+              issuingOrganization: '',
+              expiration_date: null,
+              no_expiration: false,
+            },
           ],
         })
       )
@@ -180,8 +185,8 @@ describe('doula profile layout', () => {
     fireEvent.change(screen.getByLabelText('Issuing organization'), {
       target: { value: 'Example Training' },
     });
-    fireEvent.change(screen.getByLabelText('Year'), {
-      target: { value: '2026' },
+    fireEvent.change(screen.getByLabelText('Expiration date'), {
+      target: { value: '2028-03-31' },
     });
     const saved = () =>
       within(screen.getByRole('region', { name: 'Saved certifications' }));
@@ -190,11 +195,15 @@ describe('doula profile layout', () => {
     await waitFor(() =>
       expect(saved().getByText('Birth doula')).toBeInTheDocument()
     );
-    expect(saved().getByText('Example Training · 2026')).toBeInTheDocument();
+    expect(
+      saved().getByText('Example Training · Expires Mar 31, 2028')
+    ).toBeInTheDocument();
     cleanup();
     await open();
     expect(saved().getByText('Birth doula')).toBeInTheDocument();
-    expect(saved().getByText('Example Training · 2026')).toBeInTheDocument();
+    expect(
+      saved().getByText('Example Training · Expires Mar 31, 2028')
+    ).toBeInTheDocument();
   });
   it('shows a saved entry once and opens its fields only when editing', async () => {
     profile = {
@@ -203,7 +212,8 @@ describe('doula profile layout', () => {
         {
           name: 'Birth doula',
           issuingOrganization: 'Example Training',
-          year: '2026',
+          expiration_date: '2028-03-31',
+          no_expiration: false,
         },
       ],
     };
@@ -237,6 +247,138 @@ describe('doula profile layout', () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByText('Birth doula')).not.toBeInTheDocument();
   });
+  it('saves No expiration explicitly and disables its date field', async () => {
+    await open();
+    fireEvent.click(screen.getByRole('button', { name: 'Add certification' }));
+    fireEvent.change(screen.getByLabelText('Certification name'), {
+      target: { value: 'Fictional lifetime training' },
+    });
+    fireEvent.change(screen.getByLabelText('Expiration date'), {
+      target: { value: '2028-03-31' },
+    });
+    fireEvent.click(screen.getByLabelText('No expiration'));
+    expect(screen.getByLabelText('Expiration date')).toBeDisabled();
+    expect(screen.getByLabelText('Expiration date')).toHaveValue('');
+    fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+    await waitFor(() =>
+      expect(api.updateDoulaProfile).toHaveBeenCalledWith(
+        expect.objectContaining({
+          certifications: [
+            {
+              name: 'Fictional lifetime training',
+              issuingOrganization: '',
+              expiration_date: null,
+              no_expiration: true,
+            },
+          ],
+        })
+      )
+    );
+    await screen.findByText('No expiration', { selector: 'p' });
+    expect(screen.queryByLabelText('Year')).not.toBeInTheDocument();
+  });
+  it('preserves historical year data without showing an issue year field or value', async () => {
+    profile = {
+      ...initial,
+      certifications: [
+        {
+          name: 'Fictional legacy training',
+          issuingOrganization: 'Example',
+          year: '1997',
+          expiration_date: null,
+          no_expiration: false,
+        },
+      ],
+    };
+    await open();
+    expect(
+      screen.getByText('Example · Expiration not provided')
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/1997/)).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Edit certification 1' })
+    );
+    expect(screen.queryByLabelText('Year')).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Expiration date'), {
+      target: { value: '2028-03-31' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+    await waitFor(() =>
+      expect(api.updateDoulaProfile).toHaveBeenCalledWith(
+        expect.objectContaining({
+          certifications: [
+            expect.objectContaining({
+              year: '1997',
+              expiration_date: '2028-03-31',
+            }),
+          ],
+        })
+      )
+    );
+  });
+  it('rejects invalid date values even when native form validation is bypassed', async () => {
+    profile = {
+      ...initial,
+      certifications: [
+        {
+          name: 'Fictional training',
+          issuingOrganization: 'Example',
+          expiration_date: '2028-02-30',
+          no_expiration: false,
+        },
+      ],
+    };
+    await open();
+    fireEvent.submit(document.querySelector('form')!);
+    expect(api.updateDoulaProfile).not.toHaveBeenCalled();
+  });
+  it('Cancel restores a saved entry and discards a new filled entry', async () => {
+    profile = {
+      ...initial,
+      certifications: [
+        {
+          name: 'Fictional saved training',
+          issuingOrganization: 'Example Academy',
+          expiration_date: '2028-03-31',
+          no_expiration: false,
+        },
+      ],
+    };
+    await open();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Edit certification 1' })
+    );
+    fireEvent.change(screen.getByLabelText('Certification name'), {
+      target: { value: 'Unsaved change' },
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Cancel certification 1' })
+    );
+    expect(screen.getByText('Fictional saved training')).toBeVisible();
+    expect(
+      screen.queryByLabelText('Certification name')
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Add certification' }));
+    fireEvent.change(screen.getByLabelText('Certification name'), {
+      target: { value: 'Unsaved new training' },
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Cancel certification 2' })
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+    await waitFor(() =>
+      expect(api.updateDoulaProfile).toHaveBeenCalledWith(
+        expect.objectContaining({
+          certifications: [
+            expect.objectContaining({
+              name: 'Fictional saved training',
+              expiration_date: '2028-03-31',
+            }),
+          ],
+        })
+      )
+    );
+  });
   it('adds, removes and persists structured certifications in the header area', async () => {
     await open();
     fireEvent.click(screen.getByRole('button', { name: 'Add certification' }));
@@ -246,8 +388,8 @@ describe('doula profile layout', () => {
     fireEvent.change(screen.getByLabelText('Issuing organization'), {
       target: { value: 'Example Training' },
     });
-    fireEvent.change(screen.getByLabelText('Year'), {
-      target: { value: '2026' },
+    fireEvent.change(screen.getByLabelText('Expiration date'), {
+      target: { value: '2028-03-31' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
     await waitFor(() =>
@@ -257,7 +399,8 @@ describe('doula profile layout', () => {
             {
               name: 'Birth doula',
               issuingOrganization: 'Example Training',
-              year: '2026',
+              expiration_date: '2028-03-31',
+              no_expiration: false,
             },
           ],
         })

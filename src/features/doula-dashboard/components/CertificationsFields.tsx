@@ -1,3 +1,4 @@
+import { hasCertificationDetails } from '@/features/doula-dashboard/certifications';
 import { useEffect, useState } from 'react';
 import CertificationsList from '@/features/doula-dashboard/components/CertificationsList';
 import { Button } from '@/common/components/ui/button';
@@ -14,13 +15,35 @@ export default function CertificationsFields({
   savedValue: Certification[] | undefined;
   onChange: (value: Certification[]) => void;
 }) {
-  const [editing, setEditing] = useState<number[]>([]);
-  useEffect(() => setEditing([]), [savedValue]);
+  const [editing, setEditing] = useState<Record<number, Certification | null>>(
+    {}
+  );
+  useEffect(() => setEditing({}), [savedValue]);
   const remove = (index: number) => {
     onChange(value.filter((_, i) => i !== index));
-    setEditing((indices) =>
-      indices.filter((i) => i !== index).map((i) => (i > index ? i - 1 : i))
+    setEditing((originals) =>
+      Object.fromEntries(
+        Object.entries(originals)
+          .filter(([key]) => Number(key) !== index)
+          .map(([key, entry]) => [
+            Number(key) > index ? Number(key) - 1 : Number(key),
+            entry,
+          ])
+      )
     );
+  };
+  const cancel = (index: number) => {
+    const original = editing[index];
+    if (!original) {
+      remove(index);
+      return;
+    }
+    onChange(value.map((entry, i) => (i === index ? original : entry)));
+    setEditing((originals) => {
+      const next = { ...originals };
+      delete next[index];
+      return next;
+    });
   };
   const hasUnnamedCertification = value.some((entry) => !entry.name.trim());
 
@@ -43,7 +66,7 @@ export default function CertificationsFields({
           key={index}
           className='grid gap-3 rounded-md border p-3 md:grid-cols-3'
         >
-          {!editing.includes(index) ? (
+          {!(index in editing) ? (
             <div className='flex items-start justify-between gap-3 md:col-span-3'>
               <CertificationsList certifications={[certification]} />
               <div className='flex gap-2'>
@@ -51,7 +74,12 @@ export default function CertificationsFields({
                   type='button'
                   variant='outline'
                   aria-label={`Edit certification ${index + 1}`}
-                  onClick={() => setEditing((indices) => [...indices, index])}
+                  onClick={() =>
+                    setEditing((originals) => ({
+                      ...originals,
+                      [index]: { ...certification },
+                    }))
+                  }
                 >
                   Edit
                 </Button>
@@ -67,50 +95,90 @@ export default function CertificationsFields({
             </div>
           ) : (
             <>
-              {(['name', 'issuingOrganization', 'year'] as const).map(
-                (field) => (
-                  <div key={field} className='space-y-2'>
-                    <Label htmlFor={`cert-${index}-${field}`}>
-                      {field === 'name'
-                        ? 'Certification name'
-                        : field === 'issuingOrganization'
-                          ? 'Issuing organization'
-                          : 'Year'}
-                    </Label>
-                    <Input
-                      id={`cert-${index}-${field}`}
-                      value={certification[field]}
-                      maxLength={120}
-                      autoFocus={field === 'name'}
-                      required={
-                        field === 'name' &&
-                        Object.values(certification).some((value) =>
-                          value.trim()
+              {(
+                ['name', 'issuingOrganization', 'expiration_date'] as const
+              ).map((field) => (
+                <div key={field} className='space-y-2'>
+                  <Label htmlFor={`cert-${index}-${field}`}>
+                    {field === 'name'
+                      ? 'Certification name'
+                      : field === 'issuingOrganization'
+                        ? 'Issuing organization'
+                        : 'Expiration date'}
+                  </Label>
+                  <Input
+                    id={`cert-${index}-${field}`}
+                    value={certification[field] ?? ''}
+                    type={field === 'expiration_date' ? 'date' : 'text'}
+                    disabled={
+                      field === 'expiration_date' && certification.no_expiration
+                    }
+                    maxLength={120}
+                    autoFocus={field === 'name'}
+                    required={
+                      field === 'name' && hasCertificationDetails(certification)
+                    }
+                    onChange={(event) =>
+                      onChange(
+                        value.map((entry, i) =>
+                          i === index
+                            ? {
+                                ...entry,
+                                [field]:
+                                  field === 'expiration_date'
+                                    ? event.target.value || null
+                                    : event.target.value,
+                              }
+                            : entry
                         )
-                      }
-                      onChange={(event) =>
-                        onChange(
-                          value.map((entry, i) =>
-                            i === index
-                              ? { ...entry, [field]: event.target.value }
-                              : entry
-                          )
-                        )
-                      }
-                    />
-                  </div>
-                )
-              )}
-              <Button
-                type='button'
-                variant='outline'
-                aria-label={`${Object.values(certification).some((value) => value.trim()) ? 'Remove' : 'Cancel'} certification ${index + 1}`}
-                onClick={() => remove(index)}
-              >
-                {Object.values(certification).some((value) => value.trim())
-                  ? 'Remove'
-                  : 'Cancel'}
-              </Button>
+                      )
+                    }
+                  />
+                </div>
+              ))}
+              <div className='flex items-center gap-2 md:col-span-3'>
+                <input
+                  id={`cert-${index}-no-expiration`}
+                  type='checkbox'
+                  checked={certification.no_expiration === true}
+                  onChange={(event) =>
+                    onChange(
+                      value.map((entry, i) =>
+                        i === index
+                          ? {
+                              ...entry,
+                              no_expiration: event.target.checked,
+                              expiration_date: null,
+                            }
+                          : entry
+                      )
+                    )
+                  }
+                />
+                <Label htmlFor={`cert-${index}-no-expiration`}>
+                  No expiration
+                </Label>
+              </div>
+              <div className='flex gap-2 md:col-span-3'>
+                <Button
+                  type='button'
+                  variant='outline'
+                  aria-label={`Cancel certification ${index + 1}`}
+                  onClick={() => cancel(index)}
+                >
+                  Cancel
+                </Button>
+                {hasCertificationDetails(certification) && (
+                  <Button
+                    type='button'
+                    variant='outline'
+                    aria-label={`Remove certification ${index + 1}`}
+                    onClick={() => remove(index)}
+                  >
+                    Remove
+                  </Button>
+                )}
+              </div>
             </>
           )}
         </div>
@@ -121,13 +189,21 @@ export default function CertificationsFields({
         disabled={value.length >= 20 || hasUnnamedCertification}
         onClick={() => {
           if (hasUnnamedCertification || value.length >= 20) return;
-          setEditing((indices) => [...indices, value.length]);
-          onChange([...value, { name: '', issuingOrganization: '', year: '' }]);
+          setEditing((originals) => ({ ...originals, [value.length]: null }));
+          onChange([
+            ...value,
+            {
+              name: '',
+              issuingOrganization: '',
+              expiration_date: null,
+              no_expiration: false,
+            },
+          ]);
         }}
       >
         Add certification
       </Button>
-      {editing.length > 0 && (
+      {Object.keys(editing).length > 0 && (
         <p className='text-sm text-muted-foreground'>
           Use Save Changes below to save your certifications.
         </p>
