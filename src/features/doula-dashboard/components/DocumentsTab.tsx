@@ -381,6 +381,7 @@ export default function DocumentsTab({
                 key={item.documentType}
                 data-testid={`document-slot-${item.documentType}`}
                 className={
+                  meta.required &&
                   !meta.multiple &&
                   (slotStatus === 'missing' || slotStatus === 'rejected')
                     ? 'border-l-4 border-l-amber-500'
@@ -392,11 +393,25 @@ export default function DocumentsTab({
                     <div className='flex items-center gap-3'>
                       <FileText className='h-5 w-5 text-blue-600' />
                       <div>
-                        <CardTitle className='text-base'>
+                        <CardTitle
+                          className={
+                            meta.required &&
+                            (slotStatus === 'missing' ||
+                              slotStatus === 'rejected')
+                              ? 'text-base text-red-600'
+                              : 'text-base'
+                          }
+                        >
                           {meta.label}
                         </CardTitle>
                         <div className='mt-1 flex flex-wrap items-center gap-2'>
-                          <Badge className='text-xs bg-white text-gray-700 border border-gray-200'>
+                          <Badge
+                            className={
+                              meta.required
+                                ? 'text-xs bg-red-50 text-red-600 border border-red-200'
+                                : 'text-xs bg-white text-gray-700 border border-gray-200'
+                            }
+                          >
                             {meta.required ? 'Required' : 'Optional'}
                           </Badge>
                           {!meta.multiple && (

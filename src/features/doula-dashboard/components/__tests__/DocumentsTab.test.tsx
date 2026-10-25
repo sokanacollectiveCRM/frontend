@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import DocumentsTab from '@/features/doula-dashboard/components/DocumentsTab';
 
@@ -69,6 +69,24 @@ describe('DocumentsTab Oct 21 document set', () => {
     ).toBe(true);
     expect(screen.getAllByText('Required')).toHaveLength(1);
     expect(screen.getAllByText('Optional')).toHaveLength(3);
+    const training = screen.getByTestId('document-slot-training_certificate');
+    expect(
+      within(training).getByText('Doula training certificate')
+    ).toHaveClass('text-red-600');
+    expect(training).toHaveClass('border-l-amber-500');
+    for (const label of [
+      'Liability insurance',
+      'Illinois Medicaid certification',
+      'Miscellaneous documents',
+    ]) {
+      const title = screen.getByText(label);
+      expect(title).not.toHaveClass('text-red-600');
+      const slot = title.closest('[data-testid]')! as HTMLElement;
+      expect(slot).not.toHaveClass('border-l-amber-500');
+      expect(
+        within(slot).queryByText('Required', { exact: true })
+      ).not.toBeInTheDocument();
+    }
 
     expect(screen.queryByText(/W9/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Direct Deposit/i)).not.toBeInTheDocument();

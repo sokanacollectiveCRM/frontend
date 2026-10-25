@@ -112,7 +112,16 @@ export default function CertificationsFields({
                 ['name', 'issuingOrganization', 'expiration_date'] as const
               ).map((field) => (
                 <div key={field} className='space-y-2'>
-                  <Label htmlFor={`cert-${index}-${field}`}>
+                  <Label
+                    htmlFor={`cert-${index}-${field}`}
+                    className={
+                      field === 'name' &&
+                      hasCertificationDetails(certification) &&
+                      !certification.name.trim()
+                        ? 'text-red-600'
+                        : ''
+                    }
+                  >
                     {field === 'name'
                       ? 'Certification name'
                       : field === 'issuingOrganization'
@@ -121,6 +130,25 @@ export default function CertificationsFields({
                   </Label>
                   <Input
                     id={`cert-${index}-${field}`}
+                    aria-invalid={
+                      field === 'name' &&
+                      hasCertificationDetails(certification) &&
+                      !certification.name.trim()
+                    }
+                    aria-describedby={
+                      field === 'name' &&
+                      hasCertificationDetails(certification) &&
+                      !certification.name.trim()
+                        ? `cert-${index}-name-required`
+                        : undefined
+                    }
+                    className={
+                      field === 'name' &&
+                      hasCertificationDetails(certification) &&
+                      !certification.name.trim()
+                        ? 'border-red-600 focus-visible:ring-red-600'
+                        : ''
+                    }
                     value={certification[field] ?? ''}
                     type={field === 'expiration_date' ? 'date' : 'text'}
                     disabled={
@@ -147,6 +175,16 @@ export default function CertificationsFields({
                       )
                     }
                   />
+                  {field === 'name' &&
+                    hasCertificationDetails(certification) &&
+                    !certification.name.trim() && (
+                      <p
+                        id={`cert-${index}-name-required`}
+                        className='text-sm text-red-600'
+                      >
+                        Certification name is required
+                      </p>
+                    )}
                 </div>
               ))}
               <div className='flex items-center gap-2 md:col-span-3'>

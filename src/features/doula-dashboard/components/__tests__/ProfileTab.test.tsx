@@ -497,8 +497,12 @@ describe('doula profile layout', () => {
 it('refreshes document readiness without navigating away or losing edits', async () => {
   vi.mocked(api.getDoulaDocuments).mockResolvedValueOnce({ documents: [] });
   await open('Review');
-  const complete = await screen.findByRole('button', {
+  expect(
+    screen.getByRole('button', { name: 'Documents step' })
+  ).toHaveAttribute('aria-current', 'step');
+  const complete = screen.getByRole('button', {
     name: 'Mark profile complete',
+    hidden: true,
   });
   expect(complete).toBeDisabled();
   fireEvent.change(screen.getByLabelText('About me (bio)'), {
@@ -689,6 +693,17 @@ describe('profile slider steps', () => {
     fireEvent.click(
       screen.getByRole('button', { name: 'Address step', exact: true })
     );
+    expect(screen.getByLabelText('Address')).not.toBeVisible();
+    for (const label of ['Last Name', 'Phone number', 'About me (bio)']) {
+      fireEvent.change(screen.getByLabelText(label), {
+        target: {
+          value: label === 'Phone number' ? '5555550100' : 'Completed',
+        },
+      });
+    }
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Address step', exact: true })
+    );
     expect(screen.getByLabelText('Address')).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'Next', exact: true }));
     expect(screen.getByRole('progressbar')).toHaveAttribute(
@@ -851,4 +866,142 @@ it('synchronizes the saved doula photo with Account and header user state', asyn
     profile_picture: url,
   });
   expect(setUser.mock.calls[0][0](null)).toBeNull();
+});
+
+describe('P-13 required step guards', () => {
+  it.each(['Next', 'Review step', 'Documents step'])(
+    'blocks %s when About you is incomplete',
+    async (name) => {
+      await open();
+      fireEvent.change(screen.getByLabelText('About me (bio)'), {
+        target: { value: ' ' },
+      });
+      fireEvent.click(screen.getByRole('button', { name, exact: true }));
+      expect(screen.getByRole('progressbar')).toHaveAttribute(
+        'aria-valuenow',
+        '1'
+      );
+      expect(api.updateDoulaProfile).not.toHaveBeenCalled();
+    }
+  );
+  it.each(['Address', 'City', 'State', 'Zip Code'])(
+    'cannot jump over blank %s from an earlier step',
+    async (label) => {
+      await open('Address');
+      fireEvent.change(screen.getByLabelText(label), {
+        target: { value: ' ' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'About you step' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Review step' }));
+      expect(screen.getByRole('progressbar')).toHaveAttribute(
+        'aria-valuenow',
+        '2'
+      );
+      expect(screen.getByLabelText(label)).toBeVisible();
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Next', exact: true })
+      );
+      expect(screen.getByRole('progressbar')).toHaveAttribute(
+        'aria-valuenow',
+        '2'
+      );
+      fireEvent.submit(document.querySelector('form')!);
+      expect(api.updateDoulaProfile).not.toHaveBeenCalled();
+    }
+  );
+  it('marks a partially entered certification name red and blocks forward navigation until named', async () => {
+    await open('Certifications');
+    fireEvent.click(screen.getByRole('button', { name: 'Add certification' }));
+    const name = screen.getByLabelText('Certification name');
+    expect(name).not.toBeRequired();
+    expect(name).not.toHaveClass('border-red-600');
+    fireEvent.change(screen.getByLabelText('Issuing organization'), {
+      target: { value: 'Fictional organization' },
+    });
+    expect(name).toBeRequired();
+    expect(name).toHaveAttribute('aria-invalid', 'true');
+    expect(name).toHaveClass('border-red-600');
+    expect(screen.getByText('Certification name is required')).toBeVisible();
+    for (const button of ['Next', 'Review step']) {
+      fireEvent.click(
+        screen.getByRole('button', { name: button, exact: true })
+      );
+      expect(screen.getByRole('progressbar')).toHaveAttribute(
+        'aria-valuenow',
+        '3'
+      );
+    }
+    fireEvent.change(name, { target: { value: 'Fictional certification' } });
+    expect(name).not.toHaveClass('border-red-600');
+    fireEvent.click(screen.getByRole('button', { name: 'Review step' }));
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '7'
+    );
+  });
+  it('blocks skipping a missing required document while allowing backward navigation', async () => {
+    vi.mocked(api.getDoulaDocuments).mockResolvedValue({ documents: [] });
+    await open('Documents');
+    for (const name of ['Next', 'Scheduling step', 'Review step']) {
+      fireEvent.click(screen.getByRole('button', { name, exact: true }));
+      expect(screen.getByRole('progressbar')).toHaveAttribute(
+        'aria-valuenow',
+        '4'
+      );
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Back', exact: true }));
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '3'
+    );
+  });
+  it('marks unavailable dates red, blocks navigation and saves, and clears errors when completed', async () => {
+    await open('Scheduling');
+    fireEvent.change(screen.getByLabelText('Availability Status'), {
+      target: { value: 'unavailable' },
+    });
+    for (const label of ['Unavailable From', 'Unavailable Until']) {
+      expect(screen.getByLabelText(label)).toBeRequired();
+      expect(screen.getByLabelText(label)).toHaveAttribute(
+        'aria-invalid',
+        'true'
+      );
+      expect(screen.getByLabelText(label)).toHaveClass('border-red-600');
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Review step' }));
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '5'
+    );
+    fireEvent.submit(document.querySelector('form')!);
+    expect(api.updateDoulaProfile).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText('Unavailable From'), {
+      target: { value: '2026-11-01' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Next', exact: true }));
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '5'
+    );
+    fireEvent.change(screen.getByLabelText('Unavailable Until'), {
+      target: { value: '2026-11-02' },
+    });
+    for (const label of ['Unavailable From', 'Unavailable Until']) {
+      expect(screen.getByLabelText(label)).not.toHaveClass('border-red-600');
+      expect(screen.getByLabelText(label)).toHaveAttribute(
+        'aria-invalid',
+        'false'
+      );
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Review step' }));
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '7'
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Scheduling step' }));
+    fireEvent.change(screen.getByLabelText('Availability Status'), {
+      target: { value: 'available' },
+    });
+    expect(screen.queryByLabelText('Unavailable From')).not.toBeInTheDocument();
+  });
 });

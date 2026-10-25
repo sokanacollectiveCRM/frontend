@@ -416,6 +416,10 @@ export default function ProfileTab({
       }))
       .filter(hasCertificationDetails);
     if (nextFormData.certifications.some((entry) => !entry.name)) {
+      showStep(
+        2,
+        `cert-${(formData.certifications ?? []).findIndex((entry) => hasCertificationDetails(entry) && !entry.name.trim())}-name`
+      );
       toast.error('Enter a name for each certification or remove the entry.');
       return;
     }
@@ -459,6 +463,22 @@ export default function ProfileTab({
       return;
     }
 
+    if (
+      nextFormData.availability_status === 'unavailable' &&
+      (!nextFormData.unavailable_from || !nextFormData.unavailable_until)
+    ) {
+      showStep(
+        4,
+        !nextFormData.unavailable_from
+          ? 'unavailable_from'
+          : 'unavailable_until'
+      );
+      toast.error(
+        'Unavailable doulas must include both an unavailable start and end date.'
+      );
+      return;
+    }
+
     savingRef.current = true;
     setIsSubmittingReview(submittingForReview);
     setIsSaving(true);
@@ -476,14 +496,6 @@ export default function ProfileTab({
       delete profilePayload.country;
 
       const desiredStatus = availability_status || 'available';
-      if (desiredStatus === 'unavailable') {
-        if (!unavailable_from || !unavailable_until) {
-          throw new Error(
-            'Unavailable doulas must include both an unavailable start and end date.'
-          );
-        }
-      }
-
       await updateDoulaProfile(profilePayload);
 
       const availabilitySnapshot = await getDoulaAvailability();
@@ -542,36 +554,79 @@ export default function ProfileTab({
     !String(formData[field] ?? '').trim();
   const requiredStyle = (field: RequiredTextField) =>
     isMissing(field) ? 'border-red-600 focus-visible:ring-red-600' : '';
-  const changeStep = (next: number) => {
+  const showStep = (next: number, focusId?: string) => {
     setStepDirection(next >= activeStep ? 1 : -1);
     setActiveStep(next);
     document
       .querySelector('main[aria-label="Doula dashboard content"]')
       ?.scrollTo?.({ top: 0 });
+    if (focusId)
+      requestAnimationFrame(() => document.getElementById(focusId)?.focus());
   };
-  const nextStep = () => {
-    const fields: RequiredTextField[] =
-      activeStep === 0
-        ? ['firstname', 'lastname', 'bio']
-        : activeStep === 1
-          ? ['address', 'city', 'state', 'zip_code']
-          : [];
-    if (activeStep === 0 && !isValidPhone(formData.phone_number)) {
-      setPhoneError(true);
-      toast.error(PHONE_ERROR);
-      document.getElementById('phone_number')?.focus();
-      return;
+  const validateStepsBefore = (next: number) => {
+    const fieldsByStep: RequiredTextField[][] = [
+      ['firstname', 'lastname', 'bio'],
+      ['address', 'city', 'state', 'zip_code'],
+    ];
+    for (let step = 0; step < next; step++) {
+      if (step === 0 && !isValidPhone(formData.phone_number)) {
+        setPhoneError(true);
+        toast.error(PHONE_ERROR);
+        showStep(0, 'phone_number');
+        return false;
+      }
+      const missing = (fieldsByStep[step] ?? []).filter(isMissing);
+      if (missing.length) {
+        toast.error(
+          `Complete all required fields: ${missing.map((field) => FIELD_LABELS[field]).join(', ')}`
+        );
+        showStep(step, missing[0]);
+        return false;
+      }
+      if (step === 2) {
+        const unnamed = (formData.certifications ?? []).findIndex(
+          (entry) => hasCertificationDetails(entry) && !entry.name.trim()
+        );
+        if (unnamed >= 0) {
+          toast.error(
+            'Enter a name for each certification or remove the entry.'
+          );
+          showStep(2, `cert-${unnamed}-name`);
+          return false;
+        }
+      }
+      if (step === 3 && (checkingDocuments || !hasTrainingCertificate)) {
+        toast.error(
+          checkingDocuments
+            ? 'Wait for documents to finish loading.'
+            : 'Upload your Doula training certificate in Documents.'
+        );
+        showStep(3);
+        return false;
+      }
+      if (step === 4 && formData.availability_status === 'unavailable') {
+        const missingDate = !formData.unavailable_from
+          ? 'unavailable_from'
+          : !formData.unavailable_until
+            ? 'unavailable_until'
+            : null;
+        if (missingDate) {
+          toast.error(
+            'Unavailable doulas must include both an unavailable start and end date.'
+          );
+          showStep(4, missingDate);
+          return false;
+        }
+      }
     }
-    const missing = fields.filter(isMissing);
-    if (missing.length) {
-      toast.error(
-        `Complete all required fields: ${missing.map((field) => FIELD_LABELS[field]).join(', ')}`
-      );
-      document.getElementById(missing[0])?.focus();
-      return;
-    }
+    return true;
+  };
+  const changeStep = (next: number) => {
+    if (isEditing && next > activeStep && !validateStepsBefore(next)) return;
+    showStep(next);
+  };
+  const nextStep = () =>
     changeStep(Math.min(activeStep + 1, PROFILE_STEPS.length - 1));
-  };
 
   if (isLoading) {
     return <LoadingOverlay isLoading={true} />;
@@ -1139,11 +1194,28 @@ export default function ProfileTab({
                       'unavailable' && (
                       <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                         <div className='space-y-2'>
-                          <Label htmlFor='unavailable_from'>
+                          <Label
+                            htmlFor='unavailable_from'
+                            className={
+                              !formData.unavailable_from ? 'text-red-600' : ''
+                            }
+                          >
                             Unavailable From
                           </Label>
                           <Input
                             id='unavailable_from'
+                            required
+                            aria-invalid={!formData.unavailable_from}
+                            aria-describedby={
+                              !formData.unavailable_from
+                                ? 'unavailable_from-required'
+                                : undefined
+                            }
+                            className={
+                              !formData.unavailable_from
+                                ? 'border-red-600 focus-visible:ring-red-600'
+                                : ''
+                            }
                             name='unavailable_from'
                             type='date'
                             value={
@@ -1153,13 +1225,38 @@ export default function ProfileTab({
                             }
                             onChange={handleInputChange}
                           />
+                          {!formData.unavailable_from && (
+                            <p
+                              id='unavailable_from-required'
+                              className='text-sm text-red-600'
+                            >
+                              Unavailable From is required
+                            </p>
+                          )}
                         </div>
                         <div className='space-y-2'>
-                          <Label htmlFor='unavailable_until'>
+                          <Label
+                            htmlFor='unavailable_until'
+                            className={
+                              !formData.unavailable_until ? 'text-red-600' : ''
+                            }
+                          >
                             Unavailable Until
                           </Label>
                           <Input
                             id='unavailable_until'
+                            required
+                            aria-invalid={!formData.unavailable_until}
+                            aria-describedby={
+                              !formData.unavailable_until
+                                ? 'unavailable_until-required'
+                                : undefined
+                            }
+                            className={
+                              !formData.unavailable_until
+                                ? 'border-red-600 focus-visible:ring-red-600'
+                                : ''
+                            }
                             name='unavailable_until'
                             type='date'
                             value={
@@ -1172,6 +1269,14 @@ export default function ProfileTab({
                             }
                             onChange={handleInputChange}
                           />
+                          {!formData.unavailable_until && (
+                            <p
+                              id='unavailable_until-required'
+                              className='text-sm text-red-600'
+                            >
+                              Unavailable Until is required
+                            </p>
+                          )}
                         </div>
                       </div>
                     )}
