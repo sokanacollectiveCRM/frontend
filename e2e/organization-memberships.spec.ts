@@ -160,7 +160,9 @@ test('a platform account with no active membership sees no organization workspac
   });
   await page.goto('/clients');
   await expect(
-    page.getByRole('heading', { name: 'No active organization membership' })
+    page.getByRole('heading', {
+      name: 'You’re not connected to an organization',
+    })
   ).toBeVisible();
   await expect(
     page.getByRole('link', { name: 'Leads', exact: true })

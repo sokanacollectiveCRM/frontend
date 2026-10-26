@@ -62,11 +62,11 @@ export function NoOrganizationScreen({
           id='no-organization-title'
           className='text-2xl font-semibold leading-tight tracking-tight sm:text-3xl'
         >
-          No active organization membership
+          You’re not connected to an organization
         </h1>
         <p className='mt-4 text-sm leading-6 text-[#647873] sm:text-base'>
-          Your Sokana360 account is still active. To open a workspace, you’ll
-          need an invitation from an organization.
+          You can still sign in with your existing email and password. You
+          currently don’t have permission to open any organization’s workspace.
         </p>
         <div className='mt-7 space-y-5 rounded-2xl bg-[#f5f8f6] p-5'>
           <div className='flex gap-3'>
@@ -75,10 +75,11 @@ export function NoOrganizationScreen({
               aria-hidden='true'
             />
             <div>
-              <p className='text-sm font-medium'>Your account stays with you</p>
+              <p className='text-sm font-medium'>How to get workspace access</p>
               <p className='mt-1 text-sm leading-5 text-[#647873]'>
-                Keep using the same email and password when you’re invited
-                again.
+                Ask the organization’s administrator to invite you. Accepting
+                the invitation gives your existing account permission to enter
+                its workspace.
               </p>
             </div>
           </div>
@@ -101,8 +102,8 @@ export function NoOrganizationScreen({
         <div className='mt-6 flex gap-2.5 text-sm leading-5 text-[#647873]'>
           <Mail className='mt-0.5 size-4 shrink-0' aria-hidden='true' />
           <p>
-            Already received a new invitation? Open the link in your email to
-            rejoin.
+            Already have an invitation? Open the link in your email and accept
+            it using your existing login.
           </p>
         </div>
         <div className='mt-8 flex flex-col gap-4 border-t border-[#e7ede9] pt-6 sm:flex-row sm:items-center sm:justify-between'>
