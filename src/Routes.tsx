@@ -1,3 +1,4 @@
+import StaffPermissionsPage from './features/staff-permissions/StaffPermissionsPage';
 import NavLayout from '@/common/layouts/NavLayout';
 import { AuthPublicRoutes, AuthRoutes } from '@/features/auth/AuthRoutes';
 import ClientLogin from '@/features/auth/ClientLogin';
@@ -101,6 +102,10 @@ const AppRoutes = () => (
                 />
               </Route>
               <Route element={<StaffCrmRoute />}>
+                <Route
+                  path='/settings/staff-permissions'
+                  element={<StaffPermissionsPage />}
+                />
                 {ContractRoutes()}
                 {PipelineRoutes()}
                 {ClientRoutes()}

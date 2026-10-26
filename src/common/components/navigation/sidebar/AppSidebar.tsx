@@ -16,12 +16,38 @@ import {
 import { UserContext } from '@/common/contexts/UserContext';
 import { getVisibleSidebarSections } from '@/common/data/sidebar-data';
 import { useIsClientPortalUser } from '@/common/hooks/auth/useIsClientPortalUser';
-import { useContext } from 'react';
+import { useContext, useEffect, useState } from 'react';
+import { staffRequest } from '@/features/staff-permissions/staffPermissionsApi';
+import { Link } from 'react-router-dom';
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { user, isLoading } = useContext(UserContext);
   const { isClientPortalUser, isLoading: isPortalLoading } =
     useIsClientPortalUser();
+
+  const [canManageStaff, setCanManageStaff] = useState(false);
+  useEffect(() => {
+    let active = true;
+    const refresh = () => {
+      if (user?.role !== 'admin') {
+        setCanManageStaff(false);
+        return;
+      }
+      staffRequest('/access')
+        .then(() => {
+          if (active) setCanManageStaff(true);
+        })
+        .catch(() => {
+          if (active) setCanManageStaff(false);
+        });
+    };
+    refresh();
+    window.addEventListener('focus', refresh);
+    return () => {
+      active = false;
+      window.removeEventListener('focus', refresh);
+    };
+  }, [user?.id, user?.role]);
 
   // while we're still loading auth, render nothing or a spinner
   if (isLoading || isPortalLoading) {
@@ -48,6 +74,14 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
 
       <SidebarContent>
+        {canManageStaff && !isClient && (
+          <div className='px-4 py-2'>
+            <span className='text-xs'>Settings</span>
+            <Link className='block py-2' to='/settings/staff-permissions'>
+              Staff permissions
+            </Link>
+          </div>
+        )}
         {visible.map((section) => (
           <SidebarSection
             key={section.label}
