@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { expect, it, vi } from 'vitest';
-import RequestPasswordReset from '../RequestPasswordReset';
+import RequestPasswordReset from '@/features/auth/RequestPasswordReset';
 const { reset } = vi.hoisted(() => ({
   reset: vi.fn().mockResolvedValue(undefined),
 }));

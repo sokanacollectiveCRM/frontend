@@ -231,7 +231,10 @@ test('Teams reviews documents with the same preview, rejection reason and approv
     path: '/tmp/jerry-teams-documents-mobile.png',
     fullPage: true,
   });
-  await page.getByRole('button', { name: 'Close', exact: true }).first().click();
+  await page
+    .getByRole('button', { name: 'Close', exact: true })
+    .first()
+    .click();
   fileName = 'fictional-certificate.pdf';
   await page
     .getByRole('button', { name: 'Review profile & documents' })

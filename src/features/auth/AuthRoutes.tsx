@@ -1,10 +1,8 @@
 import { Route } from 'react-router-dom';
 
 import AuthCallback from './AuthCallback';
-import ClientLogin from './ClientLogin';
 import Login from './Login';
 import ResetPassword from './ResetPassword';
-import SetPassword from './SetPassword';
 import SignUp from './SignUp';
 
 export const AuthPublicRoutes = () => (

@@ -1,7 +1,7 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, expect, it, vi } from 'vitest';
-import DoulaDashboard from '../DoulaDashboard';
+import DoulaDashboard from '@/features/doula-dashboard/DoulaDashboard';
 import { getDoulaDocuments } from '@/api/doulas/doulaService';
 vi.mock('@/common/components/user/ProfileDropdown', () => ({
   ProfileDropdown: () => null,

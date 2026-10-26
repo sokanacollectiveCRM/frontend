@@ -10,6 +10,7 @@ test('doula corrects requested changes, resubmits, and admin approves', async ({
     firstname: 'Maya',
     lastname: 'Rivers',
     email: 'maya@example.com',
+    phone_number: '3125550199',
     address: '1 Fictional Way',
     city: 'Chicago',
     state: 'IL',
@@ -75,7 +76,16 @@ test('doula corrects requested changes, resubmits, and admin approves', async ({
       data = { ...profile, role: 'doula' };
     } else if (path.endsWith('/documents'))
       data = {
+        backgroundCheck: { status: 'cleared', setAt: null, setBy: null },
+        canManageBackgroundCheck: role === 'admin',
         documents: [
+          ...['w9', 'direct_deposit_form'].map((type) => ({
+            id: type,
+            document_type: type,
+            status: 'approved',
+            file_name: `fictional-${type}.pdf`,
+            file_path: `fixture/${type}.pdf`,
+          })),
           {
             id: 'cert',
             document_type: 'training_certificate',
@@ -88,6 +98,7 @@ test('doula corrects requested changes, resubmits, and admin approves', async ({
     await route.fulfill({ status: 200, headers, json: data });
   });
   await page.goto('/doula-dashboard/profile');
+  await page.getByRole('button', { name: 'Review step', exact: true }).click();
   await page
     .getByRole('button', { name: 'Mark profile complete', exact: true })
     .click();
@@ -113,12 +124,18 @@ test('doula corrects requested changes, resubmits, and admin approves', async ({
   ).toBeDisabled();
   role = 'doula';
   await page.goto('/doula-dashboard/profile');
+  await page.getByRole('button', { name: 'Review step', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText(
     'Please explain your training in the bio.'
   );
   await page
+    .getByRole('button', { name: 'About you step', exact: true })
+    .click();
+  await page.getByRole('button', { name: 'Edit profile', exact: true }).click();
+  await page
     .getByLabel('About me (bio)')
     .fill('My corrected fictional bio describes my doula training.');
+  await page.getByRole('button', { name: 'Review step', exact: true }).click();
   await page
     .getByRole('button', { name: 'Resubmit for review', exact: true })
     .click();
@@ -151,6 +168,7 @@ test('doula corrects requested changes, resubmits, and admin approves', async ({
   ).toBeVisible();
   role = 'doula';
   await page.goto('/doula-dashboard/profile');
+  await page.getByRole('button', { name: 'Review step', exact: true }).click();
   await expect(
     page.getByText('Profile approved', { exact: true })
   ).toBeVisible();

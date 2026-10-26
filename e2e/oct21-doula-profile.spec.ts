@@ -1,24 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
-
-test.use({
-  video: 'on',
-  launchOptions: { slowMo: 400 },
-  viewport: { width: 1440, height: 1000 },
-});
-async function caption(page: Page, text: string) {
-  await page.evaluate((message) => {
-    let box = document.getElementById('test-caption');
-    if (!box) {
-      box = document.createElement('div');
-      box.id = 'test-caption';
-      box.style.cssText =
-        'position:fixed;bottom:20px;left:20px;z-index:999999;background:#173d47;color:white;padding:16px;border-radius:10px;font:20px sans-serif';
-      document.body.appendChild(box);
-    }
-    box.textContent = message;
-  }, text);
-  await page.waitForTimeout(3000);
-}
+import { test, expect } from '@playwright/test';
 
 test('doula profile layout, optional demographics, submission and client view', async ({
   page,
@@ -30,6 +10,8 @@ test('doula profile layout, optional demographics, submission and client view', 
     firstname: 'Maya',
     lastname: 'Rivers',
     email: 'maya@example.com',
+    phone_number: '3125550199',
+    profile_review_status: 'draft',
     address: '1 Fictional Way',
     city: 'Chicago',
     state: 'IL',
@@ -70,6 +52,7 @@ test('doula profile layout, optional demographics, submission and client view', 
       };
     else if (path.endsWith('/doulas/profile/submit')) {
       submissions++;
+      profile.profile_review_status = 'submitted';
       profile.profile_submitted_at = '2026-10-13T12:00:00Z';
       data = {
         success: true,
@@ -82,7 +65,15 @@ test('doula profile layout, optional demographics, submission and client view', 
       data = { records: [], availabilityStatus: { status: 'available' } };
     else if (path.endsWith('/doulas/documents'))
       data = {
+        backgroundCheck: { status: 'cleared', setAt: null, setBy: null },
         documents: [
+          ...['w9', 'direct_deposit_form'].map((type) => ({
+            id: type,
+            document_type: type,
+            status: 'uploaded',
+            file_name: `fictional-${type}.pdf`,
+            file_path: `fixture/${type}.pdf`,
+          })),
           {
             id: 'training',
             document_type: 'training_certificate',
@@ -121,22 +112,18 @@ test('doula profile layout, optional demographics, submission and client view', 
     await route.fulfill({ status: 200, headers, json: data });
   });
   await page.goto('/doula-dashboard/profile');
+  await page.getByRole('button', { name: 'Edit profile', exact: true }).click();
   await expect(page.getByLabel('About me (bio)')).toHaveValue(profile.bio);
-  await caption(page, 'Doula opens Profile — fictional test data');
-  await page.getByLabel('About me (bio)').scrollIntoViewIfNeeded();
-  expect(
-    await page
-      .getByLabel('About me (bio)')
-      .evaluate(
-        (el) =>
-          !!(
-            el.compareDocumentPosition(
-              document.getElementById('scheduling_url')!
-            ) & Node.DOCUMENT_POSITION_FOLLOWING
-          )
-      )
-  ).toBeTruthy();
-  await caption(page, 'Bio, in first person, sits above the scheduling link');
+  await page
+    .getByRole('button', { name: 'Scheduling step', exact: true })
+    .click();
+  await expect(page.getByLabel('Scheduling Link', { exact: true })).toHaveValue(
+    profile.scheduling_url
+  );
+  await expect(page.getByLabel('About me (bio)')).not.toBeVisible();
+  await page
+    .getByRole('button', { name: 'Certifications step', exact: true })
+    .click();
   await expect(page.getByLabel('Certification name')).toHaveCount(0);
   await page.getByRole('button', { name: 'Add certification' }).click();
   await expect(page.getByLabel('Certification name')).toBeFocused();
@@ -146,13 +133,12 @@ test('doula profile layout, optional demographics, submission and client view', 
   await page.getByLabel('Certification name').fill('Birth doula');
   await page.getByLabel('Issuing organization').fill('Example Training');
   await page.getByLabel('Expiration date', { exact: true }).fill('2028-03-31');
-  await caption(page, 'Add a certification beside the photo and name');
   await page.getByRole('button', { name: 'Add certification' }).click();
   await expect(page.getByLabel('Certification name')).toHaveCount(2);
-  await page.getByRole('button', { name: 'Save Changes' }).click();
+  await page.getByRole('button', { name: 'Save Changes', exact: true }).click();
   await expect(
-    page.getByRole('button', { name: 'Save Changes' })
-  ).toBeEnabled();
+    page.getByRole('button', { name: 'Edit profile', exact: true })
+  ).toBeVisible();
   await expect
     .poll(() => profile.certifications)
     .toEqual([
@@ -167,13 +153,12 @@ test('doula profile layout, optional demographics, submission and client view', 
   await expect(page.getByText('Birth doula', { exact: true })).toBeVisible();
   expect(profile.pronouns).toBe('');
   expect(profile.race_ethnicity).toEqual([]);
-  await caption(page, 'Pronouns and demographics left blank, still saves');
+  await page.getByRole('button', { name: 'Review step', exact: true }).click();
   await page.getByRole('button', { name: 'Mark profile complete' }).click();
   await expect(
     page.getByText('Submitted for review', { exact: true })
   ).toBeVisible();
   expect(submissions).toBe(1);
-  await caption(page, 'Mark profile complete → submitted for review');
   role = 'client';
   await page.goto('/profile');
   await expect(page.getByText(profile.bio, { exact: true })).toBeVisible();
@@ -184,8 +169,4 @@ test('doula profile layout, optional demographics, submission and client view', 
   await expect(page.getByText('NEVER SHOW THIS DEMOGRAPHIC')).toHaveCount(0);
   await expect(page.getByAltText("Maya Rivers's profile")).toBeVisible();
   await page.getByText(profile.bio, { exact: true }).scrollIntoViewIfNeeded();
-  await caption(
-    page,
-    'Client sees photo, bio, scheduling link, certifications'
-  );
 });

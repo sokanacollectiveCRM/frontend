@@ -38,12 +38,6 @@ import { Main } from '@/common/layouts/Main';
 import { ProfileDropdown } from '@/common/components/user/ProfileDropdown';
 import UserAvatar from '@/common/components/user/UserAvatar';
 import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
-import {
-  getDoulaById,
-  getDoulaVisits,
-  getDoulaNotes,
-  getActivityLog,
-} from '@/api/doulas/doulaApi';
 import { fetchDoulaAssignments } from '@/api/doulas/doulaDirectoryApi';
 import type {
   Doula,
@@ -391,7 +385,7 @@ export default function DoulaDetailPage() {
                           a.click();
                           URL.revokeObjectURL(url);
                           toast.success('Headshot downloaded');
-                        } catch (e) {
+                        } catch {
                           toast.error('Could not download headshot');
                         }
                       }}

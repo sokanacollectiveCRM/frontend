@@ -1,7 +1,5 @@
 import { useState } from 'react';
 
-import styled from 'styled-components';
-
 import {
   Alert,
   AlertDescription,
@@ -22,12 +20,6 @@ import { Loader2 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
-const Title = styled.h2`
-  text-align: center;
-  color: #333;
-  margin-bottom: 20px;
-`;
-
 export default function RequestPasswordReset() {
   const [params] = useSearchParams();
   const invitation = params.get('invitation');
@@ -35,7 +27,6 @@ export default function RequestPasswordReset() {
     ? `/accept-invite?${new URLSearchParams({ token: invitation })}`
     : null;
   const [email, setEmail] = useState(params.get('email') || '');
-  const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { requestPasswordReset } = useUser();
