@@ -28,6 +28,10 @@ afterEach(cleanup);
 beforeEach(() => vi.clearAllMocks());
 const fields = [
   'training_certificate',
+  'w9',
+  'direct_deposit_form',
+  'cpr',
+  'hipaa',
   'liability_insurance_certificate',
   'illinois_medicaid_certification',
   'miscellaneous',

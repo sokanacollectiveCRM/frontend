@@ -35,17 +35,21 @@ import {
 // 3A. REQUIRED_DOULA_DOCUMENT_TYPES — training certificate only
 // ─────────────────────────────────────────────
 describe('Ticket 3 — REQUIRED_DOULA_DOCUMENT_TYPES', () => {
-  it('contains exactly the training certificate', () => {
-    expect(REQUIRED_DOULA_DOCUMENT_TYPES).toEqual(['training_certificate']);
+  it('contains the three configured required uploads', () => {
+    expect(REQUIRED_DOULA_DOCUMENT_TYPES).toEqual([
+      'training_certificate',
+      'w9',
+      'direct_deposit_form',
+    ]);
   });
 
-  it('does not require liability insurance, W9, direct deposit, or background check', () => {
+  it('requires W-9 and direct deposit but not liability insurance or a background upload', () => {
     expect(REQUIRED_DOULA_DOCUMENT_TYPES).not.toContain(
       'liability_insurance_certificate'
     );
     expect(REQUIRED_DOULA_DOCUMENT_TYPES).not.toContain('background_check');
-    expect(REQUIRED_DOULA_DOCUMENT_TYPES).not.toContain('w9');
-    expect(REQUIRED_DOULA_DOCUMENT_TYPES).not.toContain('direct_deposit_form');
+    expect(REQUIRED_DOULA_DOCUMENT_TYPES).toContain('w9');
+    expect(REQUIRED_DOULA_DOCUMENT_TYPES).toContain('direct_deposit_form');
   });
 
   it('lists liability insurance and the new uploads as optional', () => {
@@ -58,12 +62,8 @@ describe('Ticket 3 — REQUIRED_DOULA_DOCUMENT_TYPES', () => {
     expect(OPTIONAL_DOULA_DOCUMENT_TYPES).toContain('miscellaneous');
   });
 
-  it('retires W9, direct deposit, and background check', () => {
-    expect(RETIRED_DOULA_DOCUMENT_TYPES).toEqual([
-      'background_check',
-      'w9',
-      'direct_deposit_form',
-    ]);
+  it('retires only the background check upload', () => {
+    expect(RETIRED_DOULA_DOCUMENT_TYPES).toEqual(['background_check']);
   });
 });
 
@@ -294,15 +294,9 @@ describe('Ticket 3 — uploadDocument validation', () => {
     const pdfFile = new File(['%PDF-1.4 fictional fixture'], 'w9.pdf', {
       type: 'application/pdf',
     });
-    await expect(uploadDocument(pdfFile, 'w9')).rejects.toThrow(
-      /no longer accepted/i
-    );
     await expect(uploadDocument(pdfFile, 'background_check')).rejects.toThrow(
       /no longer accepted/i
     );
-    await expect(
-      uploadDocument(pdfFile, 'direct_deposit_form')
-    ).rejects.toThrow(/no longer accepted/i);
   });
 });
 
@@ -471,7 +465,7 @@ describe('Ticket 3 — DocumentCompleteness activation eligibility', () => {
       items: [],
     };
 
-    expect(completeness.total_required).toBe(1);
+    expect(completeness.total_required).toBe(3);
   });
 });
 

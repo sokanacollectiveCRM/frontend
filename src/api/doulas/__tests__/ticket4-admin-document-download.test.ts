@@ -37,14 +37,18 @@ const mockFetchWithAuth = vi.mocked(fetchWithAuth);
 // 4A. Required document types
 // ─────────────────────────────────────────────
 describe('Ticket 4 — REQUIRED_DOULA_DOCUMENT_TYPES', () => {
-  it('has exactly one required document type', () => {
-    expect(REQUIRED_DOULA_DOCUMENT_TYPES).toEqual(['training_certificate']);
+  it('has three required document types', () => {
+    expect(REQUIRED_DOULA_DOCUMENT_TYPES).toEqual([
+      'training_certificate',
+      'w9',
+      'direct_deposit_form',
+    ]);
   });
 
-  it('does not require background_check, w9, or direct_deposit_form', () => {
+  it('requires W-9 and direct deposit without a background upload', () => {
     expect(REQUIRED_DOULA_DOCUMENT_TYPES).not.toContain('background_check');
-    expect(REQUIRED_DOULA_DOCUMENT_TYPES).not.toContain('w9');
-    expect(REQUIRED_DOULA_DOCUMENT_TYPES).not.toContain('direct_deposit_form');
+    expect(REQUIRED_DOULA_DOCUMENT_TYPES).toContain('w9');
+    expect(REQUIRED_DOULA_DOCUMENT_TYPES).toContain('direct_deposit_form');
   });
 });
 
@@ -76,7 +80,7 @@ describe('Ticket 4 — DOCUMENT_TYPE_LABELS', () => {
 
   it('keeps readable labels for archived types', () => {
     expect(DOCUMENT_TYPE_LABELS.background_check).toBe('Background check');
-    expect(DOCUMENT_TYPE_LABELS.w9).toBe('W9');
+    expect(DOCUMENT_TYPE_LABELS.w9).toBe('W-9');
     expect(DOCUMENT_TYPE_LABELS.direct_deposit_form).toBe(
       'Direct deposit form'
     );

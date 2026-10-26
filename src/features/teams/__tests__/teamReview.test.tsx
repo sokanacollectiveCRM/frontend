@@ -73,6 +73,8 @@ beforeEach(() => {
     () =>
       ({
         active: [
+          { document_type: 'w9', status: 'approved' },
+          { document_type: 'direct_deposit_form', status: 'approved' },
           {
             document_type: 'training_certificate',
             document_id: 'cert',

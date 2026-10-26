@@ -1,3 +1,14 @@
+import {
+  REQUIRED_DOULA_DOCUMENT_TYPES,
+  OPTIONAL_DOULA_DOCUMENT_TYPES,
+  PORTAL_DOULA_DOCUMENT_TYPES,
+  isRequiredDocument,
+} from '@/domain/documentPolicy';
+export {
+  REQUIRED_DOULA_DOCUMENT_TYPES,
+  OPTIONAL_DOULA_DOCUMENT_TYPES,
+  PORTAL_DOULA_DOCUMENT_TYPES,
+} from '@/domain/documentPolicy';
 import { validateDocumentFile } from '@/common/utils/documentUpload';
 // API service functions for Doula Dashboard
 // Base URL: http://localhost:5050/api
@@ -375,31 +386,10 @@ export async function deleteDoulaAvailability(
 // 2. Document Management (Mandatory Doula Documents)
 // ============================================
 
-export const REQUIRED_DOULA_DOCUMENT_TYPES = ['training_certificate'] as const;
-
 export type RequiredDocumentType =
   (typeof REQUIRED_DOULA_DOCUMENT_TYPES)[number];
 
-export const OPTIONAL_DOULA_DOCUMENT_TYPES = [
-  'liability_insurance_certificate',
-  'illinois_medicaid_certification',
-  'miscellaneous',
-  'license',
-  'other',
-] as const;
-
-export const RETIRED_DOULA_DOCUMENT_TYPES = [
-  'background_check',
-  'w9',
-  'direct_deposit_form',
-] as const;
-
-export const PORTAL_DOULA_DOCUMENT_TYPES = [
-  'training_certificate',
-  'liability_insurance_certificate',
-  'illinois_medicaid_certification',
-  'miscellaneous',
-] as const;
+export const RETIRED_DOULA_DOCUMENT_TYPES = ['background_check'] as const;
 
 export type PortalDocumentType = (typeof PORTAL_DOULA_DOCUMENT_TYPES)[number];
 
@@ -416,49 +406,50 @@ export interface DoulaDocumentMeta {
   retired?: boolean;
 }
 
-export const DOULA_DOCUMENT_META: Record<DocumentType, DoulaDocumentMeta> = {
+const DOCUMENT_META: Record<
+  DocumentType,
+  Omit<DoulaDocumentMeta, 'required'>
+> = {
+  cpr: { label: 'CPR' },
+  hipaa: { label: 'HIPAA' },
   training_certificate: {
     label: 'Doula training certificate',
-    required: true,
   },
   liability_insurance_certificate: {
     label: 'Liability insurance',
-    required: false,
     helperText: 'Required for Medicaid clients',
   },
   illinois_medicaid_certification: {
     label: 'Illinois Medicaid certification',
-    required: false,
   },
   miscellaneous: {
     label: 'Miscellaneous documents',
-    required: false,
     multiple: true,
   },
   license: {
     label: 'License',
-    required: false,
   },
   other: {
     label: 'Other',
-    required: false,
   },
   background_check: {
     label: 'Background check',
-    required: false,
     retired: true,
   },
   w9: {
-    label: 'W9',
-    required: false,
-    retired: true,
+    label: 'W-9',
   },
   direct_deposit_form: {
     label: 'Direct deposit form',
-    required: false,
-    retired: true,
   },
 };
+
+export const DOULA_DOCUMENT_META = Object.fromEntries(
+  Object.entries(DOCUMENT_META).map(([type, meta]) => [
+    type,
+    { ...meta, required: isRequiredDocument(type) },
+  ])
+) as Record<DocumentType, DoulaDocumentMeta>;
 
 export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> =
   Object.fromEntries(
@@ -545,6 +536,7 @@ function parseDoulaDocumentRow(raw: unknown): DocumentCompletenessItem | null {
 export function partitionDoulaDocuments(data: {
   documents?: unknown[] | null;
   completeness?: Partial<DocumentCompleteness> | null;
+  visibleDocumentTypes?: string[];
 }): {
   active: DocumentCompletenessItem[];
   archived: DocumentCompletenessItem[];
@@ -564,7 +556,10 @@ export function partitionDoulaDocuments(data: {
   const portalTypes = new Set<string>(PORTAL_DOULA_DOCUMENT_TYPES);
   const active: DocumentCompletenessItem[] = [];
 
-  for (const type of PORTAL_DOULA_DOCUMENT_TYPES) {
+  for (const type of PORTAL_DOULA_DOCUMENT_TYPES.filter(
+    (type) =>
+      !data.visibleDocumentTypes || data.visibleDocumentTypes.includes(type)
+  )) {
     const matches = documents.filter((doc) => doc.document_type === type);
     const meta = DOULA_DOCUMENT_META[type];
     if (meta.multiple) {
@@ -612,7 +607,34 @@ export function partitionDoulaDocuments(data: {
   };
 }
 
+export interface BackgroundCheck {
+  status: 'not_cleared' | 'cleared';
+  setAt: string | null;
+  setBy: string | null;
+}
+export async function setDoulaBackgroundCheck(
+  doulaId: string,
+  status: BackgroundCheck['status']
+): Promise<void> {
+  const response = await fetchWithAuth(
+    buildUrl(
+      `/api/admin/doulas/${encodeURIComponent(doulaId)}/background-check`
+    ),
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    }
+  );
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error || 'Could not update background check.');
+  }
+}
 export interface DocumentsResponse {
+  backgroundCheck?: BackgroundCheck;
+  canManageBackgroundCheck?: boolean;
+  visibleDocumentTypes?: string[];
   documents: DoulaDocument[];
   completeness?: DocumentCompleteness;
 }
@@ -701,6 +723,7 @@ export async function getDoulaDocuments(): Promise<DocumentsResponse> {
       rejectionReason: d.rejectionReason ?? d.rejection_reason ?? null,
     })),
     completeness: completeness || undefined,
+    backgroundCheck: data.backgroundCheck,
   };
 }
 
@@ -803,6 +826,9 @@ export async function getAdminDoulaDocuments(
   const data = await response.json();
   return {
     documents: data.documents ?? [],
+    backgroundCheck: data.backgroundCheck,
+    canManageBackgroundCheck: data.canManageBackgroundCheck,
+    visibleDocumentTypes: data.visibleDocumentTypes,
     completeness: data.completeness,
   };
 }
