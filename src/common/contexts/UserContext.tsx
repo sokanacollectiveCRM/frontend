@@ -1,3 +1,4 @@
+import { OrganizationChooser } from '@/common/components/routes/OrganizationAccessScreens';
 import {
   organizationHeaders,
   selectedOrganization,
@@ -475,29 +476,17 @@ export function UserProvider({
 
   return (
     <UserContext.Provider value={contextValue}>
-      {children}
-      {organizations.length > 0 && (
-        <div className='fixed inset-0 z-[100] flex items-center justify-center bg-white p-6'>
-          <section
-            className='w-full max-w-md space-y-4'
-            aria-label='Choose organization'
-          >
-            <h1 className='text-2xl font-semibold'>Choose an organization</h1>
-            <p>Your profile and documents are separate in each organization.</p>
-            {organizations.map((org) => (
-              <button
-                key={org.id}
-                className='block w-full rounded border p-4 text-left'
-                onClick={() => {
-                  selectOrganization(org.id);
-                  window.location.assign('/');
-                }}
-              >
-                {org.name}
-              </button>
-            ))}
-          </section>
-        </div>
+      {organizations.length > 0 ? (
+        <OrganizationChooser
+          organizations={organizations}
+          onSelect={(id) => {
+            selectOrganization(id);
+            window.location.assign('/');
+          }}
+          onLogout={() => void logout()}
+        />
+      ) : (
+        children
       )}
       {showWarning && (
         <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50'>

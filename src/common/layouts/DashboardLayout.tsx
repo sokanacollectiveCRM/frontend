@@ -1,3 +1,4 @@
+import { useUser } from '@/common/hooks/user/useUser';
 import { AppSidebar } from '@/common/components/navigation/sidebar/AppSidebar';
 import {
   SidebarInset,
@@ -8,6 +9,8 @@ import { SearchProvider } from '@/common/contexts/SearchContext';
 import { Outlet } from 'react-router-dom';
 
 export default function DashboardLayout() {
+  const { user } = useUser();
+  if (user?.organizationAccess === 'none') return <Outlet />;
   return (
     <SearchProvider>
       <SidebarProvider className='min-h-dvh min-w-0 overflow-x-hidden'>
