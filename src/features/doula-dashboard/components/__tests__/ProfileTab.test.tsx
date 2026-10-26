@@ -72,7 +72,14 @@ beforeEach(() => {
   profile = { ...initial };
   vi.mocked(api.getDoulaProfile).mockImplementation(async () => profile);
   vi.mocked(api.getDoulaDocuments).mockResolvedValue({
+    backgroundCheck: { status: 'cleared', setAt: null, setBy: null },
     documents: [
+      { id: 'w9', documentType: 'w9', status: 'uploaded' } as any,
+      {
+        id: 'deposit',
+        documentType: 'direct_deposit_form',
+        status: 'uploaded',
+      } as any,
       {
         id: 'training',
         documentType: 'training_certificate',

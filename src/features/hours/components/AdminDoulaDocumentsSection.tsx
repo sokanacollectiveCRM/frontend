@@ -1,3 +1,5 @@
+import { BackgroundCheckStatus } from '@/common/components/BackgroundCheckStatus';
+import type { BackgroundCheck } from '@/api/doulas/doulaService';
 import {
   DocumentPreview,
   type DocumentPreviewSource,
@@ -51,6 +53,9 @@ export function AdminDoulaDocumentsSection({
   doulaId,
   doulaEmail,
 }: AdminDoulaDocumentsSectionProps) {
+  const [backgroundCheck, setBackgroundCheck] = useState<BackgroundCheck>();
+  const [canManageBackgroundCheck, setCanManageBackgroundCheck] =
+    useState(false);
   const [preview, setPreview] = useState<DocumentPreviewSource | null>(null);
   const [items, setItems] = useState<DocumentCompletenessItem[]>([]);
   const [archivedItems, setArchivedItems] = useState<
@@ -75,6 +80,8 @@ export function AdminDoulaDocumentsSection({
     setIsLoading(true);
     try {
       const data = await getAdminDoulaDocuments(doulaId);
+      setBackgroundCheck(data.backgroundCheck);
+      setCanManageBackgroundCheck(data.canManageBackgroundCheck === true);
       const view = partitionDoulaDocuments(data);
       setItems(view.active);
       setArchivedItems(view.archived);
@@ -206,6 +213,12 @@ export function AdminDoulaDocumentsSection({
 
   return (
     <>
+      <BackgroundCheckStatus
+        value={backgroundCheck}
+        doulaId={doulaId}
+        canManage={canManageBackgroundCheck}
+        onChanged={() => void fetchDocuments()}
+      />
       <DocumentPreview source={preview} onClose={() => setPreview(null)} />
       <Card
         className={`rounded-xl border shadow-sm ${
@@ -250,7 +263,7 @@ export function AdminDoulaDocumentsSection({
             items.map((item) => (
               <div
                 key={`${item.document_type}-${item.document_id ?? 'missing'}`}
-                className='flex items-center justify-between py-2 border-b border-gray-100 last:border-0'
+                className={`flex items-center justify-between py-2 border-b border-gray-100 last:border-0 ${DOULA_DOCUMENT_META[item.document_type as DocumentType]?.required && ['missing', 'rejected'].includes(item.status) ? 'border-l-4 border-l-amber-500 pl-3' : ''}`}
               >
                 <div className='flex items-center gap-3'>
                   <FileText className='h-4 w-4 text-gray-400' />
@@ -260,12 +273,12 @@ export function AdminDoulaDocumentsSection({
                         item.document_type
                       ] ?? item.document_type}
                     </p>
-                    <p className='text-xs text-gray-500'>
+                    <Badge className='text-xs'>
                       {DOULA_DOCUMENT_META[item.document_type as DocumentType]
                         ?.required
                         ? 'Required'
                         : 'Optional'}
-                    </p>
+                    </Badge>
                     {DOULA_DOCUMENT_META[item.document_type as DocumentType]
                       ?.helperText && (
                       <p className='text-xs text-muted-foreground'>

@@ -1,3 +1,7 @@
+import {
+  REQUIRED_DOULA_DOCUMENT_TYPES,
+  backgroundCheckSatisfied,
+} from '@/domain/documentPolicy';
 import { useUser } from '@/common/hooks/user/useUser';
 import { formatAddress } from '@/common/utils/formatAddress';
 import DocumentsTab from '@/features/doula-dashboard/components/DocumentsTab';
@@ -194,15 +198,17 @@ export default function ProfileTab({
       try {
         const data = await getDoulaDocuments();
         if (mounted && request === generation)
-          setHasTrainingCertificate(
-            data.documents.some(
-              (doc) =>
-                doc.documentType === 'training_certificate' &&
-                ['uploaded', 'approved'].includes(doc.status)
-            )
+          setHasRequiredDocuments(
+            REQUIRED_DOULA_DOCUMENT_TYPES.every((type) =>
+              data.documents.some(
+                (doc) =>
+                  doc.documentType === type &&
+                  ['uploaded', 'approved'].includes(doc.status)
+              )
+            ) && backgroundCheckSatisfied(data.backgroundCheck?.status)
           );
       } catch {
-        if (mounted && request === generation) setHasTrainingCertificate(false);
+        if (mounted && request === generation) setHasRequiredDocuments(false);
       } finally {
         if (mounted && request === generation) setCheckingDocuments(false);
       }
@@ -216,7 +222,7 @@ export default function ProfileTab({
       window.removeEventListener('focus', refreshDocuments);
     };
   }, []);
-  const [hasTrainingCertificate, setHasTrainingCertificate] = useState(false);
+  const [hasRequiredDocuments, setHasRequiredDocuments] = useState(false);
   const [isUploadingPicture, setIsUploadingPicture] = useState(false);
   const [languageDraft, setLanguageDraft] = useState('');
   const [formData, setFormData] = useState<UpdateProfileData>({
@@ -595,11 +601,11 @@ export default function ProfileTab({
           return false;
         }
       }
-      if (step === 3 && (checkingDocuments || !hasTrainingCertificate)) {
+      if (step === 3 && (checkingDocuments || !hasRequiredDocuments)) {
         toast.error(
           checkingDocuments
             ? 'Wait for documents to finish loading.'
-            : 'Upload your Doula training certificate in Documents.'
+            : 'Upload all required documents and wait for HR/payroll to clear the background check in Documents.'
         );
         showStep(3);
         return false;
@@ -1558,9 +1564,10 @@ export default function ProfileTab({
                         below.
                       </li>
                       <li>
-                        Open the Documents step and upload your Doula training
-                        certificate. Liability insurance and Illinois Medicaid
-                        documents are optional for general approval.
+                        Open the Documents step and upload the documents marked
+                        Required. HR/payroll must set any required background
+                        check clearance. Optional documents do not block general
+                        approval.
                       </li>
                       <li>
                         Return here and select Mark profile complete. This saves
@@ -1581,9 +1588,9 @@ export default function ProfileTab({
                             .map((field) => field.replace(/_/g, ' '))
                             .join(', ')}.`
                         : 'Required profile fields are complete.'}{' '}
-                      {hasTrainingCertificate
-                        ? 'Training certificate uploaded.'
-                        : 'Training certificate still needed in Documents.'}
+                      {hasRequiredDocuments
+                        ? 'Required documents uploaded and background check cleared.'
+                        : 'Required documents or background check clearance still needed in Documents.'}
                     </p>
                   )}
                   {profile.profile_submitted_at &&
@@ -1608,7 +1615,7 @@ export default function ProfileTab({
                               'changes_requested'
                           ) ||
                           checkingDocuments ||
-                          !hasTrainingCertificate ||
+                          !hasRequiredDocuments ||
                           getMissingRequiredFields(formData).length > 0
                         }
                       >

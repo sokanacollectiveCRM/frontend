@@ -67,8 +67,8 @@ describe('DocumentsTab Oct 21 document set', () => {
         .getAllByRole('button', { name: 'Upload', exact: true })
         .every((button) => button.getAttribute('type') === 'button')
     ).toBe(true);
-    expect(screen.getAllByText('Required')).toHaveLength(1);
-    expect(screen.getAllByText('Optional')).toHaveLength(3);
+    expect(screen.getAllByText('Required')).toHaveLength(3);
+    expect(screen.getAllByText('Optional')).toHaveLength(5);
     const training = screen.getByTestId('document-slot-training_certificate');
     expect(
       within(training).getByText('Doula training certificate')
@@ -78,6 +78,8 @@ describe('DocumentsTab Oct 21 document set', () => {
       'Liability insurance',
       'Illinois Medicaid certification',
       'Miscellaneous documents',
+      'CPR',
+      'HIPAA',
     ]) {
       const title = screen.getByText(label);
       expect(title).not.toHaveClass('text-red-600');
@@ -88,8 +90,10 @@ describe('DocumentsTab Oct 21 document set', () => {
       ).not.toBeInTheDocument();
     }
 
-    expect(screen.queryByText(/W9/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Direct Deposit/i)).not.toBeInTheDocument();
+    expect(screen.getByText('W-9')).toBeInTheDocument();
+    expect(screen.getByText('CPR')).toBeInTheDocument();
+    expect(screen.getByText('HIPAA')).toBeInTheDocument();
+    expect(screen.getByText(/Direct Deposit/i)).toBeInTheDocument();
     expect(screen.queryByText(/Background Check/i)).not.toBeInTheDocument();
     expect(screen.queryByText('Background check')).not.toBeInTheDocument();
   });

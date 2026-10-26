@@ -1,3 +1,10 @@
+import {
+  REQUIRED_DOULA_DOCUMENT_TYPES,
+  backgroundCheckSatisfied,
+  isRequiredDocument,
+} from '@/domain/documentPolicy';
+import { BackgroundCheckStatus } from '@/common/components/BackgroundCheckStatus';
+import type { BackgroundCheck } from '@/api/doulas/doulaService';
 import { formatAddress } from '@/common/utils/formatAddress';
 import {
   DocumentPreview,
@@ -152,6 +159,9 @@ export default function Teams() {
   const [isInviting, setIsInviting] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [backgroundCheck, setBackgroundCheck] = useState<BackgroundCheck>();
+  const [canManageBackgroundCheck, setCanManageBackgroundCheck] =
+    useState(false);
   const [documentsDialogOpen, setDocumentsDialogOpen] = useState(false);
   const [documentsMember, setDocumentsMember] = useState<TeamMember | null>(
     null
@@ -289,6 +299,8 @@ export default function Teams() {
   const handleOpenDocuments = async (member: TeamMember) => {
     if (member.role !== 'doula') return;
     setDocumentsMember(member);
+    setBackgroundCheck(undefined);
+    setCanManageBackgroundCheck(false);
     setReviewReason(member.profile_review_reason ?? '');
     setDocumentsDialogOpen(true);
     setDocumentsLoading(true);
@@ -297,6 +309,8 @@ export default function Teams() {
     setArchivedDocuments([]);
     try {
       const data = await getAdminDoulaDocuments(member.id);
+      setBackgroundCheck(data.backgroundCheck);
+      setCanManageBackgroundCheck(data.canManageBackgroundCheck === true);
       const view = partitionDoulaDocuments(data);
       setDocumentsItems(view.active);
       setArchivedDocuments(view.archived);
@@ -1485,11 +1499,15 @@ export default function Teams() {
                     documentsLoading ||
                     !documentsLoaded ||
                     documentsMember.profile_review_status !== 'submitted' ||
-                    !documentsItems.some(
-                      (item) =>
-                        item.document_type === 'training_certificate' &&
-                        item.status === 'approved'
-                    )
+                    !REQUIRED_DOULA_DOCUMENT_TYPES.every((type) =>
+                      documentsItems.some(
+                        (item) =>
+                          item.document_type === type &&
+                          item.status === 'approved'
+                      )
+                    ) ||
+                    (canManageBackgroundCheck &&
+                      !backgroundCheckSatisfied(backgroundCheck?.status))
                   }
                   onClick={() => void handleReviewAction()}
                 >
@@ -1502,6 +1520,27 @@ export default function Teams() {
               </section>
             )}
 
+            <BackgroundCheckStatus
+              value={backgroundCheck}
+              doulaId={documentsMember?.id}
+              canManage={canManageBackgroundCheck}
+              onChanged={() => {
+                if (documentsMember) {
+                  const current = {
+                    ...documentsMember,
+                    profile_review_status: ['approved', 'submitted'].includes(
+                      documentsMember.profile_review_status
+                    )
+                      ? 'draft'
+                      : documentsMember.profile_review_status,
+                    profile_review_version:
+                      documentsMember.profile_review_version + 1,
+                  };
+                  void handleOpenDocuments(current);
+                  void fetchTeam();
+                }
+              }}
+            />
             {documentsLoading ? (
               <p className='text-sm text-gray-500'>Loading documents...</p>
             ) : documentsItems.length === 0 ? (
@@ -1525,12 +1564,19 @@ export default function Teams() {
                 return (
                   <div
                     key={`${item.document_type}-${item.document_id ?? 'missing'}`}
-                    className='rounded-md border border-gray-200 p-3'
+                    className={`rounded-md border border-gray-200 p-3 ${isRequiredDocument(item.document_type) && ['missing', 'rejected'].includes(item.status) ? 'border-l-4 border-l-amber-500' : ''}`}
                   >
                     <div className='flex items-start justify-between gap-3'>
                       <div className='min-w-0'>
                         <p className='text-sm font-medium text-gray-900'>
-                          {label}
+                          {label}{' '}
+                          {isRequiredDocument(item.document_type) ? (
+                            <Badge className='bg-red-50 text-red-600'>
+                              Required
+                            </Badge>
+                          ) : (
+                            <Badge variant='outline'>Optional</Badge>
+                          )}
                         </p>
                         <p className='text-xs text-gray-500 capitalize'>
                           Status: {item.status}
