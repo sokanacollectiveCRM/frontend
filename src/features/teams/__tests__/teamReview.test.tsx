@@ -167,3 +167,24 @@ it('offers HR as an invite role to an ordinary admin', async () => {
     screen.getByRole('option', { name: /HR — doula profiles/ })
   ).toBeInTheDocument();
 });
+it('shows a pending invitation without offering profile review before acceptance', async () => {
+  vi.mocked(fetchWithAuth).mockResolvedValue({
+    ok: true,
+    json: async () => [
+      {
+        id: 'pending-invite',
+        firstname: 'Pending',
+        lastname: 'Doula',
+        email: 'pending@example.test',
+        role: 'doula',
+        invitation_status: 'pending',
+        account_status: 'pending',
+      },
+    ],
+  } as Response);
+  render(<Teams />);
+  expect(await screen.findByText('pending@example.test')).toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: 'Review profile & documents' })
+  ).not.toBeInTheDocument();
+});

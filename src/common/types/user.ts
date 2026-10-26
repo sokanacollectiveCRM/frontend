@@ -6,6 +6,7 @@ export type User = {
   profile_picture?: string;
   bio?: string;
   role: string;
+  organizationAccess?: 'none';
   emailVerified?: boolean;
   platformSupport?: boolean;
   state?: string;
@@ -16,5 +17,6 @@ export type User = {
     slug: string;
     name: string;
     role: string;
+    organizationAccess?: 'none';
   };
 };

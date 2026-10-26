@@ -15,7 +15,7 @@ function SessionLoading() {
 }
 
 export function PrivateRoute() {
-  const { user, isLoading } = useUser();
+  const { user, isLoading, logout } = useUser();
   const { client, isLoading: isClientLoading } = useClientAuth();
   const location = useLocation();
 
@@ -23,6 +23,25 @@ export function PrivateRoute() {
     return <SessionLoading />;
   }
 
+  if (user?.organizationAccess === 'none')
+    return (
+      <main className='p-6 space-y-4'>
+        <h1 className='text-2xl font-semibold'>
+          No active organization membership
+        </h1>
+        <p>
+          Your platform account is still active. An organization must invite you
+          before you can access its workspace. Historical documents remain with
+          their organization.
+        </p>
+        <button
+          className='rounded border px-4 py-2'
+          onClick={() => void logout()}
+        >
+          Log out
+        </button>
+      </main>
+    );
   if (user?.role === 'hr') {
     if (location.pathname === '/') return <Navigate to='/hr' replace />;
     if (!/^\/hr(?:\/|$)/.test(location.pathname))

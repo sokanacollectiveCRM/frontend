@@ -1,3 +1,8 @@
+import {
+  organizationHeaders,
+  selectedOrganization,
+  selectOrganization,
+} from '@/api/organizationContext';
 import type {
   IdentityMfaPending,
   LoginResult,
@@ -45,6 +50,9 @@ export function UserProvider({
 }: UserProviderProps): React.ReactElement {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [organizations, setOrganizations] = useState<
+    { id: string; name: string; slug: string }[]
+  >([]);
 
   const logout = async (): Promise<void> => {
     try {
@@ -67,6 +75,7 @@ export function UserProvider({
       logFailure('auth', 'logout_error');
     } finally {
       clearSessionAccessToken();
+      selectOrganization(null);
       setUser(null);
       window.location.href = '/login';
     }
@@ -80,7 +89,22 @@ export function UserProvider({
     }
     try {
       // /auth/me is an unwrapped user object — do not use canonical get().
-      const response = await fetchWithAuth(buildUrl('/auth/me'));
+      let response = await fetchWithAuth(buildUrl('/auth/me'));
+      if (response.status === 403 && selectedOrganization()) {
+        selectOrganization(null);
+        response = await fetchWithAuth(buildUrl('/auth/me'));
+      }
+      if (response.status === 409) {
+        const data = await response.json();
+        if (
+          data.code === 'TENANT_SELECTION_REQUIRED' &&
+          Array.isArray(data.tenants)
+        ) {
+          setUser(null);
+          setOrganizations(data.tenants);
+          return true;
+        }
+      }
       if (!response.ok) throw new Error('Auth check failed');
       const userData = await response.json();
       setUser(userData);
@@ -237,13 +261,35 @@ export function UserProvider({
       typeof (data as { token?: unknown }).token === 'string'
         ? (data as { token: string }).token.trim()
         : freshIdToken;
-    const meResponse = await fetch(buildUrl('/auth/me'), {
+    let meResponse = await fetch(buildUrl('/auth/me'), {
       credentials: 'include',
       headers: {
+        ...organizationHeaders(),
         Authorization: `Bearer ${sessionToken}`,
         'X-Session-Token': sessionToken,
       },
     });
+    if (meResponse.status === 403 && selectedOrganization()) {
+      selectOrganization(null);
+      meResponse = await fetch(buildUrl('/auth/me'), {
+        credentials: 'include',
+        headers: {
+          Authorization: `Bearer ${sessionToken}`,
+          'X-Session-Token': sessionToken,
+        },
+      });
+    }
+    if (meResponse.status === 409) {
+      const data = await meResponse.json();
+      if (
+        data.code === 'TENANT_SELECTION_REQUIRED' &&
+        Array.isArray(data.tenants)
+      ) {
+        setUser(null);
+        setOrganizations(data.tenants);
+        return true;
+      }
+    }
     if (!meResponse.ok) {
       clearSessionAccessToken();
       throw new Error('Code accepted, but session could not be verified.');
@@ -418,6 +464,10 @@ export function UserProvider({
     resendIdentityMfa,
     logout,
     checkAuth,
+    chooseOrganization: () => {
+      selectOrganization(null);
+      window.location.assign('/');
+    },
     googleAuth,
     requestPasswordReset,
     updatePassword,
@@ -426,6 +476,29 @@ export function UserProvider({
   return (
     <UserContext.Provider value={contextValue}>
       {children}
+      {organizations.length > 0 && (
+        <div className='fixed inset-0 z-[100] flex items-center justify-center bg-white p-6'>
+          <section
+            className='w-full max-w-md space-y-4'
+            aria-label='Choose organization'
+          >
+            <h1 className='text-2xl font-semibold'>Choose an organization</h1>
+            <p>Your profile and documents are separate in each organization.</p>
+            {organizations.map((org) => (
+              <button
+                key={org.id}
+                className='block w-full rounded border p-4 text-left'
+                onClick={() => {
+                  selectOrganization(org.id);
+                  window.location.assign('/');
+                }}
+              >
+                {org.name}
+              </button>
+            ))}
+          </section>
+        </div>
+      )}
       {showWarning && (
         <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50'>
           <div className='bg-white text-gray-900 rounded-lg shadow-xl p-6 max-w-sm w-full space-y-4'>

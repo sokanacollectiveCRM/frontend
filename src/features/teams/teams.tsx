@@ -76,6 +76,7 @@ interface TeamMember {
   bio: string;
   address: string;
   profile_picture?: string | null;
+  invitation_status?: string;
   account_status: string;
   profile_submitted_at: string | null;
   profile_review_status: string;
@@ -100,6 +101,7 @@ const toTeamMember = (member: any): TeamMember => ({
   firstname: String(member?.firstname ?? member?.first_name ?? '').trim(),
   lastname: String(member?.lastname ?? member?.last_name ?? '').trim(),
   role: normalizeTeamRole(member?.role),
+  invitation_status: member?.invitation_status,
   email: String(member?.email ?? '')
     .trim()
     .toLowerCase(),
@@ -680,29 +682,32 @@ export default function Teams() {
         throw new Error(errorMessage);
       }
 
-      const emailResponse = await fetchWithAuth(
-        buildUrl('/email/team-invite'),
-        {
-          //send the email invite after user is created
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: inviteForm.email,
-            firstname: inviteForm.firstname,
-            lastname: inviteForm.lastname,
-            role: inviteForm.role,
-          }),
-        }
-      );
+      const invitationResult = await response.json();
+      if (invitationResult.invitation_status !== 'pending') {
+        const emailResponse = await fetchWithAuth(
+          buildUrl('/email/team-invite'),
+          {
+            //send the email invite after user is created
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: inviteForm.email,
+              firstname: inviteForm.firstname,
+              lastname: inviteForm.lastname,
+              role: inviteForm.role,
+            }),
+          }
+        );
 
-      if (!emailResponse.ok) {
-        const errorData = await emailResponse.json();
-        const errorMessage = errorData.error || 'Failed to send invite email';
-        logFailure('teams', 'failed_to_send_invite_email');
-        toast.warning('Team member created but invite email failed to send');
-        throw new Error(errorMessage);
+        if (!emailResponse.ok) {
+          const errorData = await emailResponse.json();
+          const errorMessage = errorData.error || 'Failed to send invite email';
+          logFailure('teams', 'failed_to_send_invite_email');
+          toast.warning('Team member created but invite email failed to send');
+          throw new Error(errorMessage);
+        }
       }
 
       // Success - show notification
@@ -974,21 +979,23 @@ export default function Teams() {
                             {member.role.charAt(0).toUpperCase() +
                               member.role.slice(1)}
                           </Badge>
-                          {member.role === 'doula' && (
-                            <p className='text-sm mt-2'>
-                              Account: {member.account_status}. Profile:{' '}
-                              {member.profile_review_status === 'approved'
-                                ? 'Approved'
-                                : member.profile_review_status ===
-                                    'changes_requested'
-                                  ? 'Changes requested'
-                                  : member.profile_submitted_at
-                                    ? 'Ready for review'
-                                    : 'Profile incomplete'}
-                            </p>
-                          )}
+                          {member.role === 'doula' &&
+                            member.invitation_status !== 'pending' && (
+                              <p className='text-sm mt-2'>
+                                Account: {member.account_status}. Profile:{' '}
+                                {member.profile_review_status === 'approved'
+                                  ? 'Approved'
+                                  : member.profile_review_status ===
+                                      'changes_requested'
+                                    ? 'Changes requested'
+                                    : member.profile_submitted_at
+                                      ? 'Ready for review'
+                                      : 'Profile incomplete'}
+                              </p>
+                            )}
                           {user?.role === 'admin' &&
-                            member.role === 'doula' && (
+                            member.role === 'doula' &&
+                            member.invitation_status !== 'pending' && (
                               <Button
                                 variant='default'
                                 size='sm'
@@ -1014,7 +1021,8 @@ export default function Teams() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align='end' className='w-64'>
                           {user?.role === 'admin' &&
-                            member.role === 'doula' && (
+                            member.role === 'doula' &&
+                            member.invitation_status !== 'pending' && (
                               <DropdownMenuItem
                                 onClick={() => void handleOpenDocuments(member)}
                                 className='cursor-pointer'
@@ -1033,6 +1041,7 @@ export default function Teams() {
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem
+                            disabled={member.invitation_status === 'pending'}
                             onClick={() => handleEditClick(member)}
                             className='cursor-pointer'
                           >
@@ -1046,6 +1055,7 @@ export default function Teams() {
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className='text-red-600 cursor-pointer focus:text-red-600'
+                            disabled={member.invitation_status === 'pending'}
                             onClick={() => handleDeleteClick(member.id)}
                           >
                             <span>Remove</span>
@@ -1373,8 +1383,10 @@ export default function Teams() {
           <DialogHeader>
             <DialogTitle>Remove Team Member</DialogTitle>
             <DialogDescription>
-              Are you sure you want to remove this team member? This action
-              cannot be undone.
+              Remove this member from this organization? Their platform login,
+              memberships in other organizations, and this organization’s
+              historical profile and documents will be kept. An invitation is
+              required to return.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

@@ -36,6 +36,7 @@ export interface UserContextType {
     challengeId: string,
     idToken: string
   ) => Promise<IdentityMfaPending>;
+  chooseOrganization?: () => void;
   logout: () => Promise<void>;
   checkAuth: (options?: { silent?: boolean }) => Promise<boolean>;
   googleAuth: () => Promise<void>;

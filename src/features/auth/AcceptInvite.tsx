@@ -1,3 +1,5 @@
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { getFirebaseAuth } from '@/lib/firebase';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
@@ -23,6 +25,7 @@ interface InvitationPreview {
   lastname: string;
   role: string;
   organizationName: string;
+  existingAccount?: boolean;
 }
 
 export default function AcceptInvite() {
@@ -70,10 +73,23 @@ export default function AcceptInvite() {
     setIsSubmitting(true);
     setError('');
     try {
+      let idToken: string | undefined;
+      if (preview?.existingAccount) {
+        const credential = await signInWithEmailAndPassword(
+          getFirebaseAuth(),
+          preview.email,
+          password
+        );
+        idToken = await credential.user.getIdToken(true);
+      }
       const response = await fetch(buildUrl('/auth/invitations/accept'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, password }),
+        body: JSON.stringify({
+          token,
+          password: preview?.existingAccount ? undefined : password,
+          idToken,
+        }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -81,7 +97,7 @@ export default function AcceptInvite() {
       }
       setAccepted(true);
       toast.success(
-        'Invitation accepted. Check your email to verify your address, then log in.'
+        'Invitation accepted. Sign in to continue; complete email verification if requested.'
       );
     } catch (submitError) {
       const message =
@@ -115,8 +131,8 @@ export default function AcceptInvite() {
           ) : accepted ? (
             <div className='space-y-4 text-sm'>
               <p>
-                Your invitation is accepted for {preview?.email}. We sent a
-                verification email — confirm your inbox, then log in.
+                Your invitation is accepted for {preview?.email}. Sign in to
+                continue. Complete email verification if requested.
               </p>
               <Button asChild className='w-full'>
                 <Link to='/login'>Go to login</Link>
@@ -124,6 +140,13 @@ export default function AcceptInvite() {
             </div>
           ) : preview ? (
             <form onSubmit={handleSubmit} className='flex flex-col gap-6'>
+              {preview.existingAccount && (
+                <p className='text-sm'>
+                  Use your existing platform password. Accepting adds access to
+                  this organization; your password and other memberships stay
+                  unchanged. Documents from other organizations are not copied.
+                </p>
+              )}
               <div className='grid gap-2'>
                 <Label htmlFor='invite-name'>Name</Label>
                 <Input
@@ -141,18 +164,28 @@ export default function AcceptInvite() {
                 <PasswordInput
                   id='invite-password'
                   name='password'
-                  autoComplete='new-password'
-                  placeholder='Choose a password'
+                  autoComplete={
+                    preview.existingAccount
+                      ? 'current-password'
+                      : 'new-password'
+                  }
+                  placeholder={
+                    preview.existingAccount
+                      ? 'Enter your existing password'
+                      : 'Choose a password'
+                  }
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   required
-                  minLength={8}
+                  minLength={preview.existingAccount ? 1 : 8}
                 />
               </div>
               {error && <p className='text-sm text-red-600'>{error}</p>}
               <Button type='submit' className='w-full' disabled={isSubmitting}>
                 {isSubmitting ? (
                   <Loader2 className='mx-auto h-4 w-4 animate-spin' />
+                ) : preview.existingAccount ? (
+                  'Sign in and accept invitation'
                 ) : (
                   'Accept invitation'
                 )}

@@ -54,6 +54,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     return null;
   }
 
+  if (user?.organizationAccess === 'none') return null;
   const isAdmin = isAdminRole(user?.role);
   const isDoula = isDoulaRole(user?.role);
   const isClient = isClientPortalUser;
