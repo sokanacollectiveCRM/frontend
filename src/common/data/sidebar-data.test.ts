@@ -70,3 +70,16 @@ it('keeps document management inside the doula profile steps', () => {
   expect(titles).toContain('Profile');
   expect(titles).not.toContain('Documents');
 });
+it('limits HR navigation to the doula directory', () => {
+  expect(
+    flattenTitles(
+      getVisibleSidebarSections({
+        isAdmin: false,
+        isDoula: false,
+        isClient: false,
+        isBillingOnly: false,
+        isHr: true,
+      })
+    )
+  ).toEqual(['Doula directory']);
+});

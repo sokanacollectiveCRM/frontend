@@ -1,3 +1,4 @@
+import HrWorkspace from './features/hr/HrWorkspace';
 import StaffPermissionsPage from './features/staff-permissions/StaffPermissionsPage';
 import NavLayout from '@/common/layouts/NavLayout';
 import { AuthPublicRoutes, AuthRoutes } from '@/features/auth/AuthRoutes';
@@ -81,6 +82,7 @@ const AppRoutes = () => (
       <Route element={<DashboardLayout />}>
         <Route element={<PrivateRoute />}>
           <Route element={<EmailVerifiedRoute />}>
+            <Route path='/hr/*' element={<HrWorkspace />} />
             <Route
               path='/settings/intake-form'
               element={<IntakeFormSettingsPage />}

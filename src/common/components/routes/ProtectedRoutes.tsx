@@ -23,6 +23,13 @@ export function PrivateRoute() {
     return <SessionLoading />;
   }
 
+  if (user?.role === 'hr') {
+    if (location.pathname === '/') return <Navigate to='/hr' replace />;
+    if (!/^\/hr(?:\/|$)/.test(location.pathname))
+      return (
+        <AccessDenied description='This account is limited to the HR workspace.' />
+      );
+  }
   if (user || client) {
     return <Outlet />;
   }
@@ -108,6 +115,11 @@ export function StaffCrmRoute() {
   if (isClientPortalUser) {
     return <AccessDenied description='This area is limited to Sokana staff.' />;
   }
+
+  if (user?.role === 'hr')
+    return (
+      <AccessDenied description='This account is limited to the HR workspace.' />
+    );
 
   if (isBillingOnlyRole(user?.role)) {
     return <Navigate to={getBillingHomePath()} replace />;

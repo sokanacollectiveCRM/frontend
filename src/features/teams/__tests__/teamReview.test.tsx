@@ -157,3 +157,13 @@ it.each(['JPG', 'PNG', 'PDF'])(
     }
   }
 );
+it('offers HR as an invite role to an ordinary admin', async () => {
+  render(<Teams />);
+  fireEvent.click(await screen.findByRole('button', { name: /invite/i }));
+  const roleSelect = await screen.findByLabelText('Role');
+  fireEvent.change(roleSelect, { target: { value: 'hr' } });
+  expect(roleSelect).toHaveValue('hr');
+  expect(
+    screen.getByRole('option', { name: /HR — doula profiles/ })
+  ).toBeInTheDocument();
+});

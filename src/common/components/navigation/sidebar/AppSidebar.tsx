@@ -61,6 +61,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 
   const visible = getVisibleSidebarSections({
     isAdmin,
+    isHr: user?.role === 'hr',
     isDoula,
     isClient,
     isBillingOnly,

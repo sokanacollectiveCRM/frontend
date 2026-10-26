@@ -89,7 +89,7 @@ interface TeamMember {
   certifications: Certification[];
 }
 
-const ALLOWED_TEAM_ROLES = new Set(['admin', 'doula']);
+const ALLOWED_TEAM_ROLES = new Set(['admin', 'doula', 'hr']);
 
 const normalizeTeamRole = (value: unknown): string =>
   String(value ?? '')
@@ -134,7 +134,9 @@ export default function Teams() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]); //Team members state
   const [isLoading, setIsLoading] = useState(true); //Loading state
   const [searchQuery, setSearchQuery] = useState(''); //Search query state
-  const [roleFilter, setRoleFilter] = useState<'doula' | 'admin'>('doula');
+  const [roleFilter, setRoleFilter] = useState<'doula' | 'admin' | 'hr'>(
+    'doula'
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const [inviteForm, setInviteForm] = useState({
     //Invite form data state
@@ -776,11 +778,12 @@ export default function Teams() {
                 className='h-10 rounded-md border border-gray-300 bg-white px-3 text-sm'
                 value={roleFilter}
                 onChange={(e) =>
-                  setRoleFilter(e.target.value as 'doula' | 'admin')
+                  setRoleFilter(e.target.value as 'doula' | 'admin' | 'hr')
                 }
               >
                 <option value='doula'>Doulas</option>
                 <option value='admin'>Admins</option>
+                <option value='hr'>HR</option>
               </select>
 
               <div className='flex gap-2'>
@@ -883,6 +886,9 @@ export default function Teams() {
                         >
                           <option value='doula'>Doula</option>
                           <option value='admin'>Admin</option>
+                          <option value='hr'>
+                            HR — doula profiles, documents and background checks
+                          </option>
                         </select>
                       </div>
                       <Button
@@ -1235,6 +1241,9 @@ export default function Teams() {
                         >
                           <option value='doula'>Doula</option>
                           <option value='admin'>Admin</option>
+                          <option value='hr'>
+                            HR — doula profiles, documents and background checks
+                          </option>
                         </select>
                       </div>
                       <Button
@@ -1302,6 +1311,7 @@ export default function Teams() {
             <div className='space-y-2'>
               <Label htmlFor='edit-role'>Role</Label>
               <select
+                disabled={editForm.role === 'hr'}
                 id='edit-role'
                 className='w-full rounded-md border border-input bg-background px-3 py-2'
                 value={editForm.role}
@@ -1311,6 +1321,7 @@ export default function Teams() {
               >
                 <option value='doula'>Doula</option>
                 <option value='admin'>Admin</option>
+                {editForm.role === 'hr' && <option value='hr'>HR</option>}
               </select>
             </div>
             <div className='space-y-2'>

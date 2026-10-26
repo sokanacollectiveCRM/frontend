@@ -172,13 +172,22 @@ export function getVisibleSidebarSections({
   isClient,
   isBillingOnly,
   showIntakeForm = false,
+  isHr = false,
 }: {
   isAdmin: boolean;
   isDoula: boolean;
   isClient: boolean;
   isBillingOnly: boolean;
   showIntakeForm?: boolean;
+  isHr?: boolean;
 }): SidebarSection[] {
+  if (isHr)
+    return [
+      {
+        label: 'HR',
+        items: [{ title: 'Doula directory', url: '/hr', icon: LucideUsers }],
+      },
+    ];
   return sidebarSections
     .map((section) => {
       const filteredItems = section.items.filter((item: SidebarItem) => {
