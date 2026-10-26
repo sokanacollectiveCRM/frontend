@@ -392,7 +392,9 @@ export default function Teams() {
         setReviewReason(reviewReason);
         toast.success(
           requestChanges
-            ? 'Document rejected. Select Send requested changes to notify the doula.'
+            ? documentsMember.profile_review_status === 'submitted'
+              ? 'Document rejected. Select Send requested changes to notify the doula.'
+              : 'Document rejected. The doula can see the reason in Documents.'
             : 'Document approved'
         );
       } else {
@@ -1495,18 +1497,18 @@ export default function Teams() {
                     </p>
                   </div>
                 )}
-                {documentsMember.profile_review_status === 'submitted' && (
-                  <div className='space-y-2'>
-                    <Label htmlFor='review-reason'>
-                      Requested changes / rejection reason
-                    </Label>
-                    <Textarea
-                      id='review-reason'
-                      value={reviewReason}
-                      onChange={(e) => setReviewReason(e.target.value)}
-                      maxLength={2000}
-                      placeholder='Explain exactly what the doula needs to correct.'
-                    />
+                <div className='space-y-2'>
+                  <Label htmlFor='review-reason'>
+                    Requested changes / rejection reason
+                  </Label>
+                  <Textarea
+                    id='review-reason'
+                    value={reviewReason}
+                    onChange={(e) => setReviewReason(e.target.value)}
+                    maxLength={2000}
+                    placeholder='Explain exactly what the doula needs to correct.'
+                  />
+                  {documentsMember.profile_review_status === 'submitted' && (
                     <Button
                       variant='outline'
                       disabled={reviewBusy || !reviewReason.trim()}
@@ -1514,15 +1516,19 @@ export default function Teams() {
                     >
                       Send requested changes
                     </Button>
-                  </div>
-                )}
+                  )}
+                </div>
                 <Button
                   disabled={
                     reviewBusy ||
                     documentsLoading ||
                     !documentsLoaded ||
                     documentsMember.profile_review_status !== 'submitted' ||
-                    !REQUIRED_DOULA_DOCUMENT_TYPES.every((type) =>
+                    !REQUIRED_DOULA_DOCUMENT_TYPES.filter(
+                      (type) =>
+                        canManageBackgroundCheck ||
+                        !['w9', 'direct_deposit_form'].includes(type)
+                    ).every((type) =>
                       documentsItems.some(
                         (item) =>
                           item.document_type === type &&
@@ -1589,8 +1595,8 @@ export default function Teams() {
                     key={`${item.document_type}-${item.document_id ?? 'missing'}`}
                     className={`rounded-md border border-gray-200 p-3 ${isRequiredDocument(item.document_type) && ['missing', 'rejected'].includes(item.status) ? 'border-l-4 border-l-amber-500' : ''}`}
                   >
-                    <div className='flex items-start justify-between gap-3'>
-                      <div className='min-w-0'>
+                    <div className='flex flex-wrap items-start justify-between gap-3'>
+                      <div className='min-w-0 w-full sm:w-auto sm:flex-1'>
                         <p className='text-sm font-medium text-gray-900'>
                           {label}{' '}
                           {isRequiredDocument(item.document_type) ? (
@@ -1620,21 +1626,18 @@ export default function Teams() {
                           </p>
                         )}
                       </div>
-                      {item.document_id &&
-                        item.status !== 'rejected' &&
-                        documentsMember?.profile_review_status ===
-                          'submitted' && (
-                          <Button
-                            size='sm'
-                            variant='outline'
-                            disabled={reviewBusy || !reviewReason.trim()}
-                            onClick={() =>
-                              void handleReviewAction(item.document_id!, true)
-                            }
-                          >
-                            Reject document
-                          </Button>
-                        )}
+                      {item.document_id && item.status !== 'rejected' && (
+                        <Button
+                          size='sm'
+                          variant='outline'
+                          disabled={reviewBusy || !reviewReason.trim()}
+                          onClick={() =>
+                            void handleReviewAction(item.document_id!, true)
+                          }
+                        >
+                          Reject document
+                        </Button>
+                      )}
                       {item.document_id && item.status !== 'approved' && (
                         <Button
                           size='sm'

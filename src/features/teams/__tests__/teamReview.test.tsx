@@ -188,3 +188,53 @@ it('shows a pending invitation without offering profile review before acceptance
     screen.queryByRole('button', { name: 'Review profile & documents' })
   ).not.toBeInTheDocument();
 });
+
+it('allows document rejection in Teams with a required reason', async () => {
+  render(<Teams />);
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Review profile & documents' })
+  );
+  const reject = await screen.findByRole('button', { name: 'Reject document' });
+  expect(reject).toBeDisabled();
+  fireEvent.change(
+    screen.getByLabelText('Requested changes / rejection reason'),
+    { target: { value: 'Please upload a readable certificate.' } }
+  );
+  expect(reject).toBeEnabled();
+  fireEvent.click(reject);
+  await waitFor(() =>
+    expect(fetchWithAuth).toHaveBeenCalledWith(
+      '/api/admin/doulas/doula/documents/cert/review',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({
+          status: 'rejected',
+          rejection_reason: 'Please upload a readable certificate.',
+        }),
+      })
+    )
+  );
+});
+it('permits profile approval with the visible training approval and leaves private requirements to the backend', async () => {
+  approved = true;
+  vi.mocked(partitionDoulaDocuments).mockReturnValue({
+    active: [
+      {
+        document_type: 'training_certificate',
+        document_id: 'cert',
+        status: 'approved',
+      },
+    ],
+    archived: [],
+  } as never);
+  render(<Teams />);
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Review profile & documents' })
+  );
+  await waitFor(() =>
+    expect(
+      screen.getByRole('button', { name: 'Approve profile' })
+    ).toBeEnabled()
+  );
+  expect(screen.queryByText('w9')).not.toBeInTheDocument();
+});

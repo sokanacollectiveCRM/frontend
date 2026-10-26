@@ -19,7 +19,7 @@ import { Input } from '@/common/components/ui/input';
 import { Label } from '@/common/components/ui/label';
 import { useUser } from '@/common/hooks/user/useUser';
 import { Loader2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
 const Title = styled.h2`
@@ -29,7 +29,12 @@ const Title = styled.h2`
 `;
 
 export default function RequestPasswordReset() {
-  const [email, setEmail] = useState('');
+  const [params] = useSearchParams();
+  const invitation = params.get('invitation');
+  const invitationUrl = invitation
+    ? `/accept-invite?${new URLSearchParams({ token: invitation })}`
+    : null;
+  const [email, setEmail] = useState(params.get('email') || '');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -62,6 +67,15 @@ export default function RequestPasswordReset() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {invitationUrl && (
+            <p className='mb-4 text-sm'>
+              After resetting your password,{' '}
+              <Link className='underline' to={invitationUrl}>
+                return to your invitation
+              </Link>{' '}
+              and sign in with your new password to accept it.
+            </p>
+          )}
           {!success ? (
             <form onSubmit={handleSubmit} className='flex flex-col gap-6'>
               <div className='grid gap-2'>

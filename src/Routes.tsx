@@ -3,6 +3,7 @@ import StaffPermissionsPage from './features/staff-permissions/StaffPermissionsP
 import NavLayout from '@/common/layouts/NavLayout';
 import { AuthPublicRoutes, AuthRoutes } from '@/features/auth/AuthRoutes';
 import ClientLogin from '@/features/auth/ClientLogin';
+import RequestPasswordReset from '@/features/auth/RequestPasswordReset';
 import AcceptInvite from '@/features/auth/AcceptInvite';
 import SetPassword from '@/features/auth/SetPassword';
 import VerifyEmail from '@/features/auth/VerifyEmail';
@@ -61,6 +62,7 @@ const AppRoutes = () => (
 
     <Route>
       <Route element={<NavLayout />}>
+        <Route path='forgot-password' element={<RequestPasswordReset />} />
         <Route element={<PublicOnlyRoute />}>
           {AuthRoutes()}
           {AuthPublicRoutes()}

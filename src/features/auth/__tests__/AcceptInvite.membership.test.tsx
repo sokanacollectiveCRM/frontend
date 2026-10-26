@@ -35,6 +35,12 @@ it('accepts an organization invitation using the existing login without sending 
     </MemoryRouter>
   );
   const password = await screen.findByLabelText('Password');
+  expect(
+    screen.getByRole('link', { name: /Forgot your password/ })
+  ).toHaveAttribute(
+    'href',
+    '/forgot-password?email=member%40example.test&invitation=one-time-invite'
+  );
   expect(password).toHaveAttribute('autocomplete', 'current-password');
   fireEvent.change(password, { target: { value: 'existing-password' } });
   fireEvent.click(

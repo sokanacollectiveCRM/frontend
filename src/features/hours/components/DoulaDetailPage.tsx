@@ -56,7 +56,6 @@ import { toast } from 'sonner';
 import { STATUS_LABELS } from '@/features/clients/data/schema';
 import { format } from 'date-fns';
 import { EditDoulaDialog } from './EditDoulaDialog';
-import { AdminDoulaDocumentsSection } from './AdminDoulaDocumentsSection';
 import { getDoulaSchedulingInfo } from '@/common/utils/doulaScheduling';
 
 export default function DoulaDetailPage() {
@@ -667,11 +666,14 @@ export default function DoulaDetailPage() {
                 </Card>
               )}
 
-              {/* REQUIRED DOCUMENTS (Admin) */}
-              <AdminDoulaDocumentsSection
-                doulaId={doula.id}
-                doulaEmail={doula.email}
-              />
+              <Button
+                variant='outline'
+                onClick={() =>
+                  navigate(`/team?review=${encodeURIComponent(doula.id)}`)
+                }
+              >
+                Review profile &amp; documents in Teams
+              </Button>
 
               {/* CONTRACT INFORMATION */}
               <Card className='rounded-xl border border-gray-200 bg-white shadow-sm'>

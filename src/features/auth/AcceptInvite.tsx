@@ -180,6 +180,15 @@ export default function AcceptInvite() {
                   minLength={preview.existingAccount ? 1 : 8}
                 />
               </div>
+              <p className='text-sm'>
+                <Link
+                  className='underline'
+                  to={`/forgot-password?${new URLSearchParams({ email: preview.email, invitation: token })}`}
+                >
+                  Forgot your password? Reset password
+                </Link>{' '}
+                Then return to this invitation to accept it.
+              </p>
               {error && <p className='text-sm text-red-600'>{error}</p>}
               <Button type='submit' className='w-full' disabled={isSubmitting}>
                 {isSubmitting ? (

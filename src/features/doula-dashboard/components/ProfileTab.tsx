@@ -183,6 +183,12 @@ export default function ProfileTab({
     initialStep === 'documents' ? 3 : 0
   );
   const [isEditing, setIsEditing] = useState(initialStep === 'documents');
+  useEffect(() => {
+    if (initialStep === 'documents') {
+      setActiveStep(3);
+      setIsEditing(true);
+    }
+  }, [initialStep]);
   const editingInitialized = useRef(false);
   const [stepDirection, setStepDirection] = useState(1);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);

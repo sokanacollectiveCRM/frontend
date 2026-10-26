@@ -133,3 +133,109 @@ test('an ordinary admin can invite HR while staff-permissions management remains
   await page.goto('/settings/staff-permissions');
   await expect(page.getByRole('alert')).toHaveText(/access denied/i);
 });
+
+test('Teams reviews documents with the same preview, rejection reason and approval controls', async ({
+  page,
+}) => {
+  await fixture(page, 'admin');
+  let status = 'uploaded';
+  let reason = '';
+  let fileName = 'fictional-certificate.png';
+  const headers = {
+    'access-control-allow-origin': 'http://127.0.0.1:3023',
+    'access-control-allow-credentials': 'true',
+    'access-control-allow-headers': '*',
+    'access-control-allow-methods': '*',
+  };
+  await page.route(
+    'http://localhost:5053/api/admin/doulas/fictional-doula/documents**',
+    async (route) => {
+      const path = new URL(route.request().url()).pathname;
+      if (route.request().method() === 'OPTIONS')
+        return route.fulfill({ status: 204, headers, body: '' });
+      if (path.endsWith('/review')) {
+        const body = route.request().postDataJSON();
+        status = body.status;
+        reason = body.rejection_reason || '';
+        return route.fulfill({ headers, json: { success: true } });
+      }
+      if (path.endsWith('/url'))
+        return route.fulfill({
+          headers,
+          json: { url: 'https://files.example.test/fictional-certificate' },
+        });
+      return route.fulfill({
+        headers,
+        json: {
+          visibleDocumentTypes: ['training_certificate'],
+          documents: [
+            {
+              id: 'training',
+              documentType: 'training_certificate',
+              fileName,
+              status,
+              rejectionReason: reason,
+              uploadedAt: '2026-10-26T12:00:00Z',
+            },
+          ],
+        },
+      });
+    }
+  );
+  await page.route('https://files.example.test/**', (route) =>
+    route.fulfill({
+      contentType: 'image/png',
+      body: Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aZ1sAAAAASUVORK5CYII=',
+        'base64'
+      ),
+    })
+  );
+  await page.goto('/team');
+  await page
+    .getByRole('button', { name: 'Review profile & documents' })
+    .click();
+  await page.getByRole('button', { name: 'View', exact: true }).click();
+  await expect(page.getByRole('img', { name: fileName })).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: 'Open document in a new tab' })
+  ).toHaveAttribute('target', '_blank');
+  await page
+    .getByRole('dialog')
+    .filter({ has: page.getByRole('heading', { name: fileName }) })
+    .getByRole('button', { name: 'Close', exact: true })
+    .click();
+  await expect(
+    page.getByRole('heading', { name: 'Review profile & documents' })
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Reject document' })
+  ).toBeDisabled();
+  await page
+    .getByLabel('Requested changes / rejection reason')
+    .fill('Upload a readable certificate.');
+  await page.getByRole('button', { name: 'Reject document' }).click();
+  await expect.poll(() => status).toBe('rejected');
+  await expect(
+    page.getByText('Reason: Upload a readable certificate.')
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Approve document' }).click();
+  await expect.poll(() => status).toBe('approved');
+  await expect(page.getByText('Status: approved')).toBeVisible();
+  await page.screenshot({
+    path: '/tmp/jerry-teams-documents-desktop.png',
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({
+    path: '/tmp/jerry-teams-documents-mobile.png',
+    fullPage: true,
+  });
+  await page.getByRole('button', { name: 'Close', exact: true }).first().click();
+  fileName = 'fictional-certificate.pdf';
+  await page
+    .getByRole('button', { name: 'Review profile & documents' })
+    .click();
+  await page.getByRole('button', { name: 'View', exact: true }).click();
+  await expect(page.getByTitle('PDF document preview')).toBeVisible();
+});
