@@ -21,7 +21,7 @@ export interface StaffPermissions {
 }
 export async function staffRequest<T>(path = '', body?: unknown): Promise<T> {
   const response = await fetchWithAuth(
-    buildUrl(`/admin/staff-permissions${path}`),
+    buildUrl(`/api/admin/staff-permissions${path}`),
     {
       method: body === undefined ? 'GET' : 'PATCH',
       ...(body === undefined
