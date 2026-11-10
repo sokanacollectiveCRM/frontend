@@ -1,6 +1,4 @@
 import {
-  REQUIRED_DOULA_DOCUMENT_TYPES,
-  backgroundCheckSatisfied,
   isRequiredDocument,
 } from '@/domain/documentPolicy';
 import { BackgroundCheckStatus } from '@/common/components/BackgroundCheckStatus';
@@ -1484,8 +1482,9 @@ export default function Teams() {
                   </dd>
                 </dl>
                 <p className='text-sm'>
-                  Review the profile and download the documents below. Approve
-                  the required training certificate, then approve the profile.
+                  Review the profile and documents below. Use “Approve
+                  profile” to record your decision. If anything needs to be
+                  corrected, enter the reason and send requested changes.
                 </p>
 
                 {documentsMember.profile_review_status ===
@@ -1499,22 +1498,22 @@ export default function Teams() {
                 )}
                 <div className='space-y-2'>
                   <Label htmlFor='review-reason'>
-                    Requested changes / rejection reason
+                    Reason for requested changes
                   </Label>
                   <Textarea
                     id='review-reason'
                     value={reviewReason}
                     onChange={(e) => setReviewReason(e.target.value)}
                     maxLength={2000}
-                    placeholder='Explain exactly what the doula needs to correct.'
+                    placeholder='Explain what the doula needs to correct.'
                   />
-                  {documentsMember.profile_review_status === 'submitted' && (
+                  {documentsMember.profile_review_status !== 'approved' && (
                     <Button
                       variant='outline'
                       disabled={reviewBusy || !reviewReason.trim()}
                       onClick={() => void handleReviewAction(undefined, true)}
                     >
-                      Send requested changes
+                      Reject profile and request changes
                     </Button>
                   )}
                 </div>
@@ -1523,20 +1522,7 @@ export default function Teams() {
                     reviewBusy ||
                     documentsLoading ||
                     !documentsLoaded ||
-                    documentsMember.profile_review_status !== 'submitted' ||
-                    !REQUIRED_DOULA_DOCUMENT_TYPES.filter(
-                      (type) =>
-                        canManageBackgroundCheck ||
-                        !['w9', 'direct_deposit_form'].includes(type)
-                    ).every((type) =>
-                      documentsItems.some(
-                        (item) =>
-                          item.document_type === type &&
-                          item.status === 'approved'
-                      )
-                    ) ||
-                    (canManageBackgroundCheck &&
-                      !backgroundCheckSatisfied(backgroundCheck?.status))
+                    documentsMember.profile_review_status === 'approved'
                   }
                   onClick={() => void handleReviewAction()}
                 >
@@ -1546,6 +1532,12 @@ export default function Teams() {
                       ? 'Saving...'
                       : 'Approve profile'}
                 </Button>
+                {documentsMember.profile_review_status !== 'approved' && (
+                  <p className='text-xs text-muted-foreground'>
+                    Approval checks required profile details and documents and
+                    will explain any remaining requirement.
+                  </p>
+                )}
               </section>
             )}
 
