@@ -212,7 +212,7 @@ test('Teams reviews documents with the same preview, rejection reason and approv
     page.getByRole('button', { name: 'Reject document' })
   ).toBeDisabled();
   await page
-    .getByLabel('Requested changes / rejection reason')
+    .getByLabel('Reason for requested changes')
     .fill('Upload a readable certificate.');
   await page.getByRole('button', { name: 'Reject document' }).click();
   await expect.poll(() => status).toBe('rejected');

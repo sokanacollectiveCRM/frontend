@@ -108,20 +108,26 @@ test('doula corrects requested changes, resubmits, and admin approves', async ({
   role = 'admin';
   await page.goto('/team?review=review-doula');
   await expect(
-    page.getByRole('button', { name: 'Send requested changes', exact: true })
+    page.getByRole('button', {
+      name: 'Reject profile and request changes',
+      exact: true,
+    })
   ).toBeDisabled();
   await page
-    .getByLabel('Requested changes / rejection reason')
+    .getByLabel('Reason for requested changes')
     .fill('Please explain your training in the bio.');
   await page
-    .getByRole('button', { name: 'Send requested changes', exact: true })
+    .getByRole('button', {
+      name: 'Reject profile and request changes',
+      exact: true,
+    })
     .click();
   await expect(
     page.getByText('Waiting for the doula to resolve:', { exact: true })
   ).toBeVisible();
   await expect(
     page.getByRole('button', { name: 'Approve profile', exact: true })
-  ).toBeDisabled();
+  ).toBeEnabled();
   role = 'doula';
   await page.goto('/doula-dashboard/profile');
   await page.getByRole('button', { name: 'Review step', exact: true }).click();
@@ -153,7 +159,7 @@ test('doula corrects requested changes, resubmits, and admin approves', async ({
   ).toBeVisible();
   await expect(
     page.getByRole('button', { name: 'Approve profile', exact: true })
-  ).toBeDisabled();
+  ).toBeEnabled();
   await page
     .getByRole('button', { name: 'Approve document', exact: true })
     .click();

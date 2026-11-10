@@ -105,9 +105,7 @@ it('lets an admin review the profile and certificate before approving the accoun
   expect(
     screen.getByText('Example Training · Expires Mar 31, 2028')
   ).toBeInTheDocument();
-  expect(
-    screen.getByRole('button', { name: 'Approve profile' })
-  ).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Approve profile' })).toBeEnabled();
   approved = true;
   fireEvent.click(
     await screen.findByRole('button', { name: 'Approve document' })
@@ -196,10 +194,9 @@ it('allows document rejection in Teams with a required reason', async () => {
   );
   const reject = await screen.findByRole('button', { name: 'Reject document' });
   expect(reject).toBeDisabled();
-  fireEvent.change(
-    screen.getByLabelText('Requested changes / rejection reason'),
-    { target: { value: 'Please upload a readable certificate.' } }
-  );
+  fireEvent.change(screen.getByLabelText('Reason for requested changes'), {
+    target: { value: 'Please upload a readable certificate.' },
+  });
   expect(reject).toBeEnabled();
   fireEvent.click(reject);
   await waitFor(() =>
