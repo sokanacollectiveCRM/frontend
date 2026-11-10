@@ -1,6 +1,4 @@
-import {
-  isRequiredDocument,
-} from '@/domain/documentPolicy';
+import { isRequiredDocument } from '@/domain/documentPolicy';
 import { BackgroundCheckStatus } from '@/common/components/BackgroundCheckStatus';
 import type { BackgroundCheck } from '@/api/doulas/doulaService';
 import { formatAddress } from '@/common/utils/formatAddress';
@@ -213,7 +211,7 @@ export default function Teams() {
         .map((member: any) => toTeamMember(member))
         .filter((member: TeamMember) => ALLOWED_TEAM_ROLES.has(member.role));
       setTeamMembers(normalizedMembers);
-    } catch (error) {
+    } catch {
       logFailure('teams', 'error_fetching_team_members');
       toast.error('Failed to fetch team members');
     } finally {
@@ -268,7 +266,7 @@ export default function Teams() {
     }
     try {
       window.location.href = `mailto:${member.email}`;
-    } catch (error) {
+    } catch {
       logFailure('teams', 'error_opening_email_client');
       toast.error('Failed to open email client. Please try again.');
     }
@@ -1482,9 +1480,9 @@ export default function Teams() {
                   </dd>
                 </dl>
                 <p className='text-sm'>
-                  Review the profile and documents below. Use “Approve
-                  profile” to record your decision. If anything needs to be
-                  corrected, enter the reason and send requested changes.
+                  Review the profile and documents below. Use “Approve profile”
+                  to record your decision. If anything needs to be corrected,
+                  enter the reason and send requested changes.
                 </p>
 
                 {documentsMember.profile_review_status ===
