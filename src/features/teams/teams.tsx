@@ -1508,7 +1508,7 @@ export default function Teams() {
                   {documentsMember.profile_review_status !== 'approved' && (
                     <Button
                       variant='outline'
-                      disabled={reviewBusy || !reviewReason.trim()}
+                      disabled={reviewBusy}
                       onClick={() => void handleReviewAction(undefined, true)}
                     >
                       Reject profile and request changes
@@ -1620,7 +1620,7 @@ export default function Teams() {
                         <Button
                           size='sm'
                           variant='outline'
-                          disabled={reviewBusy || !reviewReason.trim()}
+                          disabled={reviewBusy}
                           onClick={() =>
                             void handleReviewAction(item.document_id!, true)
                           }

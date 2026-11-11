@@ -48,7 +48,7 @@ import {
 import { toast } from 'sonner';
 import { preloadProfileImage } from '@/common/components/user/UserAvatar';
 import { ProfileImageInput } from '@/common/components/form/ProfileImageInput';
-import { X, Loader2 } from 'lucide-react';
+import { X } from 'lucide-react';
 import {
   ANOTHER_RACE_ETHNICITY,
   DOULA_RACE_ETHNICITY_OPTIONS,
@@ -190,6 +190,7 @@ export default function ProfileTab({
     }
   }, [initialStep]);
   const editingInitialized = useRef(false);
+  const autoSubmissionKey = useRef<string | null>(null);
   const [stepDirection, setStepDirection] = useState(1);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const savingRef = useRef(false);
@@ -321,6 +322,85 @@ export default function ProfileTab({
     }
   };
 
+  useEffect(() => {
+    if (
+      !profile ||
+      isLoading ||
+      isSaving ||
+      isEditing ||
+      checkingDocuments ||
+      !hasRequiredDocuments ||
+      getMissingRequiredFields(formData).length > 0
+    ) {
+      return;
+    }
+
+    const reviewStatus =
+      profile.profile_review_status ??
+      (profile.profile_submitted_at ? 'submitted' : 'draft');
+    if (
+      !['draft', 'changes_requested'].includes(reviewStatus) ||
+      (profile.profile_submitted_at && reviewStatus !== 'changes_requested')
+    ) {
+      return;
+    }
+
+    const submissionKey = [
+      profile.id,
+      reviewStatus,
+      profile.profile_review_version ?? 0,
+      hasRequiredDocuments,
+      formData.firstname,
+      formData.lastname,
+      formData.phone_number,
+      formData.address,
+      formData.city,
+      formData.state,
+      formData.zip_code,
+      formData.bio,
+    ].join(':');
+    if (autoSubmissionKey.current === submissionKey) return;
+    autoSubmissionKey.current = submissionKey;
+
+    savingRef.current = true;
+    setIsSubmittingReview(true);
+    setIsSaving(true);
+    void submitDoulaProfile()
+      .then(({ profile_submitted_at }) => {
+        const updatedProfile: DoulaProfile = {
+          ...profile,
+          profile_submitted_at,
+          profile_review_status: 'submitted',
+        };
+        setProfile(updatedProfile);
+        cachedProfile = updatedProfile;
+        toast.success(
+          'Your complete profile was sent to the Sokana team for review.'
+        );
+      })
+      .catch((error: unknown) => {
+        logFailure('doula-dashboard', 'profiletab_auto_submit_failed');
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : 'Could not send your profile for review.'
+        );
+      })
+      .finally(() => {
+        savingRef.current = false;
+        setIsSubmittingReview(false);
+        setIsSaving(false);
+      });
+  }, [
+    profile,
+    isLoading,
+    isSaving,
+    isEditing,
+    checkingDocuments,
+    hasRequiredDocuments,
+    formData,
+  ]);
+
   const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -391,9 +471,6 @@ export default function ProfileTab({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (savingRef.current) return;
-    const submittingForReview =
-      (e.nativeEvent as SubmitEvent).submitter?.getAttribute('value') ===
-      'submit-profile';
     // If the user typed a language but didn't press Enter/Add, include it on submit.
     const pendingLanguage = languageDraft.trim();
     const nextFormData: UpdateProfileData =
@@ -492,7 +569,6 @@ export default function ProfileTab({
     }
 
     savingRef.current = true;
-    setIsSubmittingReview(submittingForReview);
     setIsSaving(true);
 
     // Log the form data being submitted
@@ -543,15 +619,10 @@ export default function ProfileTab({
         );
       }
 
-      if (submittingForReview) await submitDoulaProfile();
       await fetchProfile(false);
       setIsEditing(false);
 
-      toast.success(
-        submittingForReview
-          ? 'Profile submitted. Confirmation and admin review emails have been queued.'
-          : 'Profile updated successfully'
-      );
+      toast.success('Profile updated successfully');
     } catch (error: any) {
       logFailure('doula-dashboard', 'profiletab_failed_to_update_profile');
       toast.error(error.message || 'Failed to update profile');
@@ -686,10 +757,6 @@ export default function ProfileTab({
             )}
           </div>
         </div>
-        {profile.profile_submitted_at &&
-          profile.profile_review_status !== 'changes_requested' && (
-            <Badge className='w-fit'>Submitted for review</Badge>
-          )}
         <ol
           aria-label='Profile steps'
           className='grid grid-cols-7 gap-1 sm:gap-2'
@@ -1552,8 +1619,9 @@ export default function ProfileTab({
                       </p>
                       <p>
                         Correct the items above, replace or remove any rejected
-                        documents in the Documents step, then select Resubmit
-                        for review. Your profile approval remains pending. Your
+                        documents in the Documents step, and save your profile.
+                        It will be sent for review automatically once all
+                        required information and documents are complete. Your
                         dashboard tools remain available.
                       </p>
                     </div>
@@ -1576,8 +1644,9 @@ export default function ProfileTab({
                         approval.
                       </li>
                       <li>
-                        Return here and select Mark profile complete. This saves
-                        your changes and emails the Sokana team for review.
+                        Your profile is sent to the Sokana team automatically
+                        when required profile information and documents are
+                        complete. Save profile changes to trigger detection.
                       </li>
                       <li>
                         Your account is active. You can log hours, record birth
@@ -1586,64 +1655,32 @@ export default function ProfileTab({
                       </li>
                     </ol>
                   </details>
-                  {(!profile.profile_submitted_at ||
-                    profile.profile_review_status === 'changes_requested') && (
-                    <p className='text-sm' role='status'>
-                      {getMissingRequiredFields(formData).length > 0
-                        ? `Still needed: ${getMissingRequiredFields(formData)
-                            .map((field) => field.replace(/_/g, ' '))
-                            .join(', ')}.`
-                        : 'Required profile fields are complete.'}{' '}
-                      {hasRequiredDocuments
-                        ? 'Required documents uploaded and background check cleared.'
-                        : 'Required documents or background check clearance still needed in Documents.'}
-                    </p>
-                  )}
-                  {profile.profile_submitted_at &&
-                  profile.profile_review_status !== 'changes_requested' ? (
-                    <Badge>
-                      {profile.profile_review_status === 'approved'
+                  <p className='text-sm' role='status'>
+                    {getMissingRequiredFields(formData).length > 0
+                      ? `Still needed: ${getMissingRequiredFields(formData)
+                          .map((field) => field.replace(/_/g, ' '))
+                          .join(', ')}.`
+                      : 'Required profile fields are complete.'}{' '}
+                    {hasRequiredDocuments
+                      ? 'Required documents uploaded and background check cleared.'
+                      : 'Required documents or background check clearance still needed in Documents.'}
+                  </p>
+                  <Badge>
+                    {isSubmittingReview
+                      ? 'Sending for admin review'
+                      : profile.profile_review_status === 'approved'
                         ? 'Profile approved'
-                        : 'Submitted — waiting for admin review'}
-                    </Badge>
-                  ) : (
-                    <>
-                      <Button
-                        type='submit'
-                        name='action'
-                        value='submit-profile'
-                        aria-busy={isSaving}
-                        disabled={
-                          isSaving ||
-                          !(
-                            !profile.profile_submitted_at ||
-                            profile.profile_review_status ===
+                        : profile.profile_review_status === 'submitted'
+                          ? 'Waiting for admin review'
+                          : profile.profile_review_status ===
                               'changes_requested'
-                          ) ||
-                          checkingDocuments ||
-                          !hasRequiredDocuments ||
-                          getMissingRequiredFields(formData).length > 0
-                        }
-                      >
-                        {isSaving && (
-                          <Loader2
-                            className='mr-2 h-4 w-4 animate-spin'
-                            aria-hidden='true'
-                          />
-                        )}
-                        {isSaving
-                          ? isSubmittingReview
-                            ? 'Submitting for review...'
-                            : 'Saving...'
-                          : checkingDocuments
-                            ? 'Checking documents...'
-                            : profile.profile_review_status ===
-                                'changes_requested'
-                              ? 'Resubmit for review'
-                              : 'Mark profile complete'}
-                      </Button>
-                    </>
-                  )}
+                            ? 'Changes requested'
+                            : !checkingDocuments &&
+                                hasRequiredDocuments &&
+                                getMissingRequiredFields(formData).length === 0
+                              ? 'Ready for admin review'
+                              : 'Profile in progress'}
+                  </Badge>
                 </CardContent>
               </Card>
             </div>
