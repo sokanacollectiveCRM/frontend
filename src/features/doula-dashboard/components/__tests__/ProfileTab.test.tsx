@@ -64,6 +64,7 @@ const initial = {
   languages_other_than_english: [],
   certifications: [],
   account_status: 'approved',
+  profile_review_status: 'approved',
   availability_status: 'available',
 };
 let profile: any;
@@ -151,11 +152,8 @@ describe('doula profile layout', () => {
     fireEvent.submit(document.querySelector('form')!);
     expect(api.updateDoulaProfile).not.toHaveBeenCalled();
     expect(
-      screen.getByRole('button', {
-        name: 'Mark profile complete',
-        hidden: true,
-      })
-    ).toBeDisabled();
+      screen.queryByRole('button', { name: /Mark profile complete|Resubmit for review/ })
+    ).not.toBeInTheDocument();
   });
   it('starts collapsed, opens only one blank entry and can cancel it', async () => {
     await open('Certifications');
@@ -468,78 +466,70 @@ describe('doula profile layout', () => {
       )
     );
   });
-  it('submits only with a certificate and shows the persistent review badge', async () => {
-    await open('Review');
-    await waitFor(() =>
-      expect(
-        screen.getByRole('button', {
-          name: 'Mark profile complete',
-          hidden: true,
-        })
-      ).not.toBeDisabled()
-    );
-    fireEvent.click(
-      screen.getByRole('button', {
-        name: 'Mark profile complete',
-        hidden: true,
-      })
-    );
+  it('automatically submits a complete profile and has no manual submit button', async () => {
+    profile = {
+      ...initial,
+      account_status: 'pending',
+      profile_review_status: 'draft',
+    };
+    render(<ProfileTab />);
     await waitFor(() =>
       expect(api.submitDoulaProfile).toHaveBeenCalledTimes(1)
     );
-    expect(await screen.findByText('Submitted for review')).toBeVisible();
+    expect(await screen.findByText('Waiting for admin review')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {
+        name: /Mark profile complete|Resubmit for review/,
+      })
+    ).not.toBeInTheDocument();
   });
-  it('disables submission without the training certificate', async () => {
+  it('does not auto-submit before required documents are ready', async () => {
+    profile = {
+      ...initial,
+      account_status: 'pending',
+      profile_review_status: 'draft',
+    };
     vi.mocked(api.getDoulaDocuments).mockResolvedValue({ documents: [] });
     await open('Review');
+    expect(screen.getByText('Profile in progress')).toBeInTheDocument();
+    expect(api.submitDoulaProfile).not.toHaveBeenCalled();
     expect(
-      screen.getByRole('button', {
-        name: 'Mark profile complete',
-        hidden: true,
+      screen.queryByRole('button', {
+        name: /Mark profile complete|Resubmit for review/,
       })
-    ).toBeDisabled();
+    ).not.toBeInTheDocument();
   });
 });
 
 it('refreshes document readiness without navigating away or losing edits', async () => {
+  profile = {
+    ...initial,
+    account_status: 'pending',
+    profile_review_status: 'draft',
+  };
   vi.mocked(api.getDoulaDocuments).mockResolvedValueOnce({ documents: [] });
   await open('Review');
   expect(
     screen.getByRole('button', { name: 'Documents step' })
   ).toHaveAttribute('aria-current', 'step');
-  const complete = screen.getByRole('button', {
-    name: 'Mark profile complete',
-    hidden: true,
-  });
-  expect(complete).toBeDisabled();
+  expect(api.submitDoulaProfile).not.toHaveBeenCalled();
   fireEvent.change(screen.getByLabelText('About me (bio)'), {
     target: { value: 'Unsaved updated bio' },
   });
   fireEvent(window, new Event('doula-documents-changed'));
-  await waitFor(() =>
-    expect(
-      screen.getByRole('button', {
-        name: 'Mark profile complete',
-        hidden: true,
-      })
-    ).toBeEnabled()
-  );
+  expect(api.submitDoulaProfile).not.toHaveBeenCalled();
   expect(screen.getByLabelText('About me (bio)')).toHaveValue(
     'Unsaved updated bio'
   );
-  vi.mocked(api.getDoulaDocuments).mockResolvedValue({ documents: [] });
-  fireEvent(window, new Event('doula-documents-changed'));
   await waitFor(() =>
-    expect(
-      screen.getByRole('button', {
-        name: 'Mark profile complete',
-        hidden: true,
-      })
-    ).toBeDisabled()
+    expect(screen.getByText('Ready for admin review')).toBeInTheDocument()
   );
+  fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+  await waitFor(() => expect(api.submitDoulaProfile).toHaveBeenCalledTimes(1));
 });
 
-it('shows submission progress and ignores duplicate form submissions', async () => {
+it('shows save progress and ignores duplicate form submissions', async () => {
+  profile = { ...initial, profile_review_status: 'approved' };
   let finish!: (value: any) => void;
   vi.mocked(api.updateDoulaProfile).mockImplementationOnce(
     () =>
@@ -548,20 +538,13 @@ it('shows submission progress and ignores duplicate form submissions', async () 
       })
   );
   await open('Review');
-  const complete = await screen.findByRole('button', {
-    name: 'Mark profile complete',
-  });
-  await waitFor(() => expect(complete).toBeEnabled());
-  fireEvent.click(complete);
-  expect(
-    screen.getByRole('button', { name: 'Submitting for review...' })
-  ).toBeDisabled();
-  expect(complete).toHaveAttribute('aria-busy', 'true');
+  const save = screen.getByRole('button', { name: 'Save Changes' });
+  fireEvent.click(save);
+  expect(save).toBeDisabled();
   fireEvent.submit(document.querySelector('form')!);
   expect(api.updateDoulaProfile).toHaveBeenCalledTimes(1);
   finish(profile);
-  await waitFor(() => expect(api.submitDoulaProfile).toHaveBeenCalledTimes(1));
-  await screen.findByText('Submitted — waiting for admin review');
+  await waitFor(() => expect(api.submitDoulaProfile).not.toHaveBeenCalled());
 });
 
 describe('P-15 required private phone', () => {
@@ -616,11 +599,10 @@ describe('P-15 required private phone', () => {
       })
     );
     expect(
-      screen.getByRole('button', {
-        name: 'Mark profile complete',
-        hidden: true,
+      screen.queryByRole('button', {
+        name: /Mark profile complete|Resubmit for review/,
       })
-    ).toBeDisabled();
+    ).not.toBeInTheDocument();
   });
 });
 

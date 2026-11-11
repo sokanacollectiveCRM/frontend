@@ -8,6 +8,7 @@ import {
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import Teams from '@/features/teams/teams';
 import { fetchWithAuth } from '@/api/http';
+import { toast } from 'sonner';
 import {
   getAdminDoulaDocuments,
   partitionDoulaDocuments,
@@ -20,6 +21,9 @@ vi.mock('@/common/contexts/UserContext', async () => {
 vi.mock('@/api/http', () => ({
   buildUrl: (url: string) => url,
   fetchWithAuth: vi.fn(),
+}));
+vi.mock('sonner', () => ({
+  toast: { error: vi.fn(), success: vi.fn() },
 }));
 vi.mock('@/api/doulas/doulaService', () => ({
   DOCUMENT_TYPE_LABELS: { training_certificate: 'Doula training certificate' },
@@ -193,7 +197,15 @@ it('allows document rejection in Teams with a required reason', async () => {
     await screen.findByRole('button', { name: 'Review profile & documents' })
   );
   const reject = await screen.findByRole('button', { name: 'Reject document' });
-  expect(reject).toBeDisabled();
+  expect(reject).toBeEnabled();
+  fireEvent.click(reject);
+  expect(toast.error).toHaveBeenCalledWith(
+    'Enter a reason for the requested changes.'
+  );
+  expect(fetchWithAuth).not.toHaveBeenCalledWith(
+    '/api/admin/doulas/doula/documents/cert/review',
+    expect.anything()
+  );
   fireEvent.change(screen.getByLabelText('Reason for requested changes'), {
     target: { value: 'Please upload a readable certificate.' },
   });
