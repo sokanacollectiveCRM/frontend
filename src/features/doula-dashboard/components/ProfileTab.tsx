@@ -17,7 +17,7 @@ import {
   isValidExpirationDate,
 } from '@/features/doula-dashboard/certifications';
 import CertificationsFields from '@/features/doula-dashboard/components/CertificationsFields';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { logFailure } from '@/utils/safeLog';
 import {
   Card,
@@ -255,10 +255,6 @@ export default function ProfileTab({
     other_demographic_details: '',
   });
 
-  useEffect(() => {
-    fetchProfile(!cachedProfile);
-  }, []);
-
   // Sync form data when profile changes (but only if formData hasn't been manually updated)
   // This prevents resetting form data immediately after a successful update
   useEffect(() => {
@@ -281,46 +277,53 @@ export default function ProfileTab({
     }
   }, [profile]);
 
-  const fetchProfile = async (showLoading = true) => {
-    if (showLoading) {
-      setIsLoading(true);
-    }
-    try {
-      const data = await getDoulaProfile();
+  const fetchProfile = useCallback(
+    async (showLoading = true) => {
+      if (showLoading) {
+        setIsLoading(true);
+      }
+      try {
+        const data = await getDoulaProfile();
 
-      if (!data) {
-        toast.error('No profile data found');
+        if (!data) {
+          toast.error('No profile data found');
+          if (showLoading) {
+            setIsLoading(false);
+          }
+          return;
+        }
+
+        // Set profile - this will trigger the useEffect to update formData
+        setProfile(data);
+        cachedProfile = data;
+
+        // Also set formData directly as a backup to ensure it's populated
+        const newFormData = profileToFormData(data);
+        setFormData(newFormData);
+        const missingFields = getMissingRequiredFields(newFormData);
+        if (!editingInitialized.current) {
+          setIsEditing(initialStep === 'documents' || missingFields.length > 0);
+          editingInitialized.current = true;
+        }
+        onProfileStatusChange?.({
+          isComplete: missingFields.length === 0,
+          missingFields,
+        });
+      } catch (error: any) {
+        logFailure('doula-dashboard', 'failed_to_fetch_profile');
+        toast.error(error.message || 'Failed to load profile');
+      } finally {
         if (showLoading) {
           setIsLoading(false);
         }
-        return;
       }
+    },
+    [initialStep, onProfileStatusChange]
+  );
 
-      // Set profile - this will trigger the useEffect to update formData
-      setProfile(data);
-      cachedProfile = data;
-
-      // Also set formData directly as a backup to ensure it's populated
-      const newFormData = profileToFormData(data);
-      setFormData(newFormData);
-      const missingFields = getMissingRequiredFields(newFormData);
-      if (!editingInitialized.current) {
-        setIsEditing(initialStep === 'documents' || missingFields.length > 0);
-        editingInitialized.current = true;
-      }
-      onProfileStatusChange?.({
-        isComplete: missingFields.length === 0,
-        missingFields,
-      });
-    } catch (error: any) {
-      logFailure('doula-dashboard', 'failed_to_fetch_profile');
-      toast.error(error.message || 'Failed to load profile');
-    } finally {
-      if (showLoading) {
-        setIsLoading(false);
-      }
-    }
-  };
+  useEffect(() => {
+    void fetchProfile(!cachedProfile);
+  }, [fetchProfile]);
 
   useEffect(() => {
     if (

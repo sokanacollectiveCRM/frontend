@@ -1,2 +1,2 @@
-echo "Running pre-push lint check (changed files vs origin/main)..."
-npm run lint:push
+echo "Running pre-push lint and format checks on outgoing files..."
+node scripts/lint-push.mjs

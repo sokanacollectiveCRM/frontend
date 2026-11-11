@@ -152,7 +152,9 @@ describe('doula profile layout', () => {
     fireEvent.submit(document.querySelector('form')!);
     expect(api.updateDoulaProfile).not.toHaveBeenCalled();
     expect(
-      screen.queryByRole('button', { name: /Mark profile complete|Resubmit for review/ })
+      screen.queryByRole('button', {
+        name: /Mark profile complete|Resubmit for review/,
+      })
     ).not.toBeInTheDocument();
   });
   it('starts collapsed, opens only one blank entry and can cancel it', async () => {
@@ -476,7 +478,9 @@ describe('doula profile layout', () => {
     await waitFor(() =>
       expect(api.submitDoulaProfile).toHaveBeenCalledTimes(1)
     );
-    expect(await screen.findByText('Waiting for admin review')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Waiting for admin review')
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole('button', {
         name: /Mark profile complete|Resubmit for review/,
