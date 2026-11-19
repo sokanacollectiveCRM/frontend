@@ -16,6 +16,7 @@ import { IntakeFormHeader } from './components/IntakeFormHeader';
 import { useRequestFormContext } from './contexts/RequestFormContext';
 import { StepNavigation } from './components/StepNavigation';
 import { StepHeader } from './components/StepHeader';
+import { StepMoveButtons } from './components/StepMoveButtons';
 
 export default function RequestFormDesktop() {
   const {
@@ -85,8 +86,8 @@ export default function RequestFormDesktop() {
       >
         <div
           style={{
-            background: '#f6fffa',
-            border: '1px solid #b2dfdb',
+            background: 'var(--intake-success-bg, #fbf4f0)',
+            border: '1px solid var(--intake-success-border, #d6704d)',
             borderRadius: 8,
             padding: '32px 24px',
             maxWidth: 500,
@@ -96,7 +97,7 @@ export default function RequestFormDesktop() {
         >
           <h2
             style={{
-              color: 'var(--intake-primary, #009688)',
+              color: 'var(--intake-primary, #0a3147)',
               fontWeight: 700,
               fontSize: '1.7rem',
               marginBottom: 16,
@@ -110,7 +111,7 @@ export default function RequestFormDesktop() {
           </p>
           <h3
             style={{
-              color: 'var(--intake-primary, #009688)',
+              color: 'var(--intake-primary, #0a3147)',
               fontWeight: 600,
               fontSize: '1.2rem',
               margin: '24px 0 8px 0',
@@ -181,6 +182,16 @@ export default function RequestFormDesktop() {
         currentStep={step}
         totalSteps={totalSteps}
         showProgressText={false}
+      />
+      <StepMoveButtons
+        step={step}
+        totalSteps={totalSteps}
+        onBack={handleBack}
+        onNext={() => {
+          void handleNextStep();
+        }}
+        isSubmitting={isSubmitting}
+        placement='top'
       />
       {stepGateMessage ? (
         <div

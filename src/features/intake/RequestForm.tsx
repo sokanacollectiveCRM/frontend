@@ -22,10 +22,12 @@ import {
 import { RequestFormValues } from './useRequestForm';
 import { StepNavigation } from './components/StepNavigation';
 import { StepHeader } from './components/StepHeader';
+import { StepMoveButtons } from './components/StepMoveButtons';
 import { apiBaseUrl } from '@/config/env';
 import { useParams } from 'react-router-dom';
 import { usePublicIntakeBranding } from './application/usePublicIntakeBranding';
 import { IntakeFormHeader } from './components/IntakeFormHeader';
+import { IntakeOrgTopBar } from '@/features/intake/components/IntakeOrgTopBar';
 import {
   IntakeBrandingProvider,
   useIntakeBranding,
@@ -207,8 +209,8 @@ function RequestFormContent() {
       >
         <div
           style={{
-            background: '#f6fffa',
-            border: '1px solid #b2dfdb',
+            background: 'var(--intake-success-bg, #fbf4f0)',
+            border: '1px solid var(--intake-success-border, #d6704d)',
             borderRadius: 8,
             padding: '32px 24px',
             maxWidth: 500,
@@ -218,13 +220,13 @@ function RequestFormContent() {
         >
           <h2
             style={{
-              color: 'var(--intake-primary, #009688)',
+              color: 'var(--intake-primary, #0a3147)',
               fontWeight: 700,
               fontSize: '1.7rem',
               marginBottom: 16,
             }}
           >
-            Thank you for contacting {orgBranding.branding.displayName}!
+            Thank you for contacting {orgBranding.displayName}!
           </h2>
           <p style={{ color: '#333', fontSize: 17, marginBottom: 16 }}>
             We are excited to get to know you and find out how we can support
@@ -272,6 +274,16 @@ function RequestFormContent() {
 
         {/* Step Header */}
         <StepHeader currentStep={step} totalSteps={totalSteps} />
+        <StepMoveButtons
+          step={step}
+          totalSteps={totalSteps}
+          onBack={handleBack}
+          onNext={() => {
+            void handleNextStep();
+          }}
+          isSubmitting={isSubmitting}
+          placement='top'
+        />
         {stepGateMessage ? (
           <div
             role='alert'
@@ -450,6 +462,7 @@ function RequestFormInner({ tenantSlug }: { tenantSlug: string }) {
 
   return (
     <RequestFormProvider onSubmit={onSubmit}>
+      <IntakeOrgTopBar />
       <RequestFormContent />
     </RequestFormProvider>
   );
@@ -494,7 +507,19 @@ export default function RequestForm() {
   }
 
   return (
-    <IntakeBrandingProvider branding={brandingState.data}>
+    <IntakeBrandingProvider
+      branding={
+        brandingState.data.form?.logoUrl
+          ? {
+              ...brandingState.data,
+              branding: {
+                ...brandingState.data.branding,
+                logoPath: brandingState.data.form.logoUrl,
+              },
+            }
+          : brandingState.data
+      }
+    >
       <RequestFormInner tenantSlug={tenantSlug} />
     </IntakeBrandingProvider>
   );

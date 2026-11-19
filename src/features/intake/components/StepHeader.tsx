@@ -1,5 +1,5 @@
 import React from 'react';
-import { getStepTitle } from 'features/intake/stepConfig';
+import { getStepTitle } from '@/features/intake/stepConfig';
 import styles from './StepHeader.module.scss';
 
 interface StepHeaderProps {

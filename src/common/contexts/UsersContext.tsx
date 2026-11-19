@@ -1,6 +1,6 @@
 import useDialogState from '@/common/hooks/ui/use-dialog-state';
 import { Template } from '@/common/types/template';
-import type { Client } from '@/features/clients/data/schema';
+import type { Client } from '@/features/clients';
 import React, { useState } from 'react';
 
 type UsersDialogType = 'invite' | 'add' | 'edit' | 'delete';

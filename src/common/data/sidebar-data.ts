@@ -115,7 +115,7 @@ export const sidebarSections = [
     ],
   },
   {
-    label: 'Doula Dashboard',
+    label: 'My work',
     items: [
       {
         title: 'Profile',

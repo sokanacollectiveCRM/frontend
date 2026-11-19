@@ -1,6 +1,6 @@
 import { isRequestTestDataEnabled } from '@/config/env';
 
-import { useIntakeBranding } from 'features/intake/contexts/IntakeBrandingContext';
+import { useIntakeBranding } from '@/features/intake/contexts/IntakeBrandingContext';
 
 type IntakeFormHeaderProps = {
   onFillTestData?: () => void;
@@ -8,7 +8,7 @@ type IntakeFormHeaderProps = {
 
 export function IntakeFormHeader({ onFillTestData }: IntakeFormHeaderProps) {
   const { branding } = useIntakeBranding();
-  const { displayName, logoPath, pageTitle } = branding.branding;
+  const { displayName, logoPath, pageTitle } = branding;
 
   return (
     <div
@@ -18,16 +18,18 @@ export function IntakeFormHeader({ onFillTestData }: IntakeFormHeaderProps) {
         alignItems: 'center',
         marginBottom: '1.5rem',
         paddingBottom: '1rem',
-        borderBottom: '1px solid #e0e0e0',
+        borderBottom: '1px solid var(--intake-nav-border, #e0e0e0)',
       }}
     >
       <img
         src={logoPath}
         alt={`${displayName} logo`}
         style={{
-          width: 140,
+          width: 160,
           height: 'auto',
-          margin: '0 auto 0.8rem auto',
+          maxWidth: 'min(280px, 70vw)',
+          objectFit: 'contain',
+          margin: '0 auto 1rem auto',
           display: 'block',
         }}
       />
@@ -37,7 +39,7 @@ export function IntakeFormHeader({ onFillTestData }: IntakeFormHeaderProps) {
           fontSize: '1.5rem',
           margin: 0,
           textAlign: 'center',
-          color: '#333',
+          color: 'var(--intake-heading, #0a3147)',
         }}
       >
         {pageTitle}
@@ -65,9 +67,9 @@ export function IntakeFormHeader({ onFillTestData }: IntakeFormHeaderProps) {
             marginTop: 10,
             padding: '5px 10px',
             fontSize: 11,
-            color: 'var(--intake-primary, #009688)',
+            color: 'var(--intake-primary, #0a3147)',
             background: 'transparent',
-            border: '1px dashed var(--intake-primary, #009688)',
+            border: '1px dashed var(--intake-accent, #d6704d)',
             borderRadius: 4,
             cursor: 'pointer',
           }}

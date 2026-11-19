@@ -28,7 +28,7 @@ flowchart TD
 
 - Broader daily ops: [`PLATFORM_SOP.md`](./PLATFORM_SOP.md)
 - Payment authorization API contract: [`BACKEND_PAYMENT_COLLECTION_RULES_PROMPT.md`](./BACKEND_PAYMENT_COLLECTION_RULES_PROMPT.md)
-- Portal invite eligibility (frontend): [`../PORTAL_ELIGIBILITY_VERIFICATION.md`](../PORTAL_ELIGIBILITY_VERIFICATION.md)
+- Portal invite eligibility (frontend): [`PORTAL_ELIGIBILITY_VERIFICATION.md`](PORTAL_ELIGIBILITY_VERIFICATION.md)
 
 ---
 
@@ -241,7 +241,7 @@ Do not use, update, or reference the following for current operations. They belo
 |------|----------|
 | `createPaymentIntent()` | `src/common/utils/createContract.ts` |
 | Stripe payment page docs | `src/features/payments/ContractPayment.md` (superseded by this SOP) |
-| Stripe workflow sections | `WORKFLOW_DIAGRAM.md`, `CONTRACT_AND_PAYMENT_INSTRUCTIONS.md` |
+| Stripe workflow sections | `docs/WORKFLOW_DIAGRAM.md`, `docs/CONTRACT_AND_PAYMENT_INSTRUCTIONS.md` |
 | Stripe charge backend prompt | `docs/BACKEND_BILLING_STRIPE_CHARGE_PROMPT.md` |
 
 **Live payment model:** Payment authorization forms + staff billing ops + QuickBooks customer sync + CRM payment tracking (`/payments`, lead profile billing fields).

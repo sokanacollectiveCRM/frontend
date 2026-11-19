@@ -17,7 +17,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/common/components/ui/popover';
-import { useClients } from '@/common/hooks/clients/useClients';
+import { useClients } from '@/features/clients';
 import { User } from '@/common/types/user';
 import { cn } from '@/lib/utils';
 

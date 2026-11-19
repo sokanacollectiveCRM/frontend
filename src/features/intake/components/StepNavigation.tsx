@@ -1,6 +1,6 @@
 import React from 'react';
-import { STEP_CONFIG } from 'features/intake/stepConfig';
-import { useRequestFormContext } from 'features/intake/contexts/RequestFormContext';
+import { STEP_CONFIG } from '@/features/intake/stepConfig';
+import { useRequestFormContext } from '@/features/intake/contexts/RequestFormContext';
 import styles from './StepNavigation.module.scss';
 
 interface StepNavigationProps {
@@ -62,7 +62,7 @@ export const StepNavigation: React.FC<StepNavigationProps> = ({
         <div
           className={styles.stepsContainer}
           style={{
-            gridTemplateColumns: `repeat(${STEP_CONFIG.length}, minmax(0, 1fr))`,
+            gridTemplateColumns: `repeat(${STEP_CONFIG.length}, minmax(6.75rem, 1fr))`,
           }}
         >
           {STEP_CONFIG.map((step) => {

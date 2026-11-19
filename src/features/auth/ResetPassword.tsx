@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useUser } from '@/common/hooks/user/useUser';
-import { API_CONFIG } from '@/api/config';
 import { toast } from 'sonner';
 
 import { Button } from '@/common/components/ui/button';
@@ -56,22 +55,12 @@ const PasswordRequirements = styled.ul`
   padding-left: 20px;
 `;
 
-function getSupabaseAccessTokenFromHash(): string | null {
-  const hash = window.location.hash.substring(1);
-  const hashParams = new URLSearchParams(hash);
-  const access_token = hashParams.get('access_token');
-  const type = hashParams.get('type');
-  if (!access_token) return null;
-  if (type && type !== 'recovery') return null;
-  return access_token;
-}
-
 function getIdentityOobCode(searchParams: URLSearchParams): string | null {
   // Firebase action links: ?mode=resetPassword&oobCode=...
   const mode = searchParams.get('mode');
   const oobCode = searchParams.get('oobCode');
   if (oobCode && (!mode || mode === 'resetPassword')) return oobCode;
-  return oobCode;
+  return null;
 }
 
 export default function ResetPassword() {
@@ -81,12 +70,11 @@ export default function ResetPassword() {
   const { updatePassword } = useUser();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const identityMode = API_CONFIG.authMode === 'identity';
 
-  const resetToken = useMemo(() => {
-    if (identityMode) return getIdentityOobCode(searchParams);
-    return getSupabaseAccessTokenFromHash();
-  }, [identityMode, searchParams]);
+  const resetToken = useMemo(
+    () => getIdentityOobCode(searchParams),
+    [searchParams]
+  );
 
   useEffect(() => {
     if (!resetToken) {

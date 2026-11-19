@@ -28,6 +28,12 @@ function expectUpdateUserFetch(userData: User) {
   );
 }
 
+// Keep request assertions independent of local Vite environment files.
+vi.mock('@/config/env', () => ({
+  apiBaseUrl: 'http://localhost:5050',
+  isProd: false,
+}));
+
 // Mock localStorage
 const mockLocalStorage = {
   getItem: vi.fn(),

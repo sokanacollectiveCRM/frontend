@@ -182,7 +182,7 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
   const [loading, setLoading] = useState(false);
   const [calculatedAmounts, setCalculatedAmounts] =
     useState<CalculatedAmounts | null>(null);
-  const [signNowFields, setSignNowFields] = useState<any>(null);
+  const [previewFields, setPreviewFields] = useState<any>(null);
   const [contractData, setContractData] = useState<ContractInput | null>(null);
   const [contractId, setContractId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -337,7 +337,7 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
           .filter((s) => s.type === 'hourly')
           .reduce((sum, s) => sum + Number(s.totalHours || 0), 0);
 
-        const localSignNowFields = {
+        const localPreviewFields = {
           total_hours: totalHoursSum.toString(),
           hourly_rate_fee: '0.00',
           deposit: depositAmount.toFixed(2),
@@ -346,7 +346,7 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
         };
 
         setCalculatedAmounts(localAmounts);
-        setSignNowFields(localSignNowFields);
+        setPreviewFields(localPreviewFields);
         setContractData({
           total_hours: data.total_hours,
           hourly_rate: data.hourly_rate,
@@ -385,7 +385,7 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
           .filter((s) => s.type === 'hourly')
           .reduce((sum, s) => sum + Number(s.totalHours || 0), 0);
 
-        const localSignNowFields = {
+        const localPreviewFields = {
           total_hours: totalHoursSum.toString(),
           hourly_rate_fee: '0.00',
           deposit: depositAmount.toFixed(2),
@@ -394,7 +394,7 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
         };
 
         setCalculatedAmounts(localAmounts);
-        setSignNowFields(localSignNowFields);
+        setPreviewFields(localPreviewFields);
         setContractData({
           total_hours: data.total_hours,
           hourly_rate: data.hourly_rate,
@@ -1065,7 +1065,7 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
           )}
 
           {/* Step 3: Calculation Preview */}
-          {step === 'calculation' && calculatedAmounts && signNowFields && (
+          {step === 'calculation' && calculatedAmounts && previewFields && (
             <div className='space-y-4'>
               <Card className='border-green-200 bg-green-50'>
                 <CardHeader>
@@ -1213,7 +1213,7 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                     </div>
                   )}
 
-                  {/* SignNow Fields Preview */}
+                  {/* Contract fields preview */}
                   <div className='mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg'>
                     <h4 className='text-sm font-semibold text-blue-800 mb-2'>
                       Contract Details:
@@ -1222,25 +1222,25 @@ export function EnhancedContractDialog({ open, onOpenChange }: Props) {
                       <div className='flex justify-between'>
                         <span className='text-blue-700'>Total Hours:</span>
                         <span className='font-medium'>
-                          {signNowFields.total_hours}
+                          {previewFields.total_hours}
                         </span>
                       </div>
                       <div className='flex justify-between'>
                         <span className='text-blue-700'>Hourly Rate:</span>
                         <span className='font-medium'>
-                          ${signNowFields.hourly_rate_fee}
+                          ${previewFields.hourly_rate_fee}
                         </span>
                       </div>
                       <div className='flex justify-between'>
                         <span className='text-blue-700'>Deposit:</span>
                         <span className='font-medium'>
-                          ${signNowFields.deposit}
+                          ${previewFields.deposit}
                         </span>
                       </div>
                       <div className='flex justify-between'>
                         <span className='text-blue-700'>Total Amount:</span>
                         <span className='font-medium'>
-                          ${signNowFields.total_amount}
+                          ${previewFields.total_amount}
                         </span>
                       </div>
                     </div>

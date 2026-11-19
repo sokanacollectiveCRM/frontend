@@ -170,7 +170,7 @@ export function Step4Referral({
         {isReferralOther && (
           <div
             className={`${styles['form-field']} ${styles['form-field-label-above']}`}
-            style={{ gridColumn: '1 / span 4' }}
+            style={{ gridColumn: '1 / -1' }}
           >
             <label
               htmlFor='referral_source_other'
@@ -320,7 +320,7 @@ export function Step5HealthHistory({
       <div className={styles['form-grid']}>
         <div
           className={styles['form-field']}
-          style={{ gridColumn: '1 / span 4' }}
+          style={{ gridColumn: '1 / -1' }}
         >
           <textarea
             className={
@@ -355,7 +355,7 @@ export function Step5HealthHistory({
         </div>
         <div
           className={styles['form-field']}
-          style={{ gridColumn: '1 / span 4' }}
+          style={{ gridColumn: '1 / -1' }}
         >
           <input
             className={
@@ -790,7 +790,7 @@ export function Step7PastPregnancies({
         <div
           className={styles['form-field']}
           style={{
-            gridColumn: '1 / span 4',
+            gridColumn: '1 / -1',
             padding: '16px 0',
           }}
         >
@@ -900,7 +900,7 @@ export function Step7PastPregnancies({
             </div>
             <div
               className={styles['form-field']}
-              style={{ gridColumn: '1 / span 4' }}
+              style={{ gridColumn: '1 / -1' }}
             >
               <textarea
                 className={styles['form-input']}
@@ -955,6 +955,10 @@ export function Step8ServicesInterested({
   totalSteps,
 }: any) {
   const values = form.getValues();
+  const supportDetails = useWatch({
+    control: form.control,
+    name: 'service_support_details',
+  });
   const errors = form.formState.errors;
   const [focus, setFocus] = useState({
     services_interested: false,
@@ -978,6 +982,7 @@ export function Step8ServicesInterested({
 
   // Multi-select dropdown logic
   const selected = values.services_interested || [];
+  const servicesLabelRaised = dropdownOpen || selected.length > 0;
   const toggleService = (service: string) => {
     if (selected.includes(service)) {
       form.setValue(
@@ -998,11 +1003,12 @@ export function Step8ServicesInterested({
         {/* Multi-select dropdown */}
         <div
           className={`${styles['form-field']} ${styles['services-select-field']}`}
-          style={{ gridColumn: '1 / span 4' }}
+          style={{ gridColumn: '1 / -1' }}
         >
           <label
             className={
-              styles['form-floating-label'] + ' ' + styles['form-label--active']
+              styles['form-floating-label'] +
+              (servicesLabelRaised ? ' ' + styles['form-label--active'] : '')
             }
             style={{
               color: errors.services_interested ? '#d32f2f' : undefined,
@@ -1015,16 +1021,19 @@ export function Step8ServicesInterested({
               <button
                 type='button'
                 className={`${styles['form-input']} ${styles['form-option-trigger-text']}`}
+                aria-label='Which services are you interested in? Select all that apply'
                 style={{
                   textAlign: 'left',
-                  minHeight: 40,
                   cursor: 'pointer',
-                  background: '#fff',
+                  background: 'transparent',
                 }}
                 onClick={() => setDropdownOpen(!dropdownOpen)}
               >
-                {selected.length > 0 ? selected.join(', ') : 'Select'}
+                <span className={styles['services-trigger-value']}>
+                  {selected.length > 0 ? selected.join(', ') : 'Select'}
+                </span>
                 <span
+                  className={styles['services-trigger-arrow']}
                   style={{
                     float: 'right',
                     pointerEvents: 'none',
@@ -1099,23 +1108,15 @@ export function Step8ServicesInterested({
         </div>
         {/* Support details textarea */}
         <div
-          className={styles['form-field']}
-          style={{ gridColumn: '1 / span 4' }}
+          className={`${styles['form-field']} ${styles['support-details-field']}`}
+          style={{ gridColumn: '1 / -1' }}
         >
-          <textarea
-            className={styles['form-input']}
-            {...form.register('service_support_details')}
-            id='service_support_details'
-            data-type='textarea'
-            onFocus={() => handleFocus('service_support_details')}
-            onBlur={() => handleBlur('service_support_details')}
-            style={{ minHeight: 80, height: 'auto' }}
-          />
           <label
             htmlFor='service_support_details'
             className={
               styles['form-floating-label'] +
-              (focus.service_support_details || values.service_support_details
+              (focus.service_support_details ||
+              (typeof supportDetails === 'string' && supportDetails.trim() !== '')
                 ? ' ' + styles['form-label--active']
                 : '')
             }
@@ -1125,6 +1126,14 @@ export function Step8ServicesInterested({
             visits, overnights, and roughly how many weeks. If you chose 'Other'
             above, explain here.*
           </label>
+          <textarea
+            className={styles['form-input']}
+            {...form.register('service_support_details')}
+            id='service_support_details'
+            data-type='textarea'
+            onFocus={() => handleFocus('service_support_details')}
+            onBlur={() => handleBlur('service_support_details')}
+          />
           {errors.service_support_details && (
             <div className={styles['form-error']}>
               {errors.service_support_details.message as string}
@@ -1220,9 +1229,19 @@ export function Step9Payment({
         {/* Payment Method Dropdown */}
         <div
           className={styles['form-field']}
-          style={{ gridColumn: '1 / span 4', position: 'relative' }}
+          style={{ gridColumn: '1 / -1', position: 'relative' }}
         >
-          {/* Error message above input, centered */}
+          <label
+            htmlFor='payment_method'
+            className={
+              styles['form-floating-label'] +
+              (focus.payment_method || values.payment_method
+                ? ' ' + styles['form-label--active']
+                : '')
+            }
+          >
+            How do you plan to pay for services? *
+          </label>
           {errors.payment_method && (
             <div
               style={{
@@ -1249,19 +1268,10 @@ export function Step9Payment({
                 className={`${styles['form-input']} ${styles['form-option-trigger-text']}`}
                 style={{
                   textAlign: 'left',
-                  minHeight: 40,
                   cursor: 'pointer',
-                  background: '#fff',
-                  borderBottom: `2px solid ${errors.payment_method ? '#d32f2f' : '#00bcd4'}`,
+                  background: 'transparent',
                   width: '100%',
-                  fontSize: 18,
                   color: '#222',
-                  borderRadius: 0,
-                  boxShadow: 'none',
-                  outline: 'none',
-                  margin: 0,
-                  padding: '12px 40px 12px 8px',
-                  position: 'relative',
                 }}
                 onClick={() =>
                   setOpen((o) => ({ ...o, payment_method: !o.payment_method }))
@@ -1275,8 +1285,7 @@ export function Step9Payment({
                 aria-invalid={!!errors.payment_method}
                 id='payment_method'
               >
-                {values.payment_method ||
-                  'How do you plan to pay for services?'}
+                {values.payment_method || 'Select'}
                 <span
                   style={{
                     float: 'right',
@@ -1354,7 +1363,7 @@ export function Step9Payment({
         {isFullSupport ? (
           <div
             className={styles['form-field']}
-            style={{ gridColumn: '1 / span 4', marginTop: 8 }}
+            style={{ gridColumn: '1 / -1', marginTop: 8 }}
           >
             <div
               style={{
@@ -1378,7 +1387,7 @@ export function Step9Payment({
         ) : isNotSure ? (
           <div
             className={styles['form-field']}
-            style={{ gridColumn: '1 / span 4', marginTop: 8 }}
+            style={{ gridColumn: '1 / -1', marginTop: 8 }}
           >
             <div
               style={{
@@ -1400,7 +1409,7 @@ export function Step9Payment({
         ) : isSelfPay ? (
           <div
             className={styles['form-field']}
-            style={{ gridColumn: '1 / span 4', marginTop: 8 }}
+            style={{ gridColumn: '1 / -1', marginTop: 8 }}
           >
             {isSelfPaySlidingScale ? (
               <div
@@ -1705,7 +1714,7 @@ export function Step9Payment({
         ) : paymentMethod && isInsuranceMethod(paymentMethod) ? (
           <div
             className={styles['form-field']}
-            style={{ gridColumn: '1 / span 4', marginTop: 8 }}
+            style={{ gridColumn: '1 / -1', marginTop: 8 }}
           >
             <div
               style={{
@@ -1732,7 +1741,7 @@ export function Step9Payment({
               <div
                 className={styles['form-field']}
                 style={{
-                  gridColumn: '1 / span 4',
+                  gridColumn: '1 / -1',
                   marginTop: 4,
                   marginBottom: 4,
                 }}
@@ -1756,7 +1765,6 @@ export function Step9Payment({
 
             <div
               className={styles['form-field']}
-              style={{ gridColumn: '1 / span 2' }}
             >
               <input
                 className={styles['form-input']}
@@ -1790,7 +1798,6 @@ export function Step9Payment({
 
             <div
               className={styles['form-field']}
-              style={{ gridColumn: '3 / span 2' }}
             >
               <input
                 className={styles['form-input']}
@@ -1824,7 +1831,7 @@ export function Step9Payment({
 
             <div
               className={styles['form-field']}
-              style={{ gridColumn: '1 / span 4' }}
+              style={{ gridColumn: '1 / -1' }}
             >
               <label
                 htmlFor='insurance_policy_holder_relationship'
@@ -1865,7 +1872,7 @@ export function Step9Payment({
 
             <div
               className={styles['form-field']}
-              style={{ gridColumn: '1 / span 4' }}
+              style={{ gridColumn: '1 / -1' }}
             >
               <input
                 className={styles['form-input']}
@@ -1901,7 +1908,6 @@ export function Step9Payment({
 
             <div
               className={styles['form-field']}
-              style={{ gridColumn: '1 / span 2' }}
             >
               <input
                 className={styles['form-input']}
@@ -1935,7 +1941,6 @@ export function Step9Payment({
 
             <div
               className={styles['form-field']}
-              style={{ gridColumn: '3 / span 2' }}
             >
               <input
                 className={styles['form-input']}
@@ -1958,7 +1963,7 @@ export function Step9Payment({
 
             <div
               className={styles['form-field']}
-              style={{ gridColumn: '1 / span 4' }}
+              style={{ gridColumn: '1 / -1' }}
             >
               <label
                 htmlFor='insurance_plan_type'
@@ -1999,7 +2004,7 @@ export function Step9Payment({
 
             <div
               className={styles['form-field']}
-              style={{ gridColumn: '1 / span 4' }}
+              style={{ gridColumn: '1 / -1' }}
             >
               <input
                 className={styles['form-input']}
@@ -2022,7 +2027,7 @@ export function Step9Payment({
 
             <div
               className={styles['form-field']}
-              style={{ gridColumn: '1 / span 4', marginTop: 4 }}
+              style={{ gridColumn: '1 / -1', marginTop: 4 }}
             >
               <label
                 htmlFor='has_secondary_insurance'
@@ -2053,7 +2058,7 @@ export function Step9Payment({
               <>
                 <div
                   className={styles['form-field']}
-                  style={{ gridColumn: '1 / span 4' }}
+                  style={{ gridColumn: '1 / -1' }}
                 >
                   <input
                     className={styles['form-input']}
@@ -2087,7 +2092,6 @@ export function Step9Payment({
 
                 <div
                   className={styles['form-field']}
-                  style={{ gridColumn: '1 / span 2' }}
                 >
                   <input
                     className={styles['form-input']}
@@ -2121,7 +2125,6 @@ export function Step9Payment({
 
                 <div
                   className={styles['form-field']}
-                  style={{ gridColumn: '3 / span 2' }}
                 >
                   <input
                     className={styles['form-input']}
@@ -2323,7 +2326,7 @@ export function Step10ClientDemographics({
         {/* Race/Ethnicity/Nationality */}
         <div
           className={styles['form-field']}
-          style={{ gridColumn: '1 / span 2', position: 'relative' }}
+          style={{ position: 'relative' }}
         >
           <select
             className={styles['form-select']}
@@ -2364,7 +2367,7 @@ export function Step10ClientDemographics({
         {/* Primary Language */}
         <div
           className={styles['form-field']}
-          style={{ gridColumn: '3 / span 2', position: 'relative' }}
+          style={{ position: 'relative' }}
         >
           <select
             className={styles['form-select']}
@@ -2405,7 +2408,7 @@ export function Step10ClientDemographics({
         {/* Client Age Range */}
         <div
           className={styles['form-field']}
-          style={{ gridColumn: '1 / span 2', position: 'relative' }}
+          style={{ position: 'relative' }}
         >
           <select
             className={styles['form-select']}
@@ -2446,7 +2449,7 @@ export function Step10ClientDemographics({
         {/* Medical Insurance Coverage */}
         <div
           className={styles['form-field']}
-          style={{ gridColumn: '3 / span 2', position: 'relative' }}
+          style={{ position: 'relative' }}
         >
           <select
             className={styles['form-select']}
@@ -2488,7 +2491,6 @@ export function Step10ClientDemographics({
         <div
           className={`${styles['form-field']} demographics-multi-container`}
           style={{
-            gridColumn: '1 / span 2',
             position: 'relative',
             height: 'auto',
             minHeight: 56,
@@ -2505,15 +2507,14 @@ export function Step10ClientDemographics({
               flexWrap: 'wrap',
               width: '100%',
               textAlign: 'left',
-              background: '#fff',
+              background: 'transparent',
               border: 'none',
               borderBottom: `2px solid ${errors.demographics_multi ? '#d32f2f' : '#bdbdbd'}`,
               borderRadius: 0,
               fontSize: 16,
               boxShadow: 'none',
               outline: 'none',
-              padding:
-                selectedMulti.length === 0 ? '16px 8px' : '22px 40px 6px 8px',
+              padding: selectedMulti.length === 0 ? '0 1.75rem 0.35rem 0' : '0.35rem 1.75rem 0.35rem 0',
               color: '#222',
               minHeight: 48,
               lineHeight: 1.5,
@@ -2529,14 +2530,14 @@ export function Step10ClientDemographics({
               setDropdownOpen(!dropdownOpen);
             }}
           >
-            <div
+              <div
               style={{
                 display: 'flex',
                 flexWrap: 'wrap',
                 alignItems: 'center',
                 width: '100%',
-                marginBottom: 6,
-                minHeight: 48,
+                marginBottom: selectedMulti.length === 0 ? 0 : 6,
+                minHeight: selectedMulti.length === 0 ? 0 : 32,
                 maxHeight: 120,
                 overflowY: selectedMulti.length > 2 ? 'auto' : 'visible',
                 boxSizing: 'border-box',
@@ -2694,7 +2695,6 @@ export function Step10ClientDemographics({
         <div
           className={styles['form-field']}
           style={{
-            gridColumn: '3 / span 2',
             position: 'relative',
             height: 'auto',
             minHeight: 56,

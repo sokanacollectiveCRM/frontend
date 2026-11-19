@@ -1,7 +1,7 @@
 import { Search } from '@/common/components/header/Search';
 import { logFailure } from '@/utils/safeLog';
 import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
-import { useClients } from '@/common/hooks/clients/useClients';
+import { useClients } from '@/features/clients';
 import { useUser } from '@/common/hooks/user/useUser';
 import { Header } from '@/common/layouts/Header';
 import { Main } from '@/common/layouts/Main';

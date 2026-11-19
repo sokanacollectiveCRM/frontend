@@ -62,6 +62,7 @@ export const STEP_CONFIG: StepInfo[] = [
     id: 8,
     title: 'Client Demographics',
     shortTitle: 'Demographics',
+    navTitle: 'Demographics',
   },
 ];
 

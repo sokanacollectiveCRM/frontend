@@ -44,7 +44,7 @@ import {
   getHourTypeLabel,
   hourTypeOptions,
   type HourType,
-} from '@/features/hours/data/hour-types';
+} from '@/features/hours';
 
 type HourFormState = {
   clientId: string;

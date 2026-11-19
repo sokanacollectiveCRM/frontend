@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { vi } from 'vitest';
-import { fullSchema, useRequestForm } from 'features/intake/useRequestForm';
+import { fullSchema, useRequestForm } from '@/features/intake/useRequestForm';
 
 // Mock document.getElementById and scrollIntoView
 const mockScrollIntoView = vi.fn();

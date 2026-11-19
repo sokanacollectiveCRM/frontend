@@ -7,6 +7,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from '@/common/components/ui/alert';
+import { AuthFormLogo } from '@/common/components/brand/Sokana360Logo';
 import { Button } from '@/common/components/ui/button';
 import {
   Card,
@@ -56,6 +57,7 @@ export default function RequestPasswordReset() {
     <div className='flex flex-col gap-6 max-w-md mx-auto'>
       <Card>
         <CardHeader>
+          <AuthFormLogo />
           <CardTitle className='text-2xl'>Reset Password</CardTitle>
           <CardDescription>
             Enter your email to receive a password reset link.

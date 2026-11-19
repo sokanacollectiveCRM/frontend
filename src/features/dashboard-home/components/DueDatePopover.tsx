@@ -6,9 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/common/components/ui/
 import { Button } from '@/common/components/ui/button';
 import { Calendar, Eye } from 'lucide-react';
 import { format } from 'date-fns';
-import { LeadProfileModal } from '@/features/clients/components/dialog/LeadProfileModal';
-import { useClients } from '@/common/hooks/clients/useClients';
-import { Client } from '@/features/clients/data/schema';
+import { Client, LeadProfileModal, useClients } from '@/features/clients';
 import { toast } from 'sonner';
 
 interface DueDatePopoverProps {

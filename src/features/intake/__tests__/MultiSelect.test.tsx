@@ -31,7 +31,7 @@ const MockMultiSelect = ({ form, onSelectionChange }: any) => {
       }
       form.setValue('demographics_multi', updated);
     }
-    onSelectionChange && onSelectionChange();
+    onSelectionChange?.();
   };
 
   return (

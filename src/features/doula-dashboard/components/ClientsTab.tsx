@@ -12,7 +12,7 @@ import {
 import { toast } from 'sonner';
 import { Users, Mail, Phone, Calendar, Search, Eye } from 'lucide-react';
 import { format } from 'date-fns';
-import { STATUS_LABELS } from '@/features/clients/data/schema';
+import { STATUS_LABELS } from '@/features/clients';
 
 interface ClientsTabProps {
   onClientSelect?: (clientId: string) => void;

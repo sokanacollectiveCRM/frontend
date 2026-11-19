@@ -50,7 +50,7 @@ import type {
   ActivityLog,
 } from '@/features/hours/types/doula';
 import { toast } from 'sonner';
-import { STATUS_LABELS } from '@/features/clients/data/schema';
+import { STATUS_LABELS } from '@/features/clients';
 import { format } from 'date-fns';
 import { EditDoulaDialog } from './EditDoulaDialog';
 import { AdminDoulaDocumentsSection } from './AdminDoulaDocumentsSection';

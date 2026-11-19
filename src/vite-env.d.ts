@@ -13,8 +13,6 @@ interface ImportMetaEnv {
   readonly VITE_CLOUD_RUN_API_URL?: string;
   /** "production" | "staging" | "development" */
   readonly VITE_APP_ENV?: string;
-  /** "supabase" (Bearer token) | "cookie" (credentials: include) | "identity" */
-  readonly VITE_AUTH_MODE?: 'supabase' | 'cookie' | 'identity';
   readonly VITE_FIREBASE_API_KEY?: string;
   readonly VITE_FIREBASE_AUTH_DOMAIN?: string;
   readonly VITE_FIREBASE_PROJECT_ID?: string;

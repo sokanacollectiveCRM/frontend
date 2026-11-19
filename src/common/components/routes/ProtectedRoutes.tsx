@@ -1,9 +1,11 @@
 import { AccessDenied } from '@/common/components/routes/AccessDenied';
 import {
   getBillingHomePath,
+  isAdminRole,
   isBillingOnlyRole,
   canAccessBillingPortal,
 } from '@/common/auth/roles';
+import { safePostLoginPath } from '@/common/auth/postLoginRedirect';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
 import { useUser } from '@/common/hooks/user/useUser';
@@ -15,12 +17,17 @@ function SessionLoading() {
 }
 
 export function PrivateRoute() {
-  const { user, isLoading } = useUser();
+  const { user, isLoading, organizations = [] } = useUser();
   const { client, isLoading: isClientLoading } = useClientAuth();
   const location = useLocation();
 
   if ((isLoading || isClientLoading) && !user && !client) {
     return <SessionLoading />;
+  }
+
+  if (organizations.length > 0 && !user) {
+    const next = encodeURIComponent(`${location.pathname}${location.search}`);
+    return <Navigate to={`/choose-organization?next=${next}`} replace />;
   }
 
   if (user || client) {
@@ -32,13 +39,20 @@ export function PrivateRoute() {
 }
 
 export function PublicOnlyRoute() {
-  const { user, isLoading } = useUser();
+  const location = useLocation();
+  const { user, isLoading, organizations = [] } = useUser();
 
   if (isLoading) {
     return <Outlet />;
   }
 
-  return !user ? <Outlet /> : <Navigate to='/' replace />;
+  if (!user && organizations.length > 0)
+    return <Navigate to={`/choose-organization${location.search}`} replace />;
+  if (!user) return <Outlet />;
+
+  const params = new URLSearchParams(location.search);
+  const next = safePostLoginPath(params.get('next'));
+  return <Navigate to={next ?? '/'} replace />;
 }
 
 export function NonBillingOnlyRoute() {
@@ -111,6 +125,21 @@ export function StaffCrmRoute() {
 
   if (isBillingOnlyRole(user?.role)) {
     return <Navigate to={getBillingHomePath()} replace />;
+  }
+
+  return <Outlet />;
+}
+
+/** Admin pages and controls are hidden from doulas and billing-only users. */
+export function AdminOnlyRoute() {
+  const { user, isLoading } = useUser();
+
+  if (isLoading && !user) {
+    return <SessionLoading />;
+  }
+
+  if (!isAdminRole(user?.role)) {
+    return <AccessDenied description='This page is limited to Sokana administrators.' />;
   }
 
   return <Outlet />;

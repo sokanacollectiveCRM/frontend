@@ -1,7 +1,8 @@
+import { MemoryRouter } from 'react-router-dom';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
-import RequestForm from 'features/intake/RequestForm';
+import RequestForm from '@/features/intake/RequestForm';
 
 // Mock the toast
 vi.mock('sonner', () => ({
@@ -11,9 +12,23 @@ vi.mock('sonner', () => ({
   },
 }));
 
-// Mock the environment variable
-vi.mock('import.meta.env', () => ({
-  VITE_APP_BACKEND_URL: 'http://localhost:5050',
+// These suites exercise the form after organization branding has loaded.
+vi.mock('@/features/intake/application/usePublicIntakeBranding', () => ({
+  usePublicIntakeBranding: () => ({
+    status: 'ready',
+    data: {
+      slug: 'sokana',
+      name: 'Sokana360',
+      branding: {
+        displayName: 'Sokana360',
+        logoPath: '/logo.png',
+        markPath: null,
+        pageTitle: 'Request for Service Form',
+        primaryColor: '#00897b',
+        accentColor: '#00897b',
+      },
+    },
+  }),
 }));
 
 // Mock fetch
@@ -27,7 +42,11 @@ describe('RequestForm Integration Tests', () => {
 
   describe('Complete Form Submission Flow', () => {
     it('renders form with all required fields', async () => {
-      render(<RequestForm />);
+      render(
+        <MemoryRouter>
+          <RequestForm />
+        </MemoryRouter>
+      );
 
       // Verify form renders correctly
       expect(screen.getByText('Request for Service Form')).toBeInTheDocument();
@@ -43,7 +62,11 @@ describe('RequestForm Integration Tests', () => {
 
     it('allows user to fill form fields', async () => {
       const user = userEvent.setup();
-      render(<RequestForm />);
+      render(
+        <MemoryRouter>
+          <RequestForm />
+        </MemoryRouter>
+      );
 
       // Fill out the form fields
       const supportDetailsInput = screen.getByLabelText(
@@ -63,23 +86,34 @@ describe('RequestForm Integration Tests', () => {
 
     it('shows Next button on first step', async () => {
       const user = userEvent.setup();
-      render(<RequestForm />);
+      render(
+        <MemoryRouter>
+          <RequestForm />
+        </MemoryRouter>
+      );
 
       // Verify Next button is present
-      const nextButton = screen.getByRole('button', { name: /next/i });
+      const nextButton = screen.getAllByRole('button', { name: /^next$/i })[0];
       expect(nextButton).toBeInTheDocument();
 
       // Verify Back button is disabled on first step
-      const backButton = screen.getByRole('button', { name: /back/i });
-      expect(backButton).toBeDisabled();
+      for (const backButton of screen.getAllByRole('button', {
+        name: /^back$/i,
+      })) {
+        expect(backButton).toBeDisabled();
+      }
     });
 
     it('handles form validation errors', async () => {
       const user = userEvent.setup();
-      render(<RequestForm />);
+      render(
+        <MemoryRouter>
+          <RequestForm />
+        </MemoryRouter>
+      );
 
       // Try to submit without filling required fields
-      const nextButton = screen.getByRole('button', { name: /next/i });
+      const nextButton = screen.getAllByRole('button', { name: /^next$/i })[0];
       await user.click(nextButton);
 
       // Form should still be visible (validation would prevent advancement)
@@ -103,9 +137,13 @@ describe('RequestForm Integration Tests', () => {
       );
 
       const user = userEvent.setup();
-      render(<RequestForm />);
+      render(
+        <MemoryRouter>
+          <RequestForm />
+        </MemoryRouter>
+      );
 
-      const nextButton = screen.getByRole('button', { name: /next/i });
+      const nextButton = screen.getAllByRole('button', { name: /^next$/i })[0];
       await user.click(nextButton);
 
       // Form should still be visible (this is a multi-step form)
@@ -116,9 +154,13 @@ describe('RequestForm Integration Tests', () => {
       (global.fetch as any).mockRejectedValueOnce(new Error('Network error'));
 
       const user = userEvent.setup();
-      render(<RequestForm />);
+      render(
+        <MemoryRouter>
+          <RequestForm />
+        </MemoryRouter>
+      );
 
-      const nextButton = screen.getByRole('button', { name: /next/i });
+      const nextButton = screen.getAllByRole('button', { name: /^next$/i })[0];
       await user.click(nextButton);
 
       // Form should still be visible
@@ -127,9 +169,13 @@ describe('RequestForm Integration Tests', () => {
 
     it('validates required fields on initial step', async () => {
       const user = userEvent.setup();
-      render(<RequestForm />);
+      render(
+        <MemoryRouter>
+          <RequestForm />
+        </MemoryRouter>
+      );
 
-      const nextButton = screen.getByRole('button', { name: /next/i });
+      const nextButton = screen.getAllByRole('button', { name: /^next$/i })[0];
       await user.click(nextButton);
 
       // Form should still be visible (validation would prevent advancement)
@@ -145,9 +191,13 @@ describe('RequestForm Integration Tests', () => {
       );
 
       const user = userEvent.setup();
-      render(<RequestForm />);
+      render(
+        <MemoryRouter>
+          <RequestForm />
+        </MemoryRouter>
+      );
 
-      const nextButton = screen.getByRole('button', { name: /next/i });
+      const nextButton = screen.getAllByRole('button', { name: /^next$/i })[0];
       await user.click(nextButton);
 
       // Form should still be visible
@@ -155,7 +205,11 @@ describe('RequestForm Integration Tests', () => {
     });
 
     it('renders form sections correctly', async () => {
-      render(<RequestForm />);
+      render(
+        <MemoryRouter>
+          <RequestForm />
+        </MemoryRouter>
+      );
 
       // Check for form sections
       expect(
@@ -169,9 +223,13 @@ describe('RequestForm Integration Tests', () => {
 
     it('handles multiple submission attempts', async () => {
       const user = userEvent.setup();
-      render(<RequestForm />);
+      render(
+        <MemoryRouter>
+          <RequestForm />
+        </MemoryRouter>
+      );
 
-      const nextButton = screen.getByRole('button', { name: /next/i });
+      const nextButton = screen.getAllByRole('button', { name: /^next$/i })[0];
 
       // Click multiple times
       await user.click(nextButton);
@@ -184,7 +242,11 @@ describe('RequestForm Integration Tests', () => {
 
     it('maintains form state after errors', async () => {
       const user = userEvent.setup();
-      render(<RequestForm />);
+      render(
+        <MemoryRouter>
+          <RequestForm />
+        </MemoryRouter>
+      );
 
       // Fill some fields
       const supportDetailsInput = screen.getByLabelText(
@@ -193,7 +255,7 @@ describe('RequestForm Integration Tests', () => {
       await user.type(supportDetailsInput, 'Postpartum support needed');
 
       // Try to submit
-      const nextButton = screen.getByRole('button', { name: /next/i });
+      const nextButton = screen.getAllByRole('button', { name: /^next$/i })[0];
       await user.click(nextButton);
 
       // Form should still be visible and maintain field values
@@ -220,9 +282,13 @@ describe('RequestForm Integration Tests', () => {
       );
 
       const user = userEvent.setup();
-      render(<RequestForm />);
+      render(
+        <MemoryRouter>
+          <RequestForm />
+        </MemoryRouter>
+      );
 
-      const nextButton = screen.getByRole('button', { name: /next/i });
+      const nextButton = screen.getAllByRole('button', { name: /^next$/i })[0];
 
       // Click multiple times quickly
       await user.click(nextButton);
@@ -235,9 +301,13 @@ describe('RequestForm Integration Tests', () => {
 
     it('resets form state after error', async () => {
       const user = userEvent.setup();
-      render(<RequestForm />);
+      render(
+        <MemoryRouter>
+          <RequestForm />
+        </MemoryRouter>
+      );
 
-      const nextButton = screen.getByRole('button', { name: /next/i });
+      const nextButton = screen.getAllByRole('button', { name: /^next$/i })[0];
       await user.click(nextButton);
 
       // Form should still be visible for retry

@@ -116,20 +116,18 @@ import {
   getPortalBlockerLabel,
   getReadinessGateSummary,
 } from '@/lib/portalEligibility';
-import { PREGNANCY_BABY_POSTPARTUM_QUESTION_LABEL } from '@/features/request/stepConfig';
 import {
-  normalizeReferralSourceStoredValue,
-  REFERRAL_SOURCE_OPTIONS,
-  REFERRAL_SOURCE_OTHER_VALUE,
-} from '@/features/request/referralSourceOptions';
-import { HOME_PEOPLE_COUNT_OPTIONS } from '@/features/request/homePeopleCountOptions';
-import {
+  HOME_PEOPLE_COUNT_OPTIONS,
   HOME_TYPE_OPTIONS,
   HOME_TYPE_OTHER_VALUE,
+  PREGNANCY_BABY_POSTPARTUM_QUESTION_LABEL,
+  REFERRAL_SOURCE_OPTIONS,
+  REFERRAL_SOURCE_OTHER_VALUE,
+  normalizeReferralSourceStoredValue,
   selectSingleHomeType,
   singleHomeTypeFromApi,
   toggleHomeTypeSelection,
-} from '@/features/request/homeTypeOptions';
+} from '@/features/intake';
 import {
   normalizeStringArrayFromApi,
   readProfileFieldFromRecord,
@@ -339,6 +337,9 @@ function isEndpointUnavailableStatus(status: number): boolean {
   return status === 404 || status === 405 || status === 501;
 }
 
+/** Radix dismisses when pointer-up lands on the overlay right after a row click. */
+const LEAD_PROFILE_OUTSIDE_DISMISS_GRACE_MS = 450;
+
 export function LeadProfileModal({
   open,
   onOpenChange,
@@ -347,6 +348,40 @@ export function LeadProfileModal({
   missingClientId,
 }: LeadProfileModalProps) {
   const { user } = useContext(UserContext);
+  const openedAtMsRef = React.useRef(0);
+
+  React.useEffect(() => {
+    if (open) {
+      openedAtMsRef.current = Date.now();
+    }
+  }, [open]);
+
+  const preventAccidentalOutsideDismiss = React.useCallback(
+    (event: { preventDefault: () => void }) => {
+      if (
+        Date.now() - openedAtMsRef.current <
+        LEAD_PROFILE_OUTSIDE_DISMISS_GRACE_MS
+      ) {
+        event.preventDefault();
+      }
+    },
+    []
+  );
+
+  const handleDialogOpenChange = React.useCallback(
+    (nextOpen: boolean) => {
+      if (
+        !nextOpen &&
+        open &&
+        Date.now() - openedAtMsRef.current <
+          LEAD_PROFILE_OUTSIDE_DISMISS_GRACE_MS
+      ) {
+        return;
+      }
+      onOpenChange(nextOpen);
+    },
+    [onOpenChange, open]
+  );
   const [notes, setNotes] = useState<ClientNote[]>([]);
   const [newNote, setNewNote] = useState('');
   const [noteCategory, setNoteCategory] = useState('General');
@@ -1227,26 +1262,18 @@ export function LeadProfileModal({
           billingData.payment_method ?? effectivePaymentMethod
         );
 
+        // Intake / legacy rows often have empty or non-API payment labels.
+        // Skip billing writes unless we can map a valid payment_method (avoid
+        // PUT /clients with billing-only payload → 400 while PHI saves succeed).
         if (!resolvedPaymentMethod) {
-          const fallbackResult = await updateClient(client.id, billingData);
-          if (!fallbackResult.success) {
-            billingSuccess = false;
-            errors.push(
-              fallbackResult.error || 'Failed to update billing fields'
-            );
-          } else if (
-            fallbackResult.client &&
-            typeof fallbackResult.client === 'object'
-          ) {
-            setEditedData((prev) => ({ ...prev, ...billingData }));
-          }
+          // no-op
         } else {
           const normalizedBillingData = {
             ...billingData,
             payment_method: resolvedPaymentMethod,
           };
           const billingResponse = await fetchWithAuth(
-            buildUrl(`/api/clients/${encodeURIComponent(client.id)}/billing`),
+            buildUrl(`/clients/${encodeURIComponent(client.id)}/billing`),
             {
               method: 'PUT',
               headers: {
@@ -2333,8 +2360,12 @@ export function LeadProfileModal({
 
   if (!client) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className='max-h-[100dvh] w-full max-w-full translate-x-0 translate-y-0 left-0 top-0 h-[100dvh] rounded-none overflow-y-auto sm:left-[50%] sm:top-[50%] sm:h-auto sm:max-h-[90vh] sm:max-w-lg sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg'>
+      <Dialog open={open} onOpenChange={handleDialogOpenChange}>
+        <DialogContent
+          className='max-h-[100dvh] w-full max-w-full translate-x-0 translate-y-0 left-0 top-0 h-[100dvh] rounded-none overflow-y-auto sm:left-[50%] sm:top-[50%] sm:h-auto sm:max-h-[90vh] sm:max-w-lg sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg'
+          onPointerDownOutside={preventAccidentalOutsideDismiss}
+          onInteractOutside={preventAccidentalOutsideDismiss}
+        >
           <DialogHeader>
             <DialogTitle>Client Not Found</DialogTitle>
             <DialogDescription>
@@ -2367,7 +2398,7 @@ export function LeadProfileModal({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent
         className={cn(
           'left-0 top-0 flex h-[100dvh] max-h-[100dvh] w-full max-w-full translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none p-0 sm:left-[50%] sm:top-[50%] sm:h-auto sm:max-h-[90vh] sm:max-w-4xl sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg',
@@ -2375,6 +2406,8 @@ export function LeadProfileModal({
         )}
         data-testid={`lead-profile-dialog-${String(client.id)}`}
         data-profile-mode={isEditing ? 'edit' : 'view'}
+        onPointerDownOutside={preventAccidentalOutsideDismiss}
+        onInteractOutside={preventAccidentalOutsideDismiss}
       >
         <div className='shrink-0 border-b bg-background/95 px-6 pb-3 pt-6 pr-12 backdrop-blur supports-[backdrop-filter]:bg-background/85'>
           <DialogHeader className='pb-0 text-left'>

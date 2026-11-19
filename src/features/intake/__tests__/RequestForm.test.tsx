@@ -1,7 +1,8 @@
+import { MemoryRouter } from 'react-router-dom';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
-import RequestForm from 'features/intake/RequestForm';
+import RequestForm from '@/features/intake/RequestForm';
 
 // Mock the toast
 vi.mock('sonner', () => ({
@@ -11,9 +12,23 @@ vi.mock('sonner', () => ({
   },
 }));
 
-// Mock the environment variable
-vi.mock('import.meta.env', () => ({
-  VITE_APP_BACKEND_URL: 'http://localhost:5050',
+// These suites exercise the form after organization branding has loaded.
+vi.mock('@/features/intake/application/usePublicIntakeBranding', () => ({
+  usePublicIntakeBranding: () => ({
+    status: 'ready',
+    data: {
+      slug: 'sokana',
+      name: 'Sokana360',
+      branding: {
+        displayName: 'Sokana360',
+        logoPath: '/logo.png',
+        markPath: null,
+        pageTitle: 'Request for Service Form',
+        primaryColor: '#00897b',
+        accentColor: '#00897b',
+      },
+    },
+  }),
 }));
 
 // Mock fetch
@@ -27,19 +42,31 @@ describe('RequestForm', () => {
 
   describe('Form Rendering', () => {
     it('renders the request form with initial step', () => {
-      render(<RequestForm />);
+      render(
+        <MemoryRouter>
+          <RequestForm />
+        </MemoryRouter>
+      );
 
       expect(screen.getByText('Request for Service Form')).toBeInTheDocument();
       expect(
         screen.getByText(/Please complete this form as thoroughly as possible/)
       ).toBeInTheDocument();
-      expect(screen.getByAltText('Sokana360 Logo')).toBeInTheDocument();
+      for (const logo of screen.getAllByAltText(/Sokana360 logo/i)) {
+        expect(logo).toBeInTheDocument();
+      }
     });
 
     it('shows Next button on first step', () => {
-      render(<RequestForm />);
+      render(
+        <MemoryRouter>
+          <RequestForm />
+        </MemoryRouter>
+      );
 
-      expect(screen.getByRole('button', { name: /next/i })).toBeInTheDocument();
+      expect(
+        screen.getAllByRole('button', { name: /^next$/i })[0]
+      ).toBeInTheDocument();
       expect(
         screen.queryByRole('button', { name: /submit/i })
       ).not.toBeInTheDocument();
@@ -54,13 +81,17 @@ describe('RequestForm', () => {
         json: async () => mockResponse,
       });
 
-      render(<RequestForm />);
+      render(
+        <MemoryRouter>
+          <RequestForm />
+        </MemoryRouter>
+      );
 
       // Fill out the form (this would be done by the user)
       // For now, we'll test the submission logic
 
       // Trigger form submission by clicking Next (which would advance through steps)
-      const nextButton = screen.getByRole('button', { name: /next/i });
+      const nextButton = screen.getAllByRole('button', { name: /^next$/i })[0];
       expect(nextButton).toBeInTheDocument();
     });
 
@@ -71,7 +102,11 @@ describe('RequestForm', () => {
         json: async () => mockResponse,
       });
 
-      render(<RequestForm />);
+      render(
+        <MemoryRouter>
+          <RequestForm />
+        </MemoryRouter>
+      );
 
       // Test that the form renders correctly
       expect(screen.getByText('Request for Service Form')).toBeInTheDocument();
@@ -87,7 +122,11 @@ describe('RequestForm', () => {
         json: async () => mockError,
       });
 
-      render(<RequestForm />);
+      render(
+        <MemoryRouter>
+          <RequestForm />
+        </MemoryRouter>
+      );
 
       // Test form rendering
       expect(screen.getByText('Request for Service Form')).toBeInTheDocument();
@@ -96,7 +135,11 @@ describe('RequestForm', () => {
     it('handles network error during submission', async () => {
       (global.fetch as any).mockRejectedValueOnce(new Error('Network error'));
 
-      render(<RequestForm />);
+      render(
+        <MemoryRouter>
+          <RequestForm />
+        </MemoryRouter>
+      );
 
       // Test form rendering
       expect(screen.getByText('Request for Service Form')).toBeInTheDocument();
@@ -120,7 +163,11 @@ describe('RequestForm', () => {
           )
       );
 
-      render(<RequestForm />);
+      render(
+        <MemoryRouter>
+          <RequestForm />
+        </MemoryRouter>
+      );
 
       // Test that form renders correctly
       expect(screen.getByText('Request for Service Form')).toBeInTheDocument();
@@ -129,7 +176,11 @@ describe('RequestForm', () => {
 
   describe('Form Fields', () => {
     it('renders all required form fields', () => {
-      render(<RequestForm />);
+      render(
+        <MemoryRouter>
+          <RequestForm />
+        </MemoryRouter>
+      );
 
       // Initial mobile step is services interested.
       expect(
@@ -145,7 +196,11 @@ describe('RequestForm', () => {
 
     it('allows user to fill form fields', async () => {
       const user = userEvent.setup();
-      render(<RequestForm />);
+      render(
+        <MemoryRouter>
+          <RequestForm />
+        </MemoryRouter>
+      );
 
       const serviceDetails = screen.getByLabelText(
         /Describe the support you are looking for/i
@@ -165,7 +220,11 @@ describe('RequestForm', () => {
         json: async () => mockResponse,
       });
 
-      render(<RequestForm />);
+      render(
+        <MemoryRouter>
+          <RequestForm />
+        </MemoryRouter>
+      );
 
       // Test that form renders correctly
       expect(screen.getByText('Request for Service Form')).toBeInTheDocument();

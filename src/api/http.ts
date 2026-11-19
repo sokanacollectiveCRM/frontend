@@ -1,3 +1,5 @@
+import { handleSessionExpiration } from '@/common/utils/sessionUtils';
+import { getSelectedOrganization } from './organizationContext';
 import { API_CONFIG } from './config';
 import { ApiError } from './errors';
 import { logger } from '@/utils/logger';
@@ -118,43 +120,34 @@ function buildBaseHeaders(
 }
 
 /**
- * Staff CRM auth: HttpOnly `sokana_session_token` cookie (credentials: include).
- * Supabase client-portal mode still sends Bearer from the Supabase session only.
+ * CRM auth: HttpOnly `sokana_session_token` cookie (credentials: include).
  */
 export async function getRequestAuth(): Promise<{
   credentials: FetchCredentials;
   headers: Record<string, string>;
 }> {
-  const headers: Record<string, string> = {};
-  if (API_CONFIG.authMode === 'supabase') {
-    const token = await getSupabaseTokenSafe();
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-      headers['X-Session-Token'] = token;
-    }
-  }
-  return { credentials: 'include', headers };
+  const tenantId = getSelectedOrganization();
+  return {
+    credentials: 'include',
+    headers: tenantId ? { 'X-Tenant-Id': tenantId } : {},
+  };
 }
 
-async function getSupabaseTokenSafe(): Promise<string | null> {
-  try {
-    const { supabase } = await import('@/lib/supabase');
-    const timedOut = Symbol('timeout');
-    const result = await Promise.race([
-      supabase.auth.getSession(),
-      new Promise<typeof timedOut>((resolve) => {
-        setTimeout(() => resolve(timedOut), 1500);
-      }),
-    ]);
-    if (result === timedOut) return null;
-    return result.data?.session?.access_token ?? null;
-  } catch {
-    return null;
+/** Login and invite calls can return 401 without meaning the CRM session died. */
+function redirectIfSessionExpired(status: number, requestUrl: string): void {
+  if (status !== 401) return;
+  if (
+    /\/auth\/(login|session|mfa|signup|reset|invitations|logout)/.test(
+      requestUrl
+    )
+  ) {
+    return;
   }
+  handleSessionExpiration();
 }
 
 /**
- * Fetch with auth applied: always sends cookies; Supabase mode also sends Bearer.
+ * Fetch with auth applied: always sends the session cookie.
  */
 export async function fetchWithAuth(
   url: string,
@@ -163,11 +156,13 @@ export async function fetchWithAuth(
   const auth = await getRequestAuth();
   const headers = new Headers(init?.headers);
   Object.entries(auth.headers).forEach(([k, v]) => headers.set(k, v));
-  return fetch(url, {
+  const response = await fetch(url, {
     ...init,
     credentials: 'include',
     headers,
   });
+  redirectIfSessionExpired(response.status, url);
+  return response;
 }
 
 async function requestLegacy<T>(
@@ -207,6 +202,7 @@ async function requestLegacy<T>(
   const parsed = await parseResponseBody(response);
   if (!response.ok) {
     const err = normalizeError(parsed, response);
+    redirectIfSessionExpired(response.status, url);
     if (API_CONFIG.isProd) logger.error(err.message);
     throw new ApiError(err.message, err.status);
   }
@@ -251,6 +247,7 @@ async function requestCanonical<T>(
 
   if (!response.ok) {
     const err = normalizeError(parsed, response);
+    redirectIfSessionExpired(response.status, url);
     if (API_CONFIG.isProd) logger.error(err.message);
     throw new ApiError(err.message, response.status, { code: err.code });
   }

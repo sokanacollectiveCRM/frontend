@@ -23,6 +23,7 @@ import {
 } from '@/common/components/ui/dropdown-menu';
 import { Input } from '@/common/components/ui/input';
 import { Label } from '@/common/components/ui/label';
+import { Textarea } from '@/common/components/ui/textarea';
 import {
   Popover,
   PopoverContent,
@@ -30,12 +31,10 @@ import {
 } from '@/common/components/ui/popover';
 import { UserContext } from '@/common/contexts/UserContext';
 import {
-  DOCUMENT_TYPE_LABELS,
-  REQUIRED_DOULA_DOCUMENT_TYPES,
   getAdminDoulaDocuments,
-  getDoulaDocumentUrl,
-  type DocumentCompletenessItem,
+  reviewAdminDoulaProfile,
 } from '@/api/doulas/doulaService';
+import { AdminDoulaDocumentsSection } from '@/features/hours/components/AdminDoulaDocumentsSection';
 import { buildUrl, fetchWithAuth } from '@/api/http';
 import UserAvatar from '@/common/components/user/UserAvatar';
 import {
@@ -59,8 +58,40 @@ interface TeamMember {
   email: string;
   bio: string;
   address: string;
+  phone?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  zip_code?: string;
+  gender?: string;
+  pronouns?: string;
+  race_ethnicity?: string[];
+  race_ethnicity_other?: string;
+  languages_other_than_english?: string[];
+  other_demographic_details?: string;
+  scheduling_url?: string;
+  availability_status?: string;
+  availability_note?: string;
+  unavailable_from?: string;
+  unavailable_until?: string;
   profile_picture?: string | null;
+  invitation_status?: string;
+  profile_review_status?:
+    | 'draft'
+    | 'not_submitted'
+    | 'pending'
+    | 'approved'
+    | 'rejected';
+  profile_rejection_reason?: string | null;
+  account_status?: string;
 }
+
+type DoulaReviewStatus =
+  | 'loading'
+  | 'needs_review'
+  | 'documents_needed'
+  | 'documents_approved'
+  | 'unavailable';
 
 const ALLOWED_TEAM_ROLES = new Set(['admin', 'doula']);
 
@@ -79,8 +110,63 @@ const toTeamMember = (member: any): TeamMember => ({
   id: String(member?.id ?? member?.user_id ?? member?.email ?? ''),
   bio: String(member?.bio ?? ''),
   address: String(member?.address ?? '').trim(),
+  phone: String(
+    member?.phone || member?.phone_number || member?.phoneNumber || ''
+  ).trim(),
+  city: String(member?.city ?? '').trim(),
+  state: String(member?.state ?? '').trim(),
+  country: String(member?.country ?? '').trim(),
+  zip_code: String(member?.zip_code ?? member?.zipCode ?? '').trim(),
+  gender: String(member?.gender ?? '').trim(),
+  pronouns: String(member?.pronouns ?? '').trim(),
+  race_ethnicity: Array.isArray(member?.race_ethnicity)
+    ? member.race_ethnicity.filter((item: unknown): item is string => typeof item === 'string')
+    : [],
+  race_ethnicity_other: String(member?.race_ethnicity_other ?? '').trim(),
+  languages_other_than_english: Array.isArray(
+    member?.languages_other_than_english
+  )
+    ? member.languages_other_than_english.filter(
+        (item: unknown): item is string => typeof item === 'string'
+      )
+    : [],
+  other_demographic_details: String(
+    member?.other_demographic_details ?? ''
+  ).trim(),
+  scheduling_url: String(member?.scheduling_url ?? '').trim(),
+  availability_status: String(member?.availability_status ?? '').trim(),
+  availability_note: String(member?.availability_note ?? '').trim(),
+  unavailable_from: String(member?.unavailable_from ?? '').trim(),
+  unavailable_until: String(member?.unavailable_until ?? '').trim(),
   profile_picture: member?.profile_picture ?? null,
+  invitation_status: member?.invitation_status
+    ? String(member.invitation_status)
+    : undefined,
+  profile_review_status: member?.profile_review_status,
+  profile_rejection_reason: member?.profile_rejection_reason ?? null,
+  account_status: member?.account_status,
 });
+
+function ProfileReviewField({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | string[] | null | undefined;
+}) {
+  const displayValue = Array.isArray(value)
+    ? value.filter(Boolean).join(', ')
+    : String(value ?? '').trim();
+
+  return (
+    <div className='min-w-0'>
+      <dt className='text-gray-500'>{label}</dt>
+      <dd className='break-words whitespace-pre-wrap font-medium text-gray-900'>
+        {displayValue || 'Not provided'}
+      </dd>
+    </div>
+  );
+}
 
 export default function Teams() {
   const { user } = useContext(UserContext);
@@ -114,16 +200,16 @@ export default function Teams() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [documentsDialogOpen, setDocumentsDialogOpen] = useState(false);
+  const [isRejectingProfileInfo, setIsRejectingProfileInfo] = useState(false);
+  const [profileRejectionReason, setProfileRejectionReason] = useState('');
+  const [isReviewingProfileInfo, setIsReviewingProfileInfo] = useState(false);
+  const [doulaReviewStatuses, setDoulaReviewStatuses] = useState<
+    Record<string, DoulaReviewStatus>
+  >({});
+  const [reviewStatusRefreshKey, setReviewStatusRefreshKey] = useState(0);
   const [documentsMember, setDocumentsMember] = useState<TeamMember | null>(
     null
   );
-  const [documentsItems, setDocumentsItems] = useState<
-    DocumentCompletenessItem[]
-  >([]);
-  const [documentsLoading, setDocumentsLoading] = useState(false);
-  const [downloadingDocumentId, setDownloadingDocumentId] = useState<
-    string | null
-  >(null);
 
   const fetchTeam = async () => {
     //function to fetch all team members
@@ -182,6 +268,10 @@ export default function Teams() {
     (safeCurrentPage - 1) * PAGE_SIZE,
     safeCurrentPage * PAGE_SIZE
   );
+  const visibleDoulaIds = paginatedMembers
+    .filter((member) => member.role === 'doula')
+    .map((member) => member.id);
+  const visibleDoulaKey = visibleDoulaIds.join('|');
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     //handles change of search
@@ -238,140 +328,56 @@ export default function Teams() {
     }
   };
 
-  const handleOpenDocuments = async (member: TeamMember) => {
+  const handleOpenDocuments = (member: TeamMember) => {
     if (member.role !== 'doula') return;
     setDocumentsMember(member);
+    setIsRejectingProfileInfo(false);
+    setProfileRejectionReason('');
     setDocumentsDialogOpen(true);
-    setDocumentsLoading(true);
-    setDocumentsItems([]);
+  };
+
+  const submitProfileInfoReview = async (status: 'approved' | 'rejected') => {
+    if (!documentsMember || isReviewingProfileInfo) return;
+    if (status === 'rejected' && !profileRejectionReason.trim()) {
+      toast.error('Enter a reason before rejecting profile information');
+      return;
+    }
+
+    setIsReviewingProfileInfo(true);
     try {
-      const data = await getAdminDoulaDocuments(member.id);
-      const rawItems = (data.completeness?.items ?? []) as unknown[];
-      const completenessItems: DocumentCompletenessItem[] = rawItems.map(
-        (raw) => {
-          const item = (raw ?? {}) as Record<string, unknown>;
-          const documentId = item.document_id ?? item.documentId;
-          const fileName = item.file_name ?? item.fileName;
-          const uploadedAt = item.uploaded_at ?? item.uploadedAt;
-          const rejectionReason = item.rejection_reason ?? item.rejectionReason;
-          return {
-            document_type: String(
-              item.document_type ?? item.documentType ?? ''
-            ),
-            status: String(item.status ?? 'missing'),
-            document_id:
-              typeof documentId === 'string' ? documentId : undefined,
-            file_name: typeof fileName === 'string' ? fileName : undefined,
-            uploaded_at:
-              typeof uploadedAt === 'string' ? uploadedAt : undefined,
-            rejection_reason:
-              typeof rejectionReason === 'string' ? rejectionReason : undefined,
-          };
-        }
+      const result = await reviewAdminDoulaProfile(
+        documentsMember.id,
+        status,
+        status === 'rejected' ? profileRejectionReason.trim() : undefined
       );
-      const completenessByType = new Map<string, DocumentCompletenessItem>(
-        completenessItems.map((item) => [item.document_type, item])
+      const updatedMember = {
+        ...documentsMember,
+        profile_review_status: result.status,
+        profile_rejection_reason: result.rejection_reason ?? null,
+        account_status: result.account_status ?? documentsMember.account_status,
+      };
+      setDocumentsMember(updatedMember);
+      setTeamMembers((current) =>
+        current.map((member) =>
+          member.id === updatedMember.id ? updatedMember : member
+        )
       );
-      const documentsByType = new Map<
-        string,
-        {
-          id?: string;
-          fileName?: string;
-          uploadedAt?: string;
-          status?: string;
-          rejectionReason?: string;
-        }
-      >();
-
-      for (const raw of (data.documents ?? []) as unknown[]) {
-        const doc = (raw ?? {}) as Record<string, unknown>;
-        const type = doc.document_type ?? doc.documentType;
-        if (typeof type !== 'string' || !type) continue;
-        documentsByType.set(type, {
-          id:
-            typeof (doc.id ?? doc.document_id ?? doc.documentId) === 'string'
-              ? String(doc.id ?? doc.document_id ?? doc.documentId)
-              : undefined,
-          fileName:
-            typeof (doc.file_name ?? doc.fileName) === 'string'
-              ? String(doc.file_name ?? doc.fileName)
-              : undefined,
-          uploadedAt:
-            typeof (doc.uploaded_at ?? doc.uploadedAt ?? doc.created_at) ===
-            'string'
-              ? String(doc.uploaded_at ?? doc.uploadedAt ?? doc.created_at)
-              : undefined,
-          status: typeof doc.status === 'string' ? doc.status : undefined,
-          rejectionReason:
-            typeof (doc.rejection_reason ?? doc.rejectionReason) === 'string'
-              ? String(doc.rejection_reason ?? doc.rejectionReason)
-              : undefined,
-        });
-      }
-
-      const mergedItems: DocumentCompletenessItem[] =
-        REQUIRED_DOULA_DOCUMENT_TYPES.map((type) => {
-          const completeness = completenessByType.get(type);
-          const document = documentsByType.get(type);
-          if (document) {
-            return {
-              document_type: type,
-              status: document.status ?? completeness?.status ?? 'uploaded',
-              document_id: document.id ?? completeness?.document_id,
-              file_name: document.fileName ?? completeness?.file_name,
-              uploaded_at: document.uploadedAt ?? completeness?.uploaded_at,
-              rejection_reason:
-                document.rejectionReason ?? completeness?.rejection_reason,
-            };
-          }
-          return (
-            completeness ?? {
-              document_type: type,
-              status: 'missing',
-            }
-          );
-        });
-      setDocumentsItems(mergedItems);
+      setIsRejectingProfileInfo(false);
+      setProfileRejectionReason('');
+      setReviewStatusRefreshKey((key) => key + 1);
+      toast.success(
+        status === 'rejected'
+          ? 'Profile information rejected; feedback sent to the doula'
+          : 'Profile information approved'
+      );
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : 'Failed to load doula documents'
+          : 'Failed to review profile information'
       );
     } finally {
-      setDocumentsLoading(false);
-    }
-  };
-
-  const handleDownloadDocument = async (
-    doulaId: string,
-    documentId: string,
-    fileName?: string
-  ) => {
-    setDownloadingDocumentId(documentId);
-    try {
-      const url = await getDoulaDocumentUrl(doulaId, documentId);
-      const response = await fetch(url, {
-        credentials: 'omit',
-        mode: 'cors',
-      });
-      if (!response.ok) throw new Error('Failed to download document');
-      const blob = await response.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = objectUrl;
-      link.download = fileName?.trim() || 'doula-document';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(objectUrl);
-      toast.success('Document downloaded');
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Failed to download document'
-      );
-    } finally {
-      setDownloadingDocumentId(null);
+      setIsReviewingProfileInfo(false);
     }
   };
 
@@ -594,39 +600,11 @@ export default function Teams() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        const errorMessage = errorData.error || 'Failed to invite team member';
-        toast.error(errorMessage);
-        throw new Error(errorMessage);
+        throw new Error(errorData.error || 'Failed to invite team member');
       }
 
-      const emailResponse = await fetchWithAuth(
-        buildUrl('/email/team-invite'),
-        {
-          //send the email invite after user is created
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: inviteForm.email,
-            firstname: inviteForm.firstname,
-            lastname: inviteForm.lastname,
-            role: inviteForm.role,
-          }),
-        }
-      );
-
-      if (!emailResponse.ok) {
-        const errorData = await emailResponse.json();
-        const errorMessage = errorData.error || 'Failed to send invite email';
-        logFailure('teams', 'failed_to_send_invite_email');
-        toast.warning('Team member created but invite email failed to send');
-        throw new Error(errorMessage);
-      }
-
-      // Success - show notification
       toast.success(
-        `Team member ${inviteForm.firstname} ${inviteForm.lastname} invited successfully!`
+        `Invitation sent to ${inviteForm.firstname} ${inviteForm.lastname}. It stays pending until they accept.`
       );
 
       // Close popover after showing toast
@@ -659,6 +637,56 @@ export default function Teams() {
   useEffect(() => {
     fetchTeam();
   }, []);
+
+  useEffect(() => {
+    if (!visibleDoulaIds.length) return;
+    let cancelled = false;
+    setDoulaReviewStatuses((current) => ({
+      ...current,
+      ...Object.fromEntries(visibleDoulaIds.map((id) => [id, 'loading'])),
+    }));
+
+    Promise.all(
+      visibleDoulaIds.map(async (id) => {
+        try {
+          const data = await getAdminDoulaDocuments(id);
+          const itemStatuses = [
+            ...(data.completeness?.items ?? []).map((item) =>
+              String(item.status ?? '').toLowerCase()
+            ),
+            ...(data.documents ?? []).map((item) =>
+              String(item.status ?? '').toLowerCase()
+            ),
+          ];
+          const status: DoulaReviewStatus = itemStatuses.some(
+            (value) => value === 'uploaded' || value === 'pending'
+          )
+            ? 'needs_review'
+            : data.completeness?.can_be_active
+              ? 'documents_approved'
+              : itemStatuses.some(
+                    (value) => value === 'missing' || value === 'rejected'
+                  ) || !itemStatuses.length
+                ? 'documents_needed'
+                : 'unavailable';
+          return [id, status] as const;
+        } catch {
+          return [id, 'unavailable'] as const;
+        }
+      })
+    ).then((entries) => {
+      if (!cancelled) {
+        setDoulaReviewStatuses((current) => ({
+          ...current,
+          ...Object.fromEntries(entries),
+        }));
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [visibleDoulaKey, reviewStatusRefreshKey]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -694,14 +722,15 @@ export default function Teams() {
                 />
               </div>
               <select
-                className='h-10 rounded-md border border-gray-300 bg-white px-3 text-sm'
+                aria-label='Filter by role'
+                className='h-10 w-44 shrink-0 rounded-md border border-gray-300 bg-white px-4 text-sm'
                 value={roleFilter}
                 onChange={(e) =>
                   setRoleFilter(e.target.value as 'doula' | 'admin')
                 }
               >
-                <option value='doula'>Doulas</option>
                 <option value='admin'>Admins</option>
+                <option value='doula'>Doulas</option>
               </select>
 
               <div className='flex gap-2'>
@@ -872,7 +901,13 @@ export default function Teams() {
                               member?.profile_picture ?? undefined
                             }
                           />
-                          <div className='absolute -bottom-1 -right-1 h-5 w-5 bg-green-500 rounded-full border-2 border-white'></div>
+                          <div
+                            className={`absolute -bottom-1 -right-1 h-5 w-5 rounded-full border-2 border-white ${
+                              member.invitation_status === 'pending'
+                                ? 'bg-amber-400'
+                                : 'bg-green-500'
+                            }`}
+                          ></div>
                         </div>
                         <div className='min-w-0'>
                           <CardTitle className='text-lg font-semibold text-gray-900 mb-1 truncate'>
@@ -889,60 +924,88 @@ export default function Teams() {
                             {member.role.charAt(0).toUpperCase() +
                               member.role.slice(1)}
                           </Badge>
+                          {member.invitation_status === 'pending' && (
+                            <Badge
+                              variant='outline'
+                              className='ml-2 mt-1 font-medium text-xs bg-amber-50 text-amber-800 border-amber-200'
+                            >
+                              Pending
+                            </Badge>
+                          )}
+                          {member.role === 'doula' && (
+                            <Badge
+                              variant='outline'
+                              className={`ml-2 mt-1 font-medium text-xs ${
+                                doulaReviewStatuses[member.id] ===
+                                'needs_review'
+                                  ? 'border-amber-200 bg-amber-50 text-amber-900'
+                                  : doulaReviewStatuses[member.id] ===
+                                      'documents_approved'
+                                    ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                                    : 'border-slate-200 bg-slate-50 text-slate-700'
+                              }`}
+                            >
+                              {doulaReviewStatuses[member.id] === 'needs_review'
+                                ? 'Needs review & approval'
+                                : doulaReviewStatuses[member.id] ===
+                                    'documents_approved'
+                                  ? 'Documents approved'
+                                  : doulaReviewStatuses[member.id] ===
+                                      'documents_needed'
+                                    ? 'Documents needed'
+                                    : doulaReviewStatuses[member.id] ===
+                                        'unavailable'
+                                      ? 'Review status unavailable'
+                                      : 'Checking review status…'}
+                            </Badge>
+                          )}
                         </div>
                       </div>
 
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant='ghost'
-                            size='sm'
-                            className='h-8 w-8 p-0 opacity-60 group-hover:opacity-100 transition-opacity hover:bg-gray-100'
-                            aria-label='Team member actions'
-                          >
-                            <MoreHorizontal className='h-4 w-4 text-gray-600' />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align='end' className='w-40'>
-                          {user?.role === 'admin' &&
-                            member.role === 'doula' && (
-                              <DropdownMenuItem
-                                onClick={() => void handleOpenDocuments(member)}
-                                className='cursor-pointer'
-                              >
-                                <FileText className='h-4 w-4 mr-2' />
-                                <span>Documents</span>
-                              </DropdownMenuItem>
-                            )}
-                          {user?.role === 'admin' && member.profile_picture && (
+                      {member.invitation_status !== 'pending' && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant='ghost'
+                              size='sm'
+                              className='h-8 w-8 p-0 opacity-60 group-hover:opacity-100 transition-opacity hover:bg-gray-100'
+                              aria-label='Team member actions'
+                            >
+                              <MoreHorizontal className='h-4 w-4 text-gray-600' />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align='end' className='w-40'>
+                            {user?.role === 'admin' &&
+                              member.profile_picture && (
+                                <DropdownMenuItem
+                                  onClick={() => handleDownloadHeadshot(member)}
+                                  className='cursor-pointer'
+                                >
+                                  <Download className='h-4 w-4 mr-2' />
+                                  <span>Download headshot</span>
+                                </DropdownMenuItem>
+                              )}
                             <DropdownMenuItem
-                              onClick={() => handleDownloadHeadshot(member)}
+                              onClick={() => handleEditClick(member)}
                               className='cursor-pointer'
                             >
-                              <Download className='h-4 w-4 mr-2' />
-                              <span>Download headshot</span>
+                              <span>Edit</span>
                             </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem
-                            onClick={() => handleEditClick(member)}
-                            className='cursor-pointer'
-                          >
-                            <span>Edit</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleMessageClick(member)}
-                            className='cursor-pointer'
-                          >
-                            <span>Message</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className='text-red-600 cursor-pointer focus:text-red-600'
-                            onClick={() => handleDeleteClick(member.id)}
-                          >
-                            <span>Remove</span>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                            <DropdownMenuItem
+                              onClick={() => handleMessageClick(member)}
+                              className='cursor-pointer'
+                            >
+                              <span>Message</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className='text-red-600 cursor-pointer focus:text-red-600'
+                              onClick={() => handleDeleteClick(member.id)}
+                            >
+                              <span>Remove</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </div>
                   </CardHeader>
 
@@ -973,6 +1036,38 @@ export default function Teams() {
                         <p className='text-xs text-gray-500 line-clamp-2'>
                           {member.bio}
                         </p>
+                      </div>
+                    )}
+                    {user?.role === 'admin' && member.role === 'doula' && (
+                      <div className='mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-3'>
+                        <p className='text-xs text-gray-500'>
+                          Review profile details and required document
+                          approvals.
+                        </p>
+                        <Button
+                          size={
+                            doulaReviewStatuses[member.id] === 'needs_review'
+                              ? 'default'
+                              : 'sm'
+                          }
+                          variant={
+                            doulaReviewStatuses[member.id] === 'needs_review'
+                              ? 'default'
+                              : 'outline'
+                          }
+                          className={
+                            doulaReviewStatuses[member.id] === 'needs_review'
+                              ? 'bg-amber-500 font-semibold text-white shadow-md ring-2 ring-amber-200 ring-offset-1 hover:bg-amber-600'
+                              : undefined
+                          }
+                          aria-label={`Review profile for ${member.firstname} ${member.lastname}`}
+                          onClick={() => handleOpenDocuments(member)}
+                        >
+                          <FileText className='mr-2 h-4 w-4' />
+                          {doulaReviewStatuses[member.id] === 'needs_review'
+                            ? 'Review profile now'
+                            : 'Review profile'}
+                        </Button>
                       </div>
                     )}
                   </CardContent>
@@ -1286,97 +1381,257 @@ export default function Teams() {
       </Dialog>
 
       <Dialog open={documentsDialogOpen} onOpenChange={setDocumentsDialogOpen}>
-        <DialogContent className='max-w-2xl'>
+        <DialogContent className='max-h-[90vh] max-w-5xl overflow-y-auto'>
           <DialogHeader>
-            <DialogTitle>Doula Documents</DialogTitle>
+            <DialogTitle>Review doula profile</DialogTitle>
             <DialogDescription>
               {documentsMember
-                ? `${documentsMember.firstname} ${documentsMember.lastname}`
-                : 'Uploaded doula documents'}
+                ? `${documentsMember.firstname} ${documentsMember.lastname} · ${documentsMember.email}`
+                : 'Profile details and required document approvals'}
             </DialogDescription>
           </DialogHeader>
-          <div className='space-y-3 py-2 max-h-[60vh] overflow-auto'>
-            {documentsLoading ? (
-              <p className='text-sm text-gray-500'>Loading documents...</p>
-            ) : documentsItems.length === 0 ? (
-              <p className='text-sm text-gray-500'>
-                No document status available.
-              </p>
-            ) : (
-              documentsItems.map((item) => {
-                const label =
-                  (DOCUMENT_TYPE_LABELS as Record<string, string>)[
-                    item.document_type
-                  ] ?? item.document_type;
-                const uploadedAt = item.uploaded_at
-                  ? new Date(item.uploaded_at)
-                  : null;
-                const uploadedAtLabel =
-                  uploadedAt && !Number.isNaN(uploadedAt.getTime())
-                    ? uploadedAt.toLocaleDateString()
-                    : null;
-
-                return (
-                  <div
-                    key={`${item.document_type}-${item.document_id ?? 'missing'}`}
-                    className='rounded-md border border-gray-200 p-3'
+          {documentsMember && (
+            <div className='space-y-5 py-2'>
+              <section className='rounded-lg border border-gray-200 bg-gray-50 p-4'>
+                <div className='mb-5 flex flex-wrap items-center justify-between gap-3'>
+                  <div className='flex min-w-0 items-center gap-3'>
+                    <UserAvatar
+                      fullName={`${documentsMember.firstname} ${documentsMember.lastname}`}
+                      profile_picture={documentsMember.profile_picture}
+                      className='h-14 w-14'
+                    />
+                    <h3 className='font-semibold text-gray-900'>
+                      Profile information
+                    </h3>
+                  </div>
+                  <Badge
+                    variant='outline'
+                    className={
+                      documentsMember.profile_review_status === 'approved'
+                        ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                        : documentsMember.profile_review_status === 'rejected'
+                          ? 'border-red-200 bg-red-50 text-red-800'
+                          : 'border-amber-200 bg-amber-50 text-amber-900'
+                    }
                   >
-                    <div className='flex items-start justify-between gap-3'>
-                      <div className='min-w-0'>
-                        <p className='text-sm font-medium text-gray-900'>
-                          {label}
-                        </p>
-                        <p className='text-xs text-gray-500 capitalize'>
-                          Status: {item.status}
-                        </p>
-                        {item.file_name && (
-                          <p className='text-xs text-gray-500 truncate'>
-                            File: {item.file_name}
-                          </p>
-                        )}
-                        {uploadedAtLabel && (
-                          <p className='text-xs text-gray-500'>
-                            Uploaded: {uploadedAtLabel}
-                          </p>
-                        )}
-                        {item.rejection_reason && (
-                          <p className='text-xs text-red-600'>
-                            Reason: {item.rejection_reason}
-                          </p>
-                        )}
+                    {documentsMember.profile_review_status === 'approved'
+                      ? 'Approved'
+                      : documentsMember.profile_review_status === 'rejected'
+                        ? 'Changes requested'
+                        : documentsMember.profile_review_status === 'pending'
+                          ? 'Pending review'
+                          : 'Not submitted'}
+                  </Badge>
+                </div>
+
+                <div className='space-y-5 text-sm'>
+                  <section>
+                    <h4 className='mb-2 font-semibold text-gray-800'>
+                      Personal details
+                    </h4>
+                    <dl className='grid gap-x-6 gap-y-3 sm:grid-cols-2'>
+                      <ProfileReviewField
+                        label='First name'
+                        value={documentsMember.firstname}
+                      />
+                      <ProfileReviewField
+                        label='Last name'
+                        value={documentsMember.lastname}
+                      />
+                      <ProfileReviewField
+                        label='Email'
+                        value={documentsMember.email}
+                      />
+                      <ProfileReviewField
+                        label='Phone'
+                        value={documentsMember.phone}
+                      />
+                      <ProfileReviewField
+                        label='Gender'
+                        value={documentsMember.gender}
+                      />
+                      <ProfileReviewField
+                        label='Pronouns'
+                        value={documentsMember.pronouns}
+                      />
+                    </dl>
+                  </section>
+
+                  <section>
+                    <h4 className='mb-2 font-semibold text-gray-800'>
+                      Address
+                    </h4>
+                    <dl className='grid gap-x-6 gap-y-3 sm:grid-cols-2'>
+                      <ProfileReviewField
+                        label='Street address'
+                        value={documentsMember.address}
+                      />
+                      <ProfileReviewField
+                        label='City'
+                        value={documentsMember.city}
+                      />
+                      <ProfileReviewField
+                        label='State'
+                        value={documentsMember.state}
+                      />
+                      <ProfileReviewField
+                        label='ZIP code'
+                        value={documentsMember.zip_code}
+                      />
+                      <ProfileReviewField
+                        label='Country'
+                        value={documentsMember.country}
+                      />
+                    </dl>
+                  </section>
+
+                  <section>
+                    <h4 className='mb-2 font-semibold text-gray-800'>
+                      Background and demographics
+                    </h4>
+                    <dl className='grid gap-x-6 gap-y-3 sm:grid-cols-2'>
+                      <ProfileReviewField
+                        label='Languages spoken (other than English)'
+                        value={documentsMember.languages_other_than_english}
+                      />
+                      <ProfileReviewField
+                        label='Race / ethnicity'
+                        value={documentsMember.race_ethnicity}
+                      />
+                      <ProfileReviewField
+                        label='Race / ethnicity details'
+                        value={documentsMember.race_ethnicity_other}
+                      />
+                      <ProfileReviewField
+                        label='Other demographic details'
+                        value={documentsMember.other_demographic_details}
+                      />
+                      <div className='sm:col-span-2'>
+                        <ProfileReviewField
+                          label='Bio'
+                          value={documentsMember.bio}
+                        />
                       </div>
-                      {documentsMember?.id && item.document_id && (
-                        <Button
-                          size='sm'
-                          variant='outline'
-                          disabled={downloadingDocumentId === item.document_id}
-                          onClick={() =>
-                            void handleDownloadDocument(
-                              documentsMember.id,
-                              item.document_id!,
-                              item.file_name
-                            )
-                          }
-                        >
-                          <Download className='h-4 w-4 mr-1' />
-                          {downloadingDocumentId === item.document_id
-                            ? 'Downloading...'
-                            : 'Download'}
-                        </Button>
-                      )}
+                    </dl>
+                  </section>
+
+                  <section>
+                    <h4 className='mb-2 font-semibold text-gray-800'>
+                      Scheduling and availability
+                    </h4>
+                    <dl className='grid gap-x-6 gap-y-3 sm:grid-cols-2'>
+                      <ProfileReviewField
+                        label='Scheduling link'
+                        value={documentsMember.scheduling_url}
+                      />
+                      <ProfileReviewField
+                        label='Availability status'
+                        value={documentsMember.availability_status}
+                      />
+                      <ProfileReviewField
+                        label='Availability note'
+                        value={documentsMember.availability_note}
+                      />
+                      <ProfileReviewField
+                        label='Unavailable from'
+                        value={documentsMember.unavailable_from}
+                      />
+                      <ProfileReviewField
+                        label='Unavailable until'
+                        value={documentsMember.unavailable_until}
+                      />
+                    </dl>
+                  </section>
+                </div>
+                {documentsMember.profile_review_status === 'rejected' &&
+                  documentsMember.profile_rejection_reason && (
+                    <p className='mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-900'>
+                      Previous rejection reason:{' '}
+                      {documentsMember.profile_rejection_reason}
+                    </p>
+                  )}
+                {isRejectingProfileInfo ? (
+                  <div className='mt-4 space-y-3 rounded-md border border-red-200 bg-white p-3'>
+                    <Label htmlFor='profile-information-rejection-reason'>
+                      Reason for rejection (required)
+                    </Label>
+                    <Textarea
+                      id='profile-information-rejection-reason'
+                      value={profileRejectionReason}
+                      onChange={(event) =>
+                        setProfileRejectionReason(event.target.value)
+                      }
+                      placeholder='Explain what the doula needs to correct.'
+                      rows={3}
+                      disabled={isReviewingProfileInfo}
+                    />
+                    <div className='flex justify-end gap-2'>
+                      <Button
+                        variant='outline'
+                        onClick={() => {
+                          setIsRejectingProfileInfo(false);
+                          setProfileRejectionReason('');
+                        }}
+                        disabled={isReviewingProfileInfo}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        variant='destructive'
+                        onClick={() => void submitProfileInfoReview('rejected')}
+                        disabled={
+                          isReviewingProfileInfo ||
+                          !profileRejectionReason.trim()
+                        }
+                      >
+                        {isReviewingProfileInfo
+                          ? 'Submitting…'
+                          : 'Submit rejection'}
+                      </Button>
                     </div>
                   </div>
-                );
-              })
-            )}
-          </div>
+                ) : (
+                  <div className='mt-4 flex flex-wrap justify-end gap-2'>
+                    <Button
+                      variant='outline'
+                      onClick={() => setIsRejectingProfileInfo(true)}
+                      disabled={isReviewingProfileInfo}
+                    >
+                      Reject profile information
+                    </Button>
+                    <Button
+                      onClick={() => void submitProfileInfoReview('approved')}
+                      disabled={
+                        isReviewingProfileInfo ||
+                        documentsMember.profile_review_status === 'approved'
+                      }
+                    >
+                      {isReviewingProfileInfo
+                        ? 'Saving…'
+                        : 'Approve profile information'}
+                    </Button>
+                  </div>
+                )}
+              </section>
+              <AdminDoulaDocumentsSection
+                doulaId={documentsMember.id}
+                doulaEmail={documentsMember.email}
+                onReviewStatusChanged={() =>
+                  setReviewStatusRefreshKey((key) => key + 1)
+                }
+              />
+              <p className='text-xs text-gray-500'>
+                Approve or reject each uploaded required document. A rejection
+                requires a reason.
+              </p>
+            </div>
+          )}
           <DialogFooter>
             <Button
               variant='outline'
               onClick={() => {
                 setDocumentsDialogOpen(false);
                 setDocumentsMember(null);
-                setDocumentsItems([]);
               }}
             >
               Close

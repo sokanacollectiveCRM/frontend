@@ -6,7 +6,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/common/components/ui/popover';
-import { DateTimePicker } from '@/features/hours/components/time-date-pick';
+import { DateTimePicker } from '@/features/hours';
 import { Clock, Plus } from 'lucide-react';
 import { useState } from 'react';
 

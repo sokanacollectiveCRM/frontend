@@ -1,3 +1,4 @@
+import { MemoryRouter } from 'react-router-dom';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useEffect } from 'react';
@@ -5,10 +6,10 @@ import { vi } from 'vitest';
 import {
   RequestFormProvider,
   useRequestFormContext,
-} from 'features/intake/contexts/RequestFormContext';
-import { DUMMY_TEST_LEAD } from 'features/intake/dummyTestLead';
-import RequestForm from 'features/intake/RequestForm';
-import type { RequestFormInput } from 'features/intake/useRequestForm';
+} from '@/features/intake/contexts/RequestFormContext';
+import { DUMMY_TEST_LEAD } from '@/features/intake/dummyTestLead';
+import RequestForm from '@/features/intake/RequestForm';
+import type { RequestFormInput } from '@/features/intake/useRequestForm';
 
 vi.mock('sonner', () => ({
   toast: {
@@ -17,8 +18,23 @@ vi.mock('sonner', () => ({
   },
 }));
 
-vi.mock('import.meta.env', () => ({
-  VITE_APP_BACKEND_URL: 'http://localhost:5050',
+// These suites exercise the form after organization branding has loaded.
+vi.mock('@/features/intake/application/usePublicIntakeBranding', () => ({
+  usePublicIntakeBranding: () => ({
+    status: 'ready',
+    data: {
+      slug: 'sokana',
+      name: 'Sokana360',
+      branding: {
+        displayName: 'Sokana360',
+        logoPath: '/logo.png',
+        markPath: null,
+        pageTitle: 'Request for Service Form',
+        primaryColor: '#00897b',
+        accentColor: '#00897b',
+      },
+    },
+  }),
 }));
 
 global.fetch = vi.fn();
@@ -53,9 +69,13 @@ describe('Request form validation banner', () => {
 
   it('shows the banner when Next is clicked on step 0 without required fields', async () => {
     const user = userEvent.setup();
-    render(<RequestForm />);
+    render(
+      <MemoryRouter>
+        <RequestForm />
+      </MemoryRouter>
+    );
 
-    await user.click(screen.getByRole('button', { name: /next/i }));
+    await user.click(screen.getAllByRole('button', { name: /^next$/i })[0]);
 
     await waitFor(() => {
       expect(screen.getByRole('alert')).toHaveTextContent(BANNER_PATTERN);

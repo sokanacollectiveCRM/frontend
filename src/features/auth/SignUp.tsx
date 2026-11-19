@@ -1,3 +1,4 @@
+import { AuthFormLogo } from '@/common/components/brand/Sokana360Logo';
 import {
   Alert,
   AlertDescription,
@@ -98,6 +99,7 @@ export default function SignUp() {
     <div className='mx-auto flex w-full min-w-0 max-w-md flex-col gap-6 px-4 py-6'>
       <Card>
         <CardHeader>
+          <AuthFormLogo />
           <CardTitle className='text-2xl'>Sign Up</CardTitle>
           <CardDescription>
             Enter your details below to create your account

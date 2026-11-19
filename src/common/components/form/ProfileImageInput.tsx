@@ -111,45 +111,57 @@ export const ProfileImageInput = React.forwardRef<
           <span className='text-sm font-medium text-primary group-hover:underline'>
             {actionLabel}
           </span>
+          <input
+            {...inputProps}
+            ref={setInputRef}
+            id={inputId}
+            type='file'
+            accept={accept}
+            disabled={isDisabled}
+            onChange={handleChange}
+            className='sr-only'
+          />
         </label>
       ) : null}
 
-      <label
-        htmlFor={inputId}
-        className={cn(
-          'flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-dashed border-input bg-background px-3 py-2 text-left shadow-xs transition-colors',
-          showAvatar ? 'w-fit max-w-xs' : 'w-full',
-          'hover:border-primary hover:bg-accent/50',
-          'has-[:focus-visible]:border-ring has-[:focus-visible]:ring-ring/50 has-[:focus-visible]:ring-[3px]',
-          isDisabled && 'pointer-events-none cursor-not-allowed opacity-50'
-        )}
-      >
-        <span className='inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow-xs'>
-          {isUploading ? (
-            <Loader2 className='h-4 w-4 animate-spin' />
-          ) : (
-            <ImagePlus className='h-4 w-4' />
+      {!showAvatar && (
+        <label
+          htmlFor={inputId}
+          className={cn(
+            'flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-dashed border-input bg-background px-3 py-2 text-left shadow-xs transition-colors',
+            showAvatar ? 'w-fit max-w-xs' : 'w-full',
+            'hover:border-primary hover:bg-accent/50',
+            'has-[:focus-visible]:border-ring has-[:focus-visible]:ring-ring/50 has-[:focus-visible]:ring-[3px]',
+            isDisabled && 'pointer-events-none cursor-not-allowed opacity-50'
           )}
-          {isUploading ? 'Uploading...' : 'Choose photo'}
-        </span>
-        <span className='min-w-0 text-sm text-muted-foreground'>
-          {isUploading
-            ? 'Uploading photo...'
-            : selectedFile
-              ? selectedFile.name
-              : 'No file chosen — JPEG, PNG, or WebP'}
-        </span>
-        <input
-          {...inputProps}
-          ref={setInputRef}
-          id={inputId}
-          type='file'
-          accept={accept}
-          disabled={isDisabled}
-          onChange={handleChange}
-          className='sr-only'
-        />
-      </label>
+        >
+          <span className='inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow-xs'>
+            {isUploading ? (
+              <Loader2 className='h-4 w-4 animate-spin' />
+            ) : (
+              <ImagePlus className='h-4 w-4' />
+            )}
+            {isUploading ? 'Uploading...' : 'Choose photo'}
+          </span>
+          <span className='min-w-0 text-sm text-muted-foreground'>
+            {isUploading
+              ? 'Uploading photo...'
+              : selectedFile
+                ? selectedFile.name
+                : 'No file chosen — JPEG, PNG, or WebP'}
+          </span>
+          <input
+            {...inputProps}
+            ref={setInputRef}
+            id={inputId}
+            type='file'
+            accept={accept}
+            disabled={isDisabled}
+            onChange={handleChange}
+            className='sr-only'
+          />
+        </label>
+      )}
     </div>
   );
 });

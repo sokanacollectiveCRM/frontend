@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/common/components/ui
 import { LoadingOverlay } from '@/common/components/loading/LoadingOverlay';
 import { toast } from 'sonner';
 import { useClientAuth } from '@/common/hooks/auth/useClientAuth';
-import { supabase } from '@/lib/supabase';
 import { buildUrl, fetchWithAuth } from '@/api/http';
 import { CreditCard, Calendar, DollarSign, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
@@ -34,14 +33,6 @@ export default function ClientPaymentHistoryTab() {
 
     setIsLoading(true);
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session) {
-        throw new Error('No session found');
-      }
-
       // TODO: Replace with actual client payment history API endpoint
       // Example: GET /api/clients/me/payments
       try {

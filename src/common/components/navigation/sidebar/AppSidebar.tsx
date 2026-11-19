@@ -38,7 +38,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     isDoula,
     isClient,
     isBillingOnly,
-    showIntakeForm: (isAdmin || user?.platformSupport === true) && !isClient,
+    showIntakeForm: false,
   });
 
   return (

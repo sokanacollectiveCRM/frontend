@@ -1,4 +1,4 @@
-import type { Client } from '@/features/clients/data/schema';
+import type { Client } from '@/features/clients';
 import { useEffect, useState } from 'react';
 import { buildUrl, fetchWithAuth } from '@/api/http';
 

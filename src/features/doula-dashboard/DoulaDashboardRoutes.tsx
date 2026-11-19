@@ -1,15 +1,13 @@
-import { Navigate, Route, useNavigate, useOutletContext, useParams } from 'react-router-dom';
+import { Navigate, Route, useNavigate, useParams } from 'react-router-dom';
 import DoulaDashboard from './DoulaDashboard';
 import ProfileTab from './components/ProfileTab';
 import DocumentsTab from './components/DocumentsTab';
 import ClientsTab from './components/ClientsTab';
 import HoursTab from './components/HoursTab';
 import ActivitiesTab from './components/ActivitiesTab';
-import type { DoulaDashboardOutletContext } from './doulaDashboardTypes';
 
 function DoulaProfilePage() {
-  const { onProfileStatusChange } = useOutletContext<DoulaDashboardOutletContext>();
-  return <ProfileTab onProfileStatusChange={onProfileStatusChange} />;
+  return <ProfileTab />;
 }
 
 function DoulaDocumentsPage() {

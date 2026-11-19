@@ -1,6 +1,6 @@
 /**
  * Admin Notes with Audit Log - Unit Tests
- * 
+ *
  * Tests covering:
  * - createClientNote function works correctly with admin metadata
  * - Audit trail information is properly stored (who, when, role)
@@ -11,7 +11,17 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createClientNote, type CreateNoteRequest, type ClientNote } from '@/api/clients/notes';
+import {
+  createClientNote,
+  type CreateNoteRequest,
+  type ClientNote,
+} from '@/api/clients/notes';
+
+// Keep request assertions independent of local Vite environment files.
+vi.mock('@/config/env', () => ({
+  apiBaseUrl: 'http://localhost:5050',
+  isProd: false,
+}));
 
 // Mock the fetch function
 const mockFetch = vi.fn();
@@ -19,8 +29,6 @@ const mockFetch = vi.fn();
 describe('Admin Notes with Audit Log - createClientNote', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', mockFetch);
-    // Mock environment variable
-    vi.stubEnv('VITE_APP_BACKEND_URL', 'http://localhost:5050');
   });
 
   afterEach(() => {
@@ -37,7 +45,7 @@ describe('Admin Notes with Audit Log - createClientNote', () => {
         category: 'general',
         createdByName: 'Nancy Cowans',
         createdByRole: 'admin',
-      }
+      },
     };
 
     const mockResponse = {
@@ -49,7 +57,7 @@ describe('Admin Notes with Audit Log - createClientNote', () => {
         metadata: mockNoteData.metadata,
         created_at: '2024-01-15T14:30:00Z',
         created_by: 'Nancy Cowans',
-      }
+      },
     };
 
     mockFetch.mockResolvedValue({
@@ -61,7 +69,7 @@ describe('Admin Notes with Audit Log - createClientNote', () => {
 
     // Verify API call format (fetchWithAuth may normalize headers to Headers)
     expect(mockFetch).toHaveBeenCalledWith(
-      'http://localhost:5050/api/clients/client-123/activity',
+      'http://localhost:5050/clients/client-123/activity',
       expect.objectContaining({
         method: 'POST',
         credentials: 'include',
@@ -92,7 +100,7 @@ describe('Admin Notes with Audit Log - createClientNote', () => {
   it('handles different note categories correctly', async () => {
     const clientId = 'client-789';
     const categories = ['communication', 'health', 'billing', 'milestone'];
-    
+
     for (const category of categories) {
       const noteData: CreateNoteRequest = {
         type: 'note',
@@ -101,7 +109,7 @@ describe('Admin Notes with Audit Log - createClientNote', () => {
           category,
           createdByName: 'Admin User',
           createdByRole: 'admin',
-        }
+        },
       };
 
       mockFetch.mockResolvedValue({
@@ -114,12 +122,12 @@ describe('Admin Notes with Audit Log - createClientNote', () => {
             metadata: noteData.metadata,
             created_at: '2024-01-15T15:00:00Z',
             created_by: 'Admin User',
-          }
+          },
         }),
       });
 
       const result = await createClientNote(clientId, noteData);
-      
+
       expect(result.metadata?.category).toBe(category);
       expect(result.description).toContain(category);
     }
@@ -142,7 +150,7 @@ describe('Admin Notes with Audit Log - createClientNote', () => {
           category: 'general',
           createdByName: admin.name,
           createdByRole: admin.role,
-        }
+        },
       };
 
       mockFetch.mockResolvedValue({
@@ -154,12 +162,12 @@ describe('Admin Notes with Audit Log - createClientNote', () => {
             metadata: noteData.metadata,
             created_at: '2024-01-15T16:00:00Z',
             created_by: admin.name,
-          }
+          },
         }),
       });
 
       const result = await createClientNote('client-test', noteData);
-      
+
       expect(result.createdBy).toBe(admin.name);
       expect(result.metadata?.createdByRole).toBe(admin.role);
       expect(result.metadata?.createdByName).toBe(admin.name);
@@ -219,7 +227,7 @@ describe('Admin Notes with Audit Log - createClientNote', () => {
     await createClientNote('client-123', {
       type: 'note',
       description: '',
-      metadata: { category: 'general' }
+      metadata: { category: 'general' },
     });
 
     const [, options] = mockFetch.mock.calls[0];
@@ -242,7 +250,7 @@ describe('Admin Notes with Audit Log - createClientNote', () => {
           id: 'format1',
           content: noteData.description,
           created_at: '2024-01-15T17:00:00Z',
-        }
+        },
       }),
     });
 
@@ -258,8 +266,8 @@ describe('Admin Notes with Audit Log - createClientNote', () => {
             id: 'format2',
             content: noteData.description,
             created_at: '2024-01-15T17:05:00Z',
-          }
-        }
+          },
+        },
       }),
     });
 
@@ -282,7 +290,7 @@ describe('Admin Notes with Audit Log - createClientNote', () => {
 
   it('preserves timestamp for audit trail', async () => {
     const exactTimestamp = '2024-01-15T18:45:30Z';
-    
+
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -291,7 +299,7 @@ describe('Admin Notes with Audit Log - createClientNote', () => {
           content: 'Time audit test',
           created_at: exactTimestamp,
           timestamp: exactTimestamp,
-        }
+        },
       }),
     });
 

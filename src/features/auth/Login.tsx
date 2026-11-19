@@ -6,11 +6,10 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { safePostLoginPath } from '@/common/auth/postLoginRedirect';
 import { useUser } from '@/common/hooks/user/useUser';
 import type { IdentityMfaPending } from '@/common/types/auth';
-import GoogleButton from '@/features/auth/GoogleButton';
-import { API_CONFIG } from '@/api/config';
 import { getFirebaseAuth, isFirebaseConfigured } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 
+import { AuthFormLogo } from '@/common/components/brand/Sokana360Logo';
 import { Button } from '@/common/components/ui/button';
 import {
   Card,
@@ -27,7 +26,7 @@ import { toast } from 'sonner';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, googleAuth, verifyIdentityMfa, resendIdentityMfa } = useUser();
+  const { login, verifyIdentityMfa, resendIdentityMfa } = useUser();
   const [isLoading, setIsLoading] = useState(false);
   const [mfa, setMfa] = useState<IdentityMfaPending | null>(null);
   const [mfaCode, setMfaCode] = useState('');
@@ -35,7 +34,6 @@ export default function Login() {
   const [searchParams] = useSearchParams();
   const oauthError = searchParams.get('error');
   const postLoginPath = safePostLoginPath(searchParams.get('next'));
-  const identityMode = API_CONFIG.authMode === 'identity';
 
   useEffect(() => {
     if (oauthError) {
@@ -45,21 +43,20 @@ export default function Login() {
 
   // Identity migration emails use continueUrl=/login; forward oobCode to reset page.
   useEffect(() => {
-    if (!identityMode) return;
     const mode = searchParams.get('mode');
     const oobCode = searchParams.get('oobCode');
     if (!oobCode || (mode && mode !== 'resetPassword')) return;
     navigate(`/auth/reset-password?${searchParams.toString()}`, {
       replace: true,
     });
-  }, [identityMode, navigate, searchParams]);
+  }, [navigate, searchParams]);
 
   // Drop stale Identity Platform browser sessions (password resets invalidate
   // persisted refresh tokens and otherwise spam accounts:lookup 400).
   useEffect(() => {
-    if (!identityMode || !isFirebaseConfigured()) return;
+    if (!isFirebaseConfigured()) return;
     void signOut(getFirebaseAuth()).catch(() => undefined);
-  }, [identityMode]);
+  }, []);
 
   useEffect(() => {
     if (resendInSec <= 0) return;
@@ -145,23 +142,12 @@ export default function Login() {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      await googleAuth();
-    } catch (googleError) {
-      toast.error(
-        googleError instanceof Error
-          ? googleError.message
-          : 'Failed to sign in using Google. Please try again.'
-      );
-    }
-  };
-
   if (mfa) {
     return (
       <div className='flex flex-col gap-6 max-w-md mx-auto w-full px-4 py-6'>
         <Card>
           <CardHeader>
+            <AuthFormLogo />
             <CardTitle className='text-2xl'>Check your email</CardTitle>
             <CardDescription>
               Enter the 6-digit code we sent to {mfa.emailHint}. Codes expire in
@@ -227,6 +213,7 @@ export default function Login() {
     <div className='flex flex-col gap-6 max-w-md mx-auto w-full px-4 py-6'>
       <Card>
         <CardHeader>
+          <AuthFormLogo />
           <CardTitle className='text-2xl'>Log In</CardTitle>
           <CardDescription>
             Enter your email below to login to your account
@@ -277,20 +264,7 @@ export default function Login() {
                 'Log In'
               )}
             </Button>
-            {!identityMode && (
-              <GoogleButton
-                onClick={handleGoogleLogin}
-                isLoading={isLoading}
-                text='Sign in with Google'
-              />
-            )}
           </form>
-          <div className='mt-4 text-center text-sm'>
-            Don't have an account?{' '}
-            <Link to='/signup' className='underline underline-offset-4'>
-              Sign up
-            </Link>
-          </div>
         </CardContent>
       </Card>
     </div>

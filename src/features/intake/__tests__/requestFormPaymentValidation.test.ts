@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   fullSchema,
   type RequestFormValues,
-} from 'features/intake/useRequestForm';
+} from '@/features/intake/useRequestForm';
 
 function buildMinimalValidRequest(
   overrides: Partial<RequestFormValues> = {}

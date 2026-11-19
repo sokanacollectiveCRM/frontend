@@ -2,6 +2,7 @@ import NavLayout from '@/common/layouts/NavLayout';
 import { AuthPublicRoutes, AuthRoutes } from '@/features/auth/AuthRoutes';
 import ClientLogin from '@/features/auth/ClientLogin';
 import AcceptInvite from '@/features/auth/AcceptInvite';
+import ChooseOrganization from '@/features/auth/ChooseOrganization';
 import SetPassword from '@/features/auth/SetPassword';
 import VerifyEmail from '@/features/auth/VerifyEmail';
 import { EmailVerifiedRoute } from '@/common/components/routes/EmailVerifiedRoute';
@@ -13,6 +14,7 @@ import PipelineRoutes from '@/features/pipeline/PipelineRoutes';
 import RequestRoutes from '@/features/request/RequestRoutes';
 import { Route, Routes } from 'react-router-dom';
 import {
+  AdminOnlyRoute,
   BillingPortalRoute,
   ClientPortalRoute,
   NonBillingOnlyRoute,
@@ -50,6 +52,7 @@ const AppRoutes = () => (
     <Route path='/auth/set-password' element={<SetPassword />} />
     <Route path='/auth/verify-email' element={<VerifyEmail />} />
     <Route path='/auth/client-login' element={<ClientLogin />} />
+    <Route path='/choose-organization' element={<ChooseOrganization />} />
     <Route path='/accept-invite' element={<AcceptInvite />} />
     <Route path='/signing/:token' element={<LegacySigningRedirect />} />
     <Route path='/signing' element={<PublicSigningEntry />} />
@@ -107,7 +110,7 @@ const AppRoutes = () => (
                 {PaymentsRoute()}
                 {HoursRoutes()}
                 {ProfileRoutes()}
-                {TeamRoutes()}
+                <Route element={<AdminOnlyRoute />}>{TeamRoutes()}</Route>
                 {InboxRoutes()}
                 {QuickBooksRoutes()}
                 {CreateCustomerRoutes()}

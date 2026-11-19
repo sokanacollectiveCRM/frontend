@@ -3,9 +3,9 @@
   width: 100%;
   margin-bottom: 0;
   padding: 1rem 0.5rem 1.125rem;
-  overflow-x: visible;
-  background: #eef2f1;
-  border: 1px solid #d5dedc;
+  overflow-x: auto;
+  background: var(--intake-nav-bg, #eef2f1);
+  border: 1px solid var(--intake-nav-border, #d5dedc);
   border-radius: 8px;
   box-sizing: border-box;
 }
@@ -39,7 +39,8 @@ button.stepButton {
   justify-content: center;
   gap: 0.55rem;
   margin: 0;
-  padding: 0.8rem 0.5rem 0.85rem;
+  padding: 0.8rem 0.6rem 0.85rem;
+  container-type: inline-size;
   border-radius: 8px;
   cursor: pointer;
   transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease,
@@ -64,9 +65,9 @@ button.stepButton {
 }
 
 button.stepButton:not(.step-current):hover:not(:disabled) {
-  background-color: #f3faf9;
-  border-color: #26a69a;
-  box-shadow: 0 2px 6px rgba(0, 105, 92, 0.12);
+  background-color: var(--intake-step-hover-bg, #f3faf9);
+  border-color: var(--intake-step-hover-border, #26a69a);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--intake-accent) 18%, transparent);
 }
 
 button.stepButton.step-current:hover:not(:disabled) {
@@ -90,10 +91,12 @@ button.stepButton.step-current:hover:not(:disabled) {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.9375rem;
+  font-size: clamp(0.6875rem, 12cqi, 0.75rem);
   font-weight: 600;
   text-align: center;
-  line-height: 1.25;
+  line-height: 1.3;
+  padding-inline: 0.2rem;
+  box-sizing: border-box;
   transition: color 0.2s ease;
   width: 100%;
   max-width: 100%;
@@ -106,31 +109,31 @@ button.stepButton.step-current:hover:not(:disabled) {
 }
 
 button.stepButton.step-completed {
-  background-color: #e0f2f1;
-  border-color: #80cbc4;
-  color: #0d3d38;
+  background-color: var(--intake-step-completed-bg, #e0f2f1);
+  border-color: var(--intake-step-completed-border, #80cbc4);
+  color: var(--intake-step-completed-text, #0d3d38);
 
   .stepNumber {
-    background-color: #00acc1;
+    background-color: var(--intake-step-completed-badge, #00acc1);
     color: #fff;
     border: none;
   }
 
   .stepTitle {
-    color: #0d3d38;
+    color: var(--intake-step-completed-text, #0d3d38);
     font-weight: 600;
   }
 }
 
 button.stepButton.step-current {
-  background-color: #00695c;
-  border-color: #004d40;
+  background-color: var(--intake-step-current-bg, #00695c);
+  border-color: var(--intake-step-current-border, #004d40);
   color: #fff;
-  box-shadow: 0 2px 8px rgba(0, 77, 64, 0.35);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--intake-primary) 35%, transparent);
 
   .stepNumber {
     background-color: #fff;
-    color: #00695c;
+    color: var(--intake-step-current-bg, #00695c);
     border: none;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
   }
@@ -181,8 +184,8 @@ button.stepButton.step-invalid {
   margin-bottom: 0;
   overflow-x: visible;
   padding: 0.75rem 0.35rem 0.5rem;
-  background: #eef2f1;
-  border: 1px solid #d5dedc;
+  background: var(--intake-nav-bg, #eef2f1);
+  border: 1px solid var(--intake-nav-border, #d5dedc);
   border-radius: 8px;
   box-sizing: border-box;
 }
@@ -226,8 +229,8 @@ button.mobileStepButton {
 }
 
 button.mobileStepButton:not(.step-current):hover:not(:disabled) {
-  background-color: #f3faf9;
-  border-color: #26a69a;
+  background-color: var(--intake-step-hover-bg, #f3faf9);
+  border-color: var(--intake-step-hover-border, #26a69a);
 }
 
 button.mobileStepButton.step-current:hover:not(:disabled) {
@@ -268,28 +271,28 @@ button.mobileStepButton.step-current:hover:not(:disabled) {
 
 /* Mobile step status styles inherit from desktop with size adjustments */
 button.mobileStepButton.step-completed {
-  background-color: #e0f2f1;
-  border-color: #80cbc4;
+  background-color: var(--intake-step-completed-bg, #e0f2f1);
+  border-color: var(--intake-step-completed-border, #80cbc4);
 
   .mobileStepNumber {
-    background-color: #00acc1;
+    background-color: var(--intake-step-completed-badge, #00acc1);
     color: white;
     border: none;
   }
 
   .mobileStepTitle {
-    color: #0d3d38;
+    color: var(--intake-step-completed-text, #0d3d38);
   }
 }
 
 button.mobileStepButton.step-current {
-  background-color: #00695c;
-  border-color: #004d40;
-  box-shadow: 0 2px 8px rgba(0, 77, 64, 0.3);
+  background-color: var(--intake-step-current-bg, #00695c);
+  border-color: var(--intake-step-current-border, #004d40);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--intake-primary) 30%, transparent);
 
   .mobileStepNumber {
     background-color: #fff;
-    color: #00695c;
+    color: var(--intake-step-current-bg, #00695c);
     border: none;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   }
@@ -343,13 +346,12 @@ button.mobileStepButton.step-invalid {
 
   button.stepButton {
     gap: 0.45rem;
-    padding: 0.7rem 0.35rem 0.75rem;
+    padding: 0.7rem 0.45rem 0.75rem;
     min-width: 0;
     min-height: 9.25rem;
   }
   
   .stepTitle {
-    font-size: 0.875rem;
     min-height: 3.4rem;
   }
   
@@ -367,12 +369,11 @@ button.mobileStepButton.step-invalid {
 
   button.stepButton {
     min-width: 0;
-    padding: 0.65rem 0.25rem 0.7rem;
+    padding: 0.65rem 0.4rem 0.7rem;
     min-height: 8.75rem;
   }
   
   .stepTitle {
-    font-size: 0.8125rem;
     min-height: 3.2rem;
   }
   

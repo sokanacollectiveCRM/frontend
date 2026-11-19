@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { UseFormRegisterReturn, useFormContext } from 'react-hook-form';
-import styles from 'features/intake/RequestForm.module.scss';
+import styles from '@/features/intake/RequestForm.module.scss';
 
 interface FloatingLabelDatePickerProps {
   label: string;

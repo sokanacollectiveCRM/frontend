@@ -20,14 +20,36 @@ export function isSessionExpiredError(
   );
 }
 
+const PUBLIC_PREFIXES = [
+  '/login',
+  '/signup',
+  '/accept-invite',
+  '/auth/',
+  '/request',
+  '/signing',
+];
+
+let sessionRedirectStarted = false;
+
+function isPublicPath(pathname: string): boolean {
+  return PUBLIC_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(prefix)
+  );
+}
+
 /**
- * Handles session expiration by clearing auth token and redirecting to login
+ * Leaves the current CRM page and opens the login screen.
+ * Public auth pages stay put so a failed login does not reload itself.
  */
 export function handleSessionExpiration(): void {
-  // Clear the auth token
-
-  // Redirect to login page
-  window.location.href = '/login';
+  if (typeof window === 'undefined' || sessionRedirectStarted) return;
+  if (isPublicPath(window.location.pathname)) return;
+  sessionRedirectStarted = true;
+  try {
+    window.location.assign('/login');
+  } catch {
+    window.location.href = '/login';
+  }
 }
 
 /**

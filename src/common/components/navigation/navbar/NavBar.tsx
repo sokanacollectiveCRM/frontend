@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 
+import { AuthFormLogo } from '@/common/components/brand/Sokana360Logo';
 import { Button } from '@/common/components/ui/button';
 
 const StyledNav = styled.nav`
@@ -25,22 +26,11 @@ export default function NavBar() {
   return (
     <StyledNav>
       <LeftAligned>
-        <Button
-          className='w-25'
-          onClick={() => navigate('/login')}
-          variant='ghost'
-        >
-          <img src='/logo.jpeg' alt='Logo' className='h-10 w-full' />
-        </Button>
+        <AuthFormLogo placement='header' />
       </LeftAligned>
-      <>
-        <Button variant='ghost' onClick={() => navigate('/signup')}>
-          Sign Up
-        </Button>
-        <Button variant='ghost' onClick={() => navigate('/login')}>
-          Login
-        </Button>
-      </>
+      <Button variant='ghost' onClick={() => navigate('/login')}>
+        Login
+      </Button>
     </StyledNav>
   );
 }

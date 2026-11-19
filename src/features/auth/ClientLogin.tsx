@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { logFailure } from '@/utils/safeLog';
 import { Link, useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
 import { isStaffRole } from '@/common/auth/roles';
 import { useUser } from '@/common/hooks/user/useUser';
+import { getFirebaseAuth } from '@/lib/firebase';
+import { signOut } from 'firebase/auth';
+import { AuthFormLogo } from '@/common/components/brand/Sokana360Logo';
 import { Button } from '@/common/components/ui/button';
 import {
   Card,
@@ -21,7 +23,7 @@ import { Alert, AlertDescription } from '@/common/components/ui/alert';
 
 export default function ClientLogin() {
   const navigate = useNavigate();
-  const { user, checkAuth, isLoading: isAuthLoading } = useUser();
+  const { user, login, isLoading: isAuthLoading } = useUser();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -44,30 +46,13 @@ export default function ClientLogin() {
     setIsLoading(true);
 
     try {
-      // Sign in with Supabase Auth (same approach as admin login - just authenticate)
-      const { data, error: signInError } =
-        await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-      if (signInError) {
-        throw new Error(
-          signInError.message === 'Invalid login credentials'
-            ? 'Invalid email or password. Please try again.'
-            : signInError.message || 'Failed to sign in. Please try again.'
-        );
+      const result = await login(email, password);
+      if (result !== true) {
+        throw new Error('Additional verification is required before continuing.');
       }
 
-      if (!data.user) {
-        throw new Error('No user data received. Please try again.');
-      }
-
-      // Success - client is logged in via Supabase
       setError(null);
       toast.success('Welcome! Redirecting to your dashboard...');
-
-      await checkAuth({ silent: true });
       navigate('/', { replace: true });
     } catch (err: any) {
       logFailure('auth', 'client_login_error');
@@ -76,13 +61,11 @@ export default function ClientLogin() {
           ? err.message
           : 'Failed to sign in. Please try again.';
       setError(errorMessage);
-      setHasLoginError(true); // Mark that there was a login error to prevent redirects
+      setHasLoginError(true);
       toast.error(errorMessage);
-      // IMPORTANT: Do NOT redirect on error - stay on the login page
-      // Ensure any Supabase session is cleared on error
       try {
-        await supabase.auth.signOut();
-      } catch (signOutError) {
+        await signOut(getFirebaseAuth());
+      } catch {
         logFailure('auth', 'error_signing_out_after_failed_login');
       }
     } finally {
@@ -95,6 +78,7 @@ export default function ClientLogin() {
     <div className='mx-auto flex w-full min-w-0 max-w-md flex-col gap-6 p-4'>
       <Card>
         <CardHeader>
+          <AuthFormLogo />
           <CardTitle className='text-2xl'>Client Portal Login</CardTitle>
           <CardDescription>
             Enter your email and password to access your client dashboard

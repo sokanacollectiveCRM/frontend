@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { applyActionCode } from 'firebase/auth';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { applyActionCode, signOut } from 'firebase/auth';
 import { Loader2, MailCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -14,6 +14,8 @@ import {
   CardTitle,
 } from '@/common/components/ui/card';
 import { buildUrl, fetchWithAuth } from '@/api/http';
+import { clearSessionAccessToken } from '@/api/sessionAccessToken';
+import { setSelectedOrganization } from '@/api/organizationContext';
 import { getFirebaseAuth } from '@/lib/firebase';
 import { useUser } from '@/common/hooks/user/useUser';
 import { isStaffRole } from '@/common/auth/roles';
@@ -21,18 +23,22 @@ import { isStaffRole } from '@/common/auth/roles';
 export default function VerifyEmail() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user, checkAuth } = useUser();
+  const { user, checkAuth, setUser } = useUser();
   const oobCode = searchParams.get('oobCode');
   const [status, setStatus] = useState<
     'idle' | 'applying' | 'success' | 'error' | 'waiting'
   >(oobCode ? 'applying' : 'waiting');
   const [error, setError] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const appliedOobCodes = useRef(new Set<string>());
 
   useEffect(() => {
-    if (!oobCode) {
+    if (!oobCode || appliedOobCodes.current.has(oobCode)) {
       return;
     }
+    // Firebase action codes are single-use. React StrictMode and changing
+    // context callbacks can re-run effects in local dev, so apply each once.
+    appliedOobCodes.current.add(oobCode);
     void (async () => {
       try {
         await applyActionCode(getFirebaseAuth(), oobCode);
@@ -45,10 +51,13 @@ export default function VerifyEmail() {
         );
       } catch (err) {
         setStatus('error');
+        const code = (err as { code?: string })?.code;
         setError(
-          err instanceof Error
-            ? err.message
-            : 'This verification link is invalid or expired.'
+          code === 'auth/invalid-action-code'
+            ? 'This verification link was already used or has expired. Try signing in; your email may already be verified.'
+            : err instanceof Error
+              ? err.message
+              : 'This verification link is invalid or expired.'
         );
       }
     })();
@@ -56,6 +65,20 @@ export default function VerifyEmail() {
 
   const loginPath =
     user && !isStaffRole(user.role) ? '/auth/client-login' : '/login';
+
+  const handleBackToSignIn = async () => {
+    await Promise.allSettled([
+      fetch(buildUrl('/auth/logout'), {
+        method: 'POST',
+        credentials: 'include',
+      }),
+      Promise.resolve().then(() => signOut(getFirebaseAuth())),
+    ]);
+    clearSessionAccessToken();
+    setSelectedOrganization(null);
+    setUser(null);
+    navigate(loginPath, { replace: true });
+  };
 
   const handleResend = async () => {
     setIsSending(true);
@@ -162,8 +185,13 @@ export default function VerifyEmail() {
                   )}
                 </Button>
               )}
-              <Button asChild variant='outline' className='w-full'>
-                <Link to={loginPath}>Back to sign in</Link>
+              <Button
+                type='button'
+                variant='outline'
+                className='w-full'
+                onClick={() => void handleBackToSignIn()}
+              >
+                Back to sign in
               </Button>
             </div>
           )}

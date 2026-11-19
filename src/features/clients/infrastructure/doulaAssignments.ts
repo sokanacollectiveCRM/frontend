@@ -1,0 +1,168 @@
+export interface Doula {
+  id: string;
+  firstname: string;
+  lastname: string;
+  email: string;
+  profile_picture?: string;
+  bio?: string;
+  phone_number?: string;
+  scheduling_url?: string;
+  availability_status?: string;
+  availability_note?: string;
+  unavailable_from?: string;
+  unavailable_until?: string;
+  is_available?: boolean;
+}
+
+export interface AssignedDoula {
+  id: string;
+  doulaId: string;
+  assignedAt: string;
+  status: string;
+  services?: string[];
+  role?: DoulaAssignmentRole;
+  category?: string;
+  doula: Doula;
+}
+
+export type DoulaAssignmentRole = 'primary' | 'backup';
+
+export const ASSIGNMENT_ROLE_OPTIONS: Array<{
+  value: DoulaAssignmentRole;
+  label: string;
+}> = [
+  { value: 'primary', label: 'Primary' },
+  { value: 'backup', label: 'Backup' },
+];
+
+export function normalizeAssignmentRole(
+  role: unknown
+): DoulaAssignmentRole | null {
+  if (typeof role !== 'string') return null;
+  const normalized = role.trim().toLowerCase();
+  if (normalized === 'primary') return 'primary';
+  if (normalized === 'backup') return 'backup';
+  return null;
+}
+
+import { apiBaseUrl } from '@/config/env';
+import { logHttpFailure } from '@/utils/safeLog';
+import { fetchWithAuth } from '@/api/http';
+
+const getBaseUrl = (): string => apiBaseUrl;
+
+/**
+ * Fetch all available doulas (team members with doula role)
+ */
+export const fetchAvailableDoulas = async (): Promise<Doula[]> => {
+  const url = `${getBaseUrl()}/clients/team/doulas`;
+
+  const response = await fetchWithAuth(url, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    logHttpFailure('client-api', 'fetch_available_doulas', response.status);
+    throw new Error(
+      `Failed to fetch doulas: ${response.status} - ${errorText}`
+    );
+  }
+
+  const result = await response.json();
+  return result.doulas || [];
+};
+
+/**
+ * Fetch doulas assigned to a specific client
+ */
+export const fetchAssignedDoulas = async (
+  clientId: string
+): Promise<AssignedDoula[]> => {
+  const url = `${getBaseUrl()}/clients/${clientId}/assigned-doulas`;
+
+  const response = await fetchWithAuth(url, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    logHttpFailure('client-api', 'fetch_assigned_doulas', response.status);
+    throw new Error(
+      `Failed to fetch assigned doulas: ${response.status} - ${errorText}`
+    );
+  }
+
+  const result = await response.json();
+  return result.doulas || [];
+};
+
+/**
+ * Assign a doula to a client
+ */
+export const assignDoula = async (
+  clientId: string,
+  doulaId: string,
+  options?: { role?: DoulaAssignmentRole; services?: string[] }
+): Promise<void> => {
+  const body: Record<string, string | string[]> = { doulaId };
+  if (options?.role) {
+    body.role = options.role;
+  }
+  if (Array.isArray(options?.services) && options.services.length > 0) {
+    body.services = options.services;
+  }
+
+  const response = await fetchWithAuth(
+    `${getBaseUrl()}/clients/${clientId}/assign-doula`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    }
+  );
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    throw new Error(`Failed to assign doula: ${response.status} ${text}`);
+  }
+};
+
+/**
+ * Unassign a doula from a client
+ */
+export const unassignDoula = async (
+  clientId: string,
+  doulaId: string
+): Promise<void> => {
+  const response = await fetchWithAuth(
+    `${getBaseUrl()}/clients/${clientId}/assign-doula/${doulaId}`,
+    {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => '');
+    throw new Error(
+      `Failed to unassign doula: ${response.status}${errorText ? ` - ${errorText}` : ''}`
+    );
+  }
+};

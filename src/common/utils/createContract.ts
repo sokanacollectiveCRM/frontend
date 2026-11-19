@@ -1,4 +1,4 @@
-import { Client } from '@/features/clients/data/schema';
+import { Client } from '@/features/clients';
 import { buildUrl, fetchWithAuth } from '@/api/http';
 import { logHttpFailure } from '@/utils/safeLog';
 
@@ -90,11 +90,7 @@ export interface ContractResponse {
     clientEmail: string;
     docxPath: string;
     pdfPath: string;
-    signNow: {
-      documentId: string;
-      invitationSent: boolean;
-      status: string;
-    };
+    invitationSent?: boolean;
     emailDelivery: {
       provider: string;
       sent: boolean;
@@ -190,8 +186,7 @@ export interface ContractSendResponse {
   success: boolean;
   message: string;
   amounts: CalculatedAmounts;
-  envelopeId: string;
-  signnow: any;
+  contractId: string;
   prefilledValues: any;
 }
 
@@ -231,7 +226,7 @@ export async function calculateContractAmounts(
   return data;
 }
 
-// Send contract for signature using SignNow API
+// Send contract for signature through the native contract flow
 export async function sendContractForSignature(
   contractInput: ContractInput,
   clientInfo: ClientInfo
@@ -296,10 +291,9 @@ export async function sendContractForSignature(
   // Transform response to match expected ContractSendResponse format
   return {
     success: data.success,
-    message: data.message || 'Contract sent for signature via SignNow',
+    message: data.message || 'Contract sent for signature',
     amounts: calculationResponse.amounts,
-    envelopeId: data.data?.signNow?.documentId || `SN-${Date.now()}`,
-    signnow: data.data?.signNow,
+    contractId: data.data?.contractId || '',
     prefilledValues: calculationResponse.fields,
   };
 }

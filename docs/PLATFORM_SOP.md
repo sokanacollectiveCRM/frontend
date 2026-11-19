@@ -363,7 +363,7 @@ Complete this checklist before launch and again at the end of launch week.
 
 ## Related References
 
-- `CLIENT_MANAGEMENT_SYSTEM.md`
-- `CONTRACT_AND_PAYMENT_INSTRUCTIONS.md`
-- `QUICK_REFERENCE_GUIDE.md`
-- `WORKFLOW_DIAGRAM.md`
+- `docs/CLIENT_MANAGEMENT_SYSTEM.md`
+- `docs/CONTRACT_AND_PAYMENT_INSTRUCTIONS.md`
+- `docs/QUICK_REFERENCE_GUIDE.md`
+- `docs/WORKFLOW_DIAGRAM.md`

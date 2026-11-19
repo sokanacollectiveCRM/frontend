@@ -15,8 +15,8 @@ import {
   type RequestFormPaymentMethod,
 } from '@/lib/paymentRules';
 import { SELF_PAY_SLIDING_SUPPORT_TYPES } from '@/lib/slidingScaleData';
-import { HOME_PEOPLE_COUNT_OPTIONS } from 'features/intake/domain/homePeopleCountOptions';
-import { HOME_TYPE_OTHER_VALUE } from 'features/intake/domain/homeTypeOptions';
+import { HOME_PEOPLE_COUNT_OPTIONS } from '@/features/intake/domain/homePeopleCountOptions';
+import { HOME_TYPE_OTHER_VALUE } from '@/features/intake/domain/homeTypeOptions';
 
 export const PAYMENT_METHOD_OPTIONS = REQUEST_FORM_PAYMENT_METHOD_OPTIONS;
 

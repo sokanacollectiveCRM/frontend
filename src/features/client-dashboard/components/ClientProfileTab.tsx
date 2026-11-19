@@ -21,7 +21,6 @@ import { toast } from 'sonner';
 import { useClientAuth } from '@/common/hooks/auth/useClientAuth';
 import { useUser } from '@/common/hooks/user/useUser';
 import { apiBaseUrl } from '@/config/env';
-import { supabase } from '@/lib/supabase';
 import UserAvatar from '@/common/components/user/UserAvatar';
 import {
   ASSIGNMENT_ROLE_OPTIONS,
@@ -235,14 +234,8 @@ export default function ClientProfileTab({
 
   const getClientApiBase = () => apiBaseUrl;
 
-  const getClientAuthHeaders = (token?: string) => ({
+  const getClientAuthHeaders = () => ({
     'Content-Type': 'application/json',
-    ...(token
-      ? {
-          Authorization: `Bearer ${token}`,
-          'X-Session-Token': token,
-        }
-      : {}),
   });
 
   const effectiveClientId = client?.id || user?.id || null;
@@ -260,22 +253,12 @@ export default function ClientProfileTab({
     setIsLoadingAssignedDoulas(true);
     setAssignedDoulasError(null);
     try {
-      let token: string | undefined;
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        token = session?.access_token;
-      } catch {
-        token = undefined;
-      }
-
       const response = await fetchWithAuth(
         `${getClientApiBase()}/clients/${effectiveClientId}/assigned-doulas`,
         {
           method: 'GET',
           credentials: 'include',
-          headers: getClientAuthHeaders(token),
+          headers: getClientAuthHeaders(),
         }
       );
 
@@ -317,22 +300,12 @@ export default function ClientProfileTab({
 
     setSharedNotesLoading(true);
     try {
-      let token: string | undefined;
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        token = session?.access_token;
-      } catch {
-        token = undefined;
-      }
-
       const response = await fetchWithAuth(
         `${getClientApiBase()}/clients/${effectiveClientId}/activities`,
         {
           method: 'GET',
           credentials: 'include',
-          headers: getClientAuthHeaders(token),
+          headers: getClientAuthHeaders(),
         }
       );
 
@@ -373,22 +346,12 @@ export default function ClientProfileTab({
 
     setIsLoading(true);
     try {
-      let token: string | undefined;
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        token = session?.access_token;
-      } catch {
-        token = undefined;
-      }
-
       const response = await fetchWithAuth(
         `${getClientApiBase()}/clients/${effectiveClientId}?detailed=true`,
         {
           method: 'GET',
           credentials: 'include',
-          headers: getClientAuthHeaders(token),
+          headers: getClientAuthHeaders(),
         }
       );
 
@@ -738,23 +701,13 @@ export default function ClientProfileTab({
 
     setIsSaving(true);
     try {
-      let token: string | undefined;
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        token = session?.access_token;
-      } catch {
-        token = undefined;
-      }
-
       if (view === 'profile') {
         const response = await fetchWithAuth(
           `${getClientApiBase()}/clients/${effectiveClientId}`,
           {
             method: 'PUT',
             credentials: 'include',
-            headers: getClientAuthHeaders(token),
+            headers: getClientAuthHeaders(),
             body: JSON.stringify(
               buildClientProfileUpdatePayload({
                 firstname: formData.firstname,
@@ -774,16 +727,6 @@ export default function ClientProfileTab({
           throw new Error(
             `Failed to update profile (${response.status}) ${errorText}`.trim()
           );
-        }
-
-        if (client) {
-          await supabase.auth.updateUser({
-            data: {
-              firstname: formData.firstname,
-              lastname: formData.lastname,
-              phone: formData.phone,
-            },
-          });
         }
 
         toast.success('Profile updated successfully');
@@ -940,7 +883,7 @@ export default function ClientProfileTab({
               {
                 method: 'PUT',
                 credentials: 'include',
-                headers: getClientAuthHeaders(token),
+                headers: getClientAuthHeaders(),
                 body: JSON.stringify(billingPayload),
               }
             );
@@ -1084,7 +1027,7 @@ export default function ClientProfileTab({
         {
           method: 'PUT',
           credentials: 'include',
-          headers: getClientAuthHeaders(token),
+          headers: getClientAuthHeaders(),
           body: JSON.stringify(buildClientProfileUpdatePayload(formData)),
         }
       );
@@ -1158,7 +1101,7 @@ export default function ClientProfileTab({
             {
               method: 'PUT',
               credentials: 'include',
-              headers: getClientAuthHeaders(token),
+              headers: getClientAuthHeaders(),
               body: JSON.stringify(billingPayload),
             }
           );
@@ -1176,17 +1119,6 @@ export default function ClientProfileTab({
             `Failed to update billing (${billingResponse.status}) ${billingErrorText}`.trim()
           );
         }
-      }
-
-      // Keep Supabase metadata in sync for greeting and avatar fallbacks.
-      if (client) {
-        await supabase.auth.updateUser({
-          data: {
-            firstname: formData.firstname,
-            lastname: formData.lastname,
-            phone: formData.phone,
-          },
-        });
       }
 
       toast.success('Profile updated successfully');

@@ -11,7 +11,7 @@ import {
 } from '@/common/components/ui/select';
 import UserAvatar from '@/common/components/user/UserAvatar';
 import updateClientStatus from '@/common/utils/updateClientStatus';
-import { STATUS_LABELS, USER_STATUSES } from '@/features/clients/data/schema';
+import { STATUS_LABELS, USER_STATUSES } from '@/features/clients';
 import { useClientProfileData } from '@/features/profiles/hooks/useClientProfileData';
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';

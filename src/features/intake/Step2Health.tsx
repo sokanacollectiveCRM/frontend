@@ -575,7 +575,6 @@ export function Step2Home({
           type='button'
           onClick={handleBack}
           className={styles['step-button']}
-          style={{ marginRight: 'auto' }}
         >
           Back
         </Button>
@@ -584,7 +583,6 @@ export function Step2Home({
           onClick={handleNextStep}
           className={styles['step-button']}
           disabled={form.formState.isSubmitting}
-          style={{ marginLeft: 'auto' }}
         >
           Next
         </Button>

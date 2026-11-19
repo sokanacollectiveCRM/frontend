@@ -1,5 +1,5 @@
 import { Button } from '@/common/components/ui/button';
-import { useState } from 'react';
+import { useState, type ChangeEvent, type FocusEvent, type KeyboardEvent } from 'react';
 import { useWatch } from 'react-hook-form';
 import styles from './RequestForm.module.scss';
 
@@ -86,6 +86,35 @@ export function Step1Personal({
   const handleBlur = (field: FocusField) => {
     const currentValue = form.getValues(field);
     setFocus((f) => ({ ...f, [field]: hasFilledValue(currentValue) }));
+  };
+  const ageField = form.register('age');
+  const handleAgeChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const input = event.target;
+    if (input.value.includes('-') || (input.value !== '' && Number(input.value) < 0)) {
+      input.value = '0';
+    }
+    void ageField.onChange(event);
+  };
+  const handleAgeBlur = (event: FocusEvent<HTMLInputElement>) => {
+    void ageField.onBlur(event);
+    handleBlur('age');
+  };
+  const handleAgeKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (
+      event.key === '-' ||
+      event.key === '+' ||
+      event.key === 'e' ||
+      event.key === 'E' ||
+      event.key === '.'
+    ) {
+      event.preventDefault();
+    }
+    if (event.key === 'ArrowDown') {
+      const current = event.currentTarget.valueAsNumber;
+      if (!Number.isFinite(current) || current <= 0) {
+        event.preventDefault();
+      }
+    }
   };
 
   // Arrow color logic
@@ -360,16 +389,18 @@ export function Step1Personal({
         <div className={styles['form-field']}>
           <input
             className={styles['form-input']}
-            {...form.register('age')}
+            {...ageField}
             id='age'
             type='number'
-            min={1}
+            min={0}
             max={120}
             step={1}
             inputMode='numeric'
             autoComplete='off'
             onFocus={() => handleFocus('age')}
-            onBlur={() => handleBlur('age')}
+            onChange={handleAgeChange}
+            onBlur={handleAgeBlur}
+            onKeyDown={handleAgeKeyDown}
             onWheel={(e) => {
               e.currentTarget.blur();
             }}

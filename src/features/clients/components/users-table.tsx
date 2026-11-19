@@ -123,11 +123,15 @@ export function UsersTable({
                   className='group/row cursor-pointer transition hover:bg-muted/50'
                   onClick={() => {
                     const clientId = String(row.original.id);
-                    prefetchClientDetail(clientId);
-                    setCurrentRow(row.original);
-                    setOpen('lead-profile');
                     const targetPath = `${basePath}/${clientId}`;
-                    navigate(targetPath);
+                    prefetchClientDetail(clientId);
+                    // Open on the next frame so the same click cannot pointer-up on
+                    // the new overlay and instantly dismiss the profile dialog.
+                    requestAnimationFrame(() => {
+                      setCurrentRow(row.original);
+                      setOpen('lead-profile');
+                      navigate(targetPath);
+                    });
                   }}
                 >
                   {row.getVisibleCells().map((cell) => (

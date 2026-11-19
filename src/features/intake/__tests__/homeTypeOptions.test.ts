@@ -6,7 +6,7 @@ import {
   selectSingleHomeType,
   singleHomeTypeFromApi,
   toggleHomeTypeSelection,
-} from 'features/intake/homeTypeOptions';
+} from '@/features/intake/homeTypeOptions';
 
 describe('homeTypeOptions', () => {
   describe('normalizeHomeTypeFromApi', () => {

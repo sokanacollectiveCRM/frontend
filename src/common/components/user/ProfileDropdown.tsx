@@ -11,21 +11,23 @@ import {
 } from '@/common/components/ui/dropdown-menu';
 import UserAvatar from '@/common/components/user/UserAvatar';
 import { useUser } from '@/common/hooks/user/useUser';
-import { LogOut } from 'lucide-react';
+import { Building2, LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useDoulaIdentity } from '@/features/doula-dashboard/useDoulaIdentity';
 
 export function ProfileDropdown() {
   const { user, logout } = useUser();
+  const doulaIdentity = useDoulaIdentity();
 
   if (!user) return null;
-  const name = `${user.firstname ?? ''} ${user.lastname ?? ''}`.trim();
+  const name = doulaIdentity.name;
 
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button variant='ghost' className='relative h-8 w-8 rounded-full'>
           <UserAvatar
-            profile_picture={user?.profile_picture}
+            profile_picture={doulaIdentity.profilePicture}
             fullName={name}
             className='h-8 w-8'
           />
@@ -50,6 +52,12 @@ export function ProfileDropdown() {
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link to='/choose-organization'>
+            <Building2 />
+            Switch organization
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={logout}>
           <LogOut />
           Log out

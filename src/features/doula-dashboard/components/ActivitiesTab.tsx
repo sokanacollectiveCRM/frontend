@@ -54,7 +54,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import React from 'react';
-import { PREGNANCY_BABY_POSTPARTUM_QUESTION_LABEL } from '@/features/request/stepConfig';
+import { PREGNANCY_BABY_POSTPARTUM_QUESTION_LABEL } from '@/features/intake';
 
 interface ActivitiesTabProps {
   clientId: string | null;

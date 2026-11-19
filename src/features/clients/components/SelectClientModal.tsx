@@ -10,7 +10,6 @@ import {
 } from '@/common/components/ui/dialog';
 import { Input } from '@/common/components/ui/input';
 import { Client, STATUS_LABELS } from '@/features/clients/data/schema';
-import { signNowService, type SignNowClient } from '@/services/signNowService';
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -54,20 +53,8 @@ export const SelectClientModal: React.FC<Props> = ({
 
     try {
       setLoading(true);
-      const client: SignNowClient = {
-        email: selectedClient.email || '',
-        name: `${selectedClient.firstname} ${selectedClient.lastname}`,
-      };
-
-      const result = await signNowService.sendInvitation(client);
-
-      if (result.success) {
-        toast.success('Contract sent successfully!');
-        onSuccess?.();
-        onOpenChange(false);
-      } else {
-        toast.error(result.error || 'Failed to send contract');
-      }
+      toast.error('Send this contract from the contract dialog.');
+      onSuccess?.();
     } catch (error) {
       logFailure('clients', 'failed_to_send_contract');
       toast.error('Failed to send contract');
