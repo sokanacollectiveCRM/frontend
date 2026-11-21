@@ -2,9 +2,11 @@ import { useUser } from '@/common/hooks/user/useUser';
 import { useIsClientPortalUser } from '@/common/hooks/auth/useIsClientPortalUser';
 import { CalendarWidget } from './components/CalendarWidget';
 import { StatsOverview } from './components/StatsOverview';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { getDoulaDocuments, getDoulaProfile } from '@/api/doulas/doulaService';
+import { isDoulaRole } from '@/common/auth/roles';
 
 const QUICKBOOKS_CONNECTED_KEY = 'quickbooks_just_connected';
 
@@ -13,13 +15,37 @@ export default function Home() {
   const { isClientPortalUser, isLoading: isPortalLoading } =
     useIsClientPortalUser();
   const [searchParams, setSearchParams] = useSearchParams();
-  const isDoula = user?.role === 'doula';
+  const isDoula = isDoulaRole(user?.role);
+  const [doulaIsActive, setDoulaIsActive] = useState(null);
   const displayFirstName =
     user?.firstname ||
     user?.first_name ||
     user?.firstName ||
     user?.name?.split?.(' ')?.[0] ||
     'User';
+
+  useEffect(() => {
+    if (!isDoula) {
+      setDoulaIsActive(true);
+      return;
+    }
+    let mounted = true;
+    Promise.all([getDoulaProfile(), getDoulaDocuments()])
+      .then(([profile, documents]) => {
+        if (mounted)
+          setDoulaIsActive(
+            String(profile?.account_status ?? '').toLowerCase() === 'active' &&
+              documents.completeness?.can_be_active === true
+          );
+      })
+      .catch(() => {
+        // If status cannot be confirmed, send the doula to profile setup for guidance.
+        if (mounted) setDoulaIsActive(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [isDoula]);
 
   // Show notification when user is redirected back to dashboard after connecting QuickBooks
   useEffect(() => {
@@ -44,6 +70,18 @@ export default function Home() {
         <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900'></div>
       </div>
     );
+  }
+
+  if (isDoula && doulaIsActive === null) {
+    return (
+      <div className='h-full p-6 flex items-center justify-center'>
+        <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900'></div>
+      </div>
+    );
+  }
+
+  if (isDoula && !doulaIsActive) {
+    return <Navigate to='/doula-dashboard/profile' replace />;
   }
 
   // Client portal: Supabase client session and/or backend role === client (not admin/doula metrics)

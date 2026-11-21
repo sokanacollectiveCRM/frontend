@@ -124,8 +124,15 @@ async function stubs(page: Page) {
           email,
           role: 'doula',
           emailVerified: true,
+          account_status: 'active',
           tenant,
         },
+      });
+    }
+    if (url.endsWith('/doulas/documents')) {
+      return route.fulfill({
+        headers: cors,
+        json: { documents: [], completeness: { can_be_active: true } },
       });
     }
     return route.fulfill({ headers: cors, json: { success: true, data: [] } });
