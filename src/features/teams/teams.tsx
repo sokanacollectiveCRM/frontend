@@ -993,7 +993,8 @@ export default function Teams() {
                             )}
                           {user?.role === 'admin' &&
                             member.role === 'doula' &&
-                            member.invitation_status !== 'pending' && (
+                            member.invitation_status !== 'pending' &&
+                            Boolean(member.profile_submitted_at) && (
                               <Button
                                 variant='default'
                                 size='sm'
@@ -1020,7 +1021,8 @@ export default function Teams() {
                         <DropdownMenuContent align='end' className='w-64'>
                           {user?.role === 'admin' &&
                             member.role === 'doula' &&
-                            member.invitation_status !== 'pending' && (
+                            member.invitation_status !== 'pending' &&
+                            Boolean(member.profile_submitted_at) && (
                               <DropdownMenuItem
                                 onClick={() => void handleOpenDocuments(member)}
                                 className='cursor-pointer'
@@ -1494,47 +1496,58 @@ export default function Teams() {
                     </p>
                   </div>
                 )}
-                <div className='space-y-2'>
-                  <Label htmlFor='review-reason'>
-                    Reason for requested changes
-                  </Label>
-                  <Textarea
-                    id='review-reason'
-                    value={reviewReason}
-                    onChange={(e) => setReviewReason(e.target.value)}
-                    maxLength={2000}
-                    placeholder='Explain what the doula needs to correct.'
-                  />
-                  {documentsMember.profile_review_status !== 'approved' && (
-                    <Button
-                      variant='outline'
-                      disabled={reviewBusy}
-                      onClick={() => void handleReviewAction(undefined, true)}
-                    >
-                      Reject profile and request changes
-                    </Button>
-                  )}
-                </div>
-                <Button
-                  disabled={
-                    reviewBusy ||
-                    documentsLoading ||
-                    !documentsLoaded ||
-                    documentsMember.profile_review_status === 'approved'
-                  }
-                  onClick={() => void handleReviewAction()}
-                >
-                  {documentsMember.profile_review_status === 'approved'
-                    ? 'Profile approved'
-                    : reviewBusy
-                      ? 'Saving...'
-                      : 'Approve profile'}
-                </Button>
-                {documentsMember.profile_review_status !== 'approved' && (
-                  <p className='text-xs text-muted-foreground'>
-                    Approval checks required profile details and documents and
-                    will explain any remaining requirement.
+                {documentsMember.profile_submitted_at ? (
+                  <div className='space-y-2'>
+                    <Label htmlFor='review-reason'>
+                      Reason for requested changes
+                    </Label>
+                    <Textarea
+                      id='review-reason'
+                      value={reviewReason}
+                      onChange={(e) => setReviewReason(e.target.value)}
+                      maxLength={2000}
+                      placeholder='Explain what the doula needs to correct.'
+                    />
+                    {documentsMember.profile_review_status !== 'approved' && (
+                      <Button
+                        variant='outline'
+                        disabled={reviewBusy}
+                        onClick={() => void handleReviewAction(undefined, true)}
+                      >
+                        Reject profile and request changes
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <p className='rounded border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900'>
+                    This profile has not been submitted. Approval and requested
+                    changes become available after onboarding is complete.
                   </p>
+                )}
+                {documentsMember.profile_submitted_at && (
+                  <>
+                    <Button
+                      disabled={
+                        reviewBusy ||
+                        documentsLoading ||
+                        !documentsLoaded ||
+                        documentsMember.profile_review_status === 'approved'
+                      }
+                      onClick={() => void handleReviewAction()}
+                    >
+                      {documentsMember.profile_review_status === 'approved'
+                        ? 'Profile approved'
+                        : reviewBusy
+                          ? 'Saving...'
+                          : 'Approve profile'}
+                    </Button>
+                    {documentsMember.profile_review_status !== 'approved' && (
+                      <p className='text-xs text-muted-foreground'>
+                        Approval checks required profile details and documents
+                        and will explain any remaining requirement.
+                      </p>
+                    )}
+                  </>
                 )}
               </section>
             )}
@@ -1616,29 +1629,33 @@ export default function Teams() {
                           </p>
                         )}
                       </div>
-                      {item.document_id && item.status !== 'rejected' && (
-                        <Button
-                          size='sm'
-                          variant='outline'
-                          disabled={reviewBusy}
-                          onClick={() =>
-                            void handleReviewAction(item.document_id!, true)
-                          }
-                        >
-                          Reject document
-                        </Button>
-                      )}
-                      {item.document_id && item.status !== 'approved' && (
-                        <Button
-                          size='sm'
-                          disabled={reviewBusy}
-                          onClick={() =>
-                            void handleReviewAction(item.document_id!)
-                          }
-                        >
-                          Approve document
-                        </Button>
-                      )}
+                      {documentsMember?.profile_submitted_at &&
+                        item.document_id &&
+                        item.status !== 'rejected' && (
+                          <Button
+                            size='sm'
+                            variant='outline'
+                            disabled={reviewBusy}
+                            onClick={() =>
+                              void handleReviewAction(item.document_id!, true)
+                            }
+                          >
+                            Reject document
+                          </Button>
+                        )}
+                      {documentsMember?.profile_submitted_at &&
+                        item.document_id &&
+                        item.status !== 'approved' && (
+                          <Button
+                            size='sm'
+                            disabled={reviewBusy}
+                            onClick={() =>
+                              void handleReviewAction(item.document_id!)
+                            }
+                          >
+                            Approve document
+                          </Button>
+                        )}
                       {documentsMember?.id && item.document_id && (
                         <Button
                           size='sm'

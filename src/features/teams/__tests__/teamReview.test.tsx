@@ -132,11 +132,6 @@ it('lets an admin review the profile and certificate before approving the accoun
       })
     )
   );
-  await waitFor(() =>
-    expect(screen.getByLabelText('Reason for requested changes')).toHaveValue(
-      ''
-    )
-  );
 });
 
 it.each(['JPG', 'PNG', 'PDF'])(
@@ -196,6 +191,38 @@ it('shows a pending invitation without offering profile review before acceptance
   ).not.toBeInTheDocument();
 });
 
+it('does not offer approval or rejection after acceptance but before profile submission', async () => {
+  vi.mocked(fetchWithAuth).mockResolvedValue({
+    ok: true,
+    json: async () => [
+      {
+        id: 'accepted-incomplete',
+        firstname: 'Accepted',
+        lastname: 'Incomplete',
+        email: 'accepted@example.test',
+        role: 'doula',
+        invitation_status: 'accepted',
+        account_status: 'pending',
+        profile_review_status: 'draft',
+        profile_submitted_at: null,
+      },
+    ],
+  } as Response);
+  render(<Teams />);
+  expect(await screen.findByText('accepted@example.test')).toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: 'Review profile & documents' })
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: 'Approve profile' })
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', {
+      name: 'Reject profile and request changes',
+    })
+  ).not.toBeInTheDocument();
+});
+
 it('allows document rejection in Teams with a required reason', async () => {
   render(<Teams />);
   fireEvent.click(
@@ -226,6 +253,11 @@ it('allows document rejection in Teams with a required reason', async () => {
           rejection_reason: 'Please upload a readable certificate.',
         }),
       })
+    )
+  );
+  await waitFor(() =>
+    expect(screen.getByLabelText('Reason for requested changes')).toHaveValue(
+      ''
     )
   );
 });
