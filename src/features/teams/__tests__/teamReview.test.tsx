@@ -132,6 +132,11 @@ it('lets an admin review the profile and certificate before approving the accoun
       })
     )
   );
+  await waitFor(() =>
+    expect(screen.getByLabelText('Reason for requested changes')).toHaveValue(
+      ''
+    )
+  );
 });
 
 it.each(['JPG', 'PNG', 'PDF'])(

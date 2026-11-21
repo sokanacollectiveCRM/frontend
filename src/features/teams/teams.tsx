@@ -385,7 +385,7 @@ export default function Teams() {
         throw new Error(data.error || 'Could not approve. Please try again.');
       if (documentId) {
         await handleOpenDocuments(documentsMember);
-        setReviewReason(reviewReason);
+        setReviewReason('');
         toast.success(
           requestChanges
             ? documentsMember.profile_review_status === 'submitted'
