@@ -8,7 +8,7 @@ import {
 } from '@/api/doulas/doulaService';
 import { AlertTriangle } from 'lucide-react';
 import { Link, Outlet } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   REQUIRED_DOULA_DOCUMENT_TYPES,
   backgroundCheckSatisfied,
@@ -100,15 +100,13 @@ export default function DoulaDashboard() {
     }
   };
 
-  const outletContext: DoulaDashboardOutletContext = {
-    onProfileStatusChange: ({
-      isComplete,
-      missingFields: updatedMissingFields,
-    }) => {
-      setIsProfileComplete(isComplete);
-      setMissingFields(updatedMissingFields);
-    },
-  };
+  const onProfileStatusChange = useCallback<
+    DoulaDashboardOutletContext['onProfileStatusChange']
+  >(({ isComplete, missingFields: updatedMissingFields }) => {
+    setIsProfileComplete(isComplete);
+    setMissingFields(updatedMissingFields);
+  }, []);
+  const outletContext: DoulaDashboardOutletContext = { onProfileStatusChange };
 
   return (
     <div className='flex h-[calc(100dvh-3rem-env(safe-area-inset-top))] min-w-0 flex-col overflow-hidden lg:h-dvh'>

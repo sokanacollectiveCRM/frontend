@@ -1,4 +1,5 @@
 import {
+  act,
   render,
   screen,
   fireEvent,
@@ -7,6 +8,14 @@ import {
   within,
 } from '@testing-library/react';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  MemoryRouter,
+  Route,
+  Routes,
+  useOutletContext,
+} from 'react-router-dom';
+import DoulaDashboard from '@/features/doula-dashboard/DoulaDashboard';
+import type { DoulaDashboardOutletContext } from '@/features/doula-dashboard/doulaDashboardTypes';
 import ProfileTab from '@/features/doula-dashboard/components/ProfileTab';
 import * as api from '@/api/doulas/doulaService';
 const { setUser, preloadImage } = vi.hoisted(() => ({
@@ -15,6 +24,9 @@ const { setUser, preloadImage } = vi.hoisted(() => ({
 }));
 vi.mock('@/common/hooks/user/useUser', () => ({
   useUser: () => ({ setUser }),
+}));
+vi.mock('@/common/components/user/ProfileDropdown', () => ({
+  ProfileDropdown: () => null,
 }));
 vi.mock('@/common/components/user/UserAvatar', () => ({
   default: () => <div>Avatar</div>,
@@ -125,6 +137,44 @@ async function open(step = 'About you') {
   );
 }
 describe('doula profile layout', () => {
+  it('keeps typed phone and bio when the dashboard refreshes document status', async () => {
+    function ProfilePage() {
+      const { onProfileStatusChange } =
+        useOutletContext<DoulaDashboardOutletContext>();
+      return <ProfileTab onProfileStatusChange={onProfileStatusChange} />;
+    }
+
+    await act(async () => {
+      render(
+        <MemoryRouter initialEntries={['/doula-dashboard/profile']}>
+          <Routes>
+            <Route path='/doula-dashboard' element={<DoulaDashboard />}>
+              <Route path='profile' element={<ProfilePage />} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      );
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Edit profile' }));
+    const phone = screen.getByRole('textbox', { name: /phone number/i });
+    const bio = screen.getByLabelText('About me (bio)');
+    fireEvent.change(phone, { target: { value: '2025550112' } });
+    fireEvent.change(bio, { target: { value: 'My new bio draft' } });
+
+    const profileRequests = vi.mocked(api.getDoulaProfile).mock.calls.length;
+    const documentRequests = vi.mocked(api.getDoulaDocuments).mock.calls.length;
+    await act(async () => {
+      fireEvent(window, new Event('focus'));
+    });
+
+    expect(vi.mocked(api.getDoulaDocuments).mock.calls.length).toBeGreaterThan(
+      documentRequests
+    );
+    expect(api.getDoulaProfile).toHaveBeenCalledTimes(profileRequests);
+    expect(phone).toHaveValue('202-555-0112');
+    expect(bio).toHaveValue('My new bio draft');
+  });
+
   it('saves with empty optional demographics and places bio before scheduling', async () => {
     await open();
     const bio = screen.getByLabelText('About me (bio)'),

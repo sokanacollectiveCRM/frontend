@@ -255,28 +255,6 @@ export default function ProfileTab({
     other_demographic_details: '',
   });
 
-  // Sync form data when profile changes (but only if formData hasn't been manually updated)
-  // This prevents resetting form data immediately after a successful update
-  useEffect(() => {
-    if (profile) {
-      const newFormData = profileToFormData(profile);
-      setFormData((prev) => {
-        const keys = Object.keys(newFormData) as (keyof UpdateProfileData)[];
-        const hasChanges = keys.some((key) => {
-          const next = newFormData[key];
-          const cur = prev[key];
-          if (key === 'race_ethnicity') {
-            const a = Array.isArray(next) ? next : [];
-            const b = Array.isArray(cur) ? cur : [];
-            return a.length !== b.length || a.some((v, i) => v !== b[i]);
-          }
-          return next !== cur;
-        });
-        return hasChanges ? newFormData : prev;
-      });
-    }
-  }, [profile]);
-
   const fetchProfile = useCallback(
     async (showLoading = true) => {
       if (showLoading) {
@@ -293,11 +271,9 @@ export default function ProfileTab({
           return;
         }
 
-        // Set profile - this will trigger the useEffect to update formData
         setProfile(data);
         cachedProfile = data;
 
-        // Also set formData directly as a backup to ensure it's populated
         const newFormData = profileToFormData(data);
         setFormData(newFormData);
         const missingFields = getMissingRequiredFields(newFormData);
