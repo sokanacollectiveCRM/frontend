@@ -1,3 +1,4 @@
+import type { OrganizationChoice } from '@/api/organizationContext';
 import { User } from '@/common/types/user';
 import React from 'react';
 
@@ -24,6 +25,9 @@ export type LoginResult = true | IdentityMfaPending;
 
 export interface UserContextType {
   user: User | null;
+  organizations: OrganizationChoice[];
+  loadOrganizations: () => Promise<OrganizationChoice[]>;
+  selectOrganization: (id: string) => Promise<void>;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<LoginResult>;
@@ -36,7 +40,6 @@ export interface UserContextType {
     challengeId: string,
     idToken: string
   ) => Promise<IdentityMfaPending>;
-  chooseOrganization?: () => void;
   logout: () => Promise<void>;
   checkAuth: (options?: { silent?: boolean }) => Promise<boolean>;
   googleAuth: () => Promise<void>;

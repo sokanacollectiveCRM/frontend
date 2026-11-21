@@ -16,7 +16,7 @@ function SessionLoading() {
 }
 
 export function PrivateRoute() {
-  const { user, isLoading, logout } = useUser();
+  const { user, isLoading, logout, organizations = [] } = useUser();
   const { client, isLoading: isClientLoading } = useClientAuth();
   const location = useLocation();
 
@@ -40,16 +40,23 @@ export function PrivateRoute() {
   }
 
   const next = encodeURIComponent(`${location.pathname}${location.search}`);
+  if (organizations.length > 0) {
+    return <Navigate to={`/choose-organization?next=${next}`} replace />;
+  }
   return <Navigate to={`/login?next=${next}`} replace />;
 }
 
 export function PublicOnlyRoute() {
-  const { user, isLoading } = useUser();
+  const { user, isLoading, organizations = [] } = useUser();
+  const location = useLocation();
 
   if (isLoading) {
     return <Outlet />;
   }
 
+  if (!user && organizations.length > 0) {
+    return <Navigate to={`/choose-organization${location.search}`} replace />;
+  }
   return !user ? <Outlet /> : <Navigate to='/' replace />;
 }
 

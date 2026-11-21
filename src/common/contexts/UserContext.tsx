@@ -1,9 +1,3 @@
-import { OrganizationChooser } from '@/common/components/routes/OrganizationAccessScreens';
-import {
-  organizationHeaders,
-  selectedOrganization,
-  selectOrganization,
-} from '@/api/organizationContext';
 import type {
   IdentityMfaPending,
   LoginResult,
@@ -11,16 +5,27 @@ import type {
 } from '@/common/types/auth';
 import { logFailure } from '@/utils/safeLog';
 import { User } from '@/common/types/user';
-import React, { createContext, ReactNode, useEffect, useState } from 'react';
+import React, {
+  createContext,
+  ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { buildUrl, fetchWithAuth } from '@/api/http';
+import {
+  getSelectedOrganization,
+  setSelectedOrganization,
+  organizationChoices,
+  type OrganizationChoice,
+} from '@/api/organizationContext';
 import { ApiError } from '@/api/errors';
-import { API_CONFIG } from '@/api/config';
 import { clearSessionAccessToken } from '@/api/sessionAccessToken';
 import { useIdleTimeout } from '@/common/hooks/auth/useIdleTimeout';
 import { getFirebaseAuth } from '@/lib/firebase';
-import { supabase } from '@/lib/supabase';
 import {
   confirmPasswordReset,
+  onAuthStateChanged,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
@@ -28,6 +33,9 @@ import {
 
 export const UserContext = createContext<UserContextType>({
   user: null,
+  organizations: [],
+  loadOrganizations: async () => [],
+  selectOrganization: async () => {},
   setUser: () => {},
   isLoading: false,
   login: async () => false as unknown as LoginResult,
@@ -50,22 +58,17 @@ export function UserProvider({
   children,
 }: UserProviderProps): React.ReactElement {
   const [user, setUser] = useState<User | null>(null);
+  const authenticationInProgress = useRef(false);
+  const sessionGeneration = useRef(0);
+  const [organizations, setOrganizations] = useState<OrganizationChoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [organizations, setOrganizations] = useState<
-    { id: string; name: string; slug: string }[]
-  >([]);
 
   const logout = async (): Promise<void> => {
     try {
-      if (API_CONFIG.authMode === 'supabase') {
-        await supabase.auth.signOut();
-      }
-      if (API_CONFIG.authMode === 'identity') {
-        try {
-          await signOut(getFirebaseAuth());
-        } catch {
-          // ignore Firebase sign-out failures; clear local session anyway
-        }
+      try {
+        await signOut(getFirebaseAuth());
+      } catch {
+        // ignore Firebase sign-out failures; clear the API cookie anyway
       }
       const response = await fetch(buildUrl('/auth/logout'), {
         method: 'POST',
@@ -76,42 +79,91 @@ export function UserProvider({
       logFailure('auth', 'logout_error');
     } finally {
       clearSessionAccessToken();
-      selectOrganization(null);
+      setSelectedOrganization(null);
+      setOrganizations([]);
       setUser(null);
       window.location.href = '/login';
     }
   };
 
+  const loadOrganizations = async (): Promise<OrganizationChoice[]> => {
+    // Deliberately omit the tenant header to request all permitted memberships.
+    const response = await fetch(buildUrl('/auth/me'), {
+      credentials: 'include',
+    });
+    const data = await response.json();
+    if (response.status === 409 && data.code === 'TENANT_SELECTION_REQUIRED') {
+      const choices = organizationChoices(data.tenants);
+      if (!choices.length) throw new Error('No organizations are available.');
+      setOrganizations(choices);
+      return choices;
+    }
+    if (!response.ok)
+      throw new Error(data.error || 'Could not load organizations.');
+    const choices = data.tenant ? organizationChoices([data.tenant]) : [];
+    setOrganizations(choices);
+    return choices;
+  };
+
+  const selectOrganization = async (id: string): Promise<void> => {
+    if (!organizations.some((org) => org.id === id))
+      throw new Error('Choose an available organization.');
+    const response = await fetch(buildUrl('/auth/me'), {
+      credentials: 'include',
+      headers: { 'X-Tenant-Id': id },
+    });
+    const data = await response.json();
+    if (!response.ok || data.tenant?.id !== id) {
+      throw new Error(
+        data.error || 'This organization is no longer available.'
+      );
+    }
+    setSelectedOrganization(id);
+    setUser(data);
+  };
+
+  const acceptSession = async (
+    response: Response,
+    generation = sessionGeneration.current
+  ): Promise<boolean> => {
+    const data = await response.json();
+    if (generation !== sessionGeneration.current) return false;
+    if (response.status === 409 && data.code === 'TENANT_SELECTION_REQUIRED') {
+      const choices = organizationChoices(data.tenants);
+      if (!choices.length) throw new Error('No organizations are available.');
+      setSelectedOrganization(null);
+      setUser(null);
+      setOrganizations(choices);
+      return true;
+    }
+    if (!response.ok) {
+      setUser(null);
+      setOrganizations([]);
+      return false;
+    }
+    setUser(data);
+    return true;
+  };
+
   const checkAuth = async (options?: {
     silent?: boolean;
   }): Promise<boolean> => {
+    const generation = sessionGeneration.current;
     if (!options?.silent) {
       setIsLoading(true);
     }
     try {
       // /auth/me is an unwrapped user object — do not use canonical get().
       let response = await fetchWithAuth(buildUrl('/auth/me'));
-      if (response.status === 403 && selectedOrganization()) {
-        selectOrganization(null);
+      if (response.status === 403 && getSelectedOrganization()) {
+        setSelectedOrganization(null);
         response = await fetchWithAuth(buildUrl('/auth/me'));
       }
-      if (response.status === 409) {
-        const data = await response.json();
-        if (
-          data.code === 'TENANT_SELECTION_REQUIRED' &&
-          Array.isArray(data.tenants)
-        ) {
-          setUser(null);
-          setOrganizations(data.tenants);
-          return true;
-        }
-      }
-      if (!response.ok) throw new Error('Auth check failed');
-      const userData = await response.json();
-      setUser(userData);
-      return true;
+      return await acceptSession(response, generation);
     } catch (err) {
+      if (generation !== sessionGeneration.current) return false;
       setUser(null);
+      setOrganizations([]);
       // Let login flow show actionable backend/network errors
       if (
         err instanceof ApiError &&
@@ -133,75 +185,52 @@ export function UserProvider({
     password: string
   ): Promise<LoginResult> => {
     try {
-      if (API_CONFIG.authMode === 'identity') {
-        const auth = getFirebaseAuth();
-        // Clear stale persisted Firebase sessions (password resets / prior failed
-        // logins otherwise trigger accounts:lookup 400 on init).
-        try {
-          await signOut(auth);
-        } catch {
-          // ignore
-        }
-        const cred = await signInWithEmailAndPassword(auth, email, password);
-        const idToken = await cred.user.getIdToken(true);
-        const response = await fetch(buildUrl('/auth/session'), {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ idToken }),
-        });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          throw new Error(
-            (data as { error?: string })?.error || 'Login failed'
-          );
-        }
-        if ((data as { mfaRequired?: boolean }).mfaRequired) {
-          return {
-            mfaRequired: true,
-            challengeId: String((data as { challengeId: string }).challengeId),
-            emailHint: String((data as { emailHint?: string }).emailHint || ''),
-            idToken,
-            expiresInSec: (data as { expiresInSec?: number }).expiresInSec,
-            resendAvailableInSec: (data as { resendAvailableInSec?: number })
-              .resendAvailableInSec,
-          };
-        }
-        throw new Error('Unexpected login response');
+      sessionGeneration.current += 1;
+      authenticationInProgress.current = true;
+      setSelectedOrganization(null);
+      setOrganizations([]);
+      setUser(null);
+      const auth = getFirebaseAuth();
+      // Clear stale persisted Firebase sessions (password resets / prior failed
+      // logins otherwise trigger accounts:lookup 400 on init).
+      try {
+        await signOut(auth);
+      } catch {
+        // ignore
       }
-
-      if (API_CONFIG.authMode === 'supabase') {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw new Error(error.message);
-        if (!data.session) throw new Error('No session after sign in');
-        await checkAuth();
-        return true;
-      }
-      // Backend: POST /auth/login — session is HttpOnly cookie sokana_session_token.
-      const response = await fetch(buildUrl('/auth/login'), {
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const idToken = await cred.user.getIdToken(true);
+      const response = await fetch(buildUrl('/auth/session'), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ idToken }),
       });
-      const data = await response.json().catch(() => ({}));
+      const data = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        mfaRequired?: boolean;
+        challengeId?: string;
+        emailHint?: string;
+        expiresInSec?: number;
+        resendAvailableInSec?: number;
+      };
       if (!response.ok) {
-        throw new Error((data as { error?: string })?.error || 'Login failed');
+        throw new Error(data.error || 'Login failed');
       }
-      const sessionOk = await checkAuth();
-      if (!sessionOk) {
-        clearSessionAccessToken();
-        throw new Error(
-          'Signed in, but the session could not be verified. Confirm the API URL is reachable and that cookies are allowed for this site.'
-        );
+      if (!data.mfaRequired || !data.challengeId) {
+        throw new Error('Login did not start email verification');
       }
-      return true;
+      return {
+        mfaRequired: true,
+        challengeId: data.challengeId,
+        emailHint: data.emailHint || '',
+        idToken,
+        expiresInSec: data.expiresInSec,
+        resendAvailableInSec: data.resendAvailableInSec,
+      };
     } catch (error) {
+      authenticationInProgress.current = false;
       logFailure('auth', 'login_error');
-      // Surface actionable message for "Failed to fetch" (Supabase or backend)
       if (
         error instanceof ApiError &&
         (error.options?.code === 'NETWORK_ERROR' ||
@@ -214,9 +243,7 @@ export function UserProvider({
         (error.message === 'Failed to fetch' || error.message === 'Load failed')
       ) {
         throw new Error(
-          API_CONFIG.authMode === 'identity'
-            ? 'Network error. Is the backend running at VITE_APP_BACKEND_URL (default http://localhost:5050)?'
-            : 'Network error. Check: (1) Supabase URL and anon key (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY), (2) Backend URL (VITE_APP_BACKEND_URL or VITE_API_BASE_URL) and CORS.'
+          'Network error. Could not reach the backend. Check VITE_APP_BACKEND_URL and confirm the backend is running.'
         );
       }
       throw error;
@@ -255,48 +282,18 @@ export function UserProvider({
       );
     }
 
-    // MFA verify sets HttpOnly cookie, but cross-origin browsers may not attach
-    // it on the very next request. Use the verify response token once (not
-    // localStorage) while credentials: include picks up the cookie when ready.
-    const sessionToken =
-      typeof (data as { token?: unknown }).token === 'string'
-        ? (data as { token: string }).token.trim()
-        : freshIdToken;
-    let meResponse = await fetch(buildUrl('/auth/me'), {
+    const meResponse = await fetchWithAuth(buildUrl('/auth/me'), {
       credentials: 'include',
       headers: {
-        ...organizationHeaders(),
-        Authorization: `Bearer ${sessionToken}`,
-        'X-Session-Token': sessionToken,
+        Authorization: `Bearer ${freshIdToken}`,
+        'X-Session-Token': freshIdToken,
       },
     });
-    if (meResponse.status === 403 && selectedOrganization()) {
-      selectOrganization(null);
-      meResponse = await fetch(buildUrl('/auth/me'), {
-        credentials: 'include',
-        headers: {
-          Authorization: `Bearer ${sessionToken}`,
-          'X-Session-Token': sessionToken,
-        },
-      });
-    }
-    if (meResponse.status === 409) {
-      const data = await meResponse.json();
-      if (
-        data.code === 'TENANT_SELECTION_REQUIRED' &&
-        Array.isArray(data.tenants)
-      ) {
-        setUser(null);
-        setOrganizations(data.tenants);
-        return true;
-      }
-    }
-    if (!meResponse.ok) {
+    authenticationInProgress.current = false;
+    if (!(await acceptSession(meResponse))) {
       clearSessionAccessToken();
       throw new Error('Code accepted, but session could not be verified.');
     }
-    const userData = await meResponse.json();
-    setUser(userData);
     return true;
   };
 
@@ -329,70 +326,22 @@ export function UserProvider({
   };
 
   const googleAuth = async (): Promise<void> => {
-    if (API_CONFIG.authMode === 'identity') {
-      throw new Error(
-        'Google sign-in is not enabled for Identity Platform login'
-      );
-    }
-    try {
-      const opts =
-        API_CONFIG.authMode === 'supabase'
-          ? { redirectTo: `${window.location.origin}/auth/callback` }
-          : {};
-      if (API_CONFIG.authMode === 'supabase') {
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: opts,
-        });
-        if (error) throw new Error(error.message);
-        return;
-      }
-      const response = await fetch(buildUrl('/auth/google'), {
-        credentials: 'include',
-      });
-      const { url } = await response.json();
-      if (url) {
-        window.location.href = url;
-      } else {
-        throw new Error('No authorization URL received');
-      }
-    } catch {
-      logFailure('auth', 'google_auth_error');
-      throw new Error('Failed to initialize Google authentication');
-    }
+    throw new Error('Google sign-in is not enabled');
   };
 
   const requestPasswordReset = async (email: string): Promise<boolean> => {
     try {
-      if (API_CONFIG.authMode === 'identity') {
-        // Firebase hosts the reset form at __/auth/action; continueUrl is only
-        // the post-success landing page. Prefer the configured production
-        // frontend even when reset was requested from localhost.
-        const frontendUrl = (
-          import.meta.env.VITE_APP_FRONTEND_URL || window.location.origin
-        ).replace(/\/+$/, '');
-        const continueUrl = `${frontendUrl}/login`;
-        await sendPasswordResetEmail(getFirebaseAuth(), email.trim(), {
-          url: continueUrl,
-          handleCodeInApp: false,
-        });
-        return true;
-      }
-
-      const response = await fetchWithAuth(buildUrl('/auth/reset-password'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
+      // Firebase hosts the reset form at __/auth/action; continueUrl is only
+      // the post-success landing page. Prefer the configured production
+      // frontend even when reset was requested from localhost.
+      const frontendUrl = (
+        import.meta.env.VITE_APP_FRONTEND_URL || window.location.origin
+      ).replace(/\/+$/, '');
+      const continueUrl = `${frontendUrl}/login`;
+      await sendPasswordResetEmail(getFirebaseAuth(), email.trim(), {
+        url: continueUrl,
+        handleCodeInApp: false,
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Password reset request failed');
-      }
-
       return true;
     } catch (error) {
       logFailure('auth', 'password_reset_request_error');
@@ -405,30 +354,13 @@ export function UserProvider({
     accessToken: string
   ): Promise<boolean> => {
     try {
-      if (API_CONFIG.authMode === 'identity') {
-        // accessToken is the Firebase oobCode from the reset link.
-        await confirmPasswordReset(getFirebaseAuth(), accessToken, password);
-        try {
-          await signOut(getFirebaseAuth());
-        } catch {
-          // ignore
-        }
-        return true;
+      // accessToken is the Firebase oobCode from the reset link.
+      await confirmPasswordReset(getFirebaseAuth(), accessToken, password);
+      try {
+        await signOut(getFirebaseAuth());
+      } catch {
+        // ignore
       }
-
-      const response = await fetchWithAuth(buildUrl('/auth/reset-password'), {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ password }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Password update failed');
-      }
-
       return true;
     } catch (error) {
       logFailure('auth', 'password_update_error');
@@ -437,20 +369,31 @@ export function UserProvider({
   };
 
   useEffect(() => {
-    void checkAuth();
-  }, []);
-
-  // After portal or OAuth sign-in, refresh /auth/me so user.role is authoritative.
-  useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'INITIAL_SESSION') return;
-      void checkAuth({ silent: true });
-    });
-    return () => {
-      subscription.unsubscribe();
-    };
+    let unsubscribe = () => {};
+    try {
+      const auth = getFirebaseAuth();
+      unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+        void (async () => {
+          const generation = ++sessionGeneration.current;
+          if (!firebaseUser) {
+            setUser(null);
+            setOrganizations([]);
+            setIsLoading(false);
+            return;
+          }
+          if (authenticationInProgress.current) return;
+          const sessionOk = await checkAuth({ silent: true });
+          if (generation !== sessionGeneration.current) return;
+          if (!sessionOk) {
+            setUser(null);
+          }
+          setIsLoading(false);
+        })();
+      });
+    } catch {
+      setIsLoading(false);
+    }
+    return () => unsubscribe();
   }, []);
 
   // Auto-logout on inactivity with warning
@@ -458,6 +401,9 @@ export function UserProvider({
 
   const contextValue = {
     user,
+    organizations,
+    loadOrganizations,
+    selectOrganization,
     setUser,
     isLoading,
     login,
@@ -465,10 +411,6 @@ export function UserProvider({
     resendIdentityMfa,
     logout,
     checkAuth,
-    chooseOrganization: () => {
-      selectOrganization(null);
-      window.location.assign('/');
-    },
     googleAuth,
     requestPasswordReset,
     updatePassword,
@@ -476,18 +418,7 @@ export function UserProvider({
 
   return (
     <UserContext.Provider value={contextValue}>
-      {organizations.length > 0 ? (
-        <OrganizationChooser
-          organizations={organizations}
-          onSelect={(id) => {
-            selectOrganization(id);
-            window.location.assign('/');
-          }}
-          onLogout={() => void logout()}
-        />
-      ) : (
-        children
-      )}
+      {children}
       {showWarning && (
         <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50'>
           <div className='bg-white text-gray-900 rounded-lg shadow-xl p-6 max-w-sm w-full space-y-4'>

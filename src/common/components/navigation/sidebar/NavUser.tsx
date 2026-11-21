@@ -1,8 +1,7 @@
 'use client';
 
-import { ChevronsUpDown, LogOut, User } from 'lucide-react';
+import { Building2, ChevronsUpDown, LogOut, User } from 'lucide-react';
 import { logFailure } from '@/utils/safeLog';
-import { useNavigate } from 'react-router-dom';
 
 import {
   DropdownMenu,
@@ -20,36 +19,43 @@ import {
   useSidebar,
 } from '@/common/components/ui/sidebar';
 import UserAvatar from '@/common/components/user/UserAvatar';
+import { buildUrl } from '@/api/http';
+import { setSelectedOrganization } from '@/api/organizationContext';
 import { useUser } from '@/common/hooks/user/useUser';
+import { getFirebaseAuth } from '@/lib/firebase';
+import { signOut } from 'firebase/auth';
 import { useClientAuth } from '@/common/hooks/auth/useClientAuth';
-import { supabase } from '@/lib/supabase';
 import { Link } from 'react-router-dom';
+import { useDoulaIdentity } from '@/features/doula-dashboard/useDoulaIdentity';
 
 //
 // This is the user profile card at the footer of the sidebar
 //
 export function NavUser() {
   const { isMobile } = useSidebar();
-  const { user, logout, chooseOrganization } = useUser();
+  const { user, logout } = useUser();
+  const doulaIdentity = useDoulaIdentity();
   const { client } = useClientAuth();
-  const navigate = useNavigate();
 
-  // Handle logout for Supabase clients
   const handleClientLogout = async () => {
     try {
-      await supabase.auth.signOut();
-      // Use window.location.href to force full page navigation and clear all state
-      window.location.href = '/auth/client-login';
-    } catch (error) {
+      await signOut(getFirebaseAuth());
+      await fetch(buildUrl('/auth/logout'), {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch {
       logFailure('ui', 'client_logout_error');
-      // Still navigate even if signOut fails - force full page reload
+    } finally {
+      setSelectedOrganization(null);
       window.location.href = '/auth/client-login';
     }
   };
 
   // Show for backend users (admin/doula)
   if (user) {
-    const name = `${user.firstname ?? ''} ${user.lastname ?? ''}`.trim();
+    const name = doulaIdentity.name;
+    const profilePicture = doulaIdentity.profilePicture;
 
     return (
       <SidebarMenu>
@@ -61,7 +67,7 @@ export function NavUser() {
                 className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
               >
                 <UserAvatar
-                  profile_picture={user.profile_picture}
+                  profile_picture={profilePicture}
                   fullName={name}
                   className='h-8 w-8'
                 />
@@ -81,7 +87,7 @@ export function NavUser() {
               <DropdownMenuLabel className='p-0 font-normal'>
                 <div className='flex items-center gap-2 px-1 py-1.5 text-left text-sm'>
                   <UserAvatar
-                    profile_picture={user.profile_picture}
+                    profile_picture={profilePicture}
                     fullName={name}
                     className='h-8 w-8'
                   />
@@ -93,22 +99,20 @@ export function NavUser() {
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
 
-              {user.role !== 'hr' && (
-                <DropdownMenuGroup>
-                  <DropdownMenuItem asChild className='cursor-pointer'>
-                    <Link to='my-account'>
-                      <User />
-                      Account
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuGroup>
-              )}
+              <DropdownMenuGroup>
+                <DropdownMenuItem asChild className='cursor-pointer'>
+                  <Link to='my-account'>
+                    <User />
+                    Account
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className='cursor-pointer'
-                onClick={chooseOrganization}
-              >
-                Switch organization
+              <DropdownMenuItem asChild>
+                <Link to='/choose-organization'>
+                  <Building2 />
+                  Switch organization
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem className='cursor-pointer' onClick={logout}>
                 <LogOut />

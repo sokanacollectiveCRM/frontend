@@ -1,4 +1,4 @@
-import { organizationHeaders } from './organizationContext';
+import { getSelectedOrganization } from './organizationContext';
 import { API_CONFIG } from './config';
 import { ApiError } from './errors';
 import { logger } from '@/utils/logger';
@@ -126,7 +126,10 @@ export async function getRequestAuth(): Promise<{
   credentials: FetchCredentials;
   headers: Record<string, string>;
 }> {
-  const headers: Record<string, string> = organizationHeaders();
+  const tenantId = getSelectedOrganization();
+  const headers: Record<string, string> = tenantId
+    ? { 'X-Tenant-Id': tenantId }
+    : {};
   if (API_CONFIG.authMode === 'supabase') {
     const token = await getSupabaseTokenSafe();
     if (token) {

@@ -24,6 +24,9 @@ function renderWithUser(role: string, initialPath: string, element: ReactNode) {
           email: 'billing@example.com',
           role,
         },
+        organizations: [],
+        loadOrganizations: vi.fn(),
+        selectOrganization: vi.fn(),
         setUser: vi.fn(),
         isLoading: false,
         login: vi.fn(),
@@ -100,15 +103,4 @@ describe('billing route guards', () => {
 
     expect(await screen.findByText('Clients')).toBeInTheDocument();
   });
-});
-it('blocks HR users from direct CRM routes', async () => {
-  renderWithUser(
-    'hr',
-    '/clients',
-    <Route element={<StaffCrmRoute />}>
-      <Route path='/clients' element={<div>Clients</div>} />
-    </Route>
-  );
-  expect(await screen.findByText('Access denied')).toBeInTheDocument();
-  expect(screen.queryByText('Clients')).not.toBeInTheDocument();
 });

@@ -5,6 +5,7 @@ import { AuthPublicRoutes, AuthRoutes } from '@/features/auth/AuthRoutes';
 import ClientLogin from '@/features/auth/ClientLogin';
 import RequestPasswordReset from '@/features/auth/RequestPasswordReset';
 import AcceptInvite from '@/features/auth/AcceptInvite';
+import ChooseOrganization from '@/features/auth/ChooseOrganization';
 import SetPassword from '@/features/auth/SetPassword';
 import VerifyEmail from '@/features/auth/VerifyEmail';
 import { EmailVerifiedRoute } from '@/common/components/routes/EmailVerifiedRoute';
@@ -54,6 +55,7 @@ const AppRoutes = () => (
     <Route path='/auth/verify-email' element={<VerifyEmail />} />
     <Route path='/auth/client-login' element={<ClientLogin />} />
     <Route path='/accept-invite' element={<AcceptInvite />} />
+    <Route path='/choose-organization' element={<ChooseOrganization />} />
     <Route path='/signing/:token' element={<LegacySigningRedirect />} />
     <Route path='/signing' element={<PublicSigningEntry />} />
 
