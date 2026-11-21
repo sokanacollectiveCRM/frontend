@@ -68,7 +68,7 @@ let cachedProfile: DoulaProfile | null = null;
 const PROFILE_STEPS = [
   'About you',
   'Address',
-  'Certifications',
+  'Photo & training',
   'Documents',
   'Scheduling',
   'Demographics',
