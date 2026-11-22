@@ -821,11 +821,29 @@ export default function ProfileTab({
                 aria-busy={isSaving}
                 disabled={isSaving}
               >
-                {isSaving ? 'Saving...' : 'Save Changes'}
+                {isSubmittingReview
+                  ? 'Submitting for review…'
+                  : isSaving
+                    ? 'Saving…'
+                    : 'Save Changes'}
               </Button>
             )}
           </div>
         </div>
+        {isSubmittingReview && (
+          <div
+            role='status'
+            className='rounded-lg border border-blue-300 bg-blue-50 p-3 text-blue-950'
+          >
+            <p className='font-medium'>
+              Profile complete — submitting for review
+            </p>
+            <p className='text-sm'>
+              We’re notifying you and the Sokana team. Please keep this page
+              open until submission is confirmed.
+            </p>
+          </div>
+        )}
         <ol
           aria-label='Profile steps'
           className='grid grid-cols-7 gap-1 sm:gap-2'
@@ -1802,7 +1820,11 @@ export default function ProfileTab({
                 Cancel
               </Button>
               <Button type='submit' disabled={isSaving}>
-                {isSaving ? 'Saving...' : 'Save Changes'}
+                {isSubmittingReview
+                  ? 'Submitting for review…'
+                  : isSaving
+                    ? 'Saving…'
+                    : 'Save Changes'}
               </Button>
             </>
           ) : (

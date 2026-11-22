@@ -114,16 +114,10 @@ export default function DoulaDashboard() {
   }, []);
   const outletContext: DoulaDashboardOutletContext = { onProfileStatusChange };
   const totalRequiredItems =
-    REQUIRED_PROFILE_FIELDS.length +
-    1 +
-    REQUIRED_DOULA_DOCUMENT_TYPES.length +
-    1;
+    REQUIRED_PROFILE_FIELDS.length + 1 + REQUIRED_DOULA_DOCUMENT_TYPES.length;
   const completedRequiredItems = Math.max(
     0,
-    totalRequiredItems -
-      missingFields.length -
-      missingDocuments.length -
-      (backgroundPending ? 1 : 0)
+    totalRequiredItems - missingFields.length - missingDocuments.length
   );
   const completionPercent = Math.round(
     (completedRequiredItems / totalRequiredItems) * 100
@@ -188,7 +182,13 @@ export default function DoulaDashboard() {
           {profileChecked && documentsChecked && !documentsError && (
             <p className='mt-2 text-sm text-muted-foreground'>
               {completedRequiredItems} of {totalRequiredItems} required profile
-              and document items complete.
+              and upload items complete.
+            </p>
+          )}
+          {completionPercent === 100 && backgroundPending && (
+            <p className='mt-1 text-sm text-muted-foreground'>
+              Your setup is complete. Background clearance is reviewed
+              separately by HR/payroll and does not hold up submission.
             </p>
           )}
         </section>

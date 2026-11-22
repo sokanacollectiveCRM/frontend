@@ -197,6 +197,13 @@ describe('doula profile layout', () => {
   });
 
   it('submits for review after the final required field autosaves', async () => {
+    let resolveSubmission!: (value: { profile_submitted_at: string }) => void;
+    vi.mocked(api.submitDoulaProfile).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveSubmission = resolve;
+        })
+    );
     profile = {
       ...initial,
       bio: '',
@@ -238,6 +245,17 @@ describe('doula profile layout', () => {
     await waitFor(() =>
       expect(api.submitDoulaProfile).toHaveBeenCalledTimes(1)
     );
+    expect(
+      await screen.findByText('Profile complete — submitting for review')
+    ).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: 'Save changes at top' })
+    ).toHaveTextContent('Submitting for review…');
+    await act(async () => {
+      resolveSubmission({
+        profile_submitted_at: '2026-10-13T12:00:00Z',
+      });
+    });
     expect(
       await screen.findByText('Waiting for admin review')
     ).toBeInTheDocument();

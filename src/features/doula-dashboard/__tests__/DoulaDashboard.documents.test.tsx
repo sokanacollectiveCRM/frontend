@@ -52,9 +52,9 @@ it('flags missing and rejected required documents at the dashboard top and refre
   await waitFor(() =>
     expect(
       screen.getByRole('progressbar', { name: 'Profile setup progress' })
-    ).toHaveAttribute('aria-valuenow', '67')
+    ).toHaveAttribute('aria-valuenow', '73')
   );
-  expect(screen.getByText(/8 of 12 required/)).toBeVisible();
+  expect(screen.getByText(/8 of 11 required/)).toBeVisible();
   expect(screen.queryByText(/liability insurance/i)).not.toBeInTheDocument();
   vi.mocked(getDoulaDocuments).mockResolvedValue({
     documents: ['training_certificate', 'w9', 'direct_deposit_form'].map(
@@ -68,6 +68,10 @@ it('flags missing and rejected required documents at the dashboard top and refre
       screen.queryByText('Required documents need attention')
     ).not.toBeInTheDocument()
   );
+  expect(
+    screen.getByRole('progressbar', { name: 'Profile setup progress' })
+  ).toHaveAttribute('aria-valuenow', '100');
+  expect(screen.getByText(/11 of 11 required/)).toBeVisible();
 });
 it('shows a retry path if document status cannot be loaded', async () => {
   vi.mocked(getDoulaDocuments).mockRejectedValue(new Error('offline'));
