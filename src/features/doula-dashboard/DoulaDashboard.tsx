@@ -39,8 +39,10 @@ export default function DoulaDashboard() {
   const [missingDocuments, setMissingDocuments] = useState<string[]>([]);
   const [backgroundPending, setBackgroundPending] = useState(false);
   const [documentsError, setDocumentsError] = useState(false);
+  const [documentsChecked, setDocumentsChecked] = useState(false);
   const [isProfileComplete, setIsProfileComplete] = useState(true);
   const [missingFields, setMissingFields] = useState<string[]>([]);
+  const [profileChecked, setProfileChecked] = useState(false);
 
   useEffect(() => {
     fetchProfileCompletion();
@@ -71,6 +73,8 @@ export default function DoulaDashboard() {
         setDocumentsError(false);
       } catch {
         if (mounted && request === generation) setDocumentsError(true);
+      } finally {
+        if (mounted && request === generation) setDocumentsChecked(true);
       }
     };
     void refresh();
@@ -97,6 +101,8 @@ export default function DoulaDashboard() {
       // Keep dashboard usable when profile check fails.
       setMissingFields([]);
       setIsProfileComplete(true);
+    } finally {
+      setProfileChecked(true);
     }
   };
 
@@ -107,6 +113,21 @@ export default function DoulaDashboard() {
     setMissingFields(updatedMissingFields);
   }, []);
   const outletContext: DoulaDashboardOutletContext = { onProfileStatusChange };
+  const totalRequiredItems =
+    REQUIRED_PROFILE_FIELDS.length +
+    1 +
+    REQUIRED_DOULA_DOCUMENT_TYPES.length +
+    1;
+  const completedRequiredItems = Math.max(
+    0,
+    totalRequiredItems -
+      missingFields.length -
+      missingDocuments.length -
+      (backgroundPending ? 1 : 0)
+  );
+  const completionPercent = Math.round(
+    (completedRequiredItems / totalRequiredItems) * 100
+  );
 
   return (
     <div className='flex h-[calc(100dvh-3rem-env(safe-area-inset-top))] min-w-0 flex-col overflow-hidden lg:h-dvh'>
@@ -130,6 +151,47 @@ export default function DoulaDashboard() {
         aria-label='Doula dashboard content'
         className='min-h-0 flex-1 overflow-y-auto px-4 pt-4 pb-4 sm:px-6 sm:pt-6'
       >
+        <section
+          aria-label='Doula profile completion'
+          className='mb-6 rounded-2xl border bg-card p-4'
+        >
+          <div className='mb-2 flex items-center justify-between gap-3'>
+            <p className='font-medium'>Profile setup progress</p>
+            <span className='text-sm font-semibold'>
+              {profileChecked && documentsChecked && !documentsError
+                ? `${completionPercent}%`
+                : 'Checking…'}
+            </span>
+          </div>
+          <div
+            role='progressbar'
+            aria-label='Profile setup progress'
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={
+              profileChecked && documentsChecked && !documentsError
+                ? completionPercent
+                : undefined
+            }
+            className='h-2.5 overflow-hidden rounded-full bg-muted'
+          >
+            <div
+              className='h-full rounded-full bg-primary transition-[width] duration-300 motion-reduce:transition-none'
+              style={{
+                width:
+                  profileChecked && documentsChecked && !documentsError
+                    ? `${completionPercent}%`
+                    : '0%',
+              }}
+            />
+          </div>
+          {profileChecked && documentsChecked && !documentsError && (
+            <p className='mt-2 text-sm text-muted-foreground'>
+              {completedRequiredItems} of {totalRequiredItems} required profile
+              and document items complete.
+            </p>
+          )}
+        </section>
         {(missingDocuments.length > 0 ||
           backgroundPending ||
           documentsError) && (
@@ -162,7 +224,7 @@ export default function DoulaDashboard() {
               size='sm'
               className='mt-3 bg-amber-600 hover:bg-amber-700'
             >
-              <Link to='/doula-dashboard/profile?step=documents'>
+              <Link to='/doula-dashboard/profile?step=documents#profile-step-heading'>
                 Review Documents
               </Link>
             </Button>

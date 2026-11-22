@@ -45,7 +45,16 @@ it('flags missing and rejected required documents at the dashboard top and refre
   ).toBeInTheDocument();
   expect(
     screen.getByRole('link', { name: 'Review Documents' })
-  ).toHaveAttribute('href', '/doula-dashboard/profile?step=documents');
+  ).toHaveAttribute(
+    'href',
+    '/doula-dashboard/profile?step=documents#profile-step-heading'
+  );
+  await waitFor(() =>
+    expect(
+      screen.getByRole('progressbar', { name: 'Profile setup progress' })
+    ).toHaveAttribute('aria-valuenow', '67')
+  );
+  expect(screen.getByText(/8 of 12 required/)).toBeVisible();
   expect(screen.queryByText(/liability insurance/i)).not.toBeInTheDocument();
   vi.mocked(getDoulaDocuments).mockResolvedValue({
     documents: ['training_certificate', 'w9', 'direct_deposit_form'].map(

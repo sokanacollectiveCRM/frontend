@@ -196,6 +196,65 @@ describe('doula profile layout', () => {
     expect(await screen.findByText(/^Saved /)).toBeVisible();
   });
 
+  it('submits for review after the final required field autosaves', async () => {
+    profile = {
+      ...initial,
+      bio: '',
+      account_status: 'pending',
+      profile_review_status: 'draft',
+      profile_submitted_at: null,
+    };
+    vi.mocked(api.getDoulaDocuments).mockResolvedValue({
+      backgroundCheck: { status: 'not_cleared', setAt: null, setBy: null },
+      documents: [
+        { id: 'w9', documentType: 'w9', status: 'uploaded' } as any,
+        {
+          id: 'deposit',
+          documentType: 'direct_deposit_form',
+          status: 'uploaded',
+        } as any,
+        {
+          id: 'training',
+          documentType: 'training_certificate',
+          status: 'uploaded',
+        } as any,
+      ],
+    });
+    await open();
+    fireEvent.change(screen.getByLabelText('About me (bio)'), {
+      target: { value: 'The final fictional required profile detail' },
+    });
+
+    await waitFor(
+      () =>
+        expect(api.updateDoulaProfile).toHaveBeenCalledWith(
+          expect.objectContaining({
+            bio: 'The final fictional required profile detail',
+          }),
+          { autosave: true }
+        ),
+      { timeout: 2000 }
+    );
+    await waitFor(() =>
+      expect(api.submitDoulaProfile).toHaveBeenCalledTimes(1)
+    );
+    expect(
+      await screen.findByText('Waiting for admin review')
+    ).toBeInTheDocument();
+  });
+
+  it('opens directly on Documents when requested by the dashboard', async () => {
+    render(<ProfileTab initialStep='documents' />);
+    expect(
+      await screen.findByRole('heading', { name: 'Documents' })
+    ).toBeVisible();
+    expect(screen.getByText('Profile document grid')).toBeVisible();
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '4'
+    );
+  });
+
   it('saves with empty optional demographics and places bio before scheduling', async () => {
     await open();
     const bio = screen.getByLabelText('About me (bio)'),

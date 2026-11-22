@@ -191,6 +191,11 @@ export default function ProfileTab({
     if (initialStep === 'documents') {
       setActiveStep(3);
       setIsEditing(true);
+      window.requestAnimationFrame(() =>
+        document
+          .getElementById('profile-step-heading')
+          ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      );
     }
   }, [initialStep]);
   const editingInitialized = useRef(false);
@@ -214,18 +219,25 @@ export default function ProfileTab({
       setCheckingDocuments(true);
       try {
         const data = await getDoulaDocuments();
-        if (mounted && request === generation)
-          setHasRequiredDocuments(
-            REQUIRED_DOULA_DOCUMENT_TYPES.every((type) =>
-              data.documents.some(
-                (doc) =>
-                  doc.documentType === type &&
-                  ['uploaded', 'approved'].includes(doc.status)
-              )
-            ) && backgroundCheckSatisfied(data.backgroundCheck?.status)
+        if (mounted && request === generation) {
+          const uploadsComplete = REQUIRED_DOULA_DOCUMENT_TYPES.every((type) =>
+            data.documents.some(
+              (doc) =>
+                doc.documentType === type &&
+                ['uploaded', 'approved'].includes(doc.status)
+            )
           );
+          setHasRequiredUploads(uploadsComplete);
+          setHasRequiredDocuments(
+            uploadsComplete &&
+              backgroundCheckSatisfied(data.backgroundCheck?.status)
+          );
+        }
       } catch {
-        if (mounted && request === generation) setHasRequiredDocuments(false);
+        if (mounted && request === generation) {
+          setHasRequiredUploads(false);
+          setHasRequiredDocuments(false);
+        }
       } finally {
         if (mounted && request === generation) setCheckingDocuments(false);
       }
@@ -239,6 +251,7 @@ export default function ProfileTab({
       window.removeEventListener('focus', refreshDocuments);
     };
   }, []);
+  const [hasRequiredUploads, setHasRequiredUploads] = useState(false);
   const [hasRequiredDocuments, setHasRequiredDocuments] = useState(false);
   const [isUploadingPicture, setIsUploadingPicture] = useState(false);
   const [languageDraft, setLanguageDraft] = useState('');
@@ -265,6 +278,8 @@ export default function ProfileTab({
     other_demographic_details: '',
   });
   latestFormData.current = formData;
+  const hasUnsavedChanges =
+    hasLoadedForm.current && JSON.stringify(formData) !== lastAutosaved.current;
 
   const saveProfileNow = useCallback(async () => {
     if (autosaveInFlight.current || savingRef.current) return;
@@ -364,9 +379,10 @@ export default function ProfileTab({
       !profile ||
       isLoading ||
       isSaving ||
-      isEditing ||
+      autosaveState !== 'saved' ||
+      hasUnsavedChanges ||
       checkingDocuments ||
-      !hasRequiredDocuments ||
+      !hasRequiredUploads ||
       getMissingRequiredFields(formData).length > 0
     ) {
       return;
@@ -386,7 +402,7 @@ export default function ProfileTab({
       profile.id,
       reviewStatus,
       profile.profile_review_version ?? 0,
-      hasRequiredDocuments,
+      hasRequiredUploads,
       formData.firstname,
       formData.lastname,
       formData.phone_number,
@@ -432,9 +448,10 @@ export default function ProfileTab({
     profile,
     isLoading,
     isSaving,
-    isEditing,
+    autosaveState,
+    hasUnsavedChanges,
     checkingDocuments,
-    hasRequiredDocuments,
+    hasRequiredUploads,
     formData,
   ]);
 
@@ -716,11 +733,11 @@ export default function ProfileTab({
           return false;
         }
       }
-      if (step === 3 && (checkingDocuments || !hasRequiredDocuments)) {
+      if (step === 3 && (checkingDocuments || !hasRequiredUploads)) {
         toast.error(
           checkingDocuments
             ? 'Wait for documents to finish loading.'
-            : 'Upload all required documents and wait for HR/payroll to clear the background check in Documents.'
+            : 'Upload all required documents in Documents.'
         );
         showStep(3);
         return false;
