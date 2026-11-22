@@ -1,5 +1,5 @@
 import { hasCertificationDetails } from '@/features/doula-dashboard/certifications';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import CertificationsList from '@/features/doula-dashboard/components/CertificationsList';
 import { Button } from '@/common/components/ui/button';
 import { Input } from '@/common/components/ui/input';
@@ -8,19 +8,14 @@ import type { Certification } from '@/api/doulas/doulaService';
 
 export default function CertificationsFields({
   value,
-  savedValue,
   onChange,
-  onOpenDocuments,
 }: {
-  onOpenDocuments?: () => void;
   value: Certification[];
-  savedValue: Certification[] | undefined;
   onChange: (value: Certification[]) => void;
 }) {
   const [editing, setEditing] = useState<Record<number, Certification | null>>(
     {}
   );
-  useEffect(() => setEditing({}), [savedValue]);
   const remove = (index: number) => {
     onChange(value.filter((_, i) => i !== index));
     setEditing((originals) =>
@@ -58,21 +53,8 @@ export default function CertificationsFields({
         Certifications &amp; training
       </h3>
       <p className='text-sm text-muted-foreground'>
-        List your certifications here.{' '}
-        <a
-          className='underline'
-          href='/doula-dashboard/profile?step=documents'
-          onClick={
-            onOpenDocuments
-              ? (event) => {
-                  event.preventDefault();
-                  onOpenDocuments();
-                }
-              : undefined
-          }
-        >
-          Upload your Doula training certificate in Documents.
-        </a>
+        List your certifications here, then upload your Doula training
+        certificate below.
       </p>
       {value.map((certification, index) => (
         <div
@@ -210,7 +192,7 @@ export default function CertificationsFields({
                   No expiration
                 </Label>
               </div>
-              <div className='flex gap-2 md:col-span-3'>
+              <div className='flex flex-wrap gap-3 md:col-span-3'>
                 <Button
                   type='button'
                   variant='outline'
@@ -256,7 +238,7 @@ export default function CertificationsFields({
       </Button>
       {Object.keys(editing).length > 0 && (
         <p className='text-sm text-muted-foreground'>
-          Use Save Changes below to save your certifications.
+          Certification changes save automatically after you finish typing.
         </p>
       )}
       {hasUnnamedCertification && (

@@ -206,7 +206,8 @@ export async function uploadDoulaProfilePicture(
 }
 
 export async function updateDoulaProfile(
-  data: UpdateProfileData
+  data: UpdateProfileData,
+  options: { autosave?: boolean } = {}
 ): Promise<DoulaProfile> {
   // Log the payload being sent
 
@@ -214,6 +215,7 @@ export async function updateDoulaProfile(
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
+      ...(options.autosave ? { 'X-Profile-Autosave': 'true' } : {}),
     },
     credentials: 'include', // Ensure cookies are sent
     body: JSON.stringify(data),

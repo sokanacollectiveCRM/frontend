@@ -68,7 +68,7 @@ let cachedProfile: DoulaProfile | null = null;
 const PROFILE_STEPS = [
   'About you',
   'Address',
-  'Photo & training',
+  'Profile photo',
   'Documents',
   'Scheduling',
   'Demographics',
@@ -178,6 +178,10 @@ export default function ProfileTab({
   const [profile, setProfile] = useState<DoulaProfile | null>(cachedProfile);
   const [isLoading, setIsLoading] = useState(!cachedProfile);
   const [isSaving, setIsSaving] = useState(false);
+  const [autosaveState, setAutosaveState] = useState<
+    'saved' | 'saving' | 'error'
+  >('saved');
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [phoneError, setPhoneError] = useState(false);
   const [activeStep, setActiveStep] = useState(
     initialStep === 'documents' ? 3 : 0
@@ -194,6 +198,12 @@ export default function ProfileTab({
   const [stepDirection, setStepDirection] = useState(1);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const savingRef = useRef(false);
+  const autosaveInFlight = useRef(false);
+  const hasLoadedForm = useRef(Boolean(cachedProfile));
+  const lastAutosaved = useRef(
+    cachedProfile ? JSON.stringify(profileToFormData(cachedProfile)) : ''
+  );
+  const latestFormData = useRef<UpdateProfileData>({});
   const [checkingDocuments, setCheckingDocuments] = useState(true);
 
   useEffect(() => {
@@ -254,6 +264,44 @@ export default function ProfileTab({
     race_ethnicity_other: '',
     other_demographic_details: '',
   });
+  latestFormData.current = formData;
+
+  const saveProfileNow = useCallback(async () => {
+    if (autosaveInFlight.current || savingRef.current) return;
+    const certifications = latestFormData.current.certifications ?? [];
+    if (
+      certifications.some(
+        (entry) => hasCertificationDetails(entry) && !entry.name.trim()
+      )
+    ) {
+      return;
+    }
+
+    autosaveInFlight.current = true;
+    setAutosaveState('saving');
+    try {
+      while (JSON.stringify(latestFormData.current) !== lastAutosaved.current) {
+        const snapshot = JSON.stringify(latestFormData.current);
+        const profilePayload = { ...latestFormData.current };
+        delete profilePayload.availability_status;
+        delete profilePayload.availability_note;
+        delete profilePayload.unavailable_from;
+        delete profilePayload.unavailable_until;
+        const updated = await updateDoulaProfile(profilePayload, {
+          autosave: true,
+        });
+        setProfile(updated);
+        cachedProfile = updated;
+        lastAutosaved.current = snapshot;
+      }
+      setSavedAt(new Date());
+      setAutosaveState('saved');
+    } catch {
+      setAutosaveState('error');
+    } finally {
+      autosaveInFlight.current = false;
+    }
+  }, []);
 
   const fetchProfile = useCallback(
     async (showLoading = true) => {
@@ -276,6 +324,9 @@ export default function ProfileTab({
 
         const newFormData = profileToFormData(data);
         setFormData(newFormData);
+        hasLoadedForm.current = true;
+        lastAutosaved.current = JSON.stringify(newFormData);
+        setAutosaveState('saved');
         const missingFields = getMissingRequiredFields(newFormData);
         if (!editingInitialized.current) {
           setIsEditing(initialStep === 'documents' || missingFields.length > 0);
@@ -300,6 +351,13 @@ export default function ProfileTab({
   useEffect(() => {
     void fetchProfile(!cachedProfile);
   }, [fetchProfile]);
+
+  useEffect(() => {
+    if (!hasLoadedForm.current || !isEditing || isSaving) return;
+    if (JSON.stringify(formData) === lastAutosaved.current) return;
+    const timer = window.setTimeout(() => void saveProfileNow(), 700);
+    return () => window.clearTimeout(timer);
+  }, [formData, isEditing, isSaving, saveProfileNow]);
 
   useEffect(() => {
     if (
@@ -485,7 +543,7 @@ export default function ProfileTab({
       .filter(hasCertificationDetails);
     if (nextFormData.certifications.some((entry) => !entry.name)) {
       showStep(
-        2,
+        3,
         `cert-${(formData.certifications ?? []).findIndex((entry) => hasCertificationDetails(entry) && !entry.name.trim())}-name`
       );
       toast.error('Enter a name for each certification or remove the entry.');
@@ -564,6 +622,7 @@ export default function ProfileTab({
 
       const desiredStatus = availability_status || 'available';
       await updateDoulaProfile(profilePayload);
+      lastAutosaved.current = JSON.stringify(nextFormData);
 
       const availabilitySnapshot = await getDoulaAvailability();
       const unavailableRecords = availabilitySnapshot.records.filter(
@@ -645,7 +704,7 @@ export default function ProfileTab({
         showStep(step, missing[0]);
         return false;
       }
-      if (step === 2) {
+      if (step === 3) {
         const unnamed = (formData.certifications ?? []).findIndex(
           (entry) => hasCertificationDetails(entry) && !entry.name.trim()
         );
@@ -653,7 +712,7 @@ export default function ProfileTab({
           toast.error(
             'Enter a name for each certification or remove the entry.'
           );
-          showStep(2, `cert-${unnamed}-name`);
+          showStep(3, `cert-${unnamed}-name`);
           return false;
         }
       }
@@ -721,6 +780,20 @@ export default function ProfileTab({
             </p>
           </div>
           <div className='flex flex-wrap items-center gap-3'>
+            {isEditing && (
+              <span
+                className={`text-xs font-medium ${autosaveState === 'error' ? 'text-red-700' : autosaveState === 'saved' && savedAt ? 'text-emerald-700' : 'text-muted-foreground'}`}
+                role='status'
+              >
+                {autosaveState === 'saving'
+                  ? 'Saving…'
+                  : autosaveState === 'error'
+                    ? 'Autosave failed — use Save Changes to retry'
+                    : savedAt
+                      ? `Saved ${savedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
+                      : 'Autosave on'}
+              </span>
+            )}
             <span className='text-sm font-medium text-muted-foreground'>
               Step {activeStep + 1} of {PROFILE_STEPS.length}
             </span>
@@ -1162,14 +1235,6 @@ export default function ProfileTab({
                       onFileChange={handleProfilePictureChange}
                     />
                   </div>
-                  <CertificationsFields
-                    onOpenDocuments={() => changeStep(3)}
-                    savedValue={profile.certifications}
-                    value={formData.certifications ?? []}
-                    onChange={(certifications) =>
-                      setFormData((prev) => ({ ...prev, certifications }))
-                    }
-                  />
                 </div>
               </>
             ) : (
@@ -1182,16 +1247,30 @@ export default function ProfileTab({
                   />
                   <p className='text-sm'>Profile photo</p>
                 </div>
-                <section aria-label='Saved certifications'>
-                  <CertificationsList
-                    certifications={profile.certifications ?? []}
-                  />
-                </section>
               </div>
             )}
           </div>
           <div id='profile-panel-3' hidden={activeStep !== 3}>
-            {activeStep === 3 && <DocumentsTab embedded />}
+            <div className='space-y-6'>
+              {isEditing ? (
+                <CertificationsFields
+                  value={formData.certifications ?? []}
+                  onChange={(certifications) =>
+                    setFormData((prev) => ({ ...prev, certifications }))
+                  }
+                />
+              ) : (
+                <section aria-label='Saved certifications'>
+                  <h3 className='mb-3 font-semibold'>
+                    Certifications &amp; training
+                  </h3>
+                  <CertificationsList
+                    certifications={profile.certifications ?? []}
+                  />
+                </section>
+              )}
+              {activeStep === 3 && <DocumentsTab embedded />}
+            </div>
           </div>
           <div
             id='profile-panel-4'
