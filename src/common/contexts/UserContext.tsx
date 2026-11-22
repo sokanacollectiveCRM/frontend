@@ -26,7 +26,6 @@ import { getFirebaseAuth } from '@/lib/firebase';
 import {
   confirmPasswordReset,
   onAuthStateChanged,
-  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
@@ -331,17 +330,13 @@ export function UserProvider({
 
   const requestPasswordReset = async (email: string): Promise<boolean> => {
     try {
-      // Firebase hosts the reset form at __/auth/action; continueUrl is only
-      // the post-success landing page. Prefer the configured production
-      // frontend even when reset was requested from localhost.
-      const frontendUrl = (
-        import.meta.env.VITE_APP_FRONTEND_URL || window.location.origin
-      ).replace(/\/+$/, '');
-      const continueUrl = `${frontendUrl}/login`;
-      await sendPasswordResetEmail(getFirebaseAuth(), email.trim(), {
-        url: continueUrl,
-        handleCodeInApp: false,
+      const response = await fetch(buildUrl('/auth/reset-password'), {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
       });
+      if (!response.ok) throw new Error('Failed to send reset email');
       return true;
     } catch (error) {
       logFailure('auth', 'password_reset_request_error');
