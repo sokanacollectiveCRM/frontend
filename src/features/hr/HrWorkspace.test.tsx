@@ -80,7 +80,9 @@ it('shows only the doula workspace and saves an audited background-check action 
   expect(
     screen.getByRole('link', { name: 'Historical.pdf' })
   ).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: 'Mark Cleared' }));
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Approve background check' })
+  );
   await waitFor(() =>
     expect(request).toHaveBeenCalledWith('/doulas/d/background-check', {
       status: 'cleared',

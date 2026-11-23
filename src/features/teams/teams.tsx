@@ -174,7 +174,12 @@ export default function Teams() {
   const [archivedDocuments, setArchivedDocuments] = useState<
     DocumentCompletenessItem[]
   >([]);
-  const [reviewReason, setReviewReason] = useState('');
+  const [profileChangeReason, setProfileChangeReason] = useState('');
+  const [documentRejection, setDocumentRejection] = useState<{
+    documentId: string;
+    label: string;
+    reason: string;
+  } | null>(null);
   const [reviewBusy, setReviewBusy] = useState(false);
   const [reviewLinkOpened, setReviewLinkOpened] = useState(false);
   const [documentsLoaded, setDocumentsLoaded] = useState(false);
@@ -301,7 +306,8 @@ export default function Teams() {
     setDocumentsMember(member);
     setBackgroundCheck(undefined);
     setCanManageBackgroundCheck(false);
-    setReviewReason(member.profile_review_reason ?? '');
+    setProfileChangeReason('');
+    setDocumentRejection(null);
     setDocumentsDialogOpen(true);
     setDocumentsLoading(true);
     setDocumentsLoaded(false);
@@ -339,11 +345,16 @@ export default function Teams() {
 
   const handleReviewAction = async (
     documentId?: string,
-    requestChanges = false
+    requestChanges = false,
+    reason = ''
   ) => {
     if (!documentsMember || reviewBusy) return;
-    if (requestChanges && !reviewReason.trim()) {
-      toast.error('Enter a reason for the requested changes.');
+    if (requestChanges && !reason.trim()) {
+      toast.error(
+        documentId
+          ? 'Enter a reason for rejecting this document.'
+          : 'Enter the profile changes the doula needs to make.'
+      );
       return;
     }
     setReviewBusy(true);
@@ -361,14 +372,12 @@ export default function Teams() {
             documentId
               ? {
                   status: requestChanges ? 'rejected' : 'approved',
-                  rejection_reason: requestChanges
-                    ? reviewReason.trim()
-                    : undefined,
+                  rejection_reason: requestChanges ? reason.trim() : undefined,
                 }
               : requestChanges
                 ? {
                     review_action: 'changes_requested',
-                    review_reason: reviewReason.trim(),
+                    review_reason: reason.trim(),
                     profile_review_version:
                       documentsMember.profile_review_version,
                   }
@@ -385,16 +394,15 @@ export default function Teams() {
         throw new Error(data.error || 'Could not approve. Please try again.');
       if (documentId) {
         await handleOpenDocuments(documentsMember);
-        setReviewReason('');
+        setDocumentRejection(null);
         toast.success(
           requestChanges
-            ? documentsMember.profile_review_status === 'submitted'
-              ? 'Document rejected. Select Send requested changes to notify the doula.'
-              : 'Document rejected. The doula can see the reason in Documents.'
+            ? 'Document rejected. The doula was notified.'
             : 'Document approved'
         );
       } else {
         setDocumentsMember(toTeamMember(data));
+        if (requestChanges) setProfileChangeReason('');
         await fetchTeam();
         toast.success(
           requestChanges
@@ -407,6 +415,23 @@ export default function Teams() {
     } finally {
       setReviewBusy(false);
     }
+  };
+
+  const handleRequestProfileChanges = () =>
+    handleReviewAction(undefined, true, profileChangeReason);
+
+  const handleApproveProfile = () => handleReviewAction();
+
+  const handleApproveDocument = (documentId: string) =>
+    handleReviewAction(documentId);
+
+  const handleRejectDocument = () => {
+    if (!documentRejection) return;
+    return handleReviewAction(
+      documentRejection.documentId,
+      true,
+      documentRejection.reason
+    );
   };
 
   const handlePreviewDocument = async (
@@ -1497,27 +1522,39 @@ export default function Teams() {
                   </div>
                 )}
                 {documentsMember.profile_submitted_at ? (
-                  <div className='space-y-2'>
-                    <Label htmlFor='review-reason'>
-                      Reason for requested changes
-                    </Label>
-                    <Textarea
-                      id='review-reason'
-                      value={reviewReason}
-                      onChange={(e) => setReviewReason(e.target.value)}
-                      maxLength={2000}
-                      placeholder='Explain what the doula needs to correct.'
-                    />
-                    {documentsMember.profile_review_status !== 'approved' && (
+                  documentsMember.profile_review_status !== 'approved' && (
+                    <section
+                      aria-label='Request profile changes'
+                      className='space-y-2 rounded-md border border-amber-200 bg-amber-50 p-3'
+                    >
+                      <h4 className='font-medium text-amber-950'>
+                        Request profile changes
+                      </h4>
+                      <p className='text-xs text-amber-900'>
+                        Use this only for corrections to profile information. A
+                        separate rejection reason is entered on each document.
+                      </p>
+                      <Label htmlFor='profile-change-reason'>
+                        Profile change reason
+                      </Label>
+                      <Textarea
+                        id='profile-change-reason'
+                        value={profileChangeReason}
+                        onChange={(e) => setProfileChangeReason(e.target.value)}
+                        maxLength={2000}
+                        placeholder='Explain which profile information needs to be corrected.'
+                      />
                       <Button
                         variant='outline'
                         disabled={reviewBusy}
-                        onClick={() => void handleReviewAction(undefined, true)}
+                        onClick={() => void handleRequestProfileChanges()}
                       >
-                        Reject profile and request changes
+                        {reviewBusy
+                          ? 'Sending...'
+                          : 'Send profile change request'}
                       </Button>
-                    )}
-                  </div>
+                    </section>
+                  )
                 ) : (
                   <p className='rounded border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900'>
                     This profile has not been submitted. Approval and requested
@@ -1533,7 +1570,7 @@ export default function Teams() {
                         !documentsLoaded ||
                         documentsMember.profile_review_status === 'approved'
                       }
-                      onClick={() => void handleReviewAction()}
+                      onClick={() => void handleApproveProfile()}
                     >
                       {documentsMember.profile_review_status === 'approved'
                         ? 'Profile approved'
@@ -1573,6 +1610,12 @@ export default function Teams() {
                 }
               }}
             />
+            <div className='pt-1'>
+              <h3 className='font-semibold'>Documents</h3>
+              <p className='text-sm text-muted-foreground'>
+                Approve each document or open its own rejection form below.
+              </p>
+            </div>
             {documentsLoading ? (
               <p className='text-sm text-gray-500'>Loading documents...</p>
             ) : documentsItems.length === 0 ? (
@@ -1637,7 +1680,11 @@ export default function Teams() {
                             variant='outline'
                             disabled={reviewBusy}
                             onClick={() =>
-                              void handleReviewAction(item.document_id!, true)
+                              setDocumentRejection({
+                                documentId: item.document_id!,
+                                label,
+                                reason: '',
+                              })
                             }
                           >
                             Reject document
@@ -1650,7 +1697,7 @@ export default function Teams() {
                             size='sm'
                             disabled={reviewBusy}
                             onClick={() =>
-                              void handleReviewAction(item.document_id!)
+                              void handleApproveDocument(item.document_id!)
                             }
                           >
                             Approve document
@@ -1691,6 +1738,49 @@ export default function Teams() {
                         </Button>
                       )}
                     </div>
+                    {documentRejection &&
+                      documentRejection.documentId === item.document_id && (
+                        <div className='mt-3 space-y-2 rounded-md border border-red-200 bg-red-50 p-3'>
+                          <Label
+                            htmlFor={`document-rejection-${item.document_id}`}
+                          >
+                            Reason for rejecting {label}
+                          </Label>
+                          <Textarea
+                            id={`document-rejection-${item.document_id}`}
+                            value={documentRejection.reason}
+                            maxLength={2000}
+                            placeholder='Explain what is wrong with this document and what must be uploaded instead.'
+                            onChange={(e) =>
+                              setDocumentRejection((current) =>
+                                current
+                                  ? { ...current, reason: e.target.value }
+                                  : current
+                              )
+                            }
+                          />
+                          <div className='flex flex-wrap gap-2'>
+                            <Button
+                              size='sm'
+                              variant='destructive'
+                              disabled={reviewBusy}
+                              onClick={() => void handleRejectDocument()}
+                            >
+                              {reviewBusy
+                                ? 'Rejecting...'
+                                : 'Send document rejection'}
+                            </Button>
+                            <Button
+                              size='sm'
+                              variant='outline'
+                              disabled={reviewBusy}
+                              onClick={() => setDocumentRejection(null)}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                   </div>
                 );
               })
@@ -1730,6 +1820,8 @@ export default function Teams() {
                 setDocumentsMember(null);
                 setDocumentsItems([]);
                 setArchivedDocuments([]);
+                setProfileChangeReason('');
+                setDocumentRejection(null);
               }}
             >
               Close

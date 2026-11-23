@@ -28,7 +28,11 @@ export function BackgroundCheckStatus({
         doulaId,
         value.status === 'cleared' ? 'not_cleared' : 'cleared'
       );
-      toast.success('Background check status saved. Profile needs review.');
+      toast.success(
+        value.status === 'cleared'
+          ? 'Background check reopened. Profile needs review.'
+          : 'Background check approved. Profile needs review.'
+      );
       onChanged?.();
     } catch (error) {
       toast.error(
@@ -67,8 +71,8 @@ export function BackgroundCheckStatus({
           {busy
             ? 'Saving...'
             : value.status === 'cleared'
-              ? 'Mark Not cleared'
-              : 'Mark Cleared'}
+              ? 'Reopen background check'
+              : 'Approve background check'}
         </Button>
       )}
     </section>

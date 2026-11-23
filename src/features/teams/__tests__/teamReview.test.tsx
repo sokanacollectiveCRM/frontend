@@ -218,12 +218,12 @@ it('does not offer approval or rejection after acceptance but before profile sub
   ).not.toBeInTheDocument();
   expect(
     screen.queryByRole('button', {
-      name: 'Reject profile and request changes',
+      name: 'Send profile change request',
     })
   ).not.toBeInTheDocument();
 });
 
-it('allows document rejection in Teams with a required reason', async () => {
+it('keeps document rejection separate with its own required reason', async () => {
   render(<Teams />);
   fireEvent.click(
     await screen.findByRole('button', { name: 'Review profile & documents' })
@@ -231,18 +231,22 @@ it('allows document rejection in Teams with a required reason', async () => {
   const reject = await screen.findByRole('button', { name: 'Reject document' });
   expect(reject).toBeEnabled();
   fireEvent.click(reject);
+  const confirm = screen.getByRole('button', {
+    name: 'Send document rejection',
+  });
+  fireEvent.click(confirm);
   expect(toast.error).toHaveBeenCalledWith(
-    'Enter a reason for the requested changes.'
+    'Enter a reason for rejecting this document.'
   );
   expect(fetchWithAuth).not.toHaveBeenCalledWith(
     '/api/admin/doulas/doula/documents/cert/review',
     expect.anything()
   );
-  fireEvent.change(screen.getByLabelText('Reason for requested changes'), {
-    target: { value: 'Please upload a readable certificate.' },
-  });
-  expect(reject).toBeEnabled();
-  fireEvent.click(reject);
+  fireEvent.change(
+    screen.getByLabelText('Reason for rejecting Doula training certificate'),
+    { target: { value: 'Please upload a readable certificate.' } }
+  );
+  fireEvent.click(confirm);
   await waitFor(() =>
     expect(fetchWithAuth).toHaveBeenCalledWith(
       '/api/admin/doulas/doula/documents/cert/review',
@@ -256,10 +260,45 @@ it('allows document rejection in Teams with a required reason', async () => {
     )
   );
   await waitFor(() =>
-    expect(screen.getByLabelText('Reason for requested changes')).toHaveValue(
-      ''
+    expect(
+      screen.queryByLabelText('Reason for rejecting Doula training certificate')
+    ).not.toBeInTheDocument()
+  );
+});
+
+it('uses a separate profile-change reason and action', async () => {
+  render(<Teams />);
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Review profile & documents' })
+  );
+  const send = await screen.findByRole('button', {
+    name: 'Send profile change request',
+  });
+  fireEvent.click(send);
+  expect(toast.error).toHaveBeenCalledWith(
+    'Enter the profile changes the doula needs to make.'
+  );
+
+  fireEvent.change(screen.getByLabelText('Profile change reason'), {
+    target: { value: 'Please correct the profile address.' },
+  });
+  fireEvent.click(send);
+  await waitFor(() =>
+    expect(fetchWithAuth).toHaveBeenCalledWith(
+      '/clients/team/doula',
+      expect.objectContaining({
+        method: 'PUT',
+        body: JSON.stringify({
+          review_action: 'changes_requested',
+          review_reason: 'Please correct the profile address.',
+          profile_review_version: 0,
+        }),
+      })
     )
   );
+  expect(
+    screen.queryByLabelText('Reason for rejecting Doula training certificate')
+  ).not.toBeInTheDocument();
 });
 it('permits profile approval with the visible training approval and leaves private requirements to the backend', async () => {
   approved = true;

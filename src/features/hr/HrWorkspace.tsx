@@ -132,8 +132,8 @@ function DoulaHrProfile({ id }: { id: string }) {
             {busy
               ? 'Saving…'
               : docs.backgroundCheck.status === 'cleared'
-                ? 'Mark Not cleared'
-                : 'Mark Cleared'}
+                ? 'Reopen background check'
+                : 'Approve background check'}
           </button>
         </section>
       )}
