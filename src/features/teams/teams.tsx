@@ -401,8 +401,11 @@ export default function Teams() {
             : 'Document approved'
         );
       } else {
-        setDocumentsMember(toTeamMember(data));
+        const updatedMember = toTeamMember(data);
+        setDocumentsMember(updatedMember);
         if (requestChanges) setProfileChangeReason('');
+        else if (updatedMember.role === 'doula')
+          await handleOpenDocuments(updatedMember);
         await fetchTeam();
         toast.success(
           requestChanges
@@ -1580,8 +1583,9 @@ export default function Teams() {
                     </Button>
                     {documentsMember.profile_review_status !== 'approved' && (
                       <p className='text-xs text-muted-foreground'>
-                        Approval checks required profile details and documents
-                        and will explain any remaining requirement.
+                        Approves the profile and every current uploaded document
+                        in one action. The background check must already be
+                        approved. Sensitive documents require HR/payroll access.
                       </p>
                     )}
                   </>
