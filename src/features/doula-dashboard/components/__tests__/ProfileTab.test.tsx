@@ -261,6 +261,52 @@ describe('doula profile layout', () => {
     ).toBeInTheDocument();
   });
 
+  it('updates dashboard progress immediately after the final autosave submits the profile', async () => {
+    profile = {
+      ...initial,
+      bio: '',
+      account_status: 'pending',
+      profile_review_status: 'draft',
+      profile_submitted_at: null,
+    };
+
+    function ProfilePage() {
+      const { onProfileStatusChange } =
+        useOutletContext<DoulaDashboardOutletContext>();
+      return <ProfileTab onProfileStatusChange={onProfileStatusChange} />;
+    }
+
+    render(
+      <MemoryRouter initialEntries={['/doula-dashboard/profile']}>
+        <Routes>
+          <Route path='/doula-dashboard' element={<DoulaDashboard />}>
+            <Route path='profile' element={<ProfilePage />} />
+          </Route>
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const progress = await screen.findByRole('progressbar', {
+      name: 'Profile setup progress',
+    });
+    await waitFor(() =>
+      expect(progress).toHaveAttribute('aria-valuenow', '91')
+    );
+
+    fireEvent.change(await screen.findByLabelText('About me (bio)'), {
+      target: { value: 'The final fictional required profile detail' },
+    });
+
+    await waitFor(
+      () => expect(api.submitDoulaProfile).toHaveBeenCalledTimes(1),
+      { timeout: 2000 }
+    );
+    await waitFor(() =>
+      expect(progress).toHaveAttribute('aria-valuenow', '100')
+    );
+    expect(screen.getByText(/11 of 11 required/)).toBeVisible();
+  });
+
   it('opens directly on Documents when requested by the dashboard', async () => {
     render(<ProfileTab initialStep='documents' />);
     expect(

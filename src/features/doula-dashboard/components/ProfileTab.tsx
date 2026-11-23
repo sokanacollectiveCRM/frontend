@@ -307,6 +307,13 @@ export default function ProfileTab({
         });
         setProfile(updated);
         cachedProfile = updated;
+        const missingFields = getMissingRequiredFields(
+          profileToFormData(updated)
+        );
+        onProfileStatusChange?.({
+          isComplete: missingFields.length === 0,
+          missingFields,
+        });
         lastAutosaved.current = snapshot;
       }
       setSavedAt(new Date());
@@ -316,7 +323,7 @@ export default function ProfileTab({
     } finally {
       autosaveInFlight.current = false;
     }
-  }, []);
+  }, [onProfileStatusChange]);
 
   const fetchProfile = useCallback(
     async (showLoading = true) => {
