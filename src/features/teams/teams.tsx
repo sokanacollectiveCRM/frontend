@@ -1668,7 +1668,7 @@ export default function Teams() {
                       </div>
                       {documentsMember?.profile_submitted_at &&
                         item.document_id &&
-                        item.status !== 'rejected' && (
+                        item.status !== 'approved' && (
                           <Button
                             size='sm'
                             variant='outline'
@@ -1677,11 +1677,13 @@ export default function Teams() {
                               setDocumentRejection({
                                 documentId: item.document_id!,
                                 label,
-                                reason: '',
+                                reason: item.rejection_reason ?? '',
                               })
                             }
                           >
-                            Reject document
+                            {item.status === 'rejected'
+                              ? 'Update rejection'
+                              : 'Reject document'}
                           </Button>
                         )}
                       {documentsMember?.profile_submitted_at &&
@@ -1762,7 +1764,9 @@ export default function Teams() {
                             >
                               {reviewBusy
                                 ? 'Rejecting...'
-                                : 'Send document rejection'}
+                                : item.status === 'rejected'
+                                  ? 'Update document rejection'
+                                  : 'Send document rejection'}
                             </Button>
                             <Button
                               size='sm'

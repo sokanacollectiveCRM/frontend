@@ -267,6 +267,47 @@ it('keeps document rejection separate with its own required reason', async () =>
   );
 });
 
+it('lets an admin revise the reason on an already rejected document', async () => {
+  vi.mocked(partitionDoulaDocuments).mockReturnValue({
+    active: [
+      {
+        document_type: 'training_certificate',
+        document_id: 'cert',
+        status: 'rejected',
+        rejection_reason: 'Original reason',
+      },
+    ],
+    archived: [],
+  } as never);
+  render(<Teams />);
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Review profile & documents' })
+  );
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Update rejection' })
+  );
+  const reason = screen.getByLabelText(
+    'Reason for rejecting Doula training certificate'
+  );
+  expect(reason).toHaveValue('Original reason');
+  fireEvent.change(reason, { target: { value: 'Updated reason' } });
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Update document rejection' })
+  );
+  await waitFor(() =>
+    expect(fetchWithAuth).toHaveBeenCalledWith(
+      '/api/admin/doulas/doula/documents/cert/review',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({
+          status: 'rejected',
+          rejection_reason: 'Updated reason',
+        }),
+      })
+    )
+  );
+});
+
 it('uses a separate profile-change reason and action', async () => {
   render(<Teams />);
   fireEvent.click(
