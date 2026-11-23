@@ -17,6 +17,7 @@ vi.mock('@/api/doulas/doulaService', async (importOriginal) => ({
     zip_code: '60601',
     bio: 'Bio',
     phone_number: '3125550199',
+    profile_review_status: 'approved',
   }),
   getDoulaDocuments: vi.fn(),
 }));
@@ -28,6 +29,7 @@ it('flags missing and rejected required documents at the dashboard top and refre
       { documentType: 'w9', status: 'approved' },
     ] as never,
     backgroundCheck: { status: 'not_cleared', setAt: null, setBy: null },
+    completeness: { can_be_active: false } as never,
   });
   render(
     <MemoryRouter>
@@ -52,15 +54,16 @@ it('flags missing and rejected required documents at the dashboard top and refre
   await waitFor(() =>
     expect(
       screen.getByRole('progressbar', { name: 'Profile setup progress' })
-    ).toHaveAttribute('aria-valuenow', '73')
+    ).toHaveAttribute('aria-valuenow', '64')
   );
-  expect(screen.getByText(/8 of 11 required/)).toBeVisible();
+  expect(screen.getByText(/9 of 14 required/)).toBeVisible();
   expect(screen.queryByText(/liability insurance/i)).not.toBeInTheDocument();
   vi.mocked(getDoulaDocuments).mockResolvedValue({
     documents: ['training_certificate', 'w9', 'direct_deposit_form'].map(
-      (documentType) => ({ documentType, status: 'uploaded' })
+      (documentType) => ({ documentType, status: 'approved' })
     ) as never,
     backgroundCheck: { status: 'cleared', setAt: null, setBy: null },
+    completeness: { can_be_active: true } as never,
   });
   fireEvent(window, new Event('doula-documents-changed'));
   await waitFor(() =>
@@ -71,7 +74,8 @@ it('flags missing and rejected required documents at the dashboard top and refre
   expect(
     screen.getByRole('progressbar', { name: 'Profile setup progress' })
   ).toHaveAttribute('aria-valuenow', '100');
-  expect(screen.getByText(/11 of 11 required/)).toBeVisible();
+  expect(screen.getByText(/14 of 14 required/)).toBeVisible();
+  expect(screen.getByText(/profile, background check/i)).toBeVisible();
 });
 it('shows a retry path if document status cannot be loaded', async () => {
   vi.mocked(getDoulaDocuments).mockRejectedValue(new Error('offline'));

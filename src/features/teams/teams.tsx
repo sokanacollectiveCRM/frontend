@@ -1583,9 +1583,9 @@ export default function Teams() {
                     </Button>
                     {documentsMember.profile_review_status !== 'approved' && (
                       <p className='text-xs text-muted-foreground'>
-                        Approves the profile and every current uploaded document
-                        in one action. The background check must already be
-                        approved. Sensitive documents require HR/payroll access.
+                        Approves profile information only. Background clearance
+                        and required documents are reviewed separately; all
+                        three must be approved to complete onboarding.
                       </p>
                     )}
                   </>
@@ -1599,17 +1599,7 @@ export default function Teams() {
               canManage={canManageBackgroundCheck}
               onChanged={() => {
                 if (documentsMember) {
-                  const current = {
-                    ...documentsMember,
-                    profile_review_status: ['approved', 'submitted'].includes(
-                      documentsMember.profile_review_status
-                    )
-                      ? 'draft'
-                      : documentsMember.profile_review_status,
-                    profile_review_version:
-                      documentsMember.profile_review_version + 1,
-                  };
-                  void handleOpenDocuments(current);
+                  void handleOpenDocuments(documentsMember);
                   void fetchTeam();
                 }
               }}

@@ -40,7 +40,10 @@ export default function DoulaDashboard() {
   const [backgroundPending, setBackgroundPending] = useState(false);
   const [documentsError, setDocumentsError] = useState(false);
   const [documentsChecked, setDocumentsChecked] = useState(false);
+  const [requiredDocumentsApproved, setRequiredDocumentsApproved] =
+    useState(false);
   const [isProfileComplete, setIsProfileComplete] = useState(true);
+  const [profileApproved, setProfileApproved] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [profileChecked, setProfileChecked] = useState(false);
 
@@ -70,6 +73,7 @@ export default function DoulaDashboard() {
         setBackgroundPending(
           !backgroundCheckSatisfied(data.backgroundCheck?.status)
         );
+        setRequiredDocumentsApproved(data.completeness?.can_be_active === true);
         setDocumentsError(false);
       } catch {
         if (mounted && request === generation) setDocumentsError(true);
@@ -97,6 +101,7 @@ export default function DoulaDashboard() {
         incompleteFields.push('Phone number');
       setMissingFields(incompleteFields);
       setIsProfileComplete(incompleteFields.length === 0);
+      setProfileApproved(profile?.profile_review_status === 'approved');
     } catch {
       // Keep dashboard usable when profile check fails.
       setMissingFields([]);
@@ -114,10 +119,18 @@ export default function DoulaDashboard() {
   }, []);
   const outletContext: DoulaDashboardOutletContext = { onProfileStatusChange };
   const totalRequiredItems =
-    REQUIRED_PROFILE_FIELDS.length + 1 + REQUIRED_DOULA_DOCUMENT_TYPES.length;
+    REQUIRED_PROFILE_FIELDS.length +
+    1 +
+    REQUIRED_DOULA_DOCUMENT_TYPES.length +
+    3;
   const completedRequiredItems = Math.max(
     0,
-    totalRequiredItems - missingFields.length - missingDocuments.length
+    totalRequiredItems -
+      missingFields.length -
+      missingDocuments.length -
+      (profileApproved ? 0 : 1) -
+      (requiredDocumentsApproved ? 0 : 1) -
+      (backgroundPending ? 1 : 0)
   );
   const completionPercent = Math.round(
     (completedRequiredItems / totalRequiredItems) * 100
@@ -181,14 +194,14 @@ export default function DoulaDashboard() {
           </div>
           {profileChecked && documentsChecked && !documentsError && (
             <p className='mt-2 text-sm text-muted-foreground'>
-              {completedRequiredItems} of {totalRequiredItems} required profile
-              and upload items complete.
+              {completedRequiredItems} of {totalRequiredItems} required
+              profile, upload, and review items complete.
             </p>
           )}
-          {completionPercent === 100 && backgroundPending && (
+          {completionPercent === 100 && (
             <p className='mt-1 text-sm text-muted-foreground'>
-              Your setup is complete. Background clearance is reviewed
-              separately by HR/payroll and does not hold up submission.
+              Your setup is complete: profile, background check, and required
+              documents are approved.
             </p>
           )}
         </section>

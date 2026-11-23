@@ -110,9 +110,7 @@ it('lets an admin review the profile and certificate before approving the accoun
     screen.getByText('Example Training · Expires Mar 31, 2028')
   ).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Approve profile' })).toBeEnabled();
-  expect(
-    screen.getByText(/every current uploaded document in one action/i)
-  ).toBeVisible();
+  expect(screen.getByText(/approves profile information only/i)).toBeVisible();
   approved = true;
   fireEvent.click(
     await screen.findByRole('button', { name: 'Approve document' })

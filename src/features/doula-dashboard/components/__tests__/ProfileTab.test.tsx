@@ -261,7 +261,7 @@ describe('doula profile layout', () => {
     ).toBeInTheDocument();
   });
 
-  it('updates dashboard progress immediately after the final autosave submits the profile', async () => {
+  it('updates entered-information progress but remains incomplete while reviews are pending', async () => {
     profile = {
       ...initial,
       bio: '',
@@ -290,7 +290,7 @@ describe('doula profile layout', () => {
       name: 'Profile setup progress',
     });
     await waitFor(() =>
-      expect(progress).toHaveAttribute('aria-valuenow', '91')
+      expect(progress).toHaveAttribute('aria-valuenow', '79')
     );
 
     fireEvent.change(await screen.findByLabelText('About me (bio)'), {
@@ -302,9 +302,12 @@ describe('doula profile layout', () => {
       { timeout: 2000 }
     );
     await waitFor(() =>
-      expect(progress).toHaveAttribute('aria-valuenow', '100')
+      expect(progress).toHaveAttribute('aria-valuenow', '86')
     );
-    expect(screen.getByText(/11 of 11 required/)).toBeVisible();
+    expect(screen.getByText(/12 of 14 required/)).toBeVisible();
+    expect(
+      screen.queryByText(/your setup is complete/i)
+    ).not.toBeInTheDocument();
   });
 
   it('opens directly on Documents when requested by the dashboard', async () => {
