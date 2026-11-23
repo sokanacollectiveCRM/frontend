@@ -23,6 +23,7 @@ import { Label } from '@/common/components/ui/label';
 import { PasswordInput } from '@/common/components/form/PasswordInput';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { authErrorMessage } from './authErrorMessage';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -37,7 +38,7 @@ export default function Login() {
 
   useEffect(() => {
     if (oauthError) {
-      toast.error(oauthError);
+      toast.error(authErrorMessage(oauthError, 'login'));
     }
   }, [oauthError]);
 
@@ -99,11 +100,7 @@ export default function Login() {
       navigate(postLoginPath ?? '/', { replace: true });
     } catch (submitError) {
       logFailure('auth', 'login_error');
-      toast.error(
-        submitError instanceof Error
-          ? submitError.message
-          : 'Failed to sign in. Please try again.'
-      );
+      toast.error(authErrorMessage(submitError, 'login'));
     } finally {
       setIsLoading(false);
     }
@@ -117,9 +114,7 @@ export default function Login() {
       await verifyIdentityMfa(mfa.challengeId, mfaCode.trim(), mfa.idToken);
       navigate(postLoginPath ?? '/', { replace: true });
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : 'Invalid verification code'
-      );
+      toast.error(authErrorMessage(err, 'mfa'));
     } finally {
       setIsLoading(false);
     }
@@ -136,7 +131,7 @@ export default function Login() {
         `New code sent to ${next.emailHint}. You can resend again in 60 seconds.`
       );
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not resend code');
+      toast.error(authErrorMessage(err, 'mfa'));
     } finally {
       setIsLoading(false);
     }

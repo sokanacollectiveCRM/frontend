@@ -15,6 +15,7 @@ import { Label } from '@/common/components/ui/label';
 import { PasswordInput } from '@/common/components/form/PasswordInput';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { authErrorMessage } from './authErrorMessage';
 import { Alert, AlertDescription } from '@/common/components/ui/alert';
 import { cn } from '@/lib/utils';
 export default function SetPassword() {
@@ -116,11 +117,8 @@ export default function SetPassword() {
       setTimeout(() => {
         navigate('/auth/client-login', { replace: true });
       }, 3000);
-    } catch (err: any) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'Failed to set password. Please try again.';
+    } catch (err: unknown) {
+      const errorMessage = authErrorMessage(err, 'password-setup');
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {

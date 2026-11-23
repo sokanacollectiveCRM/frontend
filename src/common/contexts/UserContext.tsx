@@ -242,7 +242,7 @@ export function UserProvider({
         (error.message === 'Failed to fetch' || error.message === 'Load failed')
       ) {
         throw new Error(
-          'Network error. Could not reach the backend. Check VITE_APP_BACKEND_URL and confirm the backend is running.'
+          'We could not connect. Check your internet connection and try again.'
         );
       }
       throw error;

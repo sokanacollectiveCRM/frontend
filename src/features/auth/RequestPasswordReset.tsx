@@ -19,6 +19,7 @@ import { useUser } from '@/common/hooks/user/useUser';
 import { Loader2 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { authErrorMessage } from './authErrorMessage';
 
 export default function RequestPasswordReset() {
   const [params] = useSearchParams();
@@ -40,9 +41,7 @@ export default function RequestPasswordReset() {
       toast.success('Password reset instructions sent to your email');
       setSuccess(true);
     } catch (err: any) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to send reset email';
-      toast.error(message);
+      toast.error(authErrorMessage(err, 'password-reset'));
     } finally {
       setIsLoading(false);
     }

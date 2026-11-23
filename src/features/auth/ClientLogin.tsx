@@ -18,6 +18,7 @@ import { PasswordInput } from '@/common/components/form/PasswordInput';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/common/components/ui/alert';
+import { authErrorMessage } from './authErrorMessage';
 
 export default function ClientLogin() {
   const navigate = useNavigate();
@@ -71,10 +72,7 @@ export default function ClientLogin() {
       navigate('/', { replace: true });
     } catch (err: any) {
       logFailure('auth', 'client_login_error');
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'Failed to sign in. Please try again.';
+      const errorMessage = authErrorMessage(err, 'login');
       setError(errorMessage);
       setHasLoginError(true); // Mark that there was a login error to prevent redirects
       toast.error(errorMessage);
@@ -89,7 +87,6 @@ export default function ClientLogin() {
       setIsLoading(false);
     }
   };
-
 
   return (
     <div className='mx-auto flex w-full min-w-0 max-w-md flex-col gap-6 p-4'>

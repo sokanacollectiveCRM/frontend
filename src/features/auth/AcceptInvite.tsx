@@ -18,6 +18,7 @@ import { Input } from '@/common/components/ui/input';
 import { Label } from '@/common/components/ui/label';
 import { PasswordInput } from '@/common/components/form/PasswordInput';
 import { buildUrl } from '@/api/http';
+import { authErrorMessage } from './authErrorMessage';
 
 interface InvitationPreview {
   email: string;
@@ -57,11 +58,7 @@ export default function AcceptInvite() {
         }
         setPreview(data as InvitationPreview);
       } catch (loadError) {
-        setError(
-          loadError instanceof Error
-            ? loadError.message
-            : 'This invitation is no longer valid.'
-        );
+        setError(authErrorMessage(loadError, 'invitation'));
       } finally {
         setIsLoading(false);
       }
@@ -100,10 +97,7 @@ export default function AcceptInvite() {
         'Invitation accepted. Sign in to continue; complete email verification if requested.'
       );
     } catch (submitError) {
-      const message =
-        submitError instanceof Error
-          ? submitError.message
-          : 'Could not accept the invitation.';
+      const message = authErrorMessage(submitError, 'invitation');
       setError(message);
       toast.error(message);
     } finally {

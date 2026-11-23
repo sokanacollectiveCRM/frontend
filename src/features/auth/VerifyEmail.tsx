@@ -17,6 +17,7 @@ import { buildUrl, fetchWithAuth } from '@/api/http';
 import { getFirebaseAuth } from '@/lib/firebase';
 import { useUser } from '@/common/hooks/user/useUser';
 import { isStaffRole } from '@/common/auth/roles';
+import { authErrorMessage } from './authErrorMessage';
 
 export default function VerifyEmail() {
   const [searchParams] = useSearchParams();
@@ -45,11 +46,7 @@ export default function VerifyEmail() {
         );
       } catch (err) {
         setStatus('error');
-        setError(
-          err instanceof Error
-            ? err.message
-            : 'This verification link is invalid or expired.'
-        );
+        setError(authErrorMessage(err, 'verification'));
       }
     })();
   }, [oobCode, checkAuth]);
@@ -71,10 +68,7 @@ export default function VerifyEmail() {
       }
       toast.success('Verification email sent.');
     } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : 'Could not send verification email.';
+      const message = authErrorMessage(err, 'verification');
       setError(message);
       toast.error(message);
     } finally {

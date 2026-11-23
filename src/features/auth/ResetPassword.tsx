@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useUser } from '@/common/hooks/user/useUser';
 import { API_CONFIG } from '@/api/config';
 import { toast } from 'sonner';
+import { authErrorMessage } from './authErrorMessage';
 
 import { Button } from '@/common/components/ui/button';
 import {
@@ -164,8 +165,8 @@ export default function ResetPassword() {
         },
         replace: true,
       });
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to reset password. Please try again.');
+    } catch (err: unknown) {
+      toast.error(authErrorMessage(err, 'password-reset'));
     } finally {
       setIsLoading(false);
     }
